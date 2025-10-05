@@ -113,7 +113,7 @@ export const StudentPage: React.FC = () => {
     setSidebarCollapsed(prev => !prev);
   };
   
-
+// комментарий
   if (!user) {
     return (
       <div className="student-container">
