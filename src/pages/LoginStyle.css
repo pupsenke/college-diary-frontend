@@ -1,0 +1,374 @@
+/* LoginStyle.css */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.login-title, .login-subtitle, .auth-headline, .auth-desc,
+.login-input, .password-input, .forgot-link, .login-button,
+.support-text, .support-link, .version-info {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.login-title {
+  font-weight: 700;
+}
+
+.login-subtitle {
+  font-weight: 400;
+}
+
+.auth-headline {
+  font-weight: 600;
+}
+
+.auth-desc {
+  font-weight: 400;
+}
+
+.login-button {
+  font-weight: 500;
+}
+
+/* Основные стили */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Контент */
+.login-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 440px;
+}
+
+/* Карточка */
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
+
+
+
+/* Анимированный фон */
+.background-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.background-animation .shape {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  animation: float 6s ease-in-out infinite;
+}
+
+.login-shape-1 {
+  width: 300px;
+  height: 300px;
+  top: -150px;
+  left: -150px;
+  animation-delay: 0s;
+}
+
+.login-shape-2 {
+  width: 200px;
+  height: 200px;
+  bottom: -100px;
+  right: -100px;
+  animation-delay: 2s;
+}
+
+.login-shape-3 {
+  width: 150px;
+  height: 150px;
+  top: 50%;
+  left: 70%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+
+
+/* Шапка */
+.login-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.login-title {
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.forgot-link {
+  background: transparent;
+  border: none;
+}
+
+.login-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin: 0;
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-card .auth-headline {
+  color: #002FA7;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.login-card .auth-desc {
+  color: #718096;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Ошибки */
+.login-card .auth-error {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.login-card .error-icon {
+  font-size: 14px;
+}
+
+.login-card .error-message {
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Поля ввода */
+.input-group-login {
+  margin-bottom: 20px;
+}
+
+.input-group-password {
+  margin-bottom: 5px;
+}
+
+.input-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 16px;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus-within {
+  border-color: #5986f7;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-icon {
+  font-size: 18px;
+  margin-right: 12px;
+  color: #a0aec0;
+}
+
+.login-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px 0;
+  font-size: 14px;
+  background: transparent;
+}
+
+.password-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px 0;
+  font-size: 14px;
+  background: transparent;
+}
+
+.login-input::placeholder {
+  color: #a0aec0;
+}
+
+.password-input::placeholder {
+  color: #a0aec0;
+}
+
+.password-toggle {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0px;
+  color: #a0aec0;
+  transition: color 0.3s ease;
+  margin-left: auto;
+}
+
+.password-toggle:hover {
+  color: #667eea;
+}
+
+/* Забыли пароль */
+.forgot-row {
+  text-align: right;
+  margin-bottom: 30px;
+}
+
+.forgot-link {
+  color: #3c5ceb;
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.3s ease;
+}
+
+.forgot-link:hover {
+  color: #5b77f4;
+  text-decoration: underline;
+}
+
+/* Кнопка */
+.login-button {
+  width: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  border: none;
+  padding: 18px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-icon {
+  font-size: 18px;
+}
+
+.button-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Футер */
+.login-footer {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.login-footer .support-text {
+  color: #718096;
+  font-size: 13px;
+  text-align: center;
+  margin: 0;
+}
+
+.support-link {
+  color: #3c5ceb;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 400;
+}
+
+.support-link:hover {
+  color: #5b77f4;
+  text-decoration: underline;
+}
+
+.version-info {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  margin-top: 20px;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+  
+  .login-card {
+    padding: 30px 24px;
+  }
+  
+  .login-title {
+    font-size: 24px;
+  }
+  
+  .auth-headline {
+    font-size: 20px;
+  }
+}

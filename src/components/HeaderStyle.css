@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.header-main {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  margin-bottom: 18px;
+  min-height: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.image {
+  width: 50px;
+  height: 50px;
+}
+
+.header-logo-area {
+  display: flex;
+  align-items: center;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-title {
+  color: #002FA7;
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 0px;
+  margin-left: 8px;
+}
+
+.logo-subtitle {
+  color: #002FA7;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 0px;
+  margin-left: 8px;
+}
+
+.header-profile-area {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #d3dbff5d;
+  border-radius: 16px;
+  padding: 8px 18px;
+  border: 1.5px solid rgba(99, 153, 254, 0.3);
+  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-card:hover {
+  background: #c5d0ff85;
+  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 8px;
+}
+
+.profile-name {
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.profile-info .profile-role {
+  font-size: 12px;
+  color: #002FA7;
+  font-weight: 300;
+}
+
+.profile-arrow {
+  font-size: 12px;
+  color: #547ced;
+  transition: transform 0.3s ease;
+  margin-left: 5px;
+}
+
+.profile-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Выпадающее меню */
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  z-index: 4;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-user-info {
+  padding: 16px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dropdown-user-info .user-gradient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  opacity: 1;
+  z-index: -1;
+}
+
+.dropdown-fullname {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.dropdown-group {
+  display: block;
+  font-size: 13px;
+  color: #d6e1ff;
+  font-weight: 400;
+}
+
+.dropdown-menu {
+  padding: 8px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #4664b5;
+  text-align: left;
+  font-weight: 400;
+}
+
+.dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+  padding-left: 22px;
+}
+
+.dropdown-item.logout {
+  color: #e53e3e;
+  margin-top: 8px;
+}
+
+.dropdown-item.logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+/* .dropdown-icon {
+  margin-right: 12px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  opacity: 0.8;
+} */
+
+/* Адаптация для мобильных */
+@media (max-width: 700px) {
+  .header-main {
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .logo-title {
+    font-size: 16px;
+  }
+  
+  .logo-subtitle {
+    font-size: 11px;
+  }
+  
+  .profile-card {
+    padding: 6px 12px;
+  }
+  
+  .profile-dropdown {
+    width: 240px;
+    right: -10px;
+  }
+  
+  .profile-info {
+    align-items: flex-start;
+  }
+  
+  .dropdown-item {
+    padding: 9px 18px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-mark {
+    flex-direction: column;
+    text-align: center;
+    gap: 5px;
+  }
+  
+  .logo-title,
+  .logo-subtitle {
+    margin-left: 0;
+  }
+  
+  .profile-name,
+  .profile-patronymic {
+    font-size: 12px;
+  }
+  
+  .dropdown-user-info {
+    padding: 14px 16px 18px;
+  }
+  
+  .dropdown-fullname {
+    font-size: 14px;
+  }
+  
+  .dropdown-role {
+    font-size: 12px;
+  }
+}
