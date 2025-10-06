@@ -17,6 +17,7 @@ export const LoginPage: React.FC = () => {
     setErrorMessage("");
     setIsLoading(true);
 
+    // комментарий
     try {
       const studentResponse = await fetch(
         `http://localhost:8080/api/v1/students/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
