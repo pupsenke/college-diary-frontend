@@ -12,6 +12,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { setUser } = useUser();
 
+// комментарий проверка
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
