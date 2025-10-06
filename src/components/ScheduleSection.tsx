@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './ScheduleSection.css';
 
 type Lesson = {
@@ -22,7 +22,7 @@ type GroupedSlot = {
   lessons: Lesson[];
 };
 
-const scheduleData: DaySchedule[] = [
+const upperWeekData: DaySchedule[] = [
   {
     date: { weekday: 'Понедельник', date: '22.09.2025' },
     lessons: [
@@ -59,7 +59,6 @@ const scheduleData: DaySchedule[] = [
   {
     date: { weekday: 'Пятница', date: '26.09.2025' },
     lessons: [
-      { id: 15, startTime: '12:45', endTime: '14:25', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
       { id: 16, startTime: '14:35', endTime: '16:15', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
       { id: 17, startTime: '16:25', endTime: '18:05', subject: 'Внедрение и поддержка компьютерных систем', teacher: 'Богданов М.М', room: 'ауд. 226' },
       { id: 18, startTime: '18:15', endTime: '20:05', subject: 'Внедрение и поддержка компьютерных систем', teacher: 'Богданов М.М', room: 'ауд. 226' },
@@ -72,6 +71,59 @@ const scheduleData: DaySchedule[] = [
       { id: 20, startTime: '14:35', endTime: '16:15', subject: 'Обеспечение качества функционирования компьютерных систем', teacher: 'Андреев И.А', room: 'ауд. -' },
       { id: 21, startTime: '16:25', endTime: '18:05', subject: 'Разработка программных модулей', teacher: 'Богданов М.М', room: 'ауд. 226' },
       { id: 22, startTime: '18:15', endTime: '20:05', subject: 'Разработка программных модулей', teacher: 'Богданов М.М', room: 'ауд. 226' },
+    ],
+  },
+];
+
+const lowerWeekData: DaySchedule[] = [
+  {
+    date: { weekday: 'Понедельник', date: '22.09.2025' },
+    lessons: [
+      { id: 23, startTime: '8:30', endTime: '10:10', subject: 'Основы бережливого производства', teacher: 'Лазич Ю.В', room: 'ауд. -' },
+      { id: 24, startTime: '10:20', endTime: '12:00', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
+      { id: 25, startTime: '12:45', endTime: '14:25', subject: 'Стандартизация, сертификация и техническое документирование', teacher: 'Чернега А.М', room: 'ауд. 305' },
+      { id: 26, startTime: '14:35', endTime: '16:15', subject: 'Иностранный язык в профессиональной деятельности (немецкий)', teacher: 'Скачек Н.Г', room: 'ауд. 219' },
+    ],
+  },
+  {
+    date: { weekday: 'Вторник', date: '23.09.2025' },
+    lessons: [],
+    noClassesText: 'Нет пар. Выходной',
+  },
+  {
+    date: { weekday: 'Среда', date: '24.09.2025' },
+    lessons: [
+      { id: 27, startTime: '8:30', endTime: '10:10', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
+      { id: 28, startTime: '10:20', endTime: '12:00', subject: 'Поддержка и тестирование программных модулей', teacher: 'Андреев И.А', room: 'ауд. -' },
+      { id: 29, startTime: '12:45', endTime: '14:25', subject: 'Иностранный язык в профессиональной деятельности', teacher: 'Плаксина И.А', room: 'ауд. 406' },
+      { id: 30, startTime: '12:45', endTime: '14:25', subject: 'Иностранный язык в профессиональной деятельности', teacher: 'Алексеева Л.Г', room: 'ауд. 306' },
+      { id: 31, startTime: '8:30', endTime: '10:10', subject: 'Основы бережливого производства', teacher: 'Лазич Ю.В', room: 'ауд. -' },
+    ],
+  },
+  {
+    date: { weekday: 'Четверг', date: '25.09.2025' },
+    lessons: [
+      { id: 32, startTime: '8:30', endTime: '10:10', subject: 'Физическая культура', teacher: 'Иванов В.Н', room: 'СП зал' },
+      { id: 33, startTime: '10:20', endTime: '12:00', subject: 'Разработка программных модулей', teacher: 'Цымбалюк Л.Н', room: 'ауд. 124' },
+      { id: 34, startTime: '12:45', endTime: '14:25', subject: 'Поддержка и тестирование программных модулей', teacher: 'Андреев И.А', room: 'ауд. -' },
+      { id: 35, startTime: '14:35', endTime: '16:15', subject: 'Проектный практикум' },
+    ],
+  },
+  {
+    date: { weekday: 'Пятница', date: '26.09.2025' },
+    lessons: [
+      { id: 36, startTime: '12:45', endTime: '14:25', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
+      { id: 37, startTime: '14:35', endTime: '16:15', subject: 'Системное программирование', teacher: 'Иванов А.', room: 'ауд. 1117 НовГУ' },
+      { id: 38, startTime: '16:25', endTime: '18:05', subject: 'Внедрение и поддержка компьютерных систем', teacher: 'Богданов М.М', room: 'ауд. 226' },
+      { id: 39, startTime: '18:15', endTime: '20:05', subject: 'Внедрение и поддержка компьютерных систем', teacher: 'Богданов М.М', room: 'ауд. 226' },
+    ],
+  },
+  {
+    date: { weekday: 'Суббота', date: '27.09.2025' },
+    lessons: [
+      { id: 40, startTime: '12:45', endTime: '14:25', subject: 'Поддержка и тестирование программных модулей', teacher: 'Андреев И.А', room: 'ауд. -' },
+      { id: 41, startTime: '14:35', endTime: '16:15', subject: 'Обеспечение качества функционирования компьютерных систем', teacher: 'Андреев И.А', room: 'ауд. -' },
+      { id: 42, startTime: '16:25', endTime: '18:05', subject: 'Разработка программных модулей', teacher: 'Богданов М.М', room: 'ауд. 226' },
     ],
   },
 ];
@@ -98,7 +150,7 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   );
 }
 
-export const ScheduleSection: React.FC = () => {
+const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
   return (
     <div className="schedule-section">
       {scheduleData.map(({ date, lessons, noClassesText }: DaySchedule) => (
@@ -150,6 +202,35 @@ export const ScheduleSection: React.FC = () => {
           )}
         </div>
       ))}
+    </div>
+  );
+};
+
+export const ScheduleSection: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'upper' | 'lower'>('upper');
+
+  return (
+    <div>
+      <div className="view-tabs">
+        <button 
+          className={`view-tab ${activeTab === 'upper' ? 'active' : ''}`}
+          onClick={() => setActiveTab('upper')}
+        >
+          Верхняя неделя
+        </button>
+        <button 
+          className={`view-tab ${activeTab === 'lower' ? 'active' : ''}`}
+          onClick={() => setActiveTab('lower')}
+        >
+          Нижняя неделя
+        </button>
+      </div>
+      
+      {activeTab === 'upper' ? (
+        <ScheduleView scheduleData={upperWeekData} />
+      ) : (
+        <ScheduleView scheduleData={lowerWeekData} />
+      )}
     </div>
   );
 };
