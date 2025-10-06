@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #7200a7 0%, #5986f7 100%); /* 002FA7 */
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%); /* Проверка изменения */
   padding: 20px;
   position: relative;
   overflow: hidden;
