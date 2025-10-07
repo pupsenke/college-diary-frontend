@@ -28,7 +28,7 @@
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
 }
 
-.view-tabs {
+.at-view-tabs {
   display: flex;
   background: #f8fafc;
   border-radius: 8px;
@@ -36,7 +36,7 @@
   border: 1px solid #e2e8f0;
 }
 
-.view-tab {
+.at-view-tab {
   padding: 8px 20px;
   border: none;
   background: transparent;
@@ -48,12 +48,12 @@
   transition: all 0.3s ease;
 }
 
-.view-tab.active {
+.at-view-tab.active {
   background: #002FA7;
   color: white;
 }
 
-.view-tab:hover:not(.active) {
+.at-view-tab:hover:not(.active) {
   background: #e2e8f0;
   color: #002FA7;
 }

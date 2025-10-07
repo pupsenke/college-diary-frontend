@@ -194,16 +194,16 @@ export const PerformanceSection: React.FC = () => {
   return (
     <div className="grades-section">
       <div className="grades-header">
-        <div className="view-tabs">
+        <div className="pf-view-tabs">
           
           <button
-            className={`view-tab ${activeTab === 'semesters' ? 'active' : ''}`}
+            className={`pf-view-tab ${activeTab === 'semesters' ? 'active' : ''}`}
             onClick={() => setActiveTab('semesters')}
           >
             По семестрам
           </button>
           <button
-            className={`view-tab ${activeTab === 'subjects' ? 'active' : ''}`}
+            className={`pf-view-tab ${activeTab === 'subjects' ? 'active' : ''}`}
             onClick={() => setActiveTab('subjects')}
           >
             По предметам

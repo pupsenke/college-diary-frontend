@@ -203,15 +203,15 @@ export const AttendanceSection: React.FC = () => {
   return (
     <div className="attendance-section">
       <div className="attendance-header">
-        <div className="view-tabs">
+        <div className="at-view-tabs">
           <button
-            className={`view-tab ${activeTab === 'semesters' ? 'active' : ''}`}
+            className={`at-view-tab ${activeTab === 'semesters' ? 'active' : ''}`}
             onClick={() => setActiveTab('semesters')}
           >
             По семестрам
           </button>
           <button
-            className={`view-tab ${activeTab === 'subjects' ? 'active' : ''}`}
+            className={`at-view-tab ${activeTab === 'subjects' ? 'active' : ''}`}
             onClick={() => setActiveTab('subjects')}
           >
             По предметам
