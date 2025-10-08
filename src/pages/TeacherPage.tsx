@@ -136,7 +136,7 @@ export const TeacherPage: React.FC = () => {
         <Header />
 
         <div className={`student-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-          <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <aside className={`t-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
             <button
               className="sidebar-toggle"
               onClick={handleSidebarToggle}

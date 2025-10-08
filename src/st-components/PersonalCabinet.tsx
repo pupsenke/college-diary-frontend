@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import './PersonalCabinetStyle.css';
 
+interface GroupData {
+  course: string;
+  admission_year: string;
+  formEducation: string;
+  specialty: string;
+  profile: string;
+}
+
 export const PersonalCabinet: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useUser();
@@ -16,21 +24,76 @@ export const PersonalCabinet: React.FC = () => {
     admission_year: '-',
     form_education: '-',
     speciality: '-',
+    profile: '-',
     birthDate: 'Поле не заполнено',
     address: 'Поле не заполнено'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Заполняем данные из контекста пользователя
-  useEffect(() => {
-    if (user) {
-      setUserData(prev => ({
-        ...prev,
-        firstName: user.name || '',
-        lastName: user.surname || '',
-        middleName: user.lastName || '',
-        group: user.numberGroup ? user.numberGroup.toString() : ''
-      }));
+  // Функция для получения данных группы
+  const fetchGroupData = async (groupId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`http://localhost:8080/api/v1/groups/number/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка при получении данных группы: ${response.status}`);
+      }
+
+      const groupData: GroupData = await response.json();
+      
+      return groupData;
+    } catch (err) {
+      console.error('Ошибка при загрузке данных группы:', err);
+      setError('Не удалось загрузить данные группы');
+      return null;
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Заполняем данные из контекста пользователя и получаем данные группы
+  useEffect(() => {
+    const initializeUserData = async () => {
+      if (user) {
+        // Сначала устанавливаем базовые данные из контекста
+        const baseData = {
+          firstName: user.name || '',
+          lastName: user.surname || '',
+          middleName: user.lastName || '',
+          group: user.numberGroup ? user.numberGroup.toString() : ''
+        };
+
+        setUserData(prev => ({ ...prev, ...baseData }));
+
+        // Если есть номер группы, получаем данные группы
+        if (user.numberGroup) {
+          const groupData = await fetchGroupData(user.numberGroup);
+          
+          if (groupData) {
+            setUserData(prev => ({
+              ...prev,
+              ...baseData,
+              course: groupData.course || '-',
+              admission_year: groupData.admission_year || '-',
+              form_education: groupData.formEducation || '-',
+              speciality: groupData.specialty || '-',
+              profile: groupData.profile || '-'
+            }));
+          }
+        }
+      }
+    };
+
+    initializeUserData();
   }, [user]);
 
   const handleSave = () => {
@@ -41,15 +104,33 @@ export const PersonalCabinet: React.FC = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Восстанавливаем оригинальные данные из контекста
+    // Восстанавливаем оригинальные данные
     if (user) {
-      setUserData(prev => ({
-        ...prev,
+      const baseData = {
         firstName: user.name || '',
         lastName: user.surname || '',
         middleName: user.lastName || '',
         group: user.numberGroup ? user.numberGroup.toString() : ''
-      }));
+      };
+
+      setUserData(prev => ({ ...prev, ...baseData }));
+      
+      // При отмене можно также перезапросить данные группы
+      if (user.numberGroup) {
+        fetchGroupData(user.numberGroup).then(groupData => {
+          if (groupData) {
+            setUserData(prev => ({
+              ...prev,
+              ...baseData,
+              course: groupData.course || '-',
+              admission_year: groupData.admission_year || '-',
+              form_education: groupData.formEducation || '-',
+              speciality: groupData.specialty || '-',
+              profile: groupData.profile || '-'
+            }));
+          }
+        });
+      }
     }
   };
 
@@ -102,6 +183,18 @@ export const PersonalCabinet: React.FC = () => {
       </div>
 
       <div className="pc-content">
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
+            Загрузка данных ...
+          </div>
+        )}
+        
+        {error && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#e53e3e' }}>
+            {error}
+          </div>
+        )}
+
         <div className="pc-info-grid">
           <div className="pc-info-group">
             <h3>Основная информация</h3>
@@ -223,12 +316,16 @@ export const PersonalCabinet: React.FC = () => {
               <span>{userData.speciality}</span>
             </div>
             <div className="pc-info-item">
+              <label>Профиль</label>
+              <span>{userData.profile}</span>
+            </div>
+            <div className="pc-info-item">
               <label>Год поступления</label>
-              <span>{userData.speciality}</span>
+              <span>{userData.admission_year}</span>
             </div>
             <div className="pc-info-item">
               <label>Форма обучения</label>
-              <span>{userData.speciality}</span>
+              <span>{userData.form_education}</span>
             </div>
           </div>
         </div>
