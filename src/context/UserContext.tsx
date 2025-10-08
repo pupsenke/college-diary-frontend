@@ -8,6 +8,9 @@ export interface User {
   login: string;
   userType: 'student' | 'teacher'; // Добавляем тип пользователя
   numberGroup?: number; // Только для студентов
+  disciplinesCount?: number; // для преподавателей
+  groupsCount?: number; // для преподавателей
+  email: string; // для преподавателей
 }
 
 interface UserContextType {

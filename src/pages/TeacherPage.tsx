@@ -1,16 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../st-components/Header';
-import { AttendanceSection } from '../st-components/AttendanceSection';
-import { PerformanceSection } from '../st-components/PerformanceSection';
-import { PersonalCabinet } from '../st-components/PersonalCabinet';
-import { DocumentsSection } from '../st-components/DocumentsSection';
 import { useUser } from '../context/UserContext';
 import './TeacherStyle.css';
-import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate } from 'react-router-dom';
 
+// Временные компоненты-заглушки
+const Header: React.FC = () => {
+  return (
+    <header className="teacher-header">
+      <div className="header-content">
+        <div className="header-logo">
+          <h1>Цифровой дневник</h1>
+          <p>Политехнический колледж Hoary</p>
+        </div>
+        <div className="header-actions">
+          <button className="notification-btn">
+            <span>🔔</span>
+          </button>
+          <button className="logout-btn">
+            Выйти
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const DisciplinesSection: React.FC = () => {
+  return (
+    <div className="disciplines-section">
+      <h2>Мои дисциплины</h2>
+      <p>Раздел в разработке</p>
+    </div>
+  );
+};
+
+const GroupsSection: React.FC = () => {
+  return (
+    <div className="groups-section">
+      <h2>Мои группы</h2>
+      <p>Раздел в разработке</p>
+    </div>
+  );
+};
+
+const PersonalCabinet: React.FC = () => {
+  const { user } = useUser();
+  
+  return (
+    <div className="personal-cabinet">
+      <h2>Личный кабинет преподавателя</h2>
+      <div className="personal-info">
+        <div className="info-row">
+          <label>Фамилия:</label>
+          <span>{user?.lastName || 'Фамилия'}</span>
+        </div>
+        <div className="info-row">
+          <label>Имя:</label>
+          <span>{user?.name || 'Имя'}</span>
+        </div>
+        <div className="info-row">
+          <label>Отчество:</label>
+          <span>{user?.surname || 'Отчество'}</span>
+        </div>
+        <div className="info-row">
+          <label>Эл. почта:</label>
+          <span>teacher@college.ru</span>
+        </div>
+        <div className="info-row">
+          <label>Специальность:</label>
+          <span>Математика и информатика</span>
+        </div>
+        <div className="info-row">
+          <label>Общий стаж:</label>
+          <span>27 лет</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ScheduleSection: React.FC = () => {
+  return (
+    <div className="schedule-section">
+      <h2>Расписание занятий</h2>
+      <p>Раздел в разработке</p>
+    </div>
+  );
+};
+
 export const TeacherPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('attendance');
+  const [activeTab, setActiveTab] = useState('disciplines');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user } = useUser();
   const navigate = useNavigate();
@@ -20,104 +99,93 @@ export const TeacherPage: React.FC = () => {
       console.log('No user data, redirecting to login');
       navigate('/login');
     } else {
-      console.log('User data in StudentPage:', user);
+      console.log('User data in TeacherPage:', user);
     }
   }, [user, navigate]);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'attendance':
-        return <AttendanceSection />;
-      case 'performance':
-        return <PerformanceSection />;
+      case 'disciplines':
+        return <DisciplinesSection />;
+      case 'groups':
+        return <GroupsSection />;
       case 'personal':
         return <PersonalCabinet />;
       case 'schedule':
         return <ScheduleSection />;
-      case 'documents':
-        return <DocumentsSection />;
       default:
-        return <AttendanceSection />;
+        return <DisciplinesSection />;
     }
   };
 
   const getTabIcon = (tabName: string) => {
     switch (tabName) {
-      case 'attendance':
-        return <img src="attendance_icon.svg" alt="" className="nav-svg-icon" />;
-      case 'performance':
-        return <img src="grade_icon.svg" alt="" className="nav-svg-icon" />;
+      case 'disciplines':
+        return <span className="nav-icon-placeholder">📚</span>;
+      case 'groups':
+        return <span className="nav-icon-placeholder">👥</span>;
       case 'personal':
-        return <img src="cabinet_icon.svg" alt="" className="nav-svg-icon" />;
+        return <span className="nav-icon-placeholder">👤</span>;
       case 'schedule':
-        return <img src="schedule_icon.svg" alt="" className="nav-svg-icon" />;
-      case 'documents':
-        return <img src="documents_icon.svg" alt="" className="nav-svg-icon" />;
+        return <span className="nav-icon-placeholder">📅</span>;
       default:
-        return '';
+        return <span className="nav-icon-placeholder">📚</span>;
     }
   };
 
   const getIcon = (tabName: string) => {
     switch (tabName) {
-      case 'attendance':
-        return <img src="white_attendance_icon.svg" alt="" className="nav-svg-white-icon" />;
-      case 'performance':
-        return <img src="white_grade_icon.svg" alt="" className="nav-svg-white-icon" />;
+      case 'disciplines':
+        return <span className="nav-white-icon-placeholder">📚</span>;
+      case 'groups':
+        return <span className="nav-white-icon-placeholder">👥</span>;
       case 'personal':
-        return <img src="white_cabinet_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <span className="nav-white-icon-placeholder">👤</span>;
       case 'schedule':
-        return <img src="white_schedule_icon.svg" alt="" className="nav-svg-white-icon" />;
-      case 'documents':
-        return <img src="white_documents_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <span className="nav-white-icon-placeholder">📅</span>;
       default:
-        return '';
+        return <span className="nav-white-icon-placeholder">📚</span>;
     }
   };
 
   const getTabTitle = (tabName: string) => {
     switch (tabName) {
-      case 'attendance':
-        return 'Посещаемость';
-      case 'performance':
-        return 'Успеваемость';
+      case 'disciplines':
+        return 'Дисциплины';
+      case 'groups':
+        return 'Группы';
       case 'personal':
         return 'Личный кабинет';
       case 'schedule':
         return 'Расписание';
-      case 'documents':
-        return 'Мои документы';
       default:
-        return 'Посещаемость';
+        return 'Дисциплины';
     }
   };
 
   const getTabSubTitle = (tabName: string) => {
     switch (tabName) {
-      case 'attendance':
-        return 'Мониторинг вашего присутствия на занятиях';
-      case 'performance':
-        return 'Ваши академические достижения и оценки';
+      case 'disciplines':
+        return 'Управление учебными дисциплинами';
+      case 'groups':
+        return 'Мои учебные группы';
       case 'personal':
-        return 'Управление вашими персональными данными';
+        return 'Управление персональными данными';
       case 'schedule':
-        return 'Просмотр расписания ваших занятий';
-      case 'documents':
-        return 'Управление вашими документами и заявлениями';
+        return 'Просмотр расписания занятий';
       default:
-        return 'Мониторинг вашего присутствия на занятиях';
+        return 'Управление учебными дисциплинами';
     }
   };
 
   const handleSidebarToggle = () => {
     setSidebarCollapsed(prev => !prev);
   };
-  
-// комментарий
+
   if (!user) {
     return (
-      <div className="student-container">
-        <div className="student-content">
+      <div className="teacher-container">
+        <div className="teacher-content">
           <div>Загрузка...</div>
         </div>
       </div>
@@ -125,38 +193,37 @@ export const TeacherPage: React.FC = () => {
   }
 
   return (
-    <div className="student-container">
+    <div className="teacher-container">
       <div className="background-animation">
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
         <div className="shape shape-3"></div>
       </div>
 
-      <div className="student-content">
+      <div className="teacher-content">
         <Header />
 
-        <div className={`student-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className={`teacher-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           <aside className={`t-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
             <button
               className="sidebar-toggle"
               onClick={handleSidebarToggle}
               aria-label={sidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
             >
-              {sidebarCollapsed ? <img src="toggle_back.svg" alt="" className="nav-toggle-icon" /> : <img src="toggle_back.svg" alt="" className="nav-toggle-icon" />}
+              {sidebarCollapsed ? '→' : '←'}
             </button>
 
             <div className="sidebar-header">
               <div className="user-info">
                 <p className="user-name">{user.lastName} {user.name}</p>
                 <p className="user-patronymic">{user.surname}</p>
-                <p className="user-role">Студент</p>
-                <p className="user-group">Группа: {user.numberGroup}</p>
-                <p className="user-speciality">Специальность: -</p>
+                <p className="user-role">Преподаватель</p>
+                <p className="user-department">Политехнический колледж Hoary</p>
               </div>
             </div>
 
             <nav className="sidebar-nav">
-              {['attendance', 'performance', 'personal', 'schedule', 'documents'].map((tab) => (
+              {['disciplines', 'groups', 'personal', 'schedule'].map((tab) => (
                 <button
                   key={tab}
                   className={`nav-item ${activeTab === tab ? 'active' : ''}`}
@@ -173,12 +240,12 @@ export const TeacherPage: React.FC = () => {
             <div className="sidebar-footer">
               <div className="quick-stats">
                 <div className="stat-item">
-                  <p className="stat-value">85%</p>
-                  <p className="stat-label">Процент посещаемости</p>
+                  <p className="stat-value">{user.disciplinesCount || '5'}</p>
+                  <p className="stat-label">Дисциплин</p>
                 </div>
                 <div className="stat-item">
-                  <p className="stat-value">4.5</p>
-                  <p className="stat-label">Средний балл</p>
+                  <p className="stat-value">{user.groupsCount || '3'}</p>
+                  <p className="stat-label">Групп</p>
                 </div>
               </div>
             </div>
@@ -188,7 +255,7 @@ export const TeacherPage: React.FC = () => {
             <div className="content-header">
               <h1 className="content-title">
                 <span className="title-icon">{getIcon(activeTab)}</span>
-                <p className="content-title">{getTabTitle(activeTab)}</p>
+                <p className="content-title-text">{getTabTitle(activeTab)}</p>
                 <p className="content-subtitle">{getTabSubTitle(activeTab)}</p>
               </h1>
             </div>

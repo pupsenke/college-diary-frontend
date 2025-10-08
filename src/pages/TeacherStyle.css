@@ -1,4 +1,3 @@
-/* Основные стили студенческой панели */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 * {
@@ -6,13 +5,13 @@
   box-sizing: border-box;
 }
 
-.student-container {
+.teacher-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   position: relative;
 }
 
-.student-content {
+.teacher-content {
   position: relative;
   z-index: 1;
   padding: 20px;
@@ -22,7 +21,7 @@
 }
 
 /* Основной контент */
-.student-main {
+.teacher-main {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 24px;
@@ -31,7 +30,7 @@
   transition: grid-template-columns 0.3s ease;
 }
 
-.student-main.sidebar-collapsed {
+.teacher-main.sidebar-collapsed {
   grid-template-columns: 80px 1fr;
 }
 
@@ -48,7 +47,7 @@
   transition: all 0.3s ease;
 }
 
-.sidebar.collapsed {
+.t-sidebar.collapsed {
   width: 80px;
   padding: 24px 16px;
   align-items: center;
@@ -58,14 +57,14 @@
   z-index: 2;
 }
 
-.sidebar.collapsed .sidebar-header,
-.sidebar.collapsed .nav-text,
-.sidebar.collapsed .sidebar-footer,
-.sidebar.collapsed .nav-indicator {
+.t-sidebar.collapsed .sidebar-header,
+.t-sidebar.collapsed .nav-text,
+.t-sidebar.collapsed .sidebar-footer,
+.t-sidebar.collapsed .nav-indicator {
   display: none;
 }
 
-.sidebar.collapsed .sidebar-nav {
+.t-sidebar.collapsed .sidebar-nav {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -75,7 +74,7 @@
   margin-top: 40px;
 }
 
-.sidebar.collapsed .nav-item {
+.t-sidebar.collapsed .nav-item {
   width: 52px;
   height: 52px;
   padding: 0;
@@ -86,18 +85,18 @@
   position: relative;
 }
 
-.sidebar.collapsed .nav-icon {
+.t-sidebar.collapsed .nav-icon {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.sidebar.collapsed .nav-svg-icon {
+.t-sidebar.collapsed .nav-svg-icon {
   width: 24px;
   height: 24px;
 }
 
-.sidebar.collapsed .nav-item::after {
+.t-sidebar.collapsed .nav-item::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 100%;
@@ -117,7 +116,7 @@
   pointer-events: none;
 }
 
-.sidebar.collapsed .nav-item:hover::after {
+.t-sidebar.collapsed .nav-item:hover::after {
   opacity: 1;
 }
 
@@ -146,7 +145,7 @@
   transform: scale(1.1);
 }
 
-.sidebar.collapsed .sidebar-toggle {
+.t-sidebar.collapsed .sidebar-toggle {
   transform: rotate(180deg);
 }
 
@@ -177,8 +176,7 @@
   margin: 0 0 18px 0;
 }
 
-.user-group,
-.user-info .user-speciality {
+.user-department {
   color: #002fa7;
   font-size: 12px;
   font-weight: 300;
@@ -367,40 +365,40 @@
 
 /* Адаптивность */
 @media (max-width: 1200px) {
-  .student-content {
+  .teacher-content {
     max-width: 95vw;
     padding: 16px;
   }
 }
 
 @media (max-width: 1024px) {
-  .student-main {
+  .teacher-main {
     grid-template-columns: 1fr;
     gap: 20px;
   }
   
-  .student-main.sidebar-collapsed {
+  .teacher-main.sidebar-collapsed {
     grid-template-columns: 1fr;
   }
   
-  .sidebar {
+  .t-sidebar {
     order: 2;
     min-height: auto;
   }
   
-  .sidebar.collapsed {
+  .t-sidebar.collapsed {
     width: 100%;
     padding: 20px;
     flex-direction: row;
   }
   
-  .sidebar.collapsed .sidebar-nav {
+  .t-sidebar.collapsed .sidebar-nav {
     flex-direction: row;
     width: 100%;
     justify-content: space-around;
   }
   
-  .sidebar.collapsed .nav-item {
+  .t-sidebar.collapsed .nav-item {
     width: 60px;
     height: 60px;
   }
@@ -416,7 +414,7 @@
 }
 
 @media (max-width: 768px) {
-  .student-content {
+  .teacher-content {
     padding: 12px;
   }
   
@@ -448,11 +446,11 @@
     gap: 12px;
   }
   
-  .sidebar.collapsed {
+  .t-sidebar.collapsed {
     padding: 16px;
   }
   
-  .sidebar.collapsed .nav-item {
+  .t-sidebar.collapsed .nav-item {
     width: 50px;
     height: 50px;
   }
@@ -469,16 +467,16 @@
 }
 
 @media (max-width: 480px) {
-  .student-content {
+  .teacher-content {
     padding: 8px;
   }
   
-  .student-main {
+  .teacher-main {
     gap: 16px;
     margin-top: 16px;
   }
   
-  .sidebar {
+  .t-sidebar {
     padding: 16px;
     border-radius: 16px;
   }
@@ -499,7 +497,7 @@
     gap: 8px;
   }
   
-  .sidebar.collapsed .nav-item {
+  .t-sidebar.collapsed .nav-item {
     width: 44px;
     height: 44px;
   }
@@ -511,7 +509,7 @@
 }
 
 @media (max-width: 360px) {
-  .sidebar.collapsed .nav-item {
+  .t-sidebar.collapsed .nav-item {
     width: 40px;
     height: 40px;
   }
@@ -528,4 +526,218 @@
   .content-subtitle {
     font-size: 12px;
   }
+}
+
+/* Стили для компонентов преподавателя */
+.disciplines-section h2,
+.groups-section h2,
+.personal-cabinet h2,
+.schedule-section h2 {
+  color: #002fa7;
+  margin-bottom: 20px;
+}
+
+.disciplines-list,
+.groups-list {
+  display: grid;
+  gap: 16px;
+}
+
+.discipline-card,
+.group-card {
+  background: #f8f9ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.discipline-card:hover,
+.group-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  transform: translateY(-2px);
+}
+
+.discipline-card h3,
+.group-card h3 {
+  color: #002fa7;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.discipline-actions,
+.group-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-primary {
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #5986f7;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #002FA7;
+  color: white;
+}
+
+.personal-info {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.info-row label {
+  font-weight: 600;
+  color: #002fa7;
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.info-row span {
+  color: #333;
+}
+
+.teaching-info {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.teaching-info h3 {
+  color: #002fa7;
+  margin-bottom: 12px;
+}
+
+.teaching-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.teaching-info li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e7ff;
+  color: #333;
+}
+
+.teaching-info li:last-child {
+  border-bottom: none;
+}
+
+.next-class-card {
+  background: linear-gradient(135deg, #002FA7, #5986f7);
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.class-time {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.class-subject {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.class-group {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.schedule-item {
+  display: flex;
+  background: #f8f9ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.schedule-time {
+  font-weight: 600;
+  color: #002fa7;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.schedule-details {
+  flex: 1;
+}
+
+.schedule-subject {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.schedule-group {
+  font-size: 14px;
+  color: #666;
+}
+
+
+/* Временные стили для эмодзи-иконок */
+.nav-icon-placeholder {
+  font-size: 20px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-white-icon-placeholder {
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 6px 0 4px;
+}
+
+.content-title-text {
+  color: white;
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
 }
