@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../components/Header';
-import { AttendanceSection } from '../components/AttendanceSection';
-import { PerformanceSection } from '../components/PerformanceSection';
-import { PersonalCabinet } from '../components/PersonalCabinet';
-import { DocumentsSection } from '../components/DocumentsSection';
+import { Header } from '../st-components/Header';
+import { AttendanceSection } from '../st-components/AttendanceSection';
+import { PerformanceSection } from '../st-components/PerformanceSection';
+import { PersonalCabinet } from '../st-components/PersonalCabinet';
+import { DocumentsSection } from '../st-components/DocumentsSection';
 import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
-import { ScheduleSection } from '../components/ScheduleSection';
+import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate } from 'react-router-dom';
 
 export const StudentPage: React.FC = () => {
@@ -44,15 +44,15 @@ export const StudentPage: React.FC = () => {
   const getTabIcon = (tabName: string) => {
     switch (tabName) {
       case 'attendance':
-        return <img src="attendance_icon.svg" alt="" className="nav-svg-icon" />;
+        return <img src="st-icons/attendance_icon.svg" alt="" className="nav-svg-icon" />;
       case 'performance':
-        return <img src="grade_icon.svg" alt="" className="nav-svg-icon" />;
+        return <img src="st-icons/grade_icon.svg" alt="" className="nav-svg-icon" />;
       case 'personal':
-        return <img src="cabinet_icon.svg" alt="" className="nav-svg-icon" />;
+        return <img src="st-icons/cabinet_icon.svg" alt="" className="nav-svg-icon" />;
       case 'schedule':
-        return <img src="schedule_icon.svg" alt="" className="nav-svg-icon" />;
+        return <img src="st-icons/schedule_icon.svg" alt="" className="nav-svg-icon" />;
       case 'documents':
-        return <img src="documents_icon.svg" alt="" className="nav-svg-icon" />;
+        return <img src="st-icons/documents_icon.svg" alt="" className="nav-svg-icon" />;
       default:
         return '';
     }
@@ -61,15 +61,15 @@ export const StudentPage: React.FC = () => {
   const getIcon = (tabName: string) => {
     switch (tabName) {
       case 'attendance':
-        return <img src="white_attendance_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <img src="st-icons/white_attendance_icon.svg" alt="" className="nav-svg-white-icon" />;
       case 'performance':
-        return <img src="white_grade_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <img src="st-icons/white_grade_icon.svg" alt="" className="nav-svg-white-icon" />;
       case 'personal':
-        return <img src="white_cabinet_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <img src="st-icons/white_cabinet_icon.svg" alt="" className="nav-svg-white-icon" />;
       case 'schedule':
-        return <img src="white_schedule_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <img src="st-icons/white_schedule_icon.svg" alt="" className="nav-svg-white-icon" />;
       case 'documents':
-        return <img src="white_documents_icon.svg" alt="" className="nav-svg-white-icon" />;
+        return <img src="st-icons/white_documents_icon.svg" alt="" className="nav-svg-white-icon" />;
       default:
         return '';
     }
