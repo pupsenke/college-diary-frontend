@@ -1,0 +1,59 @@
+.teacher-header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-logo h1 {
+  color: white;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.header-logo p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.notification-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.notification-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

@@ -10,7 +10,7 @@ export interface User {
   numberGroup?: number; // Только для студентов
   disciplinesCount?: number; // для преподавателей
   groupsCount?: number; // для преподавателей
-  email: string; // для преподавателей
+  email?: string; // для преподавателей
 }
 
 interface UserContextType {

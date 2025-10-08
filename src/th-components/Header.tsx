@@ -7,7 +7,7 @@ export const Header: React.FC = () => {
       <div className="header-content">
         <div className="header-logo">
           <h1>Цифровой дневник</h1>
-          <p>Политехнический колледж Hoary</p>
+          <p>Политехнический колледж HoвГУ</p>
         </div>
         <div className="header-actions">
           <button className="notification-btn">
