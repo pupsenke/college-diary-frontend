@@ -201,40 +201,41 @@ export const AttendanceSection: React.FC = () => {
   const selectedSubjectData = attendanceData.find(attendance => attendance.subject === selectedSubject);
 
   return (
-    <div className="attendance-section">
-      <div className="attendance-header">
+    <div className="at-attendance-section">
+      <div className="at-attendance-header">
+        
         <div className="at-view-tabs">
           <button
-            className={`at-view-tab ${activeTab === 'semesters' ? 'active' : ''}`}
+            className={`at-view-tab ${activeTab === 'semesters' ? 'at-active' : ''}`}
             onClick={() => setActiveTab('semesters')}
           >
             По семестрам
           </button>
           <button
-            className={`at-view-tab ${activeTab === 'subjects' ? 'active' : ''}`}
+            className={`at-view-tab ${activeTab === 'subjects' ? 'at-active' : ''}`}
             onClick={() => setActiveTab('subjects')}
           >
             По предметам
           </button>
         </div>
-        <button className="pf-statistic-btn">
+        <button className="at-pf-statistic-btn">
           Статистика
         </button>
       </div>
 
-      <div className="attendance-content">
+      <div className="at-attendance-content">
         {activeTab === 'semesters' ? (
           <>
-            <div className="semester-controls">
-              <div className="semester-tabs">
+            <div className="at-semester-controls">
+              <div className="at-semester-tabs">
                 <button
-                  className={`semester-tab ${selectedSemester === 'first' ? 'active' : ''}`}
+                  className={`at-semester-tab ${selectedSemester === 'first' ? 'at-active' : ''}`}
                   onClick={() => setSelectedSemester('first')}
                 >
                   1-ый семестр
                 </button>
                 <button
-                  className={`semester-tab ${selectedSemester === 'second' ? 'active' : ''}`}
+                  className={`at-semester-tab ${selectedSemester === 'second' ? 'at-active' : ''}`}
                   onClick={() => setSelectedSemester('second')}
                 >
                   2-ой семестр
@@ -242,15 +243,15 @@ export const AttendanceSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="attendance-table-container">
-              <table className="attendance-table">
+            <div className="at-attendance-table-container">
+              <table className="at-attendance-table">
                 <thead>
                   <tr>
                     <th>№</th>
                     <th>Предмет</th>
                     <th>Посещаемость</th>
-                    <th>Количество пропусков</th>
-                    <th>Процент посещаемости</th>
+                    <th>Пропуски</th>
+                    <th>Процент</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -259,13 +260,13 @@ export const AttendanceSection: React.FC = () => {
                     return (
                       <tr key={subject.id}>
                         <td>{index + 1}.</td>
-                        <td className="subject-name">{subject.subject}</td>
-                        <td className="attendance-list">
-                          <div className="attendance-scroll-container">
+                        <td className="at-subject-name">{subject.subject}</td>
+                        <td className="at-attendance-list">
+                          <div className="at-attendance-scroll-container">
                             {subject.statuses.map((status, statusIndex) => (
                               <span
                                 key={statusIndex}
-                                className="status-bubble"
+                                className="at-status-bubble"
                                 style={{ backgroundColor: getStatusColor(status) }}
                                 onClick={(e) => 
                                   handleAttendanceClick(
@@ -281,28 +282,28 @@ export const AttendanceSection: React.FC = () => {
                             ))}
                           </div>
                         </td>
-                        <td className="absences-cell">
-                          <div className="absences-breakdown">
-                            <div className="absence-type">
-                              <span className="absence-dot excused"></span>
+                        <td className="at-absences-cell">
+                          <div className="at-absences-breakdown">
+                            <div className="at-absence-type">
+                              <span className="at-absence-dot at-excused"></span>
                               <span>У: {absences.excused}</span>
                             </div>
-                            <div className="absence-type">
-                              <span className="absence-dot sick"></span>
+                            <div className="at-absence-type">
+                              <span className="at-absence-dot at-sick"></span>
                               <span>Б: {absences.sick}</span>
                             </div>
-                            <div className="absence-type">
-                              <span className="absence-dot absent"></span>
+                            <div className="at-absence-type">
+                              <span className="at-absence-dot at-absent"></span>
                               <span>Н: {absences.absent}</span>
                             </div>
-                            <div className="absence-total">
+                            <div className="at-absence-total">
                               Всего: {absences.excused + absences.sick + absences.absent}
                             </div>
                           </div>
                         </td>
-                        <td className="attendance-percent">
+                        <td className="at-attendance-percent">
                           <span 
-                            className="percent-bubble"
+                            className="at-percent-bubble"
                             style={{ backgroundColor: getPercentColor(subject.percent) }}
                           >
                             {subject.percent}%
@@ -317,14 +318,14 @@ export const AttendanceSection: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="subject-controls">
-              <div className="subject-filter">
-                <label htmlFor="subject-select">Предмет:</label>
+            <div className="at-subject-controls">
+              <div className="at-subject-filter">
+                <label htmlFor="at-subject-select">Предмет:</label>
                 <select
-                  id="subject-select"
+                  id="at-subject-select"
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="subject-select"
+                  className="at-subject-select"
                 >
                   <option value="">Выберите предмет</option>
                   {subjects.map(subject => (
@@ -335,11 +336,11 @@ export const AttendanceSection: React.FC = () => {
             </div>
 
             {selectedSubjectData ? (
-              <div className="subject-attendance-table-container">
-                <table className="subject-attendance-table">
+              <div className="at-subject-attendance-table-container">
+                <table className="at-subject-attendance-table">
                   <thead>
                     <tr>
-                      <th>№</th>
+                      <th className="at-subject-attendance-table-column1">№</th>
                       <th>Статус</th>
                       <th>Тема</th>
                       <th>Дата</th>
@@ -353,17 +354,17 @@ export const AttendanceSection: React.FC = () => {
                         <td>{index + 1}.</td>
                         <td>
                           <span 
-                            className="status-bubble subject-status"
+                            className="at-status-bubble at-subject-status"
                             style={{ backgroundColor: getStatusColor(detail.status) }}
                             title={getStatusText(detail.status)}
                           >
                             {detail.status}
                           </span>
                         </td>
-                        <td className="topic-cell">{detail.topic}</td>
-                        <td className="date-cell">{detail.date}</td>
-                        <td className="teacher-cell">{detail.teacher}</td>
-                        <td className="reason-cell">
+                        <td className="at-topic-cell">{detail.topic}</td>
+                        <td className="at-date-cell">{detail.date}</td>
+                        <td className="at-teacher-cell">{detail.teacher}</td>
+                        <td className="at-reason-cell">
                           {detail.reason || 
                            (detail.startDate && detail.endDate ? `Больничный с ${detail.startDate} по ${detail.endDate}` : 
                            detail.status === 'п' ? 'Присутствовал' : 'Не указана')}
@@ -374,24 +375,24 @@ export const AttendanceSection: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="no-subject-selected">
+              <div className="at-no-subject-selected">
                 <p>Выберите предмет для просмотра посещаемости</p>
               </div>
             )}
-            <div className="attendance-stats">
-              <div className="stat-card">
-                <div className="stat-value-attendance">{calculateOverallAttendance()}%</div>
-                <div className="stat-label-attendance">Общая посещаемость</div>
+            <div className="at-attendance-stats">
+              <div className="at-stat-card">
+                <div className="at-stat-value-attendance">{calculateOverallAttendance()}%</div>
+                <div className="at-stat-label-attendance">Общая посещаемость</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value-attendance">
+              <div className="at-stat-card">
+                <div className="at-stat-value-attendance">
                   2
                 </div>
-                <div className="stat-label-attendance">Количество пропусков по уважительной причине</div>
+                <div className="at-stat-label-attendance">Количество пропусков по уважительной причине</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value-attendance">1</div>
-                <div className="stat-label-attendance">Количество пропусков по неуважительной причине</div>
+              <div className="at-stat-card">
+                <div className="at-stat-value-attendance">1</div>
+                <div className="at-stat-label-attendance">Количество пропусков по неуважительной причине</div>
               </div>
             </div>
           </>
@@ -401,50 +402,50 @@ export const AttendanceSection: React.FC = () => {
       {/* Всплывающее окно с информацией о посещаемости */}
       {selectedAttendance && attendancePosition && (
         <>
-          <div className="attendance-popup-overlay" onClick={closeAttendancePopup}></div>
+          <div className="at-attendance-popup-overlay" onClick={closeAttendancePopup}></div>
           <div
-            className="attendance-popup"
+            className="at-attendance-popup"
             style={{
               top: `${attendancePosition.top}px`,
               left: `${attendancePosition.left}px`
             }}
           >
-            <div className="attendance-popup-header">
+            <div className="at-attendance-popup-header">
               <h4>Информация о посещаемости</h4>
-              <button className="attendance-popup-close" onClick={closeAttendancePopup}>×</button>
+              <button className="at-attendance-popup-close" onClick={closeAttendancePopup}>×</button>
             </div>
-            <div className="attendance-popup-content">
-              <div className="attendance-info-row">
-                <span className="attendance-info-label">Дата:</span>
-                <span className="attendance-info-value">{selectedAttendance.date}</span>
+            <div className="at-attendance-popup-content">
+              <div className="at-attendance-info-row">
+                <span className="at-attendance-info-label">Дата:</span>
+                <span className="at-attendance-info-value">{selectedAttendance.date}</span>
               </div>
-              <div className="attendance-info-row">
-                <span className="attendance-info-label">Тема:</span>
-                <span className="attendance-info-value">{selectedAttendance.topic}</span>
+              <div className="at-attendance-info-row">
+                <span className="at-attendance-info-label">Тема:</span>
+                <span className="at-attendance-info-value">{selectedAttendance.topic}</span>
               </div>
-              <div className="attendance-info-row">
-                <span className="attendance-info-label">Преподаватель:</span>
-                <span className="attendance-info-value">{selectedAttendance.teacher}</span>
+              <div className="at-attendance-info-row">
+                <span className="at-attendance-info-label">Преподаватель:</span>
+                <span className="at-attendance-info-value">{selectedAttendance.teacher}</span>
               </div>
-              <div className="attendance-info-row">
-                <span className="attendance-info-label">Статус:</span>
+              <div className="at-attendance-info-row">
+                <span className="at-attendance-info-label">Статус:</span>
                 <span 
-                  className="status-value-bubble"
+                  className="at-status-value-bubble"
                   style={{ backgroundColor: getStatusColor(selectedAttendance.status) }}
                 >
                   {selectedAttendance.status} - {getStatusText(selectedAttendance.status)}
                 </span>
               </div>
               {selectedAttendance.reason && (
-                <div className="attendance-info-row">
-                  <span className="attendance-info-label">Причина:</span>
-                  <span className="attendance-info-value">{selectedAttendance.reason}</span>
+                <div className="at-attendance-info-row">
+                  <span className="at-attendance-info-label">Причина:</span>
+                  <span className="at-attendance-info-value">{selectedAttendance.reason}</span>
                 </div>
               )}
               {selectedAttendance.startDate && selectedAttendance.endDate && (
-                <div className="attendance-info-row">
-                  <span className="attendance-info-label">Период больничного:</span>
-                  <span className="attendance-info-value">с {selectedAttendance.startDate} по {selectedAttendance.endDate}</span>
+                <div className="at-attendance-info-row">
+                  <span className="at-attendance-info-label">Период больничного:</span>
+                  <span className="at-attendance-info-value">с {selectedAttendance.startDate} по {selectedAttendance.endDate}</span>
                 </div>
               )}
             </div>

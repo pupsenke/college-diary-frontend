@@ -74,7 +74,7 @@ export const PerformanceSection: React.FC = () => {
     },
     {
       id: 4,
-      subject: 'Программирование',
+      subject: 'Программирование FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
       grades: [5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5],
       average: 4.8,
       examGrade: 5,
@@ -243,15 +243,15 @@ export const PerformanceSection: React.FC = () => {
                     <th>№</th>
                     <th>Предмет</th>
                     <th>Оценки</th>
-                    <th>Средний балл</th>
-                    <th>Экзамен/Диф.зачет</th>
+                    <th>Ср. балл</th>
+                    <th>Сессия</th>
                     <th>Итог</th>
                   </tr>
                 </thead>
                 <tbody>
                   {gradesData.map((subject, index) => (
                     <tr key={subject.id}>
-                      <td>{index + 1}.</td>
+                      <td className="number-column">{index + 1}.</td>
                       <td className="subject-name">{subject.subject}</td>
                       <td className="grades-list">
                         <div className="grades-scroll-container">

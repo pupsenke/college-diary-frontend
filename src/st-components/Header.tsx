@@ -55,46 +55,46 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="header-main">
-      <div className="header-logo-area">
-        <div className="logo-mark">
-          <img src='blue_icon.svg' alt="" className='image'/>
+    <header className="h-header-main">
+      <div className="h-header-logo-area">
+        <div className="h-logo-mark">
+          <img src='blue_icon.svg' alt="" className='h-image'/>
           <div>
-            <div className="logo-title">Цифровой дневник</div>
-            <div className="logo-subtitle">Политехнический колледж Новгу</div>
+            <div className="h-logo-title">Цифровой дневник</div>
+            <div className="h-logo-subtitle">Политехнический колледж Новгу</div>
           </div>
         </div>
       </div>
-      <div className="header-profile-area" ref={dropdownRef}>
-        <div className="profile-card" onClick={toggleDropdown}>
-          <div className="profile-info">
-            <span className="profile-name">{getFullName()}</span>
-            <span className="profile-role">
+      <div className="h-header-profile-area" ref={dropdownRef}>
+        <div className="h-profile-card" onClick={toggleDropdown}>
+          <div className="h-profile-info">
+            <span className="h-profile-name">{getFullName()}</span>
+            <span className="h-profile-role">
               {user?.userType === 'student' ? 'Студент' : 'Преподаватель'}
             </span>
           </div>
-          <span className={`profile-arrow ${isDropdownOpen ? 'rotated' : ''}`}>▼</span>
+          <span className={`h-profile-arrow ${isDropdownOpen ? 'h-rotated' : ''}`}>▼</span>
         </div>
         
         {isDropdownOpen && (
-          <div className="profile-dropdown">
-            <div className="dropdown-user-info">
-              <div className="user-gradient-bg"></div>
-              <span className="dropdown-fullname">{getFullNameWithPatronymic()}</span>
-              <span className="dropdown-group">Группа: {user?.numberGroup || '2992'}</span>
+          <div className="h-profile-dropdown">
+            <div className="h-dropdown-user-info">
+              <div className="h-user-gradient-bg"></div>
+              <span className="h-dropdown-fullname">{getFullNameWithPatronymic()}</span>
+              <span className="h-dropdown-group">Группа: {user?.numberGroup || '2992'}</span>
             </div>
-            <div className="dropdown-menu">
-              <button className="dropdown-item" onClick={handlePersonalCabinet}>
+            <div className="h-dropdown-menu">
+              <button className="h-dropdown-item" onClick={handlePersonalCabinet}>
                 Личный кабинет
               </button>
-              <button className="dropdown-item">
+              <button className="h-dropdown-item">
                 Статистика
               </button>
-              <button className="dropdown-item" onClick={handleDocuments}>
+              <button className="h-dropdown-item" onClick={handleDocuments}>
                 Документы
               </button>
-              <div className="dropdown-divider"></div>
-              <button className="dropdown-item logout" onClick={handleLogout}>
+              <div className="h-dropdown-divider"></div>
+              <button className="h-dropdown-item h-logout" onClick={handleLogout}>
                 Выйти
               </button>
             </div>

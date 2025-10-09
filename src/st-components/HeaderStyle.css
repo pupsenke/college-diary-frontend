@@ -4,7 +4,7 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
-.header-main {
+.h-header-main {
   width: 100%;
   background: #fff;
   border-radius: 20px;
@@ -19,23 +19,23 @@
   position: relative;
 }
 
-.image {
+.h-image {
   width: 50px;
   height: 50px;
 }
 
-.header-logo-area {
+.h-header-logo-area {
   display: flex;
   align-items: center;
 }
 
-.logo-mark {
+.h-logo-mark {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.logo-title {
+.h-logo-title {
   color: #002FA7;
   font-size: 19px;
   font-weight: 700;
@@ -43,7 +43,7 @@
   margin-left: 8px;
 }
 
-.logo-subtitle {
+.h-logo-subtitle {
   color: #002FA7;
   font-size: 13px;
   font-weight: 400;
@@ -51,13 +51,13 @@
   margin-left: 8px;
 }
 
-.header-profile-area {
+.h-header-profile-area {
   display: flex;
   align-items: center;
   position: relative;
 }
 
-.profile-card {
+.h-profile-card {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -70,44 +70,44 @@
   transition: all 0.3s ease;
 }
 
-.profile-card:hover {
+.h-profile-card:hover {
   background: #c5d0ff85;
   box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
 }
 
-.profile-info {
+.h-profile-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   margin-right: 8px;
 }
 
-.profile-name {
+.h-profile-name {
   font-size: 13px;
   color: #002FA7;
   font-weight: 500;
   margin-bottom: 2px;
 }
 
-.profile-info .profile-role {
+.h-profile-info .h-profile-role {
   font-size: 12px;
   color: #002FA7;
   font-weight: 300;
 }
 
-.profile-arrow {
+.h-profile-arrow {
   font-size: 12px;
   color: #547ced;
   transition: transform 0.3s ease;
   margin-left: 5px;
 }
 
-.profile-arrow.rotated {
+.h-profile-arrow.h-rotated {
   transform: rotate(180deg);
 }
 
 /* Выпадающее меню */
-.profile-dropdown {
+.h-profile-dropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -120,10 +120,10 @@
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(20px);
-  animation: fadeIn 0.2s ease-out;
+  animation: h-fadeIn 0.2s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes h-fadeIn {
   from {
     opacity: 0;
     transform: translateY(-10px) scale(0.95);
@@ -134,13 +134,13 @@
   }
 }
 
-.dropdown-user-info {
+.h-dropdown-user-info {
   padding: 16px 20px 20px;
   position: relative;
   overflow: hidden;
 }
 
-.dropdown-user-info .user-gradient-bg {
+.h-dropdown-user-info .h-user-gradient-bg {
   position: absolute;
   top: 0;
   left: 0;
@@ -151,7 +151,7 @@
   z-index: -1;
 }
 
-.dropdown-fullname {
+.h-dropdown-fullname {
   display: block;
   font-size: 15px;
   font-weight: 600;
@@ -159,18 +159,18 @@
   margin-bottom: 4px;
 }
 
-.dropdown-group {
+.h-dropdown-group {
   display: block;
   font-size: 13px;
   color: #d6e1ff;
   font-weight: 400;
 }
 
-.dropdown-menu {
+.h-dropdown-menu {
   padding: 8px 0;
 }
 
-.dropdown-item {
+.h-dropdown-item {
   display: flex;
   align-items: center;
   width: 100%;
@@ -185,89 +185,87 @@
   font-weight: 400;
 }
 
-.dropdown-item:hover {
+.h-dropdown-item:hover {
   background: rgba(102, 126, 234, 0.08);
   padding-left: 22px;
 }
 
-.dropdown-item.logout {
+.h-dropdown-item.h-logout {
   color: #e53e3e;
   margin-top: 8px;
 }
 
-.dropdown-item.logout:hover {
+.h-dropdown-item.h-logout:hover {
   background: rgba(229, 62, 62, 0.08);
 }
 
-/* .dropdown-icon {
-  margin-right: 12px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
-  opacity: 0.8;
-} */
+.h-dropdown-divider {
+  height: 1px;
+  background: rgba(102, 126, 234, 0.1);
+  margin: 8px 0;
+}
 
 /* Адаптация для мобильных */
 @media (max-width: 700px) {
-  .header-main {
+  .h-header-main {
     padding: 8px 12px;
     flex-direction: column;
     gap: 12px;
   }
   
-  .logo-title {
+  .h-logo-title {
     font-size: 16px;
   }
   
-  .logo-subtitle {
+  .h-logo-subtitle {
     font-size: 11px;
   }
   
-  .profile-card {
+  .h-profile-card {
     padding: 6px 12px;
   }
   
-  .profile-dropdown {
+  .h-profile-dropdown {
     width: 240px;
     right: -10px;
   }
   
-  .profile-info {
+  .h-profile-info {
     align-items: flex-start;
   }
   
-  .dropdown-item {
+  .h-dropdown-item {
     padding: 9px 18px;
     font-size: 13px;
   }
 }
 
 @media (max-width: 480px) {
-  .logo-mark {
+  .h-logo-mark {
     flex-direction: column;
     text-align: center;
     gap: 5px;
   }
   
-  .logo-title,
-  .logo-subtitle {
+  .h-logo-title,
+  .h-logo-subtitle {
     margin-left: 0;
   }
   
-  .profile-name,
-  .profile-patronymic {
+  .h-profile-name,
+  .h-profile-patronymic {
     font-size: 12px;
   }
   
-  .dropdown-user-info {
+  .h-dropdown-user-info {
     padding: 14px 16px 18px;
   }
   
-  .dropdown-fullname {
+  .h-dropdown-fullname {
     font-size: 14px;
   }
   
-  .dropdown-role {
+  .h-dropdown-role {
     font-size: 12px;
   }
 }
