@@ -89,7 +89,7 @@ export const Header: React.FC = () => {
             <div className="th-dropdown-user-info">
               <div className="th-user-gradient-bg"></div>
               <span className="th-dropdown-fullname">{getFullNameWithPatronymic()}</span>
-              <span className="th-dropdown-department">Политехнический колледж НовГУ</span>
+              <span className="th-dropdown-department">Преподаватель</span>
             </div>
             <div className="th-dropdown-menu">
               <button className="th-dropdown-item" onClick={handlePersonalCabinet}>

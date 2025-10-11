@@ -92,8 +92,8 @@
 }
 
 .t-sidebar.collapsed .nav-svg-icon {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
 }
 
 .t-sidebar.collapsed .nav-item::after {
@@ -127,8 +127,7 @@
   right: -12px;
   width: 24px;
   height: 24px;
-  background: #002FA7;
-  border: 2px solid white;
+  border: 2px solid;
   border-radius: 50%;
   color: white;
   font-size: 12px;
@@ -141,8 +140,9 @@
 }
 
 .sidebar-toggle:hover {
-  background: #5986f7;
+
   transform: scale(1.1);
+  background-color: white;  
 }
 
 .t-sidebar.collapsed .sidebar-toggle {
@@ -155,25 +155,34 @@
   margin-bottom: 16px;
 }
 
+.user-fullname-small {
+  color: #002fa7;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 20 0 12px 0;
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+
 .user-info .user-name {
   color: #002fa7;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 4px 100px;
 }
 
 .user-patronymic {
   color: #002fa7;
-  font-size: 18px;
+  font-size: 10px;
   font-weight: 600;
   margin: 0 0 20px 0;
 }
 
 .user-info .user-role {
-  color: #235bea;
+  color: #002fa7;
   font-size: 14px;
   font-weight: 500;
-  margin: 0 0 18px 0;
+  margin: 10px 0 10 0 ;
 }
 
 .user-department {
@@ -181,6 +190,7 @@
   font-size: 12px;
   font-weight: 300;
   margin: 4px 0;
+  margin-bottom: 20px;
 }
 
 /* Навигация */
@@ -229,8 +239,8 @@
 
 /* Иконки */
 .nav-svg-icon {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
 }
 
@@ -241,41 +251,98 @@
 }
 
 .nav-toggle-icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height:28px;
   z-index: 1;
 }
 
 /* Футер */
+/* Стили для блока "Следующая пара" в сайдбаре */
 .sidebar-footer {
-  margin-top: 6px;
+  margin-top: auto;
+  padding-top: 0px;
 }
 
-.quick-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  background: rgba(102, 126, 234, 0.1);
-  padding: 16px;
+.next-class-sidebar {
+  background: linear-gradient(135deg, #002FA7, #5986f7);
   border-radius: 12px;
+  padding: 16px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.2);
 }
 
-.stat-item {
+.next-class-title { 
+  font-size: 12px;
+  font-weight: 400;
+  margin: 0 0 8px 0;
+  color: #002FA7;
+  text-align: center;
+  margin-right: 120px;
+}
+
+.next-class-info {
   text-align: center;
   margin: 0;
 }
 
-.stat-item .stat-value {
-  font-size: 18px;
+.next-class-time {
+  font-size: 14px;
   font-weight: 700;
-  color: #002fa7;
-  margin: 0;
+  margin-bottom: 6px;
 }
 
-.stat-item .stat-label {
-  font-size: 11px;
-  color: #002fa7;
-  margin: 8px 0 0 0;
+.next-class-subject {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.next-class-group {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Адаптивность для блока следующей пары */
+@media (max-width: 768px) {
+  .next-class-sidebar {
+    padding: 14px;
+  }
+  
+  .next-class-time {
+    font-size: 15px;
+  }
+  
+  .next-class-subject {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .next-class-sidebar {
+    padding: 12px;
+  }
+  
+  .next-class-title {
+    font-size: 10px;
+  }
+  
+  .next-class-time {
+    font-size: 10px;
+  }
+  
+  .next-class-subject {
+    font-size: 11px;
+  }
+  
+  .next-class-group {
+    font-size: 11px;
+  }
+}
+
+/* Стили для свернутого состояния */
+.t-sidebar.collapsed .sidebar-footer {
+  display: none;
 }
 
 /* Основная область контента */
@@ -301,7 +368,8 @@
   color: white;
   font-size: 26px;
   font-weight: 600;
-  margin: 0;
+  margin-bottom: 10px;
+  margin-left: 4px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -316,8 +384,8 @@
   color: white;
   font-weight: 200;
   font-size: 14px;
-  margin-top: 15px;
-  margin-left: 40px;
+  margin-top: 24px;
+  margin-left: 35px;
   width: 100%;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -712,27 +780,6 @@
 .schedule-group {
   font-size: 14px;
   color: #666;
-}
-
-
-/* Временные стили для эмодзи-иконок */
-.nav-icon-placeholder {
-  font-size: 20px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-white-icon-placeholder {
-  font-size: 24px;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 6px 6px 0 4px;
 }
 
 .content-title-text {

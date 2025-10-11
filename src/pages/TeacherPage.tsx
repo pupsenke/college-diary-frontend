@@ -62,7 +62,7 @@ const ScheduleSection: React.FC = () => {
   return (
     <div className="schedule-section">
       <h2>Расписание занятий</h2>
-      <p>Раздел в разработке</p>
+      <p>Полное расписание в разработке</p>
     </div>
   );
 };
@@ -100,32 +100,18 @@ export const TeacherPage: React.FC = () => {
   const getTabIcon = (tabName: string) => {
     switch (tabName) {
       case 'disciplines':
-        return <span className="nav-icon-placeholder">📚</span>;
+        return <img src="th-icons/disciplines_icon.svg" alt="Дисциплины" className="nav-svg-icon" />;
       case 'groups':
-        return <span className="nav-icon-placeholder">👥</span>;
+        return <img src="th-icons/groups_icon.svg" alt="Группы" className="nav-svg-icon" />;
       case 'personal':
-        return <span className="nav-icon-placeholder">👤</span>;
+        return <img src="th-icons/paccount_icon.svg" alt="Личный кабинет" className="nav-svg-icon" />;
       case 'schedule':
-        return <span className="nav-icon-placeholder">📅</span>;
+        return <img src="th-icons/schedule_icon.svg" alt="Расписание" className="nav-svg-icon" />;
       default:
-        return <span className="nav-icon-placeholder">📚</span>;
+        return <img src="th-icons/disciplines_icon.svg" alt="Дисциплины" className="nav-svg-icon" />;
     }
   };
 
-  const getIcon = (tabName: string) => {
-    switch (tabName) {
-      case 'disciplines':
-        return <span className="nav-white-icon-placeholder">📚</span>;
-      case 'groups':
-        return <span className="nav-white-icon-placeholder">👥</span>;
-      case 'personal':
-        return <span className="nav-white-icon-placeholder">👤</span>;
-      case 'schedule':
-        return <span className="nav-white-icon-placeholder">📅</span>;
-      default:
-        return <span className="nav-white-icon-placeholder">📚</span>;
-    }
-  };
 
   const getTabTitle = (tabName: string) => {
     switch (tabName) {
@@ -189,20 +175,25 @@ export const TeacherPage: React.FC = () => {
               onClick={handleSidebarToggle}
               aria-label={sidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
             >
-              {sidebarCollapsed ? '→' : '←'}
+              <img 
+                src="th-icons/arrow_icon.svg" 
+                alt="" 
+                className={`nav-toggle-icon ${sidebarCollapsed ? 'rotated' : ''}`} 
+              />
             </button>
 
             <div className="sidebar-header">
               <div className="user-info">
-                <p className="user-name">{user.lastName} {user.name}</p>
-                <p className="user-patronymic">{user.surname}</p>
-                <p className="user-role">Преподаватель</p>
-                <p className="user-department">Политехнический колледж Hoary</p>
+                <h1 className="user-fullname-small">{user.lastName} {user.name} {user.surname}</h1>
+                <div className="user-role-container">
+                  <strong className="user-role">Преподаватель</strong>
+                  <p className="user-department">Политехнический колледж НовГУ</p>
+                </div>
               </div>
             </div>
 
             <nav className="sidebar-nav">
-              {['disciplines', 'groups', 'personal', 'schedule'].map((tab) => (
+              {['disciplines', 'personal', 'groups', 'schedule'].map((tab) => (
                 <button
                   key={tab}
                   className={`nav-item ${activeTab === tab ? 'active' : ''}`}
@@ -217,14 +208,12 @@ export const TeacherPage: React.FC = () => {
             </nav>
 
             <div className="sidebar-footer">
-              <div className="quick-stats">
-                <div className="stat-item">
-                  <p className="stat-value">{user.disciplinesCount || '5'}</p>
-                  <p className="stat-label">Дисциплин</p>
-                </div>
-                <div className="stat-item">
-                  <p className="stat-value">{user.groupsCount || '3'}</p>
-                  <p className="stat-label">Групп</p>
+              <h4 className="next-class-title">Следующая пара:</h4>
+              <div className="next-class-sidebar">
+                <div className="next-class-info">
+                  <div className="next-class-time">10:20 - 12:00</div>
+                  <div className="next-class-subject">Разработка программных модулей</div>
+                  <div className="next-class-group">2992</div>
                 </div>
               </div>
             </div>
@@ -233,10 +222,9 @@ export const TeacherPage: React.FC = () => {
           <main className="content-area">
             <div className="content-header">
               <h1 className="content-title">
-                <span className="title-icon">{getIcon(activeTab)}</span>
-                <p className="content-title-text">{getTabTitle(activeTab)}</p>
-                <p className="content-subtitle">{getTabSubTitle(activeTab)}</p>
+                <span className="content-title-text">{getTabTitle(activeTab)}</span>
               </h1>
+              <p className="content-subtitle">{getTabSubTitle(activeTab)}</p>
             </div>
 
             <div className="content-card">{renderContent()}</div>
