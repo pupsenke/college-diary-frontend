@@ -1,29 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Header } from '../th-components/Header';
 import { useUser } from '../context/UserContext';
 import './TeacherStyle.css';
 import { useNavigate } from 'react-router-dom';
-
-// Временные компоненты-заглушки
-const Header: React.FC = () => {
-  return (
-    <header className="teacher-header">
-      <div className="header-content">
-        <div className="header-logo">
-          <h1>Цифровой дневник</h1>
-          <p>Политехнический колледж Hoary</p>
-        </div>
-        <div className="header-actions">
-          <button className="notification-btn">
-            <span>🔔</span>
-          </button>
-          <button className="logout-btn">
-            Выйти
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-};
 
 const DisciplinesSection: React.FC = () => {
   return (

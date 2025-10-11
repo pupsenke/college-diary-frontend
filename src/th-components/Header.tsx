@@ -1,22 +1,116 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
 import './Header.css';
 
 export const Header: React.FC = () => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { user, setUser } = useUser();
+
+  // Закрытие dropdown при клике вне его области
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const handlePersonalCabinet = () => {
+    navigate('/teacher?tab=personal');
+    setIsDropdownOpen(false);
+  };
+
+  const handleDisciplines = () => {
+    navigate('/teacher?tab=disciplines');
+    setIsDropdownOpen(false);
+  };
+
+  const handleGroups = () => {
+    navigate('/teacher?tab=groups');
+    setIsDropdownOpen(false);
+  };
+
+  const handleSchedule = () => {
+    navigate('/teacher?tab=schedule');
+    setIsDropdownOpen(false);
+  };
+
+  // Форматируем ФИО
+  const getFullName = () => {
+    if (!user) return 'Фамилия Имя';
+    return `${user.lastName} ${user.name}`;
+  };
+
+  const getFullNameWithPatronymic = () => {
+    if (!user) return 'Фамилия Имя Отчество';
+    return `${user.lastName} ${user.name} ${user.surname}`;
+  };
+
   return (
-    <header className="teacher-header">
-      <div className="header-content">
-        <div className="header-logo">
-          <h1>Цифровой дневник</h1>
-          <p>Политехнический колледж HoвГУ</p>
+    <header className="th-header-main">
+      <div className="th-header-logo-area">
+        <div className="th-logo-mark">
+          <img src='blue_icon.svg' alt="" className='th-image'/>
+          <div>
+            <div className="th-logo-title">Цифровой дневник</div>
+            <div className="th-logo-subtitle">Политехнический колледж НовГУ</div>
+          </div>
         </div>
-        <div className="header-actions">
-          <button className="notification-btn">
-            <img src="notification_icon.svg" alt="Уведомления" />
-          </button>
-          <button className="logout-btn">
-            Выйти
-          </button>
+      </div>
+      <div className="th-header-profile-area" ref={dropdownRef}>
+        <div className="th-profile-card" onClick={toggleDropdown}>
+          <div className="th-profile-info">
+            <span className="th-profile-name">{getFullName()}</span>
+            <span className="th-profile-role">Преподаватель</span>
+          </div>
+          <span className={`th-profile-arrow ${isDropdownOpen ? 'th-rotated' : ''}`}>▼</span>
         </div>
+        
+        {isDropdownOpen && (
+          <div className="th-profile-dropdown">
+            <div className="th-dropdown-user-info">
+              <div className="th-user-gradient-bg"></div>
+              <span className="th-dropdown-fullname">{getFullNameWithPatronymic()}</span>
+              <span className="th-dropdown-department">Политехнический колледж НовГУ</span>
+            </div>
+            <div className="th-dropdown-menu">
+              <button className="th-dropdown-item" onClick={handlePersonalCabinet}>
+                Личный кабинет
+              </button>
+              <button className="th-dropdown-item" onClick={handleDisciplines}>
+                Дисциплины
+              </button>
+              <button className="th-dropdown-item" onClick={handleGroups}>
+                Группы
+              </button>
+              <button className="th-dropdown-item" onClick={handleSchedule}>
+                Расписание
+              </button>
+              <div className="th-dropdown-divider"></div>
+              <button className="th-dropdown-item th-logout" onClick={handleLogout}>
+                Выйти
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
