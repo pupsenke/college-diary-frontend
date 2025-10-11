@@ -1,0 +1,324 @@
+/* Стили для личного кабинета преподавателя */
+.personal-cabinet {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.personal-info-main,
+.professional-info-main {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.personal-info-section,
+.professional-info-section {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e0e7ff;
+  flex: 1;
+}
+
+.info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 24px;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  min-width: 120px;
+  text-align: left;
+}
+
+.info-value {
+  font-size: 16px;
+  color: #002fa7;
+  font-weight: 600;
+  flex: 1;
+}
+
+.change-password-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 160px;
+}
+
+.change-password-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.change-password-btn:hover {
+  background: #5986f7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.disciplines-section {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e0e7ff;
+}
+
+.disciplines-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.disciplines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discipline-item {
+  background: white;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #002fa7;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.discipline-item:hover {
+  background: #f0f4ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.discipline-item::before {
+  content: '•';
+  color: #002FA7;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+/* Адаптивность для личного кабинета */
+@media (max-width: 1024px) {
+  .personal-info-main,
+  .professional-info-main {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .personal-cabinet {
+    gap: 20px;
+  }
+  
+  .personal-info-main,
+  .professional-info-main {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .change-password-section {
+    align-items: stretch;
+    min-width: auto;
+  }
+  
+  .personal-info-section,
+  .professional-info-section,
+  .disciplines-section {
+    padding: 20px;
+  }
+  
+  .info-item {
+    gap: 12px;
+  }
+  
+  .info-label {
+    min-width: 100px;
+    font-size: 13px;
+  }
+  
+  .info-value {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .personal-cabinet {
+    gap: 16px;
+  }
+  
+  .personal-info-section,
+  .professional-info-section,
+  .disciplines-section {
+    padding: 16px;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .info-label {
+    min-width: auto;
+    font-size: 12px;
+  }
+  
+  .info-value {
+    font-size: 14px;
+  }
+  
+  .discipline-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .change-password-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.personal-info-main,
+.professional-info-main,
+.disciplines-section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.personal-info-main {
+  animation-delay: 0.1s;
+}
+
+.professional-info-main {
+  animation-delay: 0.2s;
+}
+
+.disciplines-section {
+  animation-delay: 0.3s;
+}
+
+.pc-input {
+  border: 1px solid #e0e7ff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #002fa7;
+  background: white;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.pc-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 2px rgba(0, 47, 167, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.save-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #5986f7;
+}
+
+.save-btn:disabled {
+  background: #64748b;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #f8f9ff;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e0e7ff;
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.change-password-btn.secondary {
+  background: transparent;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.change-password-btn.secondary:hover {
+  background: #f0f4ff;
+}
+
+/* Адаптивность для инпутов */
+@media (max-width: 768px) {
+  .pc-input {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}

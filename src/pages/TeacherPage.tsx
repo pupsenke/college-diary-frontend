@@ -1,71 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../th-components/Header';
+import { DisciplinesSection } from '../th-components/DisciplinesSection';
+import { GroupsSection } from '../th-components/GroupsSection';
+import { PersonalCabinet } from '../th-components/PersonalCabinet';
+import { ScheduleSection } from '../th-components/ScheduleSection';
 import { useUser } from '../context/UserContext';
 import './TeacherStyle.css';
 import { useNavigate } from 'react-router-dom';
-
-const DisciplinesSection: React.FC = () => {
-  return (
-    <div className="disciplines-section">
-      <h2>Мои дисциплины</h2>
-      <p>Раздел в разработке</p>
-    </div>
-  );
-};
-
-const GroupsSection: React.FC = () => {
-  return (
-    <div className="groups-section">
-      <h2>Мои группы</h2>
-      <p>Раздел в разработке</p>
-    </div>
-  );
-};
-
-const PersonalCabinet: React.FC = () => {
-  const { user } = useUser();
-  
-  return (
-    <div className="personal-cabinet">
-      <h2>Личный кабинет преподавателя</h2>
-      <div className="personal-info">
-        <div className="info-row">
-          <label>Фамилия:</label>
-          <span>{user?.lastName || 'Фамилия'}</span>
-        </div>
-        <div className="info-row">
-          <label>Имя:</label>
-          <span>{user?.name || 'Имя'}</span>
-        </div>
-        <div className="info-row">
-          <label>Отчество:</label>
-          <span>{user?.surname || 'Отчество'}</span>
-        </div>
-        <div className="info-row">
-          <label>Эл. почта:</label>
-          <span>teacher@college.ru</span>
-        </div>
-        <div className="info-row">
-          <label>Специальность:</label>
-          <span>Математика и информатика</span>
-        </div>
-        <div className="info-row">
-          <label>Общий стаж:</label>
-          <span>27 лет</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ScheduleSection: React.FC = () => {
-  return (
-    <div className="schedule-section">
-      <h2>Расписание занятий</h2>
-      <p>Полное расписание в разработке</p>
-    </div>
-  );
-};
 
 export const TeacherPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('disciplines');
@@ -111,7 +52,6 @@ export const TeacherPage: React.FC = () => {
         return <img src="th-icons/disciplines_icon.svg" alt="Дисциплины" className="nav-svg-icon" />;
     }
   };
-
 
   const getTabTitle = (tabName: string) => {
     switch (tabName) {
