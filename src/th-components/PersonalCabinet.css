@@ -55,11 +55,13 @@
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  min-width: 160px;
+  min-width: 240px;
+  margin-top: 152px;
 }
 
 .change-password-btn {
-  background: #002FA7;
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
   color: white;
   border: none;
   border-radius: 8px;
@@ -120,10 +122,49 @@
 }
 
 .discipline-item::before {
-  content: '•';
+  margin-right: 0px;
+}
+
+/* Стили для кнопок навигации */
+.disciplines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* Стили для кликабельных дисциплин */
+.discipline-item.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.discipline-item.clickable:hover {
+  background: #f0f4ff;
+  border-color: #002FA7;
+  transform: translateX(5px);
+}
+
+.discipline-text {
+  flex: 1;
+  color: #002fa7;
+  font-weight: 500;
+}
+
+.discipline-arrow {
   color: #002FA7;
   font-weight: bold;
-  margin-right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-left: 10px;
+}
+
+.discipline-item.clickable:hover .discipline-arrow {
+  opacity: 1;
 }
 
 /* Адаптивность для личного кабинета */
@@ -235,90 +276,4 @@
 
 .disciplines-section {
   animation-delay: 0.3s;
-}
-
-.pc-input {
-  border: 1px solid #e0e7ff;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 14px;
-  color: #002fa7;
-  background: white;
-  transition: all 0.3s ease;
-  flex: 1;
-}
-
-.pc-input:focus {
-  outline: none;
-  border-color: #002FA7;
-  box-shadow: 0 0 0 2px rgba(0, 47, 167, 0.1);
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.save-btn {
-  background: #002FA7;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.save-btn:hover:not(:disabled) {
-  background: #5986f7;
-}
-
-.save-btn:disabled {
-  background: #64748b;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  background: #f8f9ff;
-  color: #002FA7;
-  border: 1px solid #002FA7;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: #e0e7ff;
-}
-
-.cancel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.change-password-btn.secondary {
-  background: transparent;
-  color: #002FA7;
-  border: 1px solid #002FA7;
-}
-
-.change-password-btn.secondary:hover {
-  background: #f0f4ff;
-}
-
-/* Адаптивность для инпутов */
-@media (max-width: 768px) {
-  .pc-input {
-    font-size: 13px;
-    padding: 6px 10px;
-  }
 }

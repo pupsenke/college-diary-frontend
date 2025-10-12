@@ -2,7 +2,7 @@ import React from 'react';
 
 export const ScheduleSection: React.FC = () => {
   const schedule = [
-    { time: '10:20 - 12:00', subject: 'Разработка программных модулей', group: '2992' },
+    { time: '10:20 - 12:00', subject: 'Вика и Лера абобы <3', group: '2992' },
     { time: '12:10 - 13:50', subject: 'Операционные системы', group: '2991' },
     { time: '14:00 - 15:40', subject: 'Основы программирования', group: '2993' }
   ];

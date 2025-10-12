@@ -4,13 +4,15 @@ import { DisciplinesSection } from '../th-components/DisciplinesSection';
 import { GroupsSection } from '../th-components/GroupsSection';
 import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
+import { TeacherDashboard } from '../th-components/TeacherDashboard';
 import { useUser } from '../context/UserContext';
 import './TeacherStyle.css';
 import { useNavigate } from 'react-router-dom';
 
 export const TeacherPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('disciplines');
+  const [activeTab, setActiveTab] = useState('personal');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>();
   const { user } = useUser();
   const navigate = useNavigate();
 
@@ -23,18 +25,48 @@ export const TeacherPage: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Функция для перехода к дисциплинам с выбранной дисциплиной
+  const handleNavigateToDisciplines = (disciplineName?: string) => {
+    if (disciplineName) {
+      setSelectedDiscipline(disciplineName);
+    }
+    setActiveTab('disciplines');
+  };
+
+  // Функция для перехода к группам с выбранной дисциплиной
+  const handleNavigateToGroups = (disciplineName?: string) => {
+    if (disciplineName) {
+      setSelectedDiscipline(disciplineName);
+    }
+    setActiveTab('groups');
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'disciplines':
-        return <DisciplinesSection />;
+        return (
+          <TeacherDashboard />
+        );
       case 'groups':
-        return <GroupsSection />;
+        return (
+          <GroupsSection 
+            selectedDiscipline={selectedDiscipline}
+            onDisciplineClear={() => setSelectedDiscipline(undefined)}
+          />
+        );
       case 'personal':
-        return <PersonalCabinet />;
+        return (
+          <PersonalCabinet 
+            onNavigateToDisciplines={handleNavigateToDisciplines}
+            onNavigateToGroups={handleNavigateToGroups}
+          />
+        );
       case 'schedule':
         return <ScheduleSection />;
       default:
-        return <DisciplinesSection />;
+        return (
+          <TeacherDashboard />
+        );
     }
   };
 
@@ -133,11 +165,17 @@ export const TeacherPage: React.FC = () => {
             </div>
 
             <nav className="sidebar-nav">
-              {['disciplines', 'personal', 'groups', 'schedule'].map((tab) => (
+              {['personal', 'disciplines', 'groups', 'schedule'].map((tab) => (
                 <button
                   key={tab}
                   className={`nav-item ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    // При переходе на вкладку "Группы" сбрасываем выбранную дисциплину
+                    if (tab === 'groups') {
+                      setSelectedDiscipline(undefined);
+                    }
+                  }}
                   data-tooltip={sidebarCollapsed ? getTabTitle(tab) : ''}
                 >
                   <span className="nav-icon">{getTabIcon(tab)}</span>

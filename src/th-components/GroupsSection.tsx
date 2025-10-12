@@ -1,26 +1,445 @@
-import React from 'react';
+import React, { useState } from 'react';
+import './GroupsSectionStyle.css';
 
-export const GroupsSection: React.FC = () => {
-  const groups = [
-    { id: '2992', name: '2992', students: 25 },
-    { id: '2991', name: '2991', students: 28 },
-    { id: '2993', name: '2993', students: 22 }
+export interface Group {
+  id: number;
+  name: string;
+  specialty: string;
+  subject: string;
+  studentCount: number;
+  attendancePercent: number;
+  semester: number;
+  course: number;
+}
+
+interface Props {
+  selectedDiscipline?: string;
+  onDisciplineClear?: () => void;
+}
+
+export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplineClear }) => {
+  const [activeTab, setActiveTab] = useState<'semesters' | 'course'>('semesters');
+  const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
+  const [selectedCourse, setSelectedCourse] = useState<'all' | '1' | '2' | '3' | '4'>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [subjectSortOrder, setSubjectSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedGroupRow, setSelectedGroupRow] = useState<number | null>(null);
+
+  // Данные по группам - логически связаны с дисциплинами
+  const groupsData: Group[] = [
+    {
+      id: 1,
+      name: '2992',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Разработка программных модулей',
+      studentCount: 28,
+      attendancePercent: 85,
+      semester: 2,
+      course: 4
+    },
+    {
+      id: 2,
+      name: '2991',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Разработка программных модулей',
+      studentCount: 27,
+      attendancePercent: 72,
+      semester: 2,
+      course: 4
+    },
+    {
+      id: 3,
+      name: '2992',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Дипломное проектирование',
+      studentCount: 28,
+      attendancePercent: 66,
+      semester: 2,
+      course: 4
+    },
+    {
+      id: 4,
+      name: '3991',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Операционные системы и среды',
+      studentCount: 25,
+      attendancePercent: 78,
+      semester: 1,
+      course: 3
+    },
+    {
+      id: 5,
+      name: '3992',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Основы разработки программного обеспечения',
+      studentCount: 26,
+      attendancePercent: 91,
+      semester: 1,
+      course: 3
+    },
+    {
+      id: 6,
+      name: '4991',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Технология разработки и защиты баз данных',
+      studentCount: 24,
+      attendancePercent: 82,
+      semester: 2,
+      course: 2
+    },
+    {
+      id: 7,
+      name: '4992',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Системное программирование',
+      studentCount: 23,
+      attendancePercent: 88,
+      semester: 2,
+      course: 2
+    },
+    {
+      id: 8,
+      name: '3991',
+      specialty: '09.02.07 Информационные системы и программирование',
+      subject: 'Компьютерные сети',
+      studentCount: 26,
+      attendancePercent: 79,
+      semester: 2,
+      course: 3
+    }
   ];
+  
+
+  // Получение уникальных групп для выпадающего списка
+  const uniqueGroups = Array.from(new Set(groupsData.map(group => group.name)));
+
+  // Фильтрация данных с учетом выбранной дисциплины
+  const filteredGroups = groupsData.filter(group => {
+    const semesterFilter = selectedSemester === 'first' ? group.semester === 1 : group.semester === 2;
+    const courseFilter = selectedCourse === 'all' || group.course.toString() === selectedCourse;
+    const groupFilter = selectedGroup === 'all' || group.name === selectedGroup;
+    const disciplineFilter = !selectedDiscipline || group.subject === selectedDiscipline;
+    
+    return semesterFilter && courseFilter && groupFilter && disciplineFilter;
+  });
+
+  // Сортировка по предмету
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
+    if (subjectSortOrder === 'asc') {
+      return a.subject.localeCompare(b.subject);
+    } else {
+      return b.subject.localeCompare(a.subject);
+    }
+  });
+
+  const toggleSubjectSortOrder = () => {
+    setSubjectSortOrder(subjectSortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  const getPercentColor = (percent: number) => {
+    if (percent >= 90) return '#2cbb00ff';
+    if (percent >= 75) return '#a5db28ff';
+    if (percent >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const handleRowClick = (groupId: number) => {
+    setSelectedGroupRow(groupId === selectedGroupRow ? null : groupId);
+  };
+
+  const handleSetAttendance = () => {
+    if (!selectedGroupRow) return;
+    const selectedGroupData = groupsData.find(group => group.id === selectedGroupRow);
+    console.log('Выставление посещаемости для группы:', selectedGroupData?.name, 'по предмету:', selectedGroupData?.subject);
+  };
+
+  const handleSetGrades = () => {
+    if (!selectedGroupRow) return;
+    const selectedGroupData = groupsData.find(group => group.id === selectedGroupRow);
+    console.log('Выставление оценок для группы:', selectedGroupData?.name, 'по предмету:', selectedGroupData?.subject);
+  };
+
+  const handleClearDiscipline = () => {
+    if (onDisciplineClear) {
+      onDisciplineClear();
+    }
+  };
 
   return (
-    <div className="groups-section">
-      <h2>Мои группы</h2>
-      <div className="groups-list">
-        {groups.map((group) => (
-          <div key={group.id} className="group-card">
-            <h3>{group.name}</h3>
-            <p>Студентов: {group.students}</p>
-            <div className="group-actions">
-              <button className="btn-primary">Журнал группы</button>
-              <button className="btn-secondary">Расписание</button>
-            </div>
+    <div className="gs-groups-section">
+      {/* Блок выбранной дисциплины с кнопкой сброса фильтра */}
+      {selectedDiscipline && (
+        <div className="gs-discipline-filter">
+          <div className="gs-discipline-info">
+            <strong className="gs-discipline-name">{selectedDiscipline}</strong>
           </div>
-        ))}
+          <button className="gs-clear-discipline" onClick={handleClearDiscipline}>
+            Сбросить фильтр
+          </button>
+        </div>
+      )}
+
+      <div className="gs-groups-header">
+        <div className="gs-view-tabs">
+          <button
+            className={`gs-view-tab ${activeTab === 'semesters' ? 'gs-active' : ''}`}
+            onClick={() => setActiveTab('semesters')}
+          >
+            По семестрам
+          </button>
+          <button
+            className={`gs-view-tab ${activeTab === 'course' ? 'gs-active' : ''}`}
+            onClick={() => setActiveTab('course')}
+          >
+            По курсу
+          </button>
+        </div>
+      </div>
+
+      <div className="gs-groups-content">
+        {activeTab === 'semesters' ? (
+          <>
+            <div className="gs-controls-row">
+              <div className="gs-semester-controls">
+                <div className="gs-semester-tabs">
+                  <button
+                    className={`gs-semester-tab ${selectedSemester === 'first' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedSemester('first')}
+                  >
+                    1-ый семестр
+                  </button>
+                  <button
+                    className={`gs-semester-tab ${selectedSemester === 'second' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedSemester('second')}
+                  >
+                    2-ой семестр
+                  </button>
+                </div>
+              </div>
+              
+              <div className="gs-group-selector">
+                <select
+                  id="gs-group-select"
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="gs-group-select"
+                >
+                  <option value="all">Все группы</option>
+                  {uniqueGroups.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="gs-groups-table-container">
+              <table className="gs-groups-table">
+                <thead>
+                  <tr>
+                    <th className="gs-number-column">№</th>
+                    <th className="gs-group-column">Группа</th>
+                    <th className="gs-specialty-column">Специальность</th>
+                    <th className="gs-subject-column">
+                      <div className="gs-column-header">
+                        <span>Предмет</span>
+                        <button 
+                          className="gs-sort-button"
+                          onClick={toggleSubjectSortOrder}
+                        >
+                          <img 
+                            src="/th-icons/sort_icon.svg" 
+                            alt="Сортировка" 
+                            className={`gs-sort-icon ${subjectSortOrder === 'desc' ? 'gs-sort-desc' : ''}`}
+                          />
+                        </button>
+                      </div>
+                    </th>
+                    <th className="gs-students-column">
+                      <div className="gs-header-text">
+                        Количество<br />студентов
+                      </div>
+                    </th>
+                    <th className="gs-attendance-column">
+                      <div className="gs-header-text">
+                        Процент<br />посещаемости
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedGroups.map((group, index) => (
+                    <tr 
+                      key={group.id} 
+                      className={`gs-group-row ${selectedGroupRow === group.id ? 'gs-selected' : ''}`}
+                      onClick={() => handleRowClick(group.id)}
+                    >
+                      <td className="gs-number-cell">{index + 1}.</td>
+                      <td className="gs-group-name">{group.name}</td>
+                      <td className="gs-specialty-cell">{group.specialty}</td>
+                      <td className="gs-subject-cell">{group.subject}</td>
+                      <td className="gs-students-cell">{group.studentCount}</td>
+                      <td className="gs-attendance-percent">
+                        <span 
+                          className="gs-percent-bubble"
+                          style={{ backgroundColor: getPercentColor(group.attendancePercent) }}
+                        >
+                          {group.attendancePercent}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {sortedGroups.length === 0 && (
+                <div className="gs-no-data">
+                  {selectedDiscipline 
+                    ? `Нет групп по дисциплине "${selectedDiscipline}" для выбранных фильтров`
+                    : 'Нет данных для отображения'
+                  }
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="gs-controls-row">
+              <div className="gs-course-controls">
+                <div className="gs-course-tabs">
+                  <button
+                    className={`gs-course-tab ${selectedCourse === 'all' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedCourse('all')}
+                  >
+                    Все курсы
+                  </button>
+                  <button
+                    className={`gs-course-tab ${selectedCourse === '1' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedCourse('1')}
+                  >
+                    1 курс
+                  </button>
+                  <button
+                    className={`gs-course-tab ${selectedCourse === '2' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedCourse('2')}
+                  >
+                    2 курс
+                  </button>
+                  <button
+                    className={`gs-course-tab ${selectedCourse === '3' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedCourse('3')}
+                  >
+                    3 курс
+                  </button>
+                  <button
+                    className={`gs-course-tab ${selectedCourse === '4' ? 'gs-active' : ''}`}
+                    onClick={() => setSelectedCourse('4')}
+                  >
+                    4 курс
+                  </button>
+                </div>
+              </div>
+              
+              <div className="gs-group-selector">
+                <label htmlFor="gs-group-select">Выберите группу:</label>
+                <select
+                  id="gs-group-select"
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="gs-group-select"
+                >
+                  <option value="all">Все группы</option>
+                  {uniqueGroups.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="gs-groups-table-container">
+              <table className="gs-groups-table">
+                <thead>
+                  <tr>
+                    <th className="gs-number-column">№</th>
+                    <th className="gs-group-column">Группа</th>
+                    <th className="gs-specialty-column">Специальность</th>
+                    <th className="gs-subject-column">
+                      <div className="gs-column-header">
+                        <span>Предмет</span>
+                        <button 
+                          className="gs-sort-button"
+                          onClick={toggleSubjectSortOrder}
+                        >
+                          <img 
+                            src="/th-icons/sort_icon.svg" 
+                            alt="Сортировка" 
+                            className={`gs-sort-icon ${subjectSortOrder === 'desc' ? 'gs-sort-desc' : ''}`}
+                          />
+                        </button>
+                      </div>
+                    </th>
+                    <th className="gs-students-column">
+                      <div className="gs-header-text">
+                        Количество<br />студентов
+                      </div>
+                    </th>
+                    <th className="gs-attendance-column">
+                      <div className="gs-header-text">
+                        Процент<br />посещаемости
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedGroups.map((group, index) => (
+                    <tr 
+                      key={group.id} 
+                      className={`gs-group-row ${selectedGroupRow === group.id ? 'gs-selected' : ''}`}
+                      onClick={() => handleRowClick(group.id)}
+                    >
+                      <td className="gs-number-cell">{index + 1}.</td>
+                      <td className="gs-group-name">{group.name}</td>
+                      <td className="gs-specialty-cell">{group.specialty}</td>
+                      <td className="gs-subject-cell">{group.subject}</td>
+                      <td className="gs-students-cell">{group.studentCount}</td>
+                      <td className="gs-attendance-percent">
+                        <span 
+                          className="gs-percent-bubble"
+                          style={{ backgroundColor: getPercentColor(group.attendancePercent) }}
+                        >
+                          {group.attendancePercent}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {sortedGroups.length === 0 && (
+                <div className="gs-no-data">
+                  {selectedDiscipline 
+                    ? `Нет групп по дисциплине "${selectedDiscipline}" для выбранных фильтров`
+                    : 'Нет данных для отображения'
+                  }
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className="gs-action-buttons">
+          <button 
+            className={`gs-attendance-btn ${!selectedGroupRow ? 'gs-disabled' : ''}`}
+            onClick={handleSetAttendance}
+            disabled={!selectedGroupRow}
+          >
+            Выставить посещаемость
+          </button>
+          <button 
+            className={`gs-grades-btn ${!selectedGroupRow ? 'gs-disabled' : ''}`}
+            onClick={handleSetGrades}
+            disabled={!selectedGroupRow}
+          >
+            Выставить оценки
+          </button>
+        </div>
       </div>
     </div>
   );

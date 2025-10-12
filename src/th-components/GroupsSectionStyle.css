@@ -1,0 +1,693 @@
+.gs-groups-section {
+  padding: 0;
+  background: transparent;
+  min-height: 500px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.gs-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.gs-view-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gs-view-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gs-view-tab.gs-active {
+  background: #002FA7;
+  color: white;
+}
+
+.gs-view-tab:hover:not(.gs-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.gs-groups-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Строка с контролами */
+.gs-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Стили для вкладки "По семестрам" */
+.gs-semester-controls {
+  display: flex;
+  flex: 1;
+  min-width: 300px;
+}
+
+.gs-semester-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.gs-semester-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gs-semester-tab.gs-active {
+  background: #002FA7;
+  color: white;
+}
+
+.gs-semester-tab:hover:not(.gs-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+/* Стили для вкладки "По курсу" */
+.gs-course-controls {
+  display: flex;
+  flex: 1;
+  min-width: 300px;
+}
+
+.gs-course-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.gs-course-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gs-course-tab.gs-active {
+  background: #002FA7;
+  color: white;
+}
+
+.gs-course-tab:hover:not(.gs-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+/* Выбор группы */
+.gs-group-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.gs-group-selector label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.gs-group-select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  color: #1e293b;
+  min-width: 150px;
+  cursor: pointer;
+}
+
+.gs-group-select:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.gs-groups-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gs-groups-table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: white;
+  table-layout: fixed;
+}
+
+.gs-groups-table th {
+  background: #f8fafc;
+  color: #002c9c;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 16px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  min-width: 20px;
+  height: 60px;
+  vertical-align: middle;
+}
+
+/* Центрирование конкретных заголовков */
+.gs-number-column,
+.gs-group-column {
+  text-align: center;
+}
+
+/* Левые заголовки */
+.gs-specialty-column,
+.gs-subject-column {
+  text-align: left;
+}
+
+/* Центрированные заголовки для многострочных */
+.gs-students-column,
+.gs-attendance-column {
+  text-align: center;
+}
+
+.gs-groups-table td {
+  padding: 16px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  word-break: break-word;
+  vertical-align: middle;
+}
+
+/* Стили для заголовков с переносами */
+.gs-header-text {
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Стили для колонок таблицы */
+.gs-number-column {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.gs-group-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.gs-specialty-column {
+  min-width: 180px;
+  max-width: 180px;
+}
+
+.gs-subject-column {
+  min-width: 180px;
+}
+
+.gs-students-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.gs-attendance-column {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+
+/* Выравнивание ячеек */
+.gs-number-cell {
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.gs-group-name {
+  color: #002FA7;
+  font-weight: 500; /* Обычная жирность вместо полужирной */
+  text-align: center;
+}
+
+.gs-specialty-cell {
+  color: #1e293b;
+  font-weight: 500;
+  text-align: left;
+}
+
+.gs-subject-cell {
+  color: #1e293b;
+  font-weight: 500;
+  text-align: left;
+}
+
+.gs-students-cell {
+  text-align: center;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.gs-attendance-percent {
+  text-align: center;
+}
+
+.gs-percent-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  height: 32px;
+  padding: 0 12px;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.gs-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.gs-sort-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.gs-sort-button:hover {
+  background-color: #e2e8f0;
+}
+
+.gs-sort-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.gs-sort-desc {
+  transform: rotate(180deg);
+}
+
+/* Кнопки действий */
+.gs-action-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.gs-attendance-btn,
+.gs-grades-btn {
+  background: #F1F2F8;
+  border: 1px solid #DFDFDF;
+  color: #656565;
+  padding: 12px 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Стиль для выбранной строки */
+.gs-group-row.gs-selected {
+  background-color: #f0f7ff;
+  border-left: 3px solid #002FA7;
+}
+
+.gs-group-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.gs-group-row:hover {
+  background-color: #f8fafc;
+}
+
+/* АКТИВНЫЕ кнопки (когда группа выбрана) */
+.gs-attendance-btn:not(.gs-disabled),
+.gs-grades-btn:not(.gs-disabled) {
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
+  color: white;
+}
+
+.gs-attendance-btn:not(.gs-disabled):hover,
+.gs-grades-btn:not(.gs-disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+/* Стили для отключенных кнопок */
+.gs-attendance-btn.gs-disabled,
+.gs-grades-btn.gs-disabled {
+  background: #cbd5e186;
+  border-color: #94a3b898;
+  color: #656565;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.gs-attendance-btn.gs-disabled:hover,
+.gs-grades-btn.gs-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+
+.gs-selected-discipline {
+  background: #e6f0ff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #b3d4ff;
+  color: #002FA7;
+  font-size: 14px;
+}
+
+.gs-no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Стили для блока фильтра по дисциплине */
+.gs-discipline-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px ;
+  margin-bottom: 24px;
+}
+
+.gs-discipline-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.gs-discipline-name {
+  font-size: 18px;
+  color: #002FA7;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #002FA7;
+}
+
+/* Кнопка сброса фильтра */
+.gs-clear-discipline {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.gs-clear-discipline:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.gs-clear-discipline:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.3);
+}
+
+
+/* Адаптивность для планшетов (768px - 1024px) */
+@media (max-width: 1024px) {
+  .gs-groups-table th,
+  .gs-groups-table td {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+  
+  .gs-view-tab,
+  .gs-semester-tab,
+  .gs-course-tab {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  
+  .gs-group-select {
+    font-size: 13px;
+    min-width: 120px;
+  }
+  
+  .gs-percent-bubble {
+    min-width: 60px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .gs-groups-table th {
+    height: 50px;
+    font-size: 12px;
+  }
+
+  .gs-controls-row {
+    gap: 15px;
+  }
+}
+
+/* Адаптивность для мобильных устройств (768px и меньше) */
+@media (max-width: 768px) {
+  .gs-groups-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .gs-view-tabs {
+    width: 100%;
+  }
+  
+  .gs-view-tab {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 0;
+  }
+  
+  .gs-controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .gs-semester-controls,
+  .gs-course-controls {
+    min-width: 100%;
+  }
+  
+  .gs-group-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .gs-groups-table th,
+  .gs-groups-table td {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+  
+  .gs-semester-tabs,
+  .gs-course-tabs {
+    width: 100%;
+  }
+  
+  .gs-semester-tab,
+  .gs-course-tab {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 0;
+  }
+  
+  .gs-percent-bubble {
+    min-width: 50px;
+    height: 24px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .gs-groups-table th {
+    height: 45px;
+    font-size: 11px;
+  }
+
+  .gs-action-buttons {
+    justify-content: center;
+  }
+  
+  .gs-attendance-btn,
+  .gs-grades-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+/* Адаптивность для маленьких мобильных устройств (480px и меньше) */
+@media (max-width: 480px) {
+  .gs-groups-table th,
+  .gs-groups-table td {
+    padding: 8px 3px;
+    font-size: 10px;
+  }
+
+  .gs-view-tab {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+  
+  .gs-semester-tab,
+  .gs-course-tab {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+  
+  .gs-group-selector label {
+    font-size: 11px;
+  }
+  
+  .gs-group-select {
+    font-size: 11px;
+    min-width: 100px;
+  }
+  
+  .gs-percent-bubble {
+    min-width: 40px;
+    height: 20px;
+    font-size: 9px;
+    padding: 0 6px;
+    border-radius: 4px;
+  }
+
+  .gs-groups-table th {
+    height: 40px;
+    font-size: 9px;
+  }
+
+  .gs-header-text {
+    line-height: 1.1;
+  }
+
+  .gs-action-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .gs-attendance-btn,
+  .gs-grades-btn {
+    width: 100%;
+    padding: 12px 16px;
+  }
+}
