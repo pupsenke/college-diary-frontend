@@ -206,30 +206,138 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData 
   );
 };
 
+const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
+  // Для демонстрации возьмем первый день как "сегодня"
+  const todaySchedule = scheduleData[0];
+  
+  return (
+    <div className="today-schedule">
+      <div className="today-lessons">
+        {todaySchedule.lessons.length > 0 ? (
+          groupLessonsByTime(todaySchedule.lessons).map(({ startTime, endTime, lessons: grouped }: GroupedSlot) => (
+            grouped.length > 1 ? (
+              // Для сгруппированных предметов в сегодняшнем расписании
+              <div key={`${startTime}-${endTime}`} className="today-separated-lesson">
+                <div className="today-time">{startTime} - {endTime}</div>
+                <div className="today-subjects">
+                  {grouped.map((lesson: Lesson) => (
+                    <div key={lesson.id} className="today-subject-item">
+                      <div className="today-subject-name">{lesson.subject}</div>
+                      <div className="today-teacher-room">
+                        {lesson.teacher && <span>{lesson.teacher}</span>}
+                        {lesson.room && <span>{lesson.room}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Для одиночных предметов в сегодняшнем расписании
+              <div key={`${startTime}-${endTime}`} className="today-lesson">
+                <div className="today-time">{startTime} - {endTime}</div>
+                <div className="today-subject">{grouped[0].subject}</div>
+                <div className="today-teacher-room">
+                  {grouped[0].teacher && <div>{grouped[0].teacher}</div>}
+                  {grouped[0].room && <div>{grouped[0].room}</div>}
+                </div>
+              </div>
+            )
+          ))
+        ) : (
+          <div className="today-no-classes">{todaySchedule.noClassesText}</div>
+        )}
+      </div>
+      
+      {/* Блок "Следующая пара" */}
+      {todaySchedule.lessons.length > 0 && (
+        <div className="next-lesson">
+          <h3 className="next-lesson-title">Следующая пара</h3>
+          {(() => {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const allLessons = groupLessonsByTime(todaySchedule.lessons).flatMap(slot => slot.lessons);
+            const nextLesson = allLessons.find(lesson => 
+              timeToMinutes(lesson.startTime) > currentTime
+            );
+            
+            if (nextLesson) {
+              return (
+                <div className="next-lesson-card">
+                  <div className="next-lesson-time">{nextLesson.startTime} - {nextLesson.endTime}</div>
+                  <div className="next-lesson-subject">{nextLesson.subject}</div>
+                  <div className="next-lesson-teacher-room">
+                    {nextLesson.teacher && <div>{nextLesson.teacher}</div>}
+                    {nextLesson.room && <div>{nextLesson.room}</div>}
+                  </div>
+                </div>
+              );
+            } else {
+              return (
+                <div className="next-lesson-card">
+                  <div className="no-next-lesson">Пар на сегодня больше нет</div>
+                </div>
+              );
+            }
+          })()}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ScheduleSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upper' | 'lower'>('upper');
+  const [viewMode, setViewMode] = useState<'full' | 'today'>('full');
 
   return (
     <div>
-      <div className="view-tabs">
+      {/* Фильтр Полное расписание / Расписание на сегодня */}
+      <div className="schedule-filter">
         <button 
-          className={`view-tab ${activeTab === 'upper' ? 'active' : ''}`}
-          onClick={() => setActiveTab('upper')}
+          className={`filter-btn ${viewMode === 'full' ? 'active' : ''}`}
+          onClick={() => setViewMode('full')}
         >
-          Верхняя неделя
+          Полное расписание
         </button>
         <button 
-          className={`view-tab ${activeTab === 'lower' ? 'active' : ''}`}
-          onClick={() => setActiveTab('lower')}
+          className={`filter-btn ${viewMode === 'today' ? 'active' : ''}`}
+          onClick={() => setViewMode('today')}
         >
-          Нижняя неделя
+          Расписание на сегодня
         </button>
       </div>
+
+      {/* Вкладки верхняя/нижняя неделя (только для полного расписания) */}
+      {viewMode === 'full' && (
+        <div className="view-tabs">
+          <button 
+            className={`view-tab ${activeTab === 'upper' ? 'active' : ''}`}
+            onClick={() => setActiveTab('upper')}
+          >
+            Верхняя неделя
+          </button>
+          <button 
+            className={`view-tab ${activeTab === 'lower' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lower')}
+          >
+            Нижняя неделя
+          </button>
+        </div>
+      )}
       
-      {activeTab === 'upper' ? (
-        <ScheduleView scheduleData={upperWeekData} />
+      {/* Отображение расписания в зависимости от выбранного режима */}
+      {viewMode === 'full' ? (
+        activeTab === 'upper' ? (
+          <ScheduleView scheduleData={upperWeekData} />
+        ) : (
+          <ScheduleView scheduleData={lowerWeekData} />
+        )
       ) : (
-        <ScheduleView scheduleData={lowerWeekData} />
+        activeTab === 'upper' ? (
+          <TodayScheduleView scheduleData={upperWeekData} />
+        ) : (
+          <TodayScheduleView scheduleData={lowerWeekData} />
+        )
       )}
     </div>
   );
