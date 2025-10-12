@@ -4,7 +4,7 @@
   min-height: 500px;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* Добавляем чтобы избежать горизонтального скролла всего раздела */
+  overflow-x: hidden;
 }
 
 .at-attendance-header {
@@ -43,7 +43,7 @@
   color: #64748b;
   transition: all 0.3s ease;
   flex: 1;
-  min-width: 0; /* Убираем фиксированную минимальную ширину */
+  min-width: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -79,10 +79,9 @@
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
-  overflow-x: hidden; /* Предотвращаем выход за границы */
+  overflow-x: hidden;
 }
 
-/* Стили для вкладки "По семестрам" */
 .at-semester-controls {
   display: flex;
   justify-content: flex-start;
@@ -116,7 +115,7 @@
   color: #64748b;
   transition: all 0.3s ease;
   flex: 1;
-  min-width: 0; /* Убираем фиксированную ширину */
+  min-width: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -139,15 +138,16 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 .at-attendance-table {
-  width: auto; /* Меняем на auto для адаптивности */
-  min-width: 100%; /* Минимум 100% от контейнера */
+  width: auto;
+  min-width: 100%;
   border-collapse: collapse;
   background: white;
-  table-layout: fixed; /* Автоматическое распределение ширины */
+  table-layout: fixed;
+  
 }
 
 .at-attendance-table th {
@@ -155,76 +155,70 @@
   color: #002c9c;
   font-size: 14px;
   font-weight: 500;
-  padding: 16px 8px; /* Уменьшаем отступы */
+  padding: 16px 8px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
-  min-width: 20px; /* Минимальная ширина для ячеек */
+  min-width: 20px;
 }
 
 .at-attendance-table td {
-  padding: 16px 8px; /* Уменьшаем отступы */
+  padding: 16px 8px;
   border-bottom: 1px solid #f1f5f9;
   color: #1e293b;
   font-size: 14px;
   transition: all 0.3s ease;
-  min-width: 40px; /* Минимальная ширина для ячеек */
-  word-break: break-word; /* Перенос длинных слов */
+  min-width: 40px;
+  word-break: break-word;
 }
 
-.at-subject-name {       /* Делает ячейку блочной = поддержка независимого скролла */
-  max-width: 120px;       /* Можно уменьшить или увеличить под ваши нужды, совпадает с шириной вашей 2-й колонки */
-  white-space: nowrap;    /* Не переносит текст */
-  overflow-x: auto;       /* Включает горизонтальный скролл при переполнении */
-  overflow-y: hidden;     /* Отключает вертикальный скролл */
+.at-subject-name {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 4px 0;
   color: #002FA7;
   font-weight: 500;
-  cursor: grab;            /* Flex-контейнер для центрирования */
-  justify-content: center; 
+  cursor: grab;
 }
 
 .at-attendance-table th:nth-child(1),
 .at-attendance-table td:nth-child(1) {
-  width: 20px;     /* фиксированная ширина первой колонки */
+  width: 20px;
   min-width: 20px;
   max-width: 20px;
-  padding-left: 4px;  /* можно настроить отступ */
+  padding-left: 4px;
   padding-right: 4px;
   text-align: center;
   white-space: nowrap;
 }
 
-
 .at-subject-name:active {
   cursor: grabbing;
 }
 
-/* Дополнительный комфорт скроллинга (сделать на всех устройствах) */
 .at-subject-name::-webkit-scrollbar {
   height: 2px;
 }
+
 .at-subject-name::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 1px;
-}
-.at-subject-name::-webkit-scrollbar-track {
-  background: #f1f5f9;
   border-radius: 2px;
 }
 
-.at-number-column {
-    max-width: 15px;
-    justify-content: center; 
+.at-subject-name::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
 }
 
 .at-attendance-list {
-  min-width: 180px; /* Уменьшаем минимальную ширину */
+  min-width: 180px;
 }
 
 .at-attendance-scroll-container {
   display: flex;
-  gap: 4px; /* Уменьшаем gap */
+  gap: 4px;
   flex-wrap: wrap;
   max-height: 80px;
   overflow-y: auto;
@@ -236,7 +230,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px; /* Уменьшаем размер */
+  min-width: 28px;
   height: 28px;
   padding: 0 6px;
   color: white;
@@ -250,13 +244,13 @@
   flex-shrink: 0;
 }
 
-.at-status-bubble:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+.at-attendance-percent,
+.at-final-grade {
+  text-align: center;
+  min-width: 60px;
+  white-space: nowrap;
 }
 
-/* Стили для колонки пропусков */
 .at-absences-cell {
   min-width: 180px;
 }
@@ -302,12 +296,6 @@
   border-top: 1px solid #e2e8f0;
 }
 
-/* Стили для процента посещаемости */
-.at-attendance-percent {
-  min-width: 100px;
-  text-align: center;
-}
-
 .at-percent-bubble {
   display: inline-flex;
   align-items: center;
@@ -320,11 +308,6 @@
   font-size: 14px;
   font-weight: 600;
   cursor: default;
-}
-
-.at-final-grade {
-  min-width: 60px;
-  text-align: center;
 }
 
 .at-grade-bubble {
@@ -341,20 +324,21 @@
   cursor: default;
 }
 
-.at-final-grade-bubble:hover {
-  transform: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-color: transparent;
+.at-attendance-scroll-container::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
 }
 
-.at-attendance-percent,
-.at-final-grade {
-  text-align: center;
-  min-width: 60px; /* Уменьшаем минимальную ширину */
-  white-space: nowrap;
+.at-attendance-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 2px;
 }
 
-/* Адаптивность для планшетов (768px - 1024px) */
+.at-attendance-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
 @media (max-width: 1024px) {
   .at-attendance-table th,
   .at-attendance-table td {
@@ -394,7 +378,6 @@
   }
 }
 
-/* Адаптивность для мобильных устройств (768px и меньше) */
 @media (max-width: 768px) {
   .at-attendance-header {
     flex-direction: column;
@@ -409,7 +392,7 @@
   .at-view-tab {
     padding: 6px 8px;
     font-size: 12px;
-    min-width: 0; /* Важно! */
+    min-width: 0;
   }
   
   .at-pf-statistic-btn {
@@ -442,7 +425,7 @@
   .at-semester-tab {
     padding: 6px 8px;
     font-size: 12px;
-    min-width: 0; /* Важно! */
+    min-width: 0;
   }
   
   .at-attendance-percent,
@@ -476,7 +459,6 @@
   }
 }
 
-/* Адаптивность для маленьких мобильных устройств (480px и меньше) */
 @media (max-width: 480px) {
   .at-attendance-table th,
   .at-attendance-table td {
@@ -549,7 +531,6 @@
   }
 }
 
-/* Адаптивность для очень маленьких устройств (360px и меньше) */
 @media (max-width: 360px) {
   .at-attendance-table th,
   .at-attendance-table td {
@@ -605,26 +586,9 @@
   }
 }
 
-/* Стили для скроллбара */
-.at-attendance-scroll-container::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
-}
-
-.at-attendance-scroll-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 2px;
-}
-
-.at-attendance-scroll-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 2px;
-}
-
-/* Исправление для очень узких экранов */
 @media (max-width: 320px) {
   .at-attendance-table-container {
-    margin: 0 -8px; /* Небольшие отрицательные отступы для очень узких экранов */
+    margin: 0 -8px;
     width: calc(100% + 16px);
   }
 }
@@ -634,13 +598,930 @@
     max-width: 170px;
   }
 }
+
 @media (max-width: 480px) {
   .at-subject-name {
     max-width: 70px;
   }
 }
+
 @media (max-width: 360px) {
   .at-subject-name {
     max-width: 50px;
+  }
+}
+
+/* Стили для таблицы посещаемости по предметам */
+.at-subject-attendance-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.at-subject-attendance-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  background: white;
+  table-layout: auto;
+}
+
+.at-subject-attendance-table th {
+  background: #f8fafc;
+  color: #002c9c;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 16px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  min-width: 20px;
+}
+
+.at-subject-attendance-table td {
+  padding: 16px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  word-break: break-word;
+}
+
+/* Фиксированные ширины столбцов */
+.at-subject-attendance-table th.at-subject-attendance-table-column1,
+.at-subject-attendance-table td:nth-child(1) {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.at-subject-attendance-table th:nth-child(2),
+.at-subject-attendance-table td:nth-child(2) {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.at-subject-attendance-table th:nth-child(3),
+.at-subject-attendance-table td:nth-child(3) {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.at-subject-attendance-table th:nth-child(4),
+.at-subject-attendance-table td:nth-child(4) {
+  width: 120px;
+  min-width: 100px;
+  max-width: 120px;
+  white-space: nowrap;
+}
+
+.at-subject-attendance-table th:nth-child(5),
+.at-subject-attendance-table td:nth-child(5) {
+  min-width: 150px;
+  max-width: 200px;
+  white-space: nowrap;
+}
+
+.at-subject-attendance-table th:nth-child(6),
+.at-subject-attendance-table td:nth-child(6) {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+/* Стили для колонок с горизонтальным скроллом внутри ячеек */
+.at-subject-attendance-table td.at-topic-cell,
+.at-subject-attendance-table td.at-reason-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: inline-block;
+  padding: 24px 8px 24px 8px;
+  box-sizing: border-box;
+  height: auto;
+}
+
+/* Скроллбар для темы и причины */
+.at-subject-attendance-table td.at-topic-cell::-webkit-scrollbar,
+.at-subject-attendance-table td.at-reason-cell::-webkit-scrollbar {
+  height: 2px;
+}
+
+.at-subject-attendance-table td.at-topic-cell::-webkit-scrollbar-thumb,
+.at-subject-attendance-table td.at-reason-cell::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.at-subject-attendance-table td.at-topic-cell::-webkit-scrollbar-track,
+.at-subject-attendance-table td.at-reason-cell::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.at-date-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.at-teacher-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.at-reason-cell {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Стили для статус-бабблов в таблице предметов */
+.at-status-bubble.at-subject-status {
+  min-width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.at-status-bubble.at-subject-status:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Стили для состояния когда предмет не выбран */
+.at-no-subject-selected {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px dashed #e2e8f0;
+  border-radius: 16px;
+  padding: 60px 32px;
+  text-align: center;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.at-no-subject-selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #002FA7, #3B82F6, #60A5FA);
+  opacity: 0.6;
+}
+
+.at-no-subject-selected:hover {
+  border-color: #c7d2fe;
+  box-shadow: 
+    0 8px 25px -3px rgba(0, 47, 167, 0.08),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.at-no-subject-selected p {
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.5;
+  position: relative;
+  z-index: 2;
+}
+
+/* Стили для статистики посещаемости */
+.at-attendance-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.at-stat-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+  padding: 24px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.at-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #002FA7, #3B82F6, #60A5FA);
+  opacity: 0.8;
+}
+
+.at-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px -3px rgba(0, 47, 167, 0.15),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: #c7d2fe;
+}
+
+.at-stat-card:nth-child(1)::before {
+  background: linear-gradient(90deg, #002FA7, #3B82F6);
+}
+
+.at-stat-card:nth-child(2)::before {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.at-stat-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.at-stat-value-attendance {
+  font-size: 42px;
+  font-weight: 800;
+  color: #002FA7;
+  margin: 0 0 8px 0;
+  line-height: 1;
+  text-align: center;
+  background: linear-gradient(135deg, #002FA7, #3B82F6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 47, 167, 0.1);
+}
+
+.at-stat-card:nth-child(2) .at-stat-value-attendance {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.at-stat-card:nth-child(3) .at-stat-value-attendance {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.at-stat-label-attendance {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.3;
+  text-align: center;
+  letter-spacing: -0.01em;
+  opacity: 0.9;
+}
+
+/* Стили для всплывающего окна с информацией о посещаемости */
+.at-attendance-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.at-attendance-popup {
+  position: fixed;
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 1001;
+  min-width: 280px;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+.at-attendance-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.at-attendance-popup-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #002c9c;
+}
+
+.at-attendance-popup-close {
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.at-attendance-popup-close:hover {
+  color: #002FA7;
+}
+
+.at-attendance-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.at-attendance-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.at-attendance-info-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.at-attendance-info-label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.at-attendance-info-value {
+  color: #1e293b;
+  font-size: 14px;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+  min-width: 120px;
+}
+
+.at-status-value-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  height: 28px;
+  padding: 0 12px;
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Анимации */
+@keyframes atStatCardAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.at-stat-card {
+  animation: atStatCardAppear 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.at-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.at-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.at-stat-card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes atNoSubjectAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.at-no-subject-selected {
+  animation: atNoSubjectAppear 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Адаптивность для планшетов (768px - 1024px) */
+@media (max-width: 1024px) {
+  .at-subject-attendance-table th,
+  .at-subject-attendance-table td {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(3),
+  .at-subject-attendance-table td:nth-child(3) {
+    min-width: 150px;
+    max-width: 250px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(5),
+  .at-subject-attendance-table td:nth-child(5),
+  .at-subject-attendance-table th:nth-child(6),
+  .at-subject-attendance-table td:nth-child(6) {
+    min-width: 120px;
+    max-width: 180px;
+  }
+  
+  .at-status-bubble.at-subject-status {
+    min-width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .at-attendance-stats {
+    gap: 16px;
+  }
+  
+  .at-stat-card {
+    min-height: 100px;
+    padding: 20px 12px;
+    border-radius: 14px;
+  }
+  
+  .at-stat-value-attendance {
+    font-size: 36px;
+  }
+  
+  .at-stat-label-attendance {
+    font-size: 13px;
+  }
+  
+  .at-no-subject-selected {
+    padding: 50px 28px;
+    border-radius: 14px;
+  }
+  
+  .at-no-subject-selected p {
+    font-size: 15px;
+  }
+}
+
+/* Адаптивность для мобильных устройств (768px и меньше) */
+@media (max-width: 768px) {
+  .at-subject-attendance-table-container {
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+  }
+  
+  .at-subject-attendance-table th,
+  .at-subject-attendance-table td {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+  
+  .at-status-bubble.at-subject-status {
+    min-width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  
+  .at-subject-attendance-table th.at-subject-attendance-table-column1,
+  .at-subject-attendance-table td:nth-child(1) {
+    width: 35px;
+    min-width: 35px;
+    max-width: 35px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(2),
+  .at-subject-attendance-table td:nth-child(2) {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(3),
+  .at-subject-attendance-table td:nth-child(3) {
+    min-width: 120px;
+    max-width: 200px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(4),
+  .at-subject-attendance-table td:nth-child(4) {
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    font-size: 11px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(5),
+  .at-subject-attendance-table td:nth-child(5),
+  .at-subject-attendance-table th:nth-child(6),
+  .at-subject-attendance-table td:nth-child(6) {
+    min-width: 100px;
+    max-width: 150px;
+    font-size: 11px;
+  }
+  
+  .at-attendance-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    max-width: 100%;
+  }
+  
+  .at-stat-card {
+    min-height: 80px;
+    padding: 20px 16px;
+    border-radius: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+  
+  .at-stat-card::before {
+    height: 100%;
+    width: 4px;
+    right: auto;
+    bottom: 0;
+  }
+  
+  .at-stat-value-attendance {
+    font-size: 32px;
+    margin: 0;
+    order: 2;
+  }
+  
+  .at-stat-label-attendance {
+    font-size: 14px;
+    text-align: left;
+    order: 1;
+    flex: 1;
+    margin-right: 16px;
+  }
+  
+  .at-no-subject-selected {
+    padding: 40px 24px;
+    border-radius: 12px;
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+    border-width: 1.5px;
+  }
+  
+  .at-no-subject-selected p {
+    font-size: 15px;
+  }
+  
+  .at-attendance-popup {
+    min-width: 90%;
+    max-width: 90%;
+    left: 5% !important;
+    top: auto !important;
+    bottom: 10%;
+  }
+}
+
+/* Адаптивность для маленьких мобильных устройств (480px и меньше) */
+@media (max-width: 480px) {
+  .at-subject-attendance-table-container {
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+  }
+  
+  .at-subject-attendance-table th,
+  .at-subject-attendance-table td {
+    padding: 8px 3px;
+    font-size: 10px;
+  }
+  
+  .at-status-bubble.at-subject-status {
+    min-width: 18px;
+    height: 18px;
+    font-size: 9px;
+    padding: 0 4px;
+  }
+  
+  .at-subject-attendance-table th.at-subject-attendance-table-column1,
+  .at-subject-attendance-table td:nth-child(1) {
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(2),
+  .at-subject-attendance-table td:nth-child(2) {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(3),
+  .at-subject-attendance-table td:nth-child(3) {
+    min-width: 80px;
+    max-width: 100px;
+    font-size: 9px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(4),
+  .at-subject-attendance-table td:nth-child(4) {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    font-size: 9px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(5),
+  .at-subject-attendance-table td:nth-child(5),
+  .at-subject-attendance-table th:nth-child(6),
+  .at-subject-attendance-table td:nth-child(6) {
+    min-width: 70px;
+    max-width: 100px;
+    font-size: 9px;
+  }
+  
+  .at-attendance-stats {
+    gap: 10px;
+  }
+  
+  .at-stat-card {
+    min-height: 70px;
+    padding: 16px 12px;
+    border-radius: 10px;
+  }
+  
+  .at-stat-value-attendance {
+    font-size: 28px;
+  }
+  
+  .at-stat-label-attendance {
+    font-size: 12px;
+    margin-right: 12px;
+  }
+  
+  .at-no-subject-selected {
+    padding: 32px 20px;
+    border-radius: 10px;
+  }
+  
+  .at-no-subject-selected p {
+    font-size: 14px;
+  }
+  
+  .at-attendance-popup-content {
+    font-size: 13px;
+  }
+  
+  .at-attendance-popup-header h4 {
+    font-size: 16px;
+  }
+  
+  .at-status-value-bubble {
+    min-width: 100px;
+    height: 24px;
+    font-size: 11px;
+  }
+}
+
+/* Адаптивность для очень маленьких устройств (360px и меньше) */
+@media (max-width: 360px) {
+  .at-subject-attendance-table th,
+  .at-subject-attendance-table td {
+    padding: 6px 2px;
+    font-size: 9px;
+  }
+  
+  .at-status-bubble.at-subject-status {
+    min-width: 16px;
+    height: 16px;
+    font-size: 7px;
+    padding: 0 2px;
+  }
+  
+  .at-subject-attendance-table th.at-subject-attendance-table-column1,
+  .at-subject-attendance-table td:nth-child(1) {
+    width: 25px;
+    min-width: 25px;
+    max-width: 25px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(2),
+  .at-subject-attendance-table td:nth-child(2) {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(3),
+  .at-subject-attendance-table td:nth-child(3) {
+    min-width: 60px;
+    max-width: 80px;
+    font-size: 8px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(4),
+  .at-subject-attendance-table td:nth-child(4) {
+    width: 60px;
+    min-width: 60px;
+    max-width: 70px;
+    font-size: 8px;
+  }
+  
+  .at-subject-attendance-table th:nth-child(5),
+  .at-subject-attendance-table td:nth-child(5),
+  .at-subject-attendance-table th:nth-child(6),
+  .at-subject-attendance-table td:nth-child(6) {
+    min-width: 60px;
+    max-width: 70px;
+    font-size: 8px;
+  }
+  
+  .at-stat-card {
+    min-height: 60px;
+    padding: 14px 10px;
+  }
+  
+  .at-stat-value-attendance {
+    font-size: 24px;
+  }
+  
+  .at-stat-label-attendance {
+    font-size: 11px;
+    margin-right: 8px;
+  }
+  
+  .at-no-subject-selected {
+    padding: 24px 16px;
+  }
+  
+  .at-no-subject-selected p {
+    font-size: 13px;
+  }
+}
+
+
+/* Стили для фильтра предметов в разделе посещаемости */
+.at-subject-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  flex-wrap: wrap;
+  overflow-x: hidden;
+}
+
+.at-subject-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.at-subject-filter label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.at-subject-select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  width: 100%;
+  max-width: 300px;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.at-subject-select:focus {
+  outline: none;
+  border-color: #5986f7;
+  box-shadow: 0 0 0 3px rgba(89, 134, 247, 0.1);
+}
+
+/* Адаптивность для планшетов (768px - 1024px) */
+@media (max-width: 1024px) {
+  .at-subject-controls {
+    padding: 0;
+    border-radius: 0;
+    overflow-x: hidden;
+  }
+  
+  .at-subject-select {
+    font-size: 13px;
+  }
+}
+
+/* Адаптивность для мобильных устройств (768px и меньше) */
+@media (max-width: 768px) {
+  .at-subject-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .at-subject-filter {
+    width: 100%;
+  }
+  
+  .at-subject-select {
+    width: 100%;
+    max-width: none;
+    font-size: 12px;
+  }
+}
+
+/* Адаптивность для маленьких мобильных устройств (480px и меньше) */
+@media (max-width: 480px) {
+  .at-subject-controls {
+    padding: 0;
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+    border-radius: 0;
+  }
+  
+  .at-subject-filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .at-subject-filter label {
+    font-size: 12px;
+    text-align: center;
+  }
+  
+  .at-subject-select {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+/* Адаптивность для очень маленьких устройств (360px и меньше) */
+@media (max-width: 360px) {
+  .at-subject-select {
+    font-size: 11px;
   }
 }
