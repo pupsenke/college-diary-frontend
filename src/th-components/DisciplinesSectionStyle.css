@@ -1,0 +1,530 @@
+.ds-disciplines-section {
+  padding: 0;
+  background: transparent;
+  min-height: 500px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.ds-disciplines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.ds-view-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ds-view-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ds-view-tab.ds-active {
+  background: #002FA7;
+  color: white;
+}
+
+.ds-view-tab:hover:not(.ds-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.ds-disciplines-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Стили для вкладки "По семестрам" */
+.ds-semester-controls {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.ds-semester-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.ds-semester-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ds-semester-tab.ds-active {
+  background: #002FA7;
+  color: white;
+}
+
+.ds-semester-tab:hover:not(.ds-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+/* Стили для вкладки "По курсу" */
+.ds-course-controls {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.ds-course-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.ds-course-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ds-course-tab.ds-active {
+  background: #002FA7;
+  color: white;
+}
+
+.ds-course-tab:hover:not(.ds-active) {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.ds-disciplines-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ds-disciplines-table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: white;
+  table-layout: fixed;
+}
+
+.ds-disciplines-table th {
+  background: #f8fafc;
+  color: #002c9c;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 16px 8px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  min-width: 20px;
+  height: 60px;
+  vertical-align: middle;
+}
+
+.ds-disciplines-table td {
+  padding: 16px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  word-break: break-word;
+  vertical-align: middle;
+}
+
+/* Стили для заголовков с переносами */
+.ds-header-text {
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Стили для колонок таблицы */
+.ds-number-column {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.ds-subject-column {
+  min-width: 200px;
+  text-align: left;
+}
+
+.ds-course-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.ds-groups-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.ds-attendance-column {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+
+.ds-number-cell {
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ds-subject-name {
+  color: #002FA7;
+  font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.ds-course-cell {
+  text-align: center;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.ds-groups-cell {
+  text-align: center;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.ds-attendance-percent {
+  text-align: center;
+}
+
+.ds-percent-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  height: 32px;
+  padding: 0 12px;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.ds-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.ds-sort-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.ds-sort-button:hover {
+  background-color: #e2e8f0;
+}
+
+.ds-sort-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.ds-sort-desc {
+  transform: rotate(180deg);
+}
+
+/* Выделение строки */
+
+.ds-discipline-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ds-discipline-row:hover {
+  background-color: #f8fafc;
+}
+
+.ds-discipline-row.ds-selected {
+  background-color: #f0f7ff;
+  border-left: 3px solid #002FA7;
+}
+
+/* Адаптивность для планшетов (768px - 1024px) */
+@media (max-width: 1024px) {
+  .ds-disciplines-table th,
+  .ds-disciplines-table td {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+  
+  .ds-view-tab,
+  .ds-semester-tab,
+  .ds-course-tab {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  
+  .ds-subject-name {
+    min-width: 150px;
+    font-size: 13px;
+  }
+  
+  .ds-percent-bubble {
+    min-width: 60px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .ds-disciplines-table th {
+    height: 50px;
+    font-size: 12px;
+  }
+}
+
+/* Адаптивность для мобильных устройств (768px и меньше) */
+@media (max-width: 768px) {
+  .ds-disciplines-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .ds-view-tabs {
+    width: 100%;
+  }
+  
+  .ds-view-tab {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 0;
+  }
+  
+  .ds-disciplines-table th,
+  .ds-disciplines-table td {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+  
+  .ds-subject-name {
+    min-width: 120px;
+    font-size: 12px;
+  }
+  
+  .ds-semester-tabs,
+  .ds-course-tabs {
+    width: 100%;
+  }
+  
+  .ds-semester-tab,
+  .ds-course-tab {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 0;
+  }
+  
+  .ds-percent-bubble {
+    min-width: 50px;
+    height: 24px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .ds-disciplines-table th {
+    height: 45px;
+    font-size: 11px;
+  }
+
+  .ds-number-column {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+
+  .ds-course-column {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+  }
+
+  .ds-groups-column {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+  }
+
+  .ds-attendance-column {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+  }
+}
+
+/* Адаптивность для маленьких мобильных устройств (480px и меньше) */
+@media (max-width: 480px) {
+  .ds-disciplines-table th,
+  .ds-disciplines-table td {
+    padding: 8px 3px;
+    font-size: 10px;
+  }
+
+  .ds-view-tab {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+  
+  .ds-semester-tab,
+  .ds-course-tab {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+  
+  .ds-subject-name {
+    min-width: 100px;
+    font-size: 10px;
+  }
+  
+  .ds-percent-bubble {
+    min-width: 40px;
+    height: 20px;
+    font-size: 9px;
+    padding: 0 6px;
+    border-radius: 4px;
+  }
+
+  .ds-disciplines-table th {
+    height: 40px;
+    font-size: 9px;
+  }
+
+  .ds-header-text {
+    line-height: 1.1;
+  }
+}
+
+/* Адаптивность для очень маленьких устройств (360px и меньше) */
+@media (max-width: 360px) {
+  .ds-disciplines-table th,
+  .ds-disciplines-table td {
+    padding: 6px 2px;
+    font-size: 9px;
+  }
+  
+  .ds-view-tab {
+    padding: 4px 4px;
+    font-size: 9px;
+  }
+  
+  .ds-semester-tab,
+  .ds-course-tab {
+    padding: 4px 4px;
+    font-size: 9px;
+  }
+  
+  .ds-subject-name {
+    min-width: 80px;
+    font-size: 9px;
+  }
+  
+  .ds-percent-bubble {
+    min-width: 35px;
+    height: 18px;
+    font-size: 8px;
+    padding: 0 4px;
+  }
+
+  .ds-disciplines-table th {
+    height: 35px;
+    font-size: 8px;
+  }
+}

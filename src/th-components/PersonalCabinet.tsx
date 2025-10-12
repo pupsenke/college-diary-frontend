@@ -12,8 +12,15 @@ interface TeacherData {
   disciplines: string[];
 }
 
-export const PersonalCabinet: React.FC = () => {
-  const [isEditing, setIsEditing] = useState(false);
+interface Props {
+  onNavigateToDisciplines?: (disciplineName?: string) => void;
+  onNavigateToGroups?: (disciplineName?: string) => void;
+}
+
+export const PersonalCabinet: React.FC<Props> = ({ 
+  onNavigateToDisciplines, 
+  onNavigateToGroups 
+}) => {
   const { user } = useUser();
   const [teacherData, setTeacherData] = useState<TeacherData>({
     firstName: '',
@@ -23,12 +30,13 @@ export const PersonalCabinet: React.FC = () => {
     specialty: 'Математика и информатика',
     experience: '27 лет',
     disciplines: [
-      'Дипломное проектирование 09.02.07',
-      'МДК 02.01 Технология разработки программного обеспечения',
+      'Разработка программных модулей',
+      'Дипломное проектирование',
       'Операционные системы и среды',
       'Основы разработки программного обеспечения',
-      'ПРАКТИКА ПРОИЗВОДСТВЕННАЯ 09.02.07',
-      'ИНФОРМАЦИОННЫЕ СИСТЕМЫ И ПРОГРАММИРОВАНИЕ'
+      'Технология разработки и защиты баз данных',
+      'Системное программирование',
+      'Компьютерные сети'
     ]
   });
   const [loading, setLoading] = useState(false);
@@ -119,67 +127,21 @@ export const PersonalCabinet: React.FC = () => {
     initializeTeacherData();
   }, [user]);
 
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-      
-      if (!user?.id) {
-        throw new Error('ID пользователя не найден');
-      }
-
-      // Здесь будет логика сохранения данных на сервер
-      const response = await fetch(`http://localhost:8080/api/v1/teachers/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: teacherData.firstName,
-          lastName: teacherData.lastName,
-          middleName: teacherData.middleName,
-          email: teacherData.email
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Ошибка при сохранении данных');
-      }
-
-      setIsEditing(false);
-      console.log('Данные успешно сохранены:', teacherData);
-    } catch (err) {
-      console.error('Ошибка при сохранении:', err);
-      setError('Не удалось сохранить данные');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    // Восстанавливаем оригинальные данные
-    if (user) {
-      const baseData = {
-        firstName: user.name || '',
-        lastName: user.lastName || '',
-        middleName: user.surname || '',
-        email: user.email || 's123456@std.nosu.ru'
-      };
-
-      setTeacherData(prev => ({ ...prev, ...baseData }));
-    }
-  };
-
-  const handleChange = (field: keyof TeacherData, value: string) => {
-    setTeacherData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
   const handlePasswordChange = () => {
     // Логика смены пароля
     console.log('Смена пароля');
+  };
+
+  const handleDisciplineClick = (discipline: string) => {
+    if (onNavigateToGroups) {
+      onNavigateToGroups(discipline);
+    }
+  };
+
+  const handleViewAllDisciplines = () => {
+    if (onNavigateToDisciplines) {
+      onNavigateToDisciplines();
+    }
   };
 
   // Если данные пользователя еще не загружены
@@ -200,91 +162,26 @@ export const PersonalCabinet: React.FC = () => {
           <div className="info-column">
             <div className="info-item">
               <span className="info-label">Фамилия:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={teacherData.lastName}
-                  onChange={(e) => handleChange('lastName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите фамилию"
-                />
-              ) : (
-                <span className="info-value">{teacherData.lastName || 'Не указано'}</span>
-              )}
+              <span className="info-value">{teacherData.lastName || 'Не указано'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Имя:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={teacherData.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите имя"
-                />
-              ) : (
-                <span className="info-value">{teacherData.firstName || 'Не указано'}</span>
-              )}
+              <span className="info-value">{teacherData.firstName || 'Не указано'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Отчество:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={teacherData.middleName}
-                  onChange={(e) => handleChange('middleName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите отчество"
-                />
-              ) : (
-                <span className="info-value">{teacherData.middleName || 'Не указано'}</span>
-              )}
+              <span className="info-value">{teacherData.middleName || 'Не указано'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Эл. почта:</span>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={teacherData.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  className="pc-input"
-                  placeholder="example@email.com"
-                />
-              ) : (
-                <span className="info-value">{teacherData.email}</span>
-              )}
+              <span className="info-value">{teacherData.email}</span>
             </div>
           </div>
         </div>
         
         <div className="change-password-section">
-          {!isEditing ? (
-            <button 
-              className="change-password-btn"
-              onClick={() => setIsEditing(true)}
-            >
-              Редактировать
-            </button>
-          ) : (
-            <div className="action-buttons">
-              <button 
-                className="save-btn"
-                onClick={handleSave}
-                disabled={loading}
-              >
-                {loading ? 'Сохранение...' : 'Сохранить'}
-              </button>
-              <button 
-                className="cancel-btn"
-                onClick={handleCancel}
-                disabled={loading}
-              >
-                Отмена
-              </button>
-            </div>
-          )}
           <button 
-            className="change-password-btn secondary"
+            className="change-password-btn"
             onClick={handlePasswordChange}
           >
             Сменить пароль
@@ -308,11 +205,18 @@ export const PersonalCabinet: React.FC = () => {
       </div>
 
       <div className="disciplines-section">
-        <label className="disciplines-label">Дисциплины:</label>
+        <div className="disciplines-header">
+          <label className="disciplines-label">Дисциплины:</label>
+        </div>
         <div className="disciplines-list">
           {teacherData.disciplines.map((discipline, index) => (
-            <div key={index} className="discipline-item">
+            <div 
+              key={index} 
+              className="discipline-item clickable"
+              onClick={() => handleDisciplineClick(discipline)}
+            >
               {discipline}
+              <span className="discipline-arrow">→</span>
             </div>
           ))}
         </div>

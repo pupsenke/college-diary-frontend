@@ -5,6 +5,7 @@ import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
 import { UserProvider } from './context/UserContext';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { TeacherDashboard } from './th-components/TeacherDashboard';
 
 function App() {
   return (
