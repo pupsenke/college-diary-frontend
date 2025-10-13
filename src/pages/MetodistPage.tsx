@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Header } from '../st-components/Header';
+import { Header } from '../st-components/HeaderStudent';
 import { useUser } from '../context/UserContext';
 import './MetodistStyle.css';
 import { useNavigate } from 'react-router-dom';
