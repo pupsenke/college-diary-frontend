@@ -1,35 +1,36 @@
 /* ScheduleSection.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 * {
   font-family: 'Montserrat', sans-serif !important;
 }
 
-.schedule-section {
+.schedule-section-th {
   border-radius: 12px;
   margin: 0 auto;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
   padding: 18px 20px;
   box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
-.day-schedule {
+.day-schedule-th {
   margin-bottom: 20px;
 }
 
-.schedule-date {
+.schedule-date-th {
   font-weight: 800;
   font-size: 18px;
   margin-bottom: 10px;
   color: #0033a0;
 }
 
-.lesson-row {
+.lesson-row-th {
   display: flex;
   gap: 16px;
-  justify-content: stretch;
+  justify-content: space-between;
   background: #f8fafc;
   color: #0033a0;
   padding: 10px 15px;
@@ -38,133 +39,59 @@
   align-items: center;
   font-weight: 600;
   font-size: 16px;
-  width: auto;
+  width: 100%;
   border: 1px solid #0033a0;
   min-height: 70px;
 }
 
-.lesson-time {
+.lesson-time-th {
   flex: 0 0 120px;
   font-weight: 400;
   color: #0033a0;
 }
 
-.lesson-subject {
+.lesson-subject-group-th {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  font-weight: 600;
-  color: #0033a0;
   text-align: center;
 }
 
-.lesson-teacher-room {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  text-align: right;
-  font-weight: 400;
-  font-size: 15px;
-  gap: 2px;
-  white-space: nowrap;
-  padding-left: 10px;
-}
-
-.lesson-group-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-.lesson-group-teacher-room {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  width: 100%;
-}
-
-/* Стили для разделенных предметов */
-.separated-lesson-row {
-  background: #f8fafc;
-  color: #0033a0;
-  padding: 10px 15px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-  width: 100%;
-  border: 1px solid #0033a0;
-  min-height: 70px;
-}
-
-.separated-lesson-item {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  align-items: center;
-}
-
-.separated-lesson-item:not(:last-child) {
-  border-bottom: 1px solid #0033a0;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-}
-
-.separated-time {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  font-weight: 400;
-  text-align: left;
-  white-space: nowrap;
-  min-width: 140px;
-}
-
-.separated-subject {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 15px;
-  border-radius: 12px;
-  white-space: normal;
+.lesson-subject-th {
   font-weight: 600;
   color: #0033a0;
-  text-align: center;
-  margin: 0 10px;
+  margin-bottom: 4px;
 }
 
-.separated-teacher-room {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  text-align: right;
-  font-weight: 400;
+.lesson-group-th {
+  font-weight: 600;
+  color: #0033a0;
   font-size: 15px;
-  line-height: 1.4;
-  gap: 2px;
-  white-space: nowrap;
-  padding-left: 10px;
 }
 
-.no-classes {
+.lesson-room-th {
+  flex: 0 0 auto;
+  font-weight: 400;
+  color: #0033a0;
+  font-size: 14px;
+  margin-left: auto;
+}
+
+
+.no-classes-th {
   background: #f8fafc;
   color: #0033a0;
-  padding: 10px;
+  padding: 20px;
   border-radius: 12px;
   font-weight: 600;
   font-size: 16px;
   text-align: center;
-  border: 1px solid #0033a0;
   height: 70px;
   display: flex;
   justify-content: center;
   align-items: center;
+  border: 1px solid #0033a0;
+
 }
 
 /* Стили для фильтра Полное расписание / Расписание на сегодня */
@@ -235,18 +162,17 @@
 }
 
 /* Стили для расписания на сегодня */
-.today-schedule {
+.today-schedule-th {
   background: #f8fafc;
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
 }
 
-.today-lessons {
+.today-lessons-th {
   margin-bottom: 30px;
 }
 
-.today-lesson {
+.today-lesson-th {
   display: flex;
   gap: 16px;
   justify-content: stretch;
@@ -263,70 +189,53 @@
   min-height: 70px;
 }
 
-.today-time {
+.today-time-th {
   flex: 0 0 120px;
   font-weight: 400;
   color: #0033a0;
 }
 
-.today-subject {
-  flex: 1;
-  font-weight: 600;
-  color: #0033a0;
-  text-align: center;
-}
-
-.today-teacher-room {
-  flex: 0 0 auto;
+.today-subject-group-th {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  text-align: right;
-  font-weight: 400;
-  font-size: 15px;
-  gap: 2px;
-  white-space: nowrap;
-  padding-left: 10px;
+  flex: 1;
+  text-align: center;
 }
 
-.today-separated-lesson {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #e2e8f0;
-}
-
-.today-subjects {
-  margin-top: 10px;
-}
-
-.today-subject-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.today-subject-item:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.today-subject-name {
+.today-subject-th {
   flex: 1;
   font-weight: 600;
   color: #0033a0;
+  text-align: center;
 }
 
-.today-no-classes {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
+.today-group-th {
   font-weight: 600;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  color: #0033a0;
+  font-size: 15px;
+}
+
+.today-room-th {
+  flex: 0 0 auto;
+  font-weight: 400;
+  color: #0033a0;
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.today-no-classes-th {
+  background: #f8fafc;
+  color: #0033a0;
+  padding: 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #0033a0;
 }
 
 /* Стили для блока "Следующая пара" */
@@ -334,7 +243,7 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .next-lesson-title {
@@ -342,7 +251,6 @@
   font-size: 18px;
   color: #0033a0;
   margin-bottom: 15px;
-  margin-top: 0;
 }
 
 .next-lesson-card {
@@ -364,7 +272,14 @@
   margin-bottom: 5px;
 }
 
-.next-lesson-teacher-room {
+.next-lesson-group {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.next-lesson-room {
   font-size: 14px;
   color: #64748b;
 }
@@ -390,74 +305,26 @@
   /* Адаптация для обычных пар */
   .lesson-row {
     gap: 8px;
-    padding: 8px 10px;
-    min-height: 60px;
+    padding: 12px 10px;
     font-size: 14px;
+    flex-direction: column;
   }
 
   .lesson-time {
-    flex: 0 0 100px;
+    flex: none;
     font-size: 13px;
-    min-width: 100px;
-    justify-content: center;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .lesson-content {
+    width: 100%;
     text-align: center;
   }
 
-  .lesson-subject {
-    flex: 1 1 auto;
-    padding: 6px 8px;
-    font-size: 13px;
-    margin: 0 5px;
-    text-align: center;
-  }
-
-  .lesson-teacher-room {
-    flex: 0 0 120px;
-    font-size: 12px;
-    padding-left: 5px;
-    align-items: flex-end;
-    text-align: right;
-    gap: 1px;
-  }
-
-  /* Адаптация для разделенных пар */
-  .separated-lesson-row {
-    padding: 8px 10px;
-    min-height: 60px;
-  }
-
-  .separated-lesson-item {
-    gap: 8px;
-  }
-
-  .separated-time {
-    flex: 0 0 100px;
-    font-size: 13px;
-    min-width: 100px;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .separated-subject {
-    flex: 1 1 auto;
-    padding: 6px 8px;
-    font-size: 13px;
-    margin: 0 5px;
-    text-align: center;
-  }
-
-  .separated-teacher-room {
-    flex: 0 0 120px;
-    font-size: 12px;
-    padding-left: 5px;
-    align-items: flex-end;
-    text-align: right;
-    gap: 1px;
-  }
-
-  .separated-lesson-item:not(:last-child) {
-    padding-bottom: 6px;
-    margin-bottom: 6px;
+  .lesson-details {
+    align-items: center;
   }
 
   /* Адаптация для фильтра */
@@ -491,25 +358,21 @@
     padding: 15px;
   }
 
-  .today-lesson,
-  .today-separated-lesson {
+  .today-lesson {
     flex-direction: column;
     gap: 10px;
     text-align: center;
   }
 
   .today-time,
-  .today-subject,
-  .today-teacher-room {
+  .today-content {
     flex: none;
     width: 100%;
     text-align: center;
   }
 
-  .today-subject-item {
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
+  .today-details {
+    align-items: center;
   }
 
   .next-lesson {
@@ -532,30 +395,9 @@
     font-size: 15px;
   }
 
-  .lesson-row,
-  .separated-lesson-row {
-    padding: 6px 8px;
+  .lesson-row {
+    padding: 10px 8px;
     border-radius: 6px;
-    min-height: 55px;
-  }
-
-  .lesson-time,
-  .separated-time {
-    flex: 0 0 90px;
-    font-size: 12px;
-    min-width: 90px;
-  }
-
-  .lesson-subject,
-  .separated-subject {
-    font-size: 12px;
-    padding: 4px 6px;
-  }
-
-  .lesson-teacher-room,
-  .separated-teacher-room {
-    flex: 0 0 110px;
-    font-size: 11px;
   }
 
   .filter-btn,
@@ -583,30 +425,6 @@
 
   .schedule-date {
     font-size: 14px;
-  }
-
-  .lesson-row,
-  .separated-lesson-row {
-    padding: 5px 6px;
-    min-height: 50px;
-  }
-
-  .lesson-time,
-  .separated-time {
-    flex: 0 0 80px;
-    font-size: 11px;
-    min-width: 80px;
-  }
-
-  .lesson-subject,
-  .separated-subject {
-    font-size: 11px;
-  }
-
-  .lesson-teacher-room,
-  .separated-teacher-room {
-    flex: 0 0 100px;
-    font-size: 10px;
   }
 
   .filter-btn,

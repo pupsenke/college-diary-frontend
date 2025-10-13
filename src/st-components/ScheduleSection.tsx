@@ -144,7 +144,7 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
     }
     groups[key].lessons.push(lesson);
   }
-  // Правильная сортировка по времени начала
+  // сортировка по времени начала
   return Object.values(groups).sort((a, b) => 
     timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
   );
