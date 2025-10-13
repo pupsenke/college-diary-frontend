@@ -5,6 +5,7 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
+/*стиль для блока полное расписание*/
 .schedule-section {
   border-radius: 12px;
   margin: 0 auto;
@@ -83,8 +84,22 @@
   align-items: flex-end;
   width: 100%;
 }
+.no-classes {
+  background: #f8fafc;
+  color: #0033a0;
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  border: 1px solid #0033a0;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-/* Стили для разделенных предметов */
+/* стили для разделенных предметов (пары которые проводятся в одно время в один день, по подгруппам) */
 .separated-lesson-row {
   background: #f8fafc;
   color: #0033a0;
@@ -152,22 +167,222 @@
   padding-left: 10px;
 }
 
-.no-classes {
-  background: #f8fafc;
-  color: #0033a0;
-  padding: 10px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 16px;
-  text-align: center;
-  border: 1px solid #0033a0;
-  height: 70px;
+/* стили для модульного окна */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
+  padding: 20px;
 }
 
-/* Стили для фильтра Полное расписание / Расписание на сегодня */
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #0033a0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #0033a0;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.lesson-info {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.info-value {
+  color: #0033a0;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.performance-section,
+.attendance-section {
+  margin-bottom: 25px;
+}
+
+.performance-section h3,
+.attendance-section h3 {
+  color: #0033a0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  border-bottom: 2px solid #0033a0;
+  padding-bottom: 5px;
+}
+
+.stat-item {
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  width: auto;
+}
+
+.stat-label {
+  display: block;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0033a0;
+}
+
+.grades-list h4,
+.attendance-list h4 {
+  color: #0033a0;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.grade-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 10px;
+  background: #f8fafc;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border-left: 4px solid #002FA7;
+}
+
+.grade-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.grade-value {
+  font-weight: 700;
+  color: #0033a0;
+  margin: 0 15px;
+}
+
+.grade-date {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.attendance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}
+
+.attendance-item.attended {
+  background: #f0f9ff;
+  border-left: 4px solid #10b981;
+}
+
+.attendance-item.missed {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+}
+
+.attendance-date {
+  font-weight: 500;
+}
+
+.attendance-status {
+  font-weight: 600;
+  margin: 0 10px;
+}
+
+.attendance-item.attended .attendance-status {
+  color: #10b981;
+}
+
+.attendance-item.missed .attendance-status {
+  color: #ef4444;
+}
+
+.attendance-reason {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 30px;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+
+
+/* стили для фильтра полное расписание/расписание на сегодня */
 .schedule-filter {
   display: flex;
   background: #f8fafc;
@@ -234,7 +449,7 @@
   color: #002FA7;
 }
 
-/* Стили для расписания на сегодня */
+/* стили для блока расписания на сегодня */
 .today-schedule {
   background: #f8fafc;
   border-radius: 12px;
@@ -329,7 +544,7 @@
   border: 1px solid #e2e8f0;
 }
 
-/* Стили для блока "Следующая пара" */
+/* стили для блока следующая пара в блоке расписание на сегодня */
 .next-lesson {
   background: white;
   border-radius: 8px;
@@ -374,7 +589,7 @@
   color: #64748b;
 }
 
-/* Мобильная адаптация */
+/* адаптация под мобильные устройства */
 @media (max-width: 768px) {
   .schedule-section {
     padding: 12px 15px;
@@ -387,7 +602,39 @@
     margin-bottom: 8px;
   }
 
-  /* Адаптация для обычных пар */
+  /* адаптация модального окна */
+  .modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    padding: 15px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
+  
+  .performance-stats,
+  .attendance-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .grade-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .attendance-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  /* адаптация для обычных пар (блок полное расписание) */
   .lesson-row {
     gap: 8px;
     padding: 8px 10px;
@@ -420,7 +667,7 @@
     gap: 1px;
   }
 
-  /* Адаптация для разделенных пар */
+  /* адаптация для разделенных пар */
   .separated-lesson-row {
     padding: 8px 10px;
     min-height: 60px;
@@ -460,7 +707,7 @@
     margin-bottom: 6px;
   }
 
-  /* Адаптация для фильтра */
+  /* адаптация фильтров */
   .schedule-filter,
   .view-tabs {
     flex-direction: column;
@@ -474,7 +721,7 @@
     font-size: 14px;
   }
 
-  /* Адаптация для "нет пар" */
+  /* адаптация для "нет пар" */
   .no-classes {
     height: auto;
     min-height: 50px;
@@ -486,7 +733,7 @@
     margin-bottom: 16px;
   }
 
-  /* Адаптация для расписания на сегодня */
+  /* адаптация для блока расписания на сегодня */
   .today-schedule {
     padding: 15px;
   }
@@ -575,7 +822,6 @@
   }
 }
 
-/* Для очень маленьких экранов */
 @media (max-width: 360px) {
   .schedule-section {
     padding: 8px 10px;

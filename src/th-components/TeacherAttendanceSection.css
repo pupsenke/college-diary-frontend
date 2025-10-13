@@ -1,0 +1,688 @@
+/* TeacherAttendanceSection.css */
+.teacher-attendance-section {
+  background: transparent;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  margin-bottom: 0px;
+}
+
+/* Заголовок */
+.attendance-header {
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.attendance-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.attendance-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.group-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #002FA7;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.subject-title {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 400;
+  line-height: 1.1;
+  max-width: 200px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: box;
+  -webkit-line-clamp: 2;
+  -moz-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  white-space: normal;
+  text-align: left;
+}
+
+.attendance-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* Кнопки */
+.gradient-btn {
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.gradient-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
+}
+
+.set-grades-btn {
+  min-width: 140px;
+}
+
+.back-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: rgba(0, 47, 167, 0.1);
+}
+
+/* Фильтр семестров */
+.semester-filter {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.semester-btn {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #64748b;
+}
+
+.semester-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.semester-btn:hover:not(.disabled) {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.semester-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+}
+
+.lock-icon {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+/* Таблица - ОСНОВНЫЕ ИСПРАВЛЕНИЯ */
+.attendance-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  white-space: nowrap;
+}
+
+.attendance-table-wrapper {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: visible; 
+}
+
+.attendance-table {
+  width: auto;
+  min-width: max-content;
+  border-collapse: collapse;
+  background: white;
+  table-layout: fixed;
+}
+
+.attendance-table th {
+  background: #f8fafc;
+  color: #002c9c;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  user-select: none;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.attendance-table td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Колонки */
+.column-number {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  text-align: center;
+  position: sticky;
+  left: 0;
+  background: #f8fafc;
+  z-index: 5;
+}
+
+.column-name {
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  text-align: left;
+  position: sticky;
+  left: 60px;
+  background: white;
+  z-index: 5;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.column-date {
+  min-width: 80px;
+  max-width: 80px;
+  cursor: pointer;
+  position: relative;
+}
+
+.column-date:hover::after {
+  content: "Двойной клик для редактирования даты";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(99, 153, 254, 0.3);
+  color: #002FA7;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.column-add-date {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  position: sticky;
+  right: 0;
+  background: #f8fafc;
+  z-index: 5;
+}
+
+/* Ячейки */
+.cell-number {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 2;
+}
+
+.cell-name {
+  text-align: left;
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 13px;
+  padding: 8px 12px;
+  position: sticky;
+  left: 60px;
+  background: white;
+  z-index: 2;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.cell-status {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  min-width: 40px;
+  height: 40px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 13px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.cell-status:hover {
+  outline: 1px solid #002FA7;
+  border-color: transparent;
+  transform: none;
+}
+
+.cell-status:hover::after {
+  content: "Клик: изменить статус | Двойной клик: изменить дату";
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(99, 153, 254, 0.3);
+  color: #002FA7;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.cell-status.editing {
+  border-color: #002FA7;
+  background: white !important;
+}
+
+.cell-add {
+  background: #f8fafc;
+  position: sticky;
+  right: 0;
+  z-index: 2;
+}
+
+/* Inputs */
+.status-input,
+.date-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  position: relative;
+}
+
+.status-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+  text-align: center;
+}
+
+.date-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+  text-align: center;
+}
+
+.date-input {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Подсказки для инпутов */
+.status-input-container,
+.date-input-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.status-input-container::after,
+.date-input-container::after {
+  content: "";
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.status-input:focus + .status-input-container::after,
+.date-input:focus + .date-input-container::after {
+  opacity: 1;
+}
+
+.status-input-container::after {
+  content: "п - присутствует | у - уважительная | б - больничный | н - отсутствие";
+}
+
+.date-input-container::after {
+  content: "Формат: день.месяц (например: 05.09)";
+}
+
+/* Кнопка добавления даты */
+.add-date-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px dashed #cbd5e1;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.add-date-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f4ff;
+}
+
+.add-date-btn:hover::after {
+  content: "Добавить новую дату";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+/* Модальные окна */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.modal-content h3 {
+  margin: 0 0 16px 0;
+  color: #002FA7;
+  font-size: 18px;
+}
+
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.date-inputs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.date-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-input-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #002FA7;
+}
+
+.date-input-group input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.date-input-group input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  border-color: #64748b;
+  background: #f8fafc;
+}
+
+/* Стили для скроллбара - ТОЛЬКО ГОРИЗОНТАЛЬНЫЙ */
+.attendance-table-wrapper::-webkit-scrollbar {
+  height: 20px;
+}
+
+.attendance-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.attendance-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.attendance-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .teacher-attendance-section {
+    padding: 12px;
+  }
+  
+  .attendance-title-container {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .group-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .subject-title {
+    max-width: 100%;
+    -webkit-line-clamp: 3;
+    -moz-line-clamp: 3;
+    line-clamp: 3;
+  }
+  
+  .attendance-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .semester-filter {
+    flex-wrap: wrap;
+  }
+  
+  .modal-content {
+    min-width: 90vw;
+    margin: 20px;
+  }
+  
+  .date-inputs {
+    flex-direction: column;
+  }
+
+  .cell-name {
+    font-size: 12px;
+    padding: 6px 8px;
+    left: 50px;
+  }
+
+  .cell-number {
+    font-size: 12px;
+    left: 0;
+    width: 50px;
+    min-width: 50px;
+  }
+
+  .cell-status {
+    font-size: 12px;
+    min-width: 35px;
+    height: 35px;
+  }
+
+  .column-name {
+    left: 50px;
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .column-number {
+    left: 0;
+    width: 50px;
+    min-width: 50px;
+  }
+
+  /* Скрываем подсказки на мобильных */
+  .column-date:hover::after,
+  .cell-status:hover::after,
+  .add-date-btn:hover::after,
+  .status-input-container::after,
+  .date-input-container::after {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .back-button,
+  .set-grades-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cell-name {
+    font-size: 11px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 6px 4px;
+    left: 40px;
+  }
+
+  .cell-number {
+    font-size: 11px;
+    width: 40px;
+    min-width: 40px;
+    left: 0;
+  }
+
+  .cell-status {
+    font-size: 11px;
+    min-width: 30px;
+    height: 30px;
+  }
+
+  .column-name {
+    left: 40px;
+    width: 150px;
+    min-width: 150px;
+  }
+
+  .column-number {
+    left: 0;
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .column-date {
+    min-width: 70px;
+    max-width: 70px;
+  }
+}
