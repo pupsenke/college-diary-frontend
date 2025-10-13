@@ -6,6 +6,7 @@ import { TeacherPage } from './pages/TeacherPage';
 import { UserProvider } from './context/UserContext';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { TeacherDashboard } from './th-components/TeacherDashboard';
+import { MetodistPage } from './pages/MetodistPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/student" element={<StudentPage />} />
           <Route path="/teacher" element={<TeacherPage />} />
+          <Route path="/metodist" element={<MetodistPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<LoginPage />} />
         </Routes>

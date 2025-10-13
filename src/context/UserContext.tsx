@@ -6,11 +6,12 @@ export interface User {
   surname: string;
   lastName: string;
   login: string;
-  userType: 'student' | 'teacher'; // Добавляем тип пользователя
+  userType: 'student' | 'teacher' | 'metodist'; // Добавляем тип пользователя
   numberGroup?: number; // Только для студентов
   disciplinesCount?: number; // для преподавателей
   groupsCount?: number; // для преподавателей
   email?: string; // для преподавателей
+  position?: string; // для методиста
 }
 
 interface UserContextType {

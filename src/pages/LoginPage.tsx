@@ -12,13 +12,11 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { setUser } = useUser();
 
-// комментарий проверка
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
 
-    // комментарий
     try {
       const studentResponse = await fetch(
         `http://localhost:8080/api/v1/students/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
@@ -43,30 +41,51 @@ export const LoginPage: React.FC = () => {
         }
       }
 
-      // Если студент не найден, пробуем как преподаватель
-      const teacherResponse = await fetch(
-        `http://localhost:8080/api/v1/teachers/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
+      // если студент не найден, проверяем сотрудника
+      const staffResponse = await fetch(
+        `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
 
-      if (teacherResponse.ok) {
-        const teacherData = await teacherResponse.json();
-        if (teacherData && teacherData.id) {
+      if (staffResponse.ok) {
+        const staffData = await staffResponse.json();
+        if (staffData && staffData.id) {
+          // тип пользователя на основе должности
+          let userType: 'teacher' | 'metodist' = 'teacher';
+          let positionName = '';
+          
+          if (staffData.staffPosition && staffData.staffPosition.length > 0) {
+            positionName = staffData.staffPosition[0].name;
+            
+            if (positionName === 'Методист' || positionName.toLowerCase().includes('методист')) {
+              userType = 'metodist';
+            } else if (positionName === 'Преподаватель' || positionName.toLowerCase().includes('преподаватель')) {
+              userType = 'teacher';
+            }
+          }
+
           const userData = {
-            id: teacherData.id,
-            name: teacherData.name,
-            surname: teacherData.surname,
-            lastName: teacherData.lastName,
-            login: teacherData.login,
-            userType: 'teacher' as const
+            id: staffData.id,
+            name: staffData.name,
+            surname: staffData.lastName, 
+            lastName: staffData.patronymic, 
+            login: staffData.login,
+            position: positionName,
+            userType: userType
           };
           
           setUser(userData);
-          navigate("/teacher", { replace: true });
+          
+          // перенаправляем в зависимости от типа пользователя
+          if (userType === 'metodist') {
+            navigate("/metodist", { replace: true });
+          } else {
+            navigate("/teacher", { replace: true });
+          }
           return;
         }
       }
 
-      // Если оба запроса не прошли
+      // если оба запроса не прошли
       setErrorMessage("Неверный логин или пароль");
       
     } catch (err) {
