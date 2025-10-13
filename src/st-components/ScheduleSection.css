@@ -5,6 +5,7 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
+/*стиль для блока полное расписание*/
 .schedule-section {
   border-radius: 12px;
   margin: 0 auto;
@@ -83,8 +84,22 @@
   align-items: flex-end;
   width: 100%;
 }
+.no-classes {
+  background: #f8fafc;
+  color: #0033a0;
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  border: 1px solid #0033a0;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-/* Стили для разделенных предметов */
+/* стили для разделенных предметов (пары которые проводятся в одно время в один день, по подгруппам) */
 .separated-lesson-row {
   background: #f8fafc;
   color: #0033a0;
@@ -152,22 +167,7 @@
   padding-left: 10px;
 }
 
-.no-classes {
-  background: #f8fafc;
-  color: #0033a0;
-  padding: 10px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 16px;
-  text-align: center;
-  border: 1px solid #0033a0;
-  height: 70px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Стили для модального окна */
+/* стили для модульного окна */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -380,41 +380,9 @@
   border-radius: 8px;
 }
 
-/* Адаптация для мобильных */
-@media (max-width: 768px) {
-  .modal-content {
-    margin: 10px;
-    max-height: 90vh;
-  }
-  
-  .modal-header {
-    padding: 15px;
-  }
-  
-  .modal-body {
-    padding: 15px;
-  }
-  
-  .performance-stats,
-  .attendance-stats {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  
-  .grade-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-  
-  .attendance-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-}
 
-/* Стили для фильтра Полное расписание / Расписание на сегодня */
+
+/* стили для фильтра полное расписание/расписание на сегодня */
 .schedule-filter {
   display: flex;
   background: #f8fafc;
@@ -481,7 +449,7 @@
   color: #002FA7;
 }
 
-/* Стили для расписания на сегодня */
+/* стили для блока расписания на сегодня */
 .today-schedule {
   background: #f8fafc;
   border-radius: 12px;
@@ -576,7 +544,7 @@
   border: 1px solid #e2e8f0;
 }
 
-/* Стили для блока "Следующая пара" */
+/* стили для блока следующая пара в блоке расписание на сегодня */
 .next-lesson {
   background: white;
   border-radius: 8px;
@@ -621,7 +589,7 @@
   color: #64748b;
 }
 
-/* Мобильная адаптация */
+/* адаптация под мобильные устройства */
 @media (max-width: 768px) {
   .schedule-section {
     padding: 12px 15px;
@@ -634,7 +602,39 @@
     margin-bottom: 8px;
   }
 
-  /* Адаптация для обычных пар */
+  /* адаптация модального окна */
+  .modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    padding: 15px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
+  
+  .performance-stats,
+  .attendance-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .grade-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .attendance-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  /* адаптация для обычных пар (блок полное расписание) */
   .lesson-row {
     gap: 8px;
     padding: 8px 10px;
@@ -667,7 +667,7 @@
     gap: 1px;
   }
 
-  /* Адаптация для разделенных пар */
+  /* адаптация для разделенных пар */
   .separated-lesson-row {
     padding: 8px 10px;
     min-height: 60px;
@@ -707,7 +707,7 @@
     margin-bottom: 6px;
   }
 
-  /* Адаптация для фильтра */
+  /* адаптация фильтров */
   .schedule-filter,
   .view-tabs {
     flex-direction: column;
@@ -721,7 +721,7 @@
     font-size: 14px;
   }
 
-  /* Адаптация для "нет пар" */
+  /* адаптация для "нет пар" */
   .no-classes {
     height: auto;
     min-height: 50px;
@@ -733,7 +733,7 @@
     margin-bottom: 16px;
   }
 
-  /* Адаптация для расписания на сегодня */
+  /* адаптация для блока расписания на сегодня */
   .today-schedule {
     padding: 15px;
   }
@@ -822,7 +822,6 @@
   }
 }
 
-/* Для очень маленьких экранов */
 @media (max-width: 360px) {
   .schedule-section {
     padding: 8px 10px;

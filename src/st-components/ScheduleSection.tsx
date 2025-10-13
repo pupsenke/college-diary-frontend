@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './ScheduleSection.css';
 
+
+// типы для отображения
 type Lesson = {
   id: number;
   startTime: string;
@@ -22,7 +24,6 @@ type GroupedSlot = {
   lessons: Lesson[];
 };
 
-// Типы для данных успеваемости и посещаемости
 type PerformanceData = {
   subject: string;
   teacher: string;
@@ -46,12 +47,12 @@ type AttendanceData = {
   }[];
 };
 
-// Заглушки базы данных
+// заглушки базы данных (затем парсинг)
 const performanceData: Record<string, PerformanceData> = {
   "Системное программирование": {
     subject: "Системное программирование",
     teacher: "Иванов А.",
-    totalHours: 48, //парсинг
+    totalHours: 48,
     attendedHours: 42,
     attendancePercentage: 87.5, //само должно рассчитываться расчитывается из посещения
     grades: [
@@ -80,7 +81,7 @@ const attendanceData: Record<string, AttendanceData> = {
   }
 };
 
-// Компонент модального окна
+// модальное окно
 const LessonModal: React.FC<{
   lesson: Lesson;
   isOpen: boolean;
@@ -172,6 +173,7 @@ const LessonModal: React.FC<{
   );
 };
 
+// расписание верхней и нижней недели с заглушками базы данных
 const upperWeekData: DaySchedule[] = [
   {
     date: { weekday: 'Понедельник', date: '22.09.2025' },
@@ -278,13 +280,13 @@ const lowerWeekData: DaySchedule[] = [
   },
 ];
 
-// Функция для преобразования времени в минуты для корректной сортировки
+// функция для преобразования времени в минуты для корректной сортировки
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 }
 
-// Группировка уроков по интервалу времени
+// группировка уроков по интервалу времени
 function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   const groups: Record<string, GroupedSlot> = {};
   for (const lesson of lessons) {
@@ -300,7 +302,7 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   );
 }
 
-// Обновленный компонент ScheduleView с поддержкой клика
+// отображение полного расписание с поддержкой клика для открытия модального окна
 const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -388,7 +390,7 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData 
   );
 };
 
-// Обновленный TodayScheduleView с поддержкой клика
+// отображение расписания на сегодня с поддержкой клика для открытия модального окна
 const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -452,7 +454,7 @@ const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ schedule
           )}
         </div>
         
-        {/* Блок "Следующая пара" */}
+        {/* блок следующая пара */}
         {todaySchedule.lessons.length > 0 && (
           <div className="next-lesson">
             <h3 className="next-lesson-title">Следующая пара</h3>
@@ -505,10 +507,9 @@ const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ schedule
 export const ScheduleSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upper' | 'lower'>('upper');
   const [viewMode, setViewMode] = useState<'full' | 'today'>('full');
-
+  // фильтр полное расписание/расписание на сегодня
   return (
     <div>
-      {/* Фильтр Полное расписание / Расписание на сегодня */}
       <div className="schedule-filter">
         <button 
           className={`filter-btn ${viewMode === 'full' ? 'active' : ''}`}
@@ -524,7 +525,7 @@ export const ScheduleSection: React.FC = () => {
         </button>
       </div>
 
-      {/* Вкладки верхняя/нижняя неделя (только для полного расписания) */}
+      {/* фильтр верхняя/нижняя неделя (только для полного расписания) */}
       {viewMode === 'full' && (
         <div className="view-tabs">
           <button 
@@ -542,7 +543,7 @@ export const ScheduleSection: React.FC = () => {
         </div>
       )}
       
-      {/* Отображение расписания в зависимости от выбранного режима */}
+      {/* отображение расписания в зависимости от выбранного режима */}
       {viewMode === 'full' ? (
         activeTab === 'upper' ? (
           <ScheduleView scheduleData={upperWeekData} />

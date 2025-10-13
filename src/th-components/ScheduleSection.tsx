@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './ScheduleSection.css';
 
+
+// типы для отображения
 type Lesson = {
   id: number;
   startTime: string;
@@ -112,13 +114,13 @@ const lowerWeekData: DaySchedule[] = [
   },
 ];
 
-// Функция для преобразования времени в минуты для корректной сортировки
+// функция для преобразования времени в минуты для корректной сортировки
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 }
 
-// Группировка уроков по интервалу времени
+// группировка уроков по интервалу времени
 function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   const groups: Record<string, GroupedSlot> = {};
   for (const lesson of lessons) {
@@ -136,24 +138,24 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
 
 const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
   return (
-    <div className="schedule-section-th">
+    <div className="schedule-section">
       {scheduleData.map(({ date, lessons, noClassesText }: DaySchedule) => (
-        <div key={date.weekday + date.date} className="day-schedule-th">
-          <h3 className="schedule-date-th">{date.weekday} {date.date}</h3>
+        <div key={date.weekday + date.date} className="day-schedule">
+          <h3 className="schedule-date">{date.weekday} {date.date}</h3>
 
           {lessons.length > 0 ? (
             lessons.map((lesson: Lesson) => (
-              <div key={lesson.id} className="lesson-row-th">
-                <div className="lesson-time-th">{lesson.startTime} - {lesson.endTime}</div>
+              <div key={lesson.id} className="lesson-row">
+                <div className="lesson-time">{lesson.startTime} - {lesson.endTime}</div>
                 <div className="lesson-subject-group-th">
-                  <div className="lesson-subject-th">{lesson.subject}</div>
+                  <div className="lesson-subject">{lesson.subject}</div>
                   <div className="lesson-group-th">{lesson.group}</div>
                 </div>
                 {lesson.room && <div className="lesson-room-th">{lesson.room}</div>}
               </div>
             ))
           ) : (
-            <div className="no-classes-th">{noClassesText}</div>
+            <div className="no-classes">{noClassesText}</div>
           )}
         </div>
       ))}
@@ -162,29 +164,27 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData 
 };
 
 const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
-  // Для демонстрации возьмем первый день как "сегодня"
   const todaySchedule = scheduleData[1]; 
-  
   return (
-    <div className="today-schedule-th">
-      <div className="today-lessons-th">
+    <div className="today-schedule">
+      <div className="today-lessons">
         {todaySchedule.lessons.length > 0 ? (
           todaySchedule.lessons.map((lesson: Lesson) => (
-            <div key={lesson.id} className="today-lesson-th">
-              <div className="today-time-th">{lesson.startTime} - {lesson.endTime}</div>
+            <div key={lesson.id} className="today-lesson">
+              <div className="today-time">{lesson.startTime} - {lesson.endTime}</div>
               <div className="today-subject-group-th">
-                <div className="today-subject-th">{lesson.subject}</div>
+                <div className="today-subject">{lesson.subject}</div>
                   <div className="today-group-th">{lesson.group}</div>
               </div>
               {lesson.room && <div className="today-room-th">{lesson.room}</div>}
             </div>
           ))
         ) : (
-          <div className="today-no-classes-th">{todaySchedule.noClassesText}</div>
+          <div className="today-no-classes">{todaySchedule.noClassesText}</div>
         )}
       </div>
       
-      {/* Блок "Следующая пара" */}
+      {/* блок "Следующая пара" */}
       {todaySchedule.lessons.length > 0 && (
         <div className="next-lesson">
           <h3 className="next-lesson-title">Следующая пара</h3>
@@ -226,7 +226,7 @@ export const ScheduleSection: React.FC = () => {
 
   return (
     <div>
-      {/* Фильтр Полное расписание / Расписание на сегодня */}
+      {/* фильтр полное расписание/расписание на сегодня */}
       <div className="schedule-filter">
         <button 
           className={`filter-btn ${viewMode === 'full' ? 'active' : ''}`}
@@ -242,7 +242,7 @@ export const ScheduleSection: React.FC = () => {
         </button>
       </div>
 
-      {/* Вкладки верхняя/нижняя неделя (только для полного расписания) */}
+      {/* вкладки верхняя/нижняя неделя (только для полного расписания) */}
       {viewMode === 'full' && (
         <div className="view-tabs">
           <button 
@@ -260,7 +260,7 @@ export const ScheduleSection: React.FC = () => {
         </div>
       )}
       
-      {/* Отображение расписания в зависимости от выбранного режима */}
+      {/* отображение расписания в зависимости от выбранного режима */}
       {viewMode === 'full' ? (
         activeTab === 'upper' ? (
           <ScheduleView scheduleData={upperWeekData} />
