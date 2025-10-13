@@ -3,3 +3,4 @@ export { DisciplinesSection } from './DisciplinesSection';
 export { GroupsSection } from './GroupsSection';
 export { PersonalCabinet } from './PersonalCabinet';
 export { ScheduleSection } from './ScheduleSection';
+export { TeacherAttendanceSection } from './TeacherAttendanceSection';

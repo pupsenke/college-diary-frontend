@@ -6,6 +6,7 @@ import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
 import { TeacherDashboard } from '../th-components/TeacherDashboard';
 import { useUser } from '../context/UserContext';
+import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +14,7 @@ export const TeacherPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('personal');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>();
+  const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const { user } = useUser();
   const navigate = useNavigate();
 
@@ -24,6 +26,23 @@ export const TeacherPage: React.FC = () => {
       console.log('User data in TeacherPage:', user);
     }
   }, [user, navigate]);
+
+  // Загружаем следующую пару при монтировании компонента
+  useEffect(() => {
+    const loadNextLesson = () => {
+      const scheduleData = getScheduleData();
+      // Для простоты используем верхнюю неделю, можно добавить логику определения текущей недели
+      const next = getNextLesson(scheduleData.upper);
+      setNextLesson(next);
+    };
+
+    loadNextLesson();
+    
+    // Обновляем каждую минуту
+    const interval = setInterval(loadNextLesson, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Функция для перехода к дисциплинам с выбранной дисциплиной
   const handleNavigateToDisciplines = (disciplineName?: string) => {
@@ -189,9 +208,15 @@ export const TeacherPage: React.FC = () => {
               <h4 className="next-class-title">Следующая пара:</h4>
               <div className="next-class-sidebar">
                 <div className="next-class-info">
-                  <div className="next-class-time">10:20 - 12:00</div>
-                  <div className="next-class-subject">Разработка программных модулей</div>
-                  <div className="next-class-group">2992</div>
+                  {nextLesson ? (
+                    <>
+                      <div className="next-class-time">{nextLesson.startTime} - {nextLesson.endTime}</div>
+                      <div className="next-class-subject">{nextLesson.subject}</div>
+                      <div className="next-class-group">{nextLesson.group}</div>
+                    </>
+                  ) : (
+                    <div className="no-next-class">Пар на сегодня нет</div>
+                  )}
                 </div>
               </div>
             </div>

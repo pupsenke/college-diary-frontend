@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TeacherAttendanceSection } from './TeacherAttendanceSection';
 import './GroupsSectionStyle.css';
 
 export interface Group {
@@ -24,6 +25,8 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [subjectSortOrder, setSubjectSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGroupRow, setSelectedGroupRow] = useState<number | null>(null);
+  const [showAttendance, setShowAttendance] = useState<boolean>(false);
+  const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
 
   // Данные по группам - логически связаны с дисциплинами
   const groupsData: Group[] = [
@@ -108,7 +111,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       course: 3
     }
   ];
-  
 
   // Получение уникальных групп для выпадающего списка
   const uniqueGroups = Array.from(new Set(groupsData.map(group => group.name)));
@@ -149,8 +151,12 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
   const handleSetAttendance = () => {
     if (!selectedGroupRow) return;
-    const selectedGroupData = groupsData.find(group => group.id === selectedGroupRow);
-    console.log('Выставление посещаемости для группы:', selectedGroupData?.name, 'по предмету:', selectedGroupData?.subject);
+    
+    const groupData = groupsData.find(group => group.id === selectedGroupRow);
+    if (groupData) {
+      setSelectedGroupData(groupData);
+      setShowAttendance(true);
+    }
   };
 
   const handleSetGrades = () => {
@@ -164,6 +170,44 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       onDisciplineClear();
     }
   };
+
+  const handleBackToGroups = () => {
+    setShowAttendance(false);
+    setSelectedGroupData(null);
+  };
+
+  // Моковые данные студентов для демонстрации
+  const mockStudents = [
+    { id: 1, lastName: 'Абрамов', firstName: 'Кирилл', middleName: 'Денисович' },
+    { id: 2, lastName: 'Андреев', firstName: 'Никита', middleName: 'Игоревич' },
+    { id: 3, lastName: 'Васильев', firstName: 'Алексей', middleName: 'Валерьевич' },
+    { id: 4, lastName: 'Васильев', firstName: 'Дмитрий', middleName: 'Романович' },
+    { id: 5, lastName: 'Васильев', firstName: 'Макар', middleName: 'Александрович' },
+    { id: 6, lastName: 'Давтян', firstName: 'Егор', middleName: 'Каренович' },
+    { id: 7, lastName: 'Загайный', firstName: 'Семен', middleName: 'Олегович' },
+    { id: 8, lastName: 'Загоскин', firstName: 'Александр', middleName: 'Иванович' },
+    { id: 9, lastName: 'Капустинская', firstName: 'Софья', middleName: 'Алексеевна' },
+    { id: 10, lastName: 'Крючков', firstName: 'Захар', middleName: 'Владимирович' },
+    { id: 11, lastName: 'Лунёв', firstName: 'Александр', middleName: 'Иванович' },
+    { id: 12, lastName: 'Орлов', firstName: 'Алексей', middleName: 'Александрович' },
+    { id: 13, lastName: 'Павлов', firstName: 'Михаил', middleName: 'Александрович' },
+    { id: 14, lastName: 'Перлова', firstName: 'Екатерина', middleName: 'Андреевна' },
+  ];
+
+  // Если показываем страницу посещаемости
+  if (showAttendance && selectedGroupData) {
+    return (
+      <div className="teacher-attendance-page">
+        <TeacherAttendanceSection
+          groupNumber={selectedGroupData.name}
+          subject={selectedGroupData.subject}
+          students={mockStudents}
+          currentSemester={selectedGroupData.semester as 1 | 2}
+          onBackToGroups={handleBackToGroups}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="gs-groups-section">
