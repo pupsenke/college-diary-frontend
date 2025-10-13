@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../st-components/Header';
+import { Header } from '../st-components/HeaderStudent';
 import { AttendanceSection } from '../st-components/AttendanceSection';
 import { PerformanceSection } from '../st-components/PerformanceSection';
 import { PersonalCabinet } from '../st-components/PersonalCabinet';
@@ -7,7 +7,7 @@ import { DocumentsSection } from '../st-components/DocumentsSection';
 import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface GroupData {
   numberGroup: number;
@@ -36,6 +36,28 @@ export const StudentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Синхронизация активной вкладки с URL параметрами
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['attendance', 'performance', 'personal', 'schedule', 'documents'].includes(tab)) {
+      setActiveTab(tab);
+    } else {
+      // Если параметр невалидный или отсутствует, устанавливаем вкладку по умолчанию
+      setActiveTab('attendance');
+      // Обновляем URL параметр
+      searchParams.set('tab', 'attendance');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Функция для смены вкладки
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    searchParams.set('tab', tab);
+    setSearchParams(searchParams);
+  };
 
   // Функция для получения данных группы
   const fetchGroupData = async (groupId: number) => {
@@ -266,7 +288,7 @@ export const StudentPage: React.FC = () => {
                 <button
                   key={tab}
                   className={`st-nav-item ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   data-tooltip={sidebarCollapsed ? getTabTitle(tab) : ''}
                 >
                   <span className="st-nav-icon">{getTabIcon(tab)}</span>

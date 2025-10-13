@@ -1525,3 +1525,199 @@
     font-size: 11px;
   }
 }
+
+/* Стили для секции статистики */
+.at-statistics-section {
+  padding: 20px;
+}
+
+.at-statistics-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.at-statistics-header h2 {
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.at-statistics-header p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.at-statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.at-stat-card-large {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.at-stat-card-large h3 {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.at-overall-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.at-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.at-stat-item:last-child {
+  border-bottom: none;
+}
+
+.at-stat-label {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.at-stat-value {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.at-percent-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.at-percent-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.at-percent-inner {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.at-percent-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Стили для графиков Recharts */
+.at-chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.at-chart-card h3 {
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.at-line-chart {
+  grid-column: 1 / -1;
+  height: 350px;
+}
+
+/* Кастомный тултип */
+.at-custom-tooltip {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.at-tooltip-label {
+  color: #6b7280;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.at-tooltip-value {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Текст в центре круговой диаграммы */
+.at-doughnut-text {
+  font-size: 18px;
+  font-weight: 700;
+  fill: #1f2937;
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+  .at-statistics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .at-chart-card {
+    height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .at-statistics-section {
+    padding: 10px;
+  }
+  
+  .at-stat-card-large {
+    padding: 16px;
+  }
+  
+  .at-percent-circle {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .at-percent-inner {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .at-percent-value {
+    font-size: 20px;
+  }
+}

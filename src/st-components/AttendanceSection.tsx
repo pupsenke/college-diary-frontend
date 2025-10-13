@@ -1,5 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AttendanceSectionStyle.css';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieLabelRenderProps
+} from 'recharts';
 
 export interface Attendance {
   id: number;
@@ -21,8 +39,22 @@ export interface GradeDetail {
   endDate?: string;
 }
 
+// Интерфейс для данных круговой диаграммы
+interface PieData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+// Интерфейс для данных столбчатой диаграммы
+interface BarData {
+  name: string;
+  value: number;
+  color: string;
+}
+
 export const AttendanceSection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'semesters' | 'subjects'>('semesters');
+  const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'statistics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedAttendance, setSelectedAttendance] = useState<GradeDetail | null>(null);
@@ -114,6 +146,37 @@ export const AttendanceSection: React.FC = () => {
 
   const subjects = attendanceData.map(attendance => attendance.subject);
 
+  // Функция для подсчета общей статистики
+  const calculateOverallStatistics = () => {
+    let totalPresent = 0;
+    let totalExcused = 0;
+    let totalSick = 0;
+    let totalAbsent = 0;
+    let totalLessons = 0;
+
+    attendanceData.forEach(subject => {
+      const absences = calculateAbsences(subject.statuses);
+      totalPresent += absences.present;
+      totalExcused += absences.excused;
+      totalSick += absences.sick;
+      totalAbsent += absences.absent;
+      totalLessons += subject.statuses.length;
+    });
+
+    const totalAbsences = totalExcused + totalSick + totalAbsent;
+    const overallPercent = ((totalPresent / totalLessons) * 100).toFixed(1);
+
+    return {
+      totalPresent,
+      totalExcused,
+      totalSick,
+      totalAbsent,
+      totalLessons,
+      totalAbsences,
+      overallPercent: parseFloat(overallPercent)
+    };
+  };
+
   // Функция для подсчета пропусков по типам
   const calculateAbsences = (statuses: ('п' | 'у' | 'б' | 'н')[]) => {
     const present = statuses.filter(status => status === 'п').length;
@@ -173,10 +236,10 @@ export const AttendanceSection: React.FC = () => {
 
   const getStatusColor = (status: 'п' | 'у' | 'б' | 'н') => {
     switch (status) {
-      case 'п': return '#2cbb00ff'; // зеленый
-      case 'у': return '#f59e0b'; // оранжевый
-      case 'б': return '#6b7280'; // серый
-      case 'н': return '#ef4444'; // красный
+      case 'п': return '#2cbb00ff';
+      case 'у': return '#f59e0b';
+      case 'б': return '#6b7280';
+      case 'н': return '#ef4444';
       default: return '#6b7280';
     }
   };
@@ -199,11 +262,232 @@ export const AttendanceSection: React.FC = () => {
   };
 
   const selectedSubjectData = attendanceData.find(attendance => attendance.subject === selectedSubject);
+  const statistics = calculateOverallStatistics();
+
+  // Данные для графиков
+  const barChartData: BarData[] = [
+    { name: 'Присутствовал', value: statistics.totalPresent, color: '#2cbb00ff' },
+    { name: 'Уважительные', value: statistics.totalExcused, color: '#f59e0b' },
+    { name: 'Больничные', value: statistics.totalSick, color: '#6b7280' },
+    { name: 'Неуважительные', value: statistics.totalAbsent, color: '#ef4444' }
+  ];
+
+  const pieChartData: PieData[] = [
+    { name: 'Уважительные', value: statistics.totalExcused, color: '#f59e0b' },
+    { name: 'Больничные', value: statistics.totalSick, color: '#6b7280' },
+    { name: 'Неуважительные', value: statistics.totalAbsent, color: '#ef4444' }
+  ];
+
+  const progressData = [
+    { name: 'Посещаемость', value: statistics.overallPercent, color: '#2cbb00ff' },
+    { name: 'Осталось', value: 100 - statistics.overallPercent, color: '#e5e7eb' }
+  ];
+
+  const lineChartData = [
+    { month: 'Сентябрь', attendance: 85 },
+    { month: 'Октябрь', attendance: 78 },
+    { month: 'Ноябрь', attendance: 92 },
+    { month: 'Декабрь', attendance: 88 },
+    { month: 'Январь', attendance: 90 },
+    { month: 'Февраль', attendance: 87 }
+  ];
+
+  // Кастомный тултип для графиков
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="at-custom-tooltip">
+          <p className="at-tooltip-label">{label}</p>
+          <p className="at-tooltip-value">
+            {payload[0].name}: {payload[0].value}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Функция для рендера лейблов круговой диаграммы
+  const renderCustomizedLabel = (props: PieLabelRenderProps) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name } = props;
+    
+    if (typeof percent !== 'number' || typeof midAngle !== 'number') return null;
+    
+    const RADIAN = Math.PI / 180;
+    const radius = (innerRadius as number) + ((outerRadius as number) - (innerRadius as number)) * 0.5;
+    const x = (cx as number) + radius * Math.cos(-midAngle * RADIAN);
+    const y = (cy as number) + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > (cx as number) ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
+  // Рендер секции статистики с Recharts
+  const renderStatisticsSection = () => {
+    return (
+      <div className="at-statistics-section">
+        <div className="at-statistics-header">
+          <h2>Статистика посещаемости</h2>
+          <p>Общий обзор вашей посещаемости за семестр</p>
+        </div>
+
+        <div className="at-statistics-grid">
+          {/* Карточка с общей статистикой */}
+          <div className="at-stat-card-large">
+            <h3>Общая статистика</h3>
+            <div className="at-overall-stats">
+              <div className="at-stat-item">
+                <span className="at-stat-label">Всего занятий:</span>
+                <span className="at-stat-value">{statistics.totalLessons}</span>
+              </div>
+              <div className="at-stat-item">
+                <span className="at-stat-label">Присутствовал:</span>
+                <span className="at-stat-value">{statistics.totalPresent}</span>
+              </div>
+              <div className="at-stat-item">
+                <span className="at-stat-label">Пропуски всего:</span>
+                <span className="at-stat-value">{statistics.totalAbsences}</span>
+              </div>
+              <div className="at-stat-item">
+                <span className="at-stat-label">Уважительные:</span>
+                <span className="at-stat-value">{statistics.totalExcused}</span>
+              </div>
+              <div className="at-stat-item">
+                <span className="at-stat-label">Больничные:</span>
+                <span className="at-stat-value">{statistics.totalSick}</span>
+              </div>
+              <div className="at-stat-item">
+                <span className="at-stat-label">Неуважительные:</span>
+                <span className="at-stat-value">{statistics.totalAbsent}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Индикатор процента посещаемости */}
+          <div className="at-stat-card-large">
+            <h3>Процент посещаемости</h3>
+            <div className="at-percent-indicator">
+              <div 
+                className="at-percent-circle"
+                style={{ 
+                  background: `conic-gradient(#2cbb00ff ${statistics.overallPercent * 3.6}deg, #e5e7eb 0deg)` 
+                }}
+              >
+                <div className="at-percent-inner">
+                  <span className="at-percent-value">{statistics.overallPercent}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Столбчатая диаграмма */}
+          <div className="at-chart-card">
+            <h3>Общее количество пропусков по категориям</h3>
+            <ResponsiveContainer width="100%" height="80%">
+              <BarChart 
+                data={barChartData} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {barChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Круговая диаграмма пропусков */}
+          <div className="at-chart-card">
+            <h3>Распределение пропусков</h3>
+            <ResponsiveContainer width="100%" height="80%">
+              <PieChart>
+                <Pie
+                  data={pieChartData as any[]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={renderCustomizedLabel}
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Линейный график */}
+          <div className="at-chart-card at-line-chart">
+            <h3>Динамика посещаемости по месяцам</h3>
+            <ResponsiveContainer width="100%" height="80%">
+              <AreaChart
+                data={lineChartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  domain={[0, 100]}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="attendance" 
+                  stroke="#2cbb00ff" 
+                  fill="url(#colorAttendance)" 
+                  strokeWidth={2}
+                />
+                <defs>
+                  <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2cbb00ff" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#2cbb00ff" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Остальной код компонента остается без изменений
+  // ... (ваш существующий код для других вкладок)
 
   return (
     <div className="at-attendance-section">
       <div className="at-attendance-header">
-        
         <div className="at-view-tabs">
           <button
             className={`at-view-tab ${activeTab === 'semesters' ? 'at-active' : ''}`}
@@ -217,10 +501,13 @@ export const AttendanceSection: React.FC = () => {
           >
             По предметам
           </button>
+          <button
+            className={`at-view-tab ${activeTab === 'statistics' ? 'at-active' : ''}`}
+            onClick={() => setActiveTab('statistics')}
+          >
+            Статистика
+          </button>
         </div>
-        <button className="at-pf-statistic-btn">
-          Статистика
-        </button>
       </div>
 
       <div className="at-attendance-content">
@@ -316,7 +603,7 @@ export const AttendanceSection: React.FC = () => {
               </table>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'subjects' ? (
           <>
             <div className="at-subject-controls">
               <div className="at-subject-filter">
@@ -396,6 +683,8 @@ export const AttendanceSection: React.FC = () => {
               </div>
             </div>
           </>
+        ) : (
+          renderStatisticsSection()
         )}
       </div>
 

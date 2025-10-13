@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import './HeaderStyle.css';
+import './HeaderStudentStyle.css';
 
 export const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useUser();
 
   // Закрытие dropdown при клике вне его области
@@ -28,19 +29,21 @@ export const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Очищаем данные пользователя
     localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const handlePersonalCabinet = () => {
-    navigate('/student?tab=personal');
+  const handleNavigation = (tab: string) => {
+    // Закрываем dropdown
     setIsDropdownOpen(false);
-  };
-
-  const handleDocuments = () => {
-    navigate('/student?tab=documents');
-    setIsDropdownOpen(false);
+    
+    // Если мы уже на странице студента, просто обновляем параметр tab
+    if (location.pathname === '/student') {
+      navigate(`/student?tab=${tab}`);
+    } else {
+      // Если мы на другой странице, переходим на страницу студента с нужным tab
+      navigate(`/student?tab=${tab}`);
+    }
   };
 
   // Форматируем ФИО
@@ -54,10 +57,19 @@ export const Header: React.FC = () => {
     return `${user.lastName} ${user.name} ${user.surname}`;
   };
 
+  // Обработчик клика по логотипу
+  const handleLogoClick = () => {
+    if (user?.userType === 'student') {
+      navigate('/student');
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <header className="h-header-main">
       <div className="h-header-logo-area">
-        <div className="h-logo-mark">
+        <div className="h-logo-mark" onClick={handleLogoClick} style={{cursor: 'pointer'}}>
           <img src='blue_icon.svg' alt="" className='h-image'/>
           <div>
             <div className="h-logo-title">Цифровой дневник</div>
@@ -70,7 +82,7 @@ export const Header: React.FC = () => {
           <div className="h-profile-info">
             <span className="h-profile-name">{getFullName()}</span>
             <span className="h-profile-role">
-              {user?.userType === 'student' ? 'Студент' : 'Преподаватель'}
+              {user?.userType === 'student' ? 'Студент' : ''}
             </span>
           </div>
           <span className={`h-profile-arrow ${isDropdownOpen ? 'h-rotated' : ''}`}>▼</span>
@@ -84,13 +96,22 @@ export const Header: React.FC = () => {
               <span className="h-dropdown-group">Группа: {user?.numberGroup || '2992'}</span>
             </div>
             <div className="h-dropdown-menu">
-              <button className="h-dropdown-item" onClick={handlePersonalCabinet}>
+              <button 
+                className="h-dropdown-item" 
+                onClick={() => handleNavigation('main')}
+              >
+                Главная страница
+              </button>
+              <button 
+                className="h-dropdown-item" 
+                onClick={() => handleNavigation('personal')}
+              >
                 Личный кабинет
               </button>
-              <button className="h-dropdown-item">
-                Статистика
-              </button>
-              <button className="h-dropdown-item" onClick={handleDocuments}>
+              <button 
+                className="h-dropdown-item" 
+                onClick={() => handleNavigation('documents')}
+              >
                 Документы
               </button>
               <div className="h-dropdown-divider"></div>

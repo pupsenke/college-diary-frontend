@@ -7,7 +7,6 @@
 
 .ds-header {
   background: white;
-  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -28,6 +27,7 @@
   gap: 16px;
   flex: 1;
   max-width: 100%;
+  padding-bottom: 12px;
 }
 
 .ds-filter-section {
@@ -117,7 +117,6 @@
 }
 
 .ds-content {
-  padding: 16px 20px;
   overflow-x: auto;
 }
 
@@ -456,7 +455,6 @@
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .ds-header {
-    padding: 12px 16px;
     gap: 12px;
   }
   
@@ -487,9 +485,6 @@
     margin-top: 8px;
   }
   
-  .ds-content {
-    padding: 12px 16px;
-  }
   
   .ds-table {
     min-width: 500px;
@@ -586,14 +581,6 @@
     border-radius: 12px;
   }
   
-  .ds-header {
-    padding: 10px 12px;
-  }
-  
-  .ds-content {
-    padding: 10px 12px;
-  }
-  
   .ds-table {
     min-width: 400px;
     font-size: 12px;
@@ -669,14 +656,6 @@
 
 /* Планшеты в портретной ориентации */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .ds-header {
-    padding: 20px;
-  }
-  
-  .ds-content {
-    padding: 20px;
-  }
-  
   .ds-modal-container {
     max-width: 95%;
     margin: 20px;
@@ -690,12 +669,9 @@
 /* Большие экраны */
 @media (min-width: 1200px) {
   .ds-header {
-    padding: 24px;
+    padding: 4px;
   }
   
-  .ds-content {
-    padding: 24px;
-  }
 }
 
 /* Стили для скроллбара в модальном окне */

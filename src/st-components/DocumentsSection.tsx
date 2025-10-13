@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import './DocumentSectionStyle.css';
 
+// Добавляем импорт для работы с docx
+import { Document as DocxDocument, Packer, Paragraph, TextRun, Table, TableCell, TableRow, WidthType, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
+
 export interface Document {
   id: number;
   title: string;
@@ -18,8 +22,8 @@ export const DocumentsSection: React.FC = () => {
     fullName: user ? `${user.lastName} ${user.name} ${user.surname}` : 'ФИО не указано',
     group: user?.numberGroup ? user.numberGroup.toString() : '2992',
     course: '4 курс',
-    phone: '+7 (999) 999-99-99', // Это поле можно будет редактировать в форме
-    departmentHead: 'Петрова Мария Сергеевна' // Это можно получать из API по группе
+    phone: '+7 (999) 999-99-99',
+    departmentHead: 'Петрова Мария Сергеевна'
   };
 
   const subjects = ['Математика', 'Программирование', 'Базы данных', 'Веб-разработка'];
@@ -53,30 +57,293 @@ export const DocumentsSection: React.FC = () => {
     phone: userData.phone
   });
 
-  // Загрузка документов пользователя из базы данных
-  useEffect(() => {
-    const fetchUserDocuments = async () => {
-      if (!user) return;
-      
-      setIsLoading(true);
-      try {
-        const response = await fetch(`http://localhost:8080/api/v1/documents/student/${user.id}`);
-        
-        if (response.ok) {
-          const userDocuments = await response.json();
-          setDocuments(userDocuments);
-        } else {
-          console.error('Ошибка при загрузке документов');
-        }
-      } catch (error) {
-        console.error('Ошибка сети:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Функция для форматирования даты
+  const formatDateForDocument = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = date.toLocaleDateString('ru-RU', { month: 'long' });
+    const year = date.getFullYear().toString().slice(-2);
+    return { day, month, year };
+  };
 
-    fetchUserDocuments();
-  }, [user]);
+  // Функция для генерации документа на отчисление в формате docx
+  const generateDismissalDocument = async () => {
+    const currentDate = new Date();
+    const dismissalDate = new Date(formData.startDate);
+    
+    // Форматирование дат
+    const currentDateFormatted = formatDateForDocument(currentDate.toISOString().split('T')[0]);
+    const dismissalDateFormatted = formatDateForDocument(formData.startDate);
+
+    // Создание документа docx
+    const doc = new DocxDocument({
+      sections: [{
+        properties: {},
+        children: [
+          // Шапка документа
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Ректору НовГУ", break: 1 }),
+              new TextRun({ text: "Ю. С. Боровикову", break: 1 }),
+              new TextRun({ text: "От обучающегося", break: 1 }),
+            ],
+          }),
+          
+          // Таблица с данными студента
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ text: "ФИО студента" })],
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: userData.fullName })],
+                    width: { size: 70, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ text: "Группа" })],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: userData.group })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ text: "Телефон" })],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: formData.phone })],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Пустые строки для форматирования
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: "" }),
+
+          // Заголовок заявления
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: "ЗАЯВЛЕНИЕ", bold: true, size: 24 }),
+            ],
+          }),
+
+          // Текст заявления
+          new Paragraph({
+            children: [
+              new TextRun({ 
+                text: `Прошу отчислить меня из Политехнического колледжа по собственному желанию с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.` 
+              }),
+            ],
+          }),
+
+          // Пустые строки
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: "" }),
+
+          // Дата и подпись
+          new Paragraph({
+            children: [
+              new TextRun({ text: `«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года` }),
+              new TextRun({ text: " ".repeat(30) }), // Отступ
+              new TextRun({ text: "Подпись ___________________" }),
+            ],
+          }),
+
+          // Пустые строки
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: "" }),
+
+          // Согласование
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Согласовано:", break: 1 }),
+              new TextRun({ text: "Заведующий отделением Политехнического колледжа НовГУ", break: 1 }),
+              new TextRun({ text: "___________________ / " + userData.departmentHead, break: 1 }),
+              new TextRun({ text: "Подпись                                  ФИО", break: 1 }),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    // Генерация Blob и скачивание
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Заявление_на_отчисление_${userData.fullName.replace(/\s+/g, '_')}.docx`);
+  };
+
+  // Функция для генерации других типов документов
+  const generateOtherDocument = async (type: string) => {
+    let docContent: any[] = [];
+    let fileName = '';
+
+    switch (type) {
+      case 'Заявление на отчисление в другое образовательное учреждение':
+        const currentDate = new Date();
+        const dismissalDate = new Date(formData.startDate);
+        
+        const currentDateFormatted = formatDateForDocument(currentDate.toISOString().split('T')[0]);
+        const dismissalDateFormatted = formatDateForDocument(formData.startDate);
+
+        docContent = [
+          new Paragraph({ children: [new TextRun({ text: "Ректору НовГУ", break: 1 }) ]}),
+          new Paragraph({ children: [new TextRun({ text: "Ю. С. Боровикову", break: 1 }) ]}),
+          new Paragraph({ children: [new TextRun({ text: "От обучающегося", break: 1 }) ]}),
+          
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: "ФИО студента" })] }),
+                  new TableCell({ children: [new Paragraph({ text: userData.fullName })] }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: "Группа" })] }),
+                  new TableCell({ children: [new Paragraph({ text: userData.group })] }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: "Телефон" })] }),
+                  new TableCell({ children: [new Paragraph({ text: formData.phone })] }),
+                ],
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: "" }), new Paragraph({ text: "" }), new Paragraph({ text: "" }),
+
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "ЗАЯВЛЕНИЕ", bold: true, size: 24 })],
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({ 
+                text: `Прошу отчислить меня из Политехнического колледжа в связи с переводом в ${formData.institutionName} с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.` 
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: "" }), new Paragraph({ text: "" }),
+
+          new Paragraph({
+            children: [
+              new TextRun({ text: `«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года` }),
+              new TextRun({ text: " ".repeat(30) }),
+              new TextRun({ text: "Подпись ___________________" }),
+            ],
+          }),
+
+          new Paragraph({ text: "" }), new Paragraph({ text: "" }),
+
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Согласовано:", break: 1 }),
+              new TextRun({ text: "Заведующий отделением Политехнического колледжа НовГУ", break: 1 }),
+              new TextRun({ text: "___________________ / " + userData.departmentHead, break: 1 }),
+              new TextRun({ text: "Подпись                                  ФИО", break: 1 }),
+            ],
+          }),
+        ];
+        fileName = `Заявление_на_перевод_${userData.fullName.replace(/\s+/g, '_')}.docx`;
+        break;
+
+      // Добавьте другие case для остальных типов документов...
+      
+      default:
+        // Простой документ по умолчанию
+        docContent = [
+          new Paragraph({
+            children: [new TextRun({ text: `Документ: ${type}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Студент: ${userData.fullName}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Группа: ${userData.group}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Дата создания: ${new Date().toLocaleDateString('ru-RU')}`, break: 1 })],
+          }),
+        ];
+        fileName = `Документ_${userData.fullName.replace(/\s+/g, '_')}.docx`;
+    }
+
+    const doc = new DocxDocument({
+      sections: [{
+        properties: {},
+        children: docContent,
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, fileName);
+  };
+
+  // Функция для скачивания существующего документа
+  const downloadExistingDocument = async (document: Document) => {
+    // Для существующих документов создаем простую версию
+    const doc = new DocxDocument({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: `Документ: ${document.title}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Студент: ${userData.fullName}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Группа: ${userData.group}`, break: 1 })],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Дата создания: ${document.creationDate}`, break: 1 })],
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Документ_${document.id}_${userData.fullName.replace(/\s+/g, '_')}.docx`);
+  };
+
+  // Загрузка документов пользователя (моковые данные)
+  useEffect(() => {
+    const mockDocuments: Document[] = [
+      {
+        id: 1,
+        title: 'Заявление на отчисление по собственному желанию',
+        creationDate: '15.12.2024',
+        type: 'Заявление на отчисление по собственному желанию'
+      },
+      {
+        id: 2,
+        title: 'Объяснительная записка о причинах опоздания',
+        creationDate: '10.12.2024',
+        type: 'Объяснительная записка о причинах опоздания'
+      }
+    ];
+
+    setDocuments(mockDocuments);
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -88,16 +355,13 @@ export const DocumentsSection: React.FC = () => {
   const openModal = () => {
     if (selectedDocumentType !== 'Все документы') {
       setIsModalOpen(true);
-      // Блокируем скролл body при открытии модального окна
       document.body.style.overflow = 'hidden';
     }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    // Восстанавливаем скролл body при закрытии модального окна
     document.body.style.overflow = 'auto';
-    // Сброс формы при закрытии
     setFormData({
       startDate: '',
       endDate: '',
@@ -114,92 +378,71 @@ export const DocumentsSection: React.FC = () => {
   const handleCreateDocument = async () => {
     if (!user) return;
 
-    const today = new Date().toLocaleDateString('ru-RU', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: '2-digit' 
-    });
-
-    const documentData = {
-      studentId: user.id,
-      title: selectedDocumentType,
-      type: selectedDocumentType,
-      creationDate: today,
-      formData: { ...formData, userData }
-    };
+    setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/documents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(documentData)
-      });
+      // Валидация для заявления на отчисление
+      if (selectedDocumentType === 'Заявление на отчисление по собственному желанию') {
+        if (!formData.phone || !formData.startDate) {
+          alert('Пожалуйста, заполните все обязательные поля (отмечены *)');
+          return;
+        }
 
-      if (response.ok) {
-        const newDocument = await response.json();
+        // Генерация и скачивание документа
+        await generateDismissalDocument();
+
+        // Добавляем документ в локальный список
+        const newDocument: Document = {
+          id: Date.now(),
+          title: selectedDocumentType,
+          creationDate: new Date().toLocaleDateString('ru-RU'),
+          type: selectedDocumentType
+        };
+
         setDocuments(prev => [...prev, newDocument]);
-        closeModal();
-      } else {
-        alert('Ошибка при создании документа');
+      } 
+      // Обработка других типов документов
+      else {
+        await generateOtherDocument(selectedDocumentType);
+
+        const newDocument: Document = {
+          id: Date.now(),
+          title: selectedDocumentType,
+          creationDate: new Date().toLocaleDateString('ru-RU'),
+          type: selectedDocumentType
+        };
+
+        setDocuments(prev => [...prev, newDocument]);
       }
+
+      closeModal();
     } catch (error) {
-      console.error('Ошибка сети:', error);
-      alert('Ошибка сети при создании документа');
+      console.error('Ошибка при создании документа:', error);
+      alert('Произошла ошибка при создании документа');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDownloadDocument = async (documentId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/documents/${documentId}/download`);
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `document_${documentId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        alert('Ошибка при скачивании документа');
-      }
-    } catch (error) {
-      console.error('Ошибка сети:', error);
-      alert('Ошибка сети при скачивании документа');
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      await downloadExistingDocument(document);
     }
   };
 
-  const handleDeleteDocument = async (documentId: number) => {
+  const handleDeleteDocument = (documentId: number) => {
     if (!window.confirm('Вы уверены, что хотите удалить этот документ?')) {
       return;
     }
-
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/documents/${documentId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setDocuments(prev => prev.filter(doc => doc.id !== documentId));
-      } else {
-        alert('Ошибка при удалении документа');
-      }
-    } catch (error) {
-      console.error('Ошибка сети:', error);
-      alert('Ошибка сети при удалении документа');
-    }
+    setDocuments(prev => prev.filter(doc => doc.id !== documentId));
   };
 
   const renderModal = () => {
     if (!isModalOpen) return null;
 
     return (
-      <div className="ds-modal-overlay" onClick={closeModal} >
+      <div className="ds-modal-overlay" onClick={closeModal}>
         <div className="ds-modal-container" onClick={(e) => e.stopPropagation()}>
           <div className="ds-modal-header">
             <h3>Создание документа</h3>
@@ -231,7 +474,7 @@ export const DocumentsSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Специфичные поля для каждого типа документа */}
+              {/* Специфичные поля для заявления на отчисление */}
               {selectedDocumentType === 'Заявление на отчисление по собственному желанию' && (
                 <div className="ds-form-section">
                   <h4>Данные для заявления</h4>
@@ -458,18 +701,6 @@ export const DocumentsSection: React.FC = () => {
   const filteredDocuments = selectedDocumentType === 'Все документы' 
     ? documents 
     : documents.filter(doc => doc.type === selectedDocumentType);
-
-  if (isLoading) {
-    return (
-      <div className="document-section">
-        <div className="ds-content">
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-            Загрузка документов...
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="document-section">
