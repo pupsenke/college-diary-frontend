@@ -45,7 +45,7 @@
 }
 
 .lesson-time-th {
-  flex: 0 0 120px;
+  flex: 0 0 100px;
   font-weight: 400;
   color: #0033a0;
 }
@@ -75,8 +75,9 @@
   color: #0033a0;
   font-size: 14px;
   margin-left: auto;
+  width: 100px;
+  text-align: right;
 }
-
 
 .no-classes-th {
   background: #f8fafc;
@@ -166,6 +167,7 @@
   background: #f8fafc;
   border-radius: 12px;
   padding: 20px;
+  border: 1px solid #e2e8f0;
 }
 
 .today-lessons-th {
@@ -220,7 +222,7 @@
   font-weight: 400;
   color: #0033a0;
   font-size: 14px;
-  margin-left: auto;
+  width: 70px;
 }
 
 .today-no-classes-th {
