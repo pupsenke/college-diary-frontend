@@ -175,7 +175,7 @@ export const TeacherPage: React.FC = () => {
 
             <div className="sidebar-header">
               <div className="user-info">
-                <h1 className="user-fullname-small">{user.lastName} {user.name} {user.surname}</h1>
+                <h1 className="user-fullname-small">{user.lastName} {user.name} {user.patronymic}</h1>
                 <div className="user-role-container">
                   <strong className="user-role">Преподаватель</strong>
                   <p className="user-department">Политехнический колледж НовГУ</p>

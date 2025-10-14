@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
 
   const getFullNameWithPatronymic = () => {
     if (!user) return 'Фамилия Имя Отчество';
-    return `${user.lastName} ${user.name} ${user.surname}`;
+    return `${user.lastName} ${user.name} ${user.patronymic}`;
   };
 
   return (

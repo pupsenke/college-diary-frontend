@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import './DocumentSectionStyle.css';
 
-// Добавляем импорт для работы с docx
-import { Document as DocxDocument, Packer, Paragraph, TextRun, Table, TableCell, TableRow, WidthType, AlignmentType } from 'docx';
-import { saveAs } from 'file-saver';
-
 export interface Document {
   id: number;
   title: string;
@@ -15,12 +11,12 @@ export interface Document {
 }
 
 export const DocumentsSection: React.FC = () => {
-  const { user } = useUser();
+  const { user, isStudent } = useUser();
   
   // Данные из БД через контекст пользователя
   const userData = {
-    fullName: user ? `${user.lastName} ${user.name} ${user.surname}` : 'ФИО не указано',
-    group: user?.numberGroup ? user.numberGroup.toString() : '2992',
+    fullName: user ? `${user.lastName} ${user.name} ${user.patronymic}` : 'ФИО не указано',
+    group: isStudent ? (user as import('../context/UserContext').Student).numberGroup?.toString() || '2992' : '2992',
     course: '4 курс',
     phone: '+7 (999) 999-99-99',
     departmentHead: 'Петрова Мария Сергеевна'
@@ -66,263 +62,183 @@ export const DocumentsSection: React.FC = () => {
     return { day, month, year };
   };
 
-  // Функция для генерации документа на отчисление в формате docx
+  // Функция для создания и скачивания текстового файла
+  const downloadTextFile = (content: string, fileName: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Функция для генерации документа на отчисление
   const generateDismissalDocument = async () => {
     const currentDate = new Date();
     const dismissalDate = new Date(formData.startDate);
     
-    // Форматирование дат
     const currentDateFormatted = formatDateForDocument(currentDate.toISOString().split('T')[0]);
     const dismissalDateFormatted = formatDateForDocument(formData.startDate);
 
-    // Создание документа docx
-    const doc = new DocxDocument({
-      sections: [{
-        properties: {},
-        children: [
-          // Шапка документа
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Ректору НовГУ", break: 1 }),
-              new TextRun({ text: "Ю. С. Боровикову", break: 1 }),
-              new TextRun({ text: "От обучающегося", break: 1 }),
-            ],
-          }),
-          
-          // Таблица с данными студента
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: "ФИО студента" })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: userData.fullName })],
-                    width: { size: 70, type: WidthType.PERCENTAGE },
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: "Группа" })],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: userData.group })],
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: "Телефон" })],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: formData.phone })],
-                  }),
-                ],
-              }),
-            ],
-          }),
+    const content = `
+Ректору НовГУ
+Ю. С. Боровикову
+От обучающегося
 
-          // Пустые строки для форматирования
-          new Paragraph({ text: "" }),
-          new Paragraph({ text: "" }),
-          new Paragraph({ text: "" }),
+ФИО студента: ${userData.fullName}
+Группа: ${userData.group}
+Телефон: ${formData.phone}
 
-          // Заголовок заявления
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({ text: "ЗАЯВЛЕНИЕ", bold: true, size: 24 }),
-            ],
-          }),
 
-          // Текст заявления
-          new Paragraph({
-            children: [
-              new TextRun({ 
-                text: `Прошу отчислить меня из Политехнического колледжа по собственному желанию с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.` 
-              }),
-            ],
-          }),
+                              ЗАЯВЛЕНИЕ
 
-          // Пустые строки
-          new Paragraph({ text: "" }),
-          new Paragraph({ text: "" }),
+Прошу отчислить меня из Политехнического колледжа по собственному желанию 
+с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.
 
-          // Дата и подпись
-          new Paragraph({
-            children: [
-              new TextRun({ text: `«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года` }),
-              new TextRun({ text: " ".repeat(30) }), // Отступ
-              new TextRun({ text: "Подпись ___________________" }),
-            ],
-          }),
 
-          // Пустые строки
-          new Paragraph({ text: "" }),
-          new Paragraph({ text: "" }),
+«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года      Подпись ___________________
 
-          // Согласование
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Согласовано:", break: 1 }),
-              new TextRun({ text: "Заведующий отделением Политехнического колледжа НовГУ", break: 1 }),
-              new TextRun({ text: "___________________ / " + userData.departmentHead, break: 1 }),
-              new TextRun({ text: "Подпись                                  ФИО", break: 1 }),
-            ],
-          }),
-        ],
-      }],
-    });
 
-    // Генерация Blob и скачивание
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `Заявление_на_отчисление_${userData.fullName.replace(/\s+/g, '_')}.docx`);
+Согласовано:
+Заведующий отделением Политехнического колледжа НовГУ
+___________________ / ${userData.departmentHead}
+Подпись                                  ФИО
+    `.trim();
+
+    downloadTextFile(content, `Заявление_на_отчисление_${userData.fullName.replace(/\s+/g, '_')}.txt`);
   };
 
   // Функция для генерации других типов документов
   const generateOtherDocument = async (type: string) => {
-    let docContent: any[] = [];
+    const currentDate = new Date();
+    const currentDateFormatted = formatDateForDocument(currentDate.toISOString().split('T')[0]);
+    
+    let content = '';
     let fileName = '';
 
     switch (type) {
       case 'Заявление на отчисление в другое образовательное учреждение':
-        const currentDate = new Date();
-        const dismissalDate = new Date(formData.startDate);
-        
-        const currentDateFormatted = formatDateForDocument(currentDate.toISOString().split('T')[0]);
         const dismissalDateFormatted = formatDateForDocument(formData.startDate);
+        content = `
+Ректору НовГУ
+Ю. С. Боровикову
+От обучающегося
 
-        docContent = [
-          new Paragraph({ children: [new TextRun({ text: "Ректору НовГУ", break: 1 }) ]}),
-          new Paragraph({ children: [new TextRun({ text: "Ю. С. Боровикову", break: 1 }) ]}),
-          new Paragraph({ children: [new TextRun({ text: "От обучающегося", break: 1 }) ]}),
-          
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: "ФИО студента" })] }),
-                  new TableCell({ children: [new Paragraph({ text: userData.fullName })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: "Группа" })] }),
-                  new TableCell({ children: [new Paragraph({ text: userData.group })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: "Телефон" })] }),
-                  new TableCell({ children: [new Paragraph({ text: formData.phone })] }),
-                ],
-              }),
-            ],
-          }),
+ФИО студента: ${userData.fullName}
+Группа: ${userData.group}
+Телефон: ${formData.phone}
 
-          new Paragraph({ text: "" }), new Paragraph({ text: "" }), new Paragraph({ text: "" }),
 
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: "ЗАЯВЛЕНИЕ", bold: true, size: 24 })],
-          }),
+                              ЗАЯВЛЕНИЕ
 
-          new Paragraph({
-            children: [
-              new TextRun({ 
-                text: `Прошу отчислить меня из Политехнического колледжа в связи с переводом в ${formData.institutionName} с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.` 
-              }),
-            ],
-          }),
+Прошу отчислить меня из Политехнического колледжа в связи с переводом 
+в ${formData.institutionName} с «${dismissalDateFormatted.day}» ${dismissalDateFormatted.month} 20${dismissalDateFormatted.year} года.
 
-          new Paragraph({ text: "" }), new Paragraph({ text: "" }),
 
-          new Paragraph({
-            children: [
-              new TextRun({ text: `«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года` }),
-              new TextRun({ text: " ".repeat(30) }),
-              new TextRun({ text: "Подпись ___________________" }),
-            ],
-          }),
+«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года      Подпись ___________________
 
-          new Paragraph({ text: "" }), new Paragraph({ text: "" }),
 
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Согласовано:", break: 1 }),
-              new TextRun({ text: "Заведующий отделением Политехнического колледжа НовГУ", break: 1 }),
-              new TextRun({ text: "___________________ / " + userData.departmentHead, break: 1 }),
-              new TextRun({ text: "Подпись                                  ФИО", break: 1 }),
-            ],
-          }),
-        ];
-        fileName = `Заявление_на_перевод_${userData.fullName.replace(/\s+/g, '_')}.docx`;
+Согласовано:
+Заведующий отделением Политехнического колледжа НовГУ
+___________________ / ${userData.departmentHead}
+Подпись                                  ФИО
+        `.trim();
+        fileName = `Заявление_на_перевод_${userData.fullName.replace(/\s+/g, '_')}.txt`;
         break;
 
-      // Добавьте другие case для остальных типов документов...
+      case 'Заявление на пропуск занятий':
+        const startDateFormatted = formatDateForDocument(formData.startDate);
+        const endDateFormatted = formatDateForDocument(formData.endDate);
+        content = `
+Директору Политехнического колледжа НовГУ
+От студента ${userData.group} группы
+${userData.fullName}
+
+
+                              ЗАЯВЛЕНИЕ
+
+Прошу разрешить мне пропуск учебных занятий 
+с «${startDateFormatted.day}» ${startDateFormatted.month} 20${startDateFormatted.year} года 
+по «${endDateFormatted.day}» ${endDateFormatted.month} 20${endDateFormatted.year} года.
+
+Причина: ${formData.reason}
+
+
+«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года      Подпись ___________________
+        `.trim();
+        fileName = `Заявление_на_пропуск_${userData.fullName.replace(/\s+/g, '_')}.txt`;
+        break;
+
+      case 'Объяснительная записка о причинах опоздания':
+        content = `
+Объяснительная записка
+
+${userData.fullName}
+студента ${userData.group} группы
+${userData.course}
+
+Преподавателю: ${formData.teacher}
+По предмету: ${formData.subject}
+
+Я, ${userData.fullName}, опоздал(а) на занятие по причине: ${formData.reason}
+
+
+«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года      Подпись ___________________
+        `.trim();
+        fileName = `Объяснительная_опоздание_${userData.fullName.replace(/\s+/g, '_')}.txt`;
+        break;
+
+      case 'Объяснительная записка о причинах пропусков занятия':
+        content = `
+Объяснительная записка
+
+${userData.fullName}
+студента ${userData.group} группы
+${userData.course}
+
+Я, ${userData.fullName}, пропустил(а) ${formData.hours} часов занятий 
+в ${formData.month.toLowerCase()} месяце по причине: ${formData.reason}
+
+
+«${currentDateFormatted.day}» ${currentDateFormatted.month} 20${currentDateFormatted.year} года      Подпись ___________________
+        `.trim();
+        fileName = `Объяснительная_пропуск_${userData.fullName.replace(/\s+/g, '_')}.txt`;
+        break;
       
       default:
-        // Простой документ по умолчанию
-        docContent = [
-          new Paragraph({
-            children: [new TextRun({ text: `Документ: ${type}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Студент: ${userData.fullName}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Группа: ${userData.group}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Дата создания: ${new Date().toLocaleDateString('ru-RU')}`, break: 1 })],
-          }),
-        ];
-        fileName = `Документ_${userData.fullName.replace(/\s+/g, '_')}.docx`;
+        content = `
+Документ: ${type}
+
+Студент: ${userData.fullName}
+Группа: ${userData.group}
+Курс: ${userData.course}
+Дата создания: ${new Date().toLocaleDateString('ru-RU')}
+        `.trim();
+        fileName = `Документ_${userData.fullName.replace(/\s+/g, '_')}.txt`;
     }
 
-    const doc = new DocxDocument({
-      sections: [{
-        properties: {},
-        children: docContent,
-      }],
-    });
-
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, fileName);
+    downloadTextFile(content, fileName);
   };
 
   // Функция для скачивания существующего документа
   const downloadExistingDocument = async (document: Document) => {
-    // Для существующих документов создаем простую версию
-    const doc = new DocxDocument({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: `Документ: ${document.title}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Студент: ${userData.fullName}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Группа: ${userData.group}`, break: 1 })],
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `Дата создания: ${document.creationDate}`, break: 1 })],
-          }),
-        ],
-      }],
-    });
+    const currentDate = new Date();
+    const content = `
+Документ: ${document.title}
 
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `Документ_${document.id}_${userData.fullName.replace(/\s+/g, '_')}.docx`);
+Студент: ${userData.fullName}
+Группа: ${userData.group}
+Курс: ${userData.course}
+Дата создания документа: ${document.creationDate}
+Дата скачивания: ${currentDate.toLocaleDateString('ru-RU')}
+
+Данный документ был создан через систему документооборота Политехнического колледжа НовГУ.
+    `.trim();
+
+    downloadTextFile(content, `Документ_${document.id}_${userData.fullName.replace(/\s+/g, '_')}.txt`);
   };
 
   // Загрузка документов пользователя (моковые данные)
@@ -385,6 +301,7 @@ export const DocumentsSection: React.FC = () => {
       if (selectedDocumentType === 'Заявление на отчисление по собственному желанию') {
         if (!formData.phone || !formData.startDate) {
           alert('Пожалуйста, заполните все обязательные поля (отмечены *)');
+          setIsLoading(false);
           return;
         }
 
@@ -685,11 +602,15 @@ export const DocumentsSection: React.FC = () => {
             </div>
 
             <div className="ds-modal-footer">
-              <button className="ds-cancel-btn" onClick={closeModal}>
+              <button className="ds-cancel-btn" onClick={closeModal} disabled={isLoading}>
                 Отмена
               </button>
-              <button className="ds-create-btn" onClick={handleCreateDocument}>
-                Создать документ
+              <button 
+                className="ds-create-btn" 
+                onClick={handleCreateDocument}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Создание...' : 'Создать документ'}
               </button>
             </div>
           </div>

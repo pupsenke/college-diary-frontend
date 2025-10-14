@@ -8,24 +8,7 @@ import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-interface GroupData {
-  numberGroup: number;
-  idCurator: number;
-  course: number;
-  specialty: string;
-  profile: string;
-  formEducation: string;
-}
-
-interface TeacherData {
-  id: number;
-  name: string;
-  surname: string;
-  lastName: string;
-  login: string;
-  password: string;
-}
+import { apiService, GroupData, TeacherData } from '../services/apiService';
 
 export const StudentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('attendance');
@@ -34,7 +17,7 @@ export const StudentPage: React.FC = () => {
   const [curatorData, setCuratorData] = useState<TeacherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
+  const { user, isStudent } = useUser();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -44,9 +27,7 @@ export const StudentPage: React.FC = () => {
     if (tab && ['attendance', 'performance', 'personal', 'schedule', 'documents'].includes(tab)) {
       setActiveTab(tab);
     } else {
-      // Если параметр невалидный или отсутствует, устанавливаем вкладку по умолчанию
       setActiveTab('attendance');
-      // Обновляем URL параметр
       searchParams.set('tab', 'attendance');
       setSearchParams(searchParams);
     }
@@ -59,72 +40,41 @@ export const StudentPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
-  // Функция для получения данных группы
-  const fetchGroupData = async (groupId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/groups/number/${groupId}`);
-      if (!response.ok) {
-        throw new Error(`Ошибка при загрузке данных группы: ${response.status}`);
-      }
-      const data: GroupData = await response.json();
-      setGroupData(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching group data:', error);
-      setError('Ошибка загрузки данных группы');
-      return null;
-    }
-  };
-
-  // Функция для получения данных куратора по правильному endpoint
-  const fetchCuratorData = async (curatorId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/teachers/id/${curatorId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка при загрузке данных куратора: ${response.status}`);
-      }
-      
-      const data: TeacherData = await response.json();
-      setCuratorData(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching curator data:', error);
-      setError('Ошибка загрузки данных куратора');
-      return null;
-    }
-  };
-
   // Функция для форматирования ФИО куратора
   const formatCuratorName = (curator: TeacherData) => {
     const lastName = curator.lastName || '';
     const firstName = curator.name ? `${curator.name.charAt(0)}.` : '';
-    const middleName = curator.surname ? `${curator.surname.charAt(0)}.` : '';
+    const middleName = curator.patronymic ? `${curator.patronymic.charAt(0)}.` : '';
     return `${lastName} ${firstName}${middleName}`.trim();
   };
 
   useEffect(() => {
     const initializeData = async () => {
-      if (!user) {
-        console.log('No user data, redirecting to login');
+      if (!user || !isStudent) {
+        console.log('No student data, redirecting to login');
         navigate('/login');
         return;
       }
 
-      console.log('User data in StudentPage:', user);
+      // Приводим тип к Student для доступа к numberGroup
+      const student = user as import('../context/UserContext').Student;
+      
+      console.log('Student data in StudentPage:', student);
       setLoading(true);
       setError(null);
 
       try {
         // Получаем данные группы
-        if (user.numberGroup) {
-          const groupData = await fetchGroupData(user.numberGroup);
+        if (student.numberGroup) {
+          const groupData = await apiService.getGroupData(student.numberGroup);
           console.log('Group data:', groupData);
+          setGroupData(groupData);
           
           // Если есть данные группы и id куратора, получаем данные куратора
           if (groupData && groupData.idCurator) {
             console.log('Fetching curator data for ID:', groupData.idCurator);
-            await fetchCuratorData(groupData.idCurator);
+            const curatorData = await apiService.getTeacherData(groupData.idCurator);
+            setCuratorData(curatorData);
           } else {
             console.log('No curator ID found in group data');
           }
@@ -140,7 +90,7 @@ export const StudentPage: React.FC = () => {
     };
 
     initializeData();
-  }, [user, navigate]);
+  }, [user, isStudent, navigate]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -231,7 +181,7 @@ export const StudentPage: React.FC = () => {
     setSidebarCollapsed(prev => !prev);
   };
 
-  if (!user) {
+  if (!user || !isStudent) {
     return (
       <div className="st-container">
         <div className="st-content">
@@ -240,6 +190,9 @@ export const StudentPage: React.FC = () => {
       </div>
     );
   }
+
+  // Приводим тип к Student для доступа к numberGroup
+  const student = user as import('../context/UserContext').Student;
 
   return (
     <div className="st-container">
@@ -264,10 +217,10 @@ export const StudentPage: React.FC = () => {
 
             <div className="st-sidebar-header">
               <div className="st-user-info">
-                <p className="st-user-name">{user.lastName} {user.name}</p>
-                <p className="st-user-patronymic">{user.surname}</p>
+                <p className="st-user-name">{student.lastName} {student.name}</p>
+                <p className="st-user-patronymic">{student.patronymic}</p>
                 <p className="st-user-role">Студент</p>
-                <p className="st-user-group">Группа: {user.numberGroup}</p>
+                <p className="st-user-group">Группа: {student.numberGroup}</p>
                 
                 {/* Специальность из данных группы */}
                 <p className="st-user-speciality">

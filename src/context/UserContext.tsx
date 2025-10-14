@@ -1,53 +1,65 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export interface User {
+export interface Student {
   id: number;
   name: string;
-  surname: string;
+  patronymic: string;
   lastName: string;
   login: string;
-  userType: 'student' | 'teacher' | 'metodist'; // Добавляем тип пользователя
-  numberGroup?: number; // Только для студентов
-  disciplinesCount?: number; // для преподавателей
-  groupsCount?: number; // для преподавателей
-  email?: string; // для преподавателей
-  position?: string; // для методиста
+  numberGroup: number;
+  email?: string;
+  telephone?: string;
+  birthDate?: string;
+  address?: string;
+  userType: 'student';
 }
+
+export interface Staff {
+  id: number;
+  name: string;
+  patronymic: string;
+  lastName: string;
+  login: string;
+  position: string;
+  staffPosition?: any[];
+  userType: 'teacher' | 'metodist';
+  email?: string;
+  telephone?: string;
+  birthDate?: string;
+  address?: string;
+}
+
+export type User = Student | Staff;
 
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  isStudent: boolean;
+  isTeacher: boolean;
+  isMetodist: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+interface UserProviderProps {
+  children: ReactNode;
+}
+
+export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  const updateUser = (userData: User | null) => {
-    setUser(userData);
-    if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
-    } else {
-      localStorage.removeItem('user');
-    }
-  };
+  const isStudent = user?.userType === 'student';
+  const isTeacher = user?.userType === 'teacher';
+  const isMetodist = user?.userType === 'metodist';
 
   return (
-    <UserContext.Provider value={{ user, setUser: updateUser }}>
+    <UserContext.Provider value={{ user, setUser, isStudent, isTeacher, isMetodist }}>
       {children}
     </UserContext.Provider>
   );
 };
 
-export const useUser = () => {
+export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error('useUser must be used within a UserProvider');
