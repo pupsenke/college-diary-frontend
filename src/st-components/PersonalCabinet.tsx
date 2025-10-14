@@ -1,140 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../context/UserContext';
+import { useUser, Student } from '../context/UserContext';
+import { apiService } from '../services/apiService';
 import './PersonalCabinetStyle.css';
 
-interface GroupData {
-  course: string;
-  admission_year: string;
-  formEducation: string;
-  specialty: string;
-  profile: string;
+interface UserFormData {
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  email: string;
+  phone: string;
+  birthDate: string;
+  address: string;
+}
+
+interface StudentUpdateData {
+  name: string;
+  lastName: string;
+  patronymic: string;
+  email?: string;
+  telephone?: string;
+  birthDate?: string;
+  address?: string;
 }
 
 export const PersonalCabinet: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const { user } = useUser();
-  const [userData, setUserData] = useState({
+  const { user, isStudent } = useUser();
+  const [userData, setUserData] = useState<UserFormData>({
     firstName: '',
     lastName: '',
     middleName: '',
-    email: 'Поле не заполнено',
-    phone: 'Поле не заполнено',
+    email: '',
+    phone: '',
+    birthDate: '',
+    address: ''
+  });
+  const [groupData, setGroupData] = useState({
     group: '',
     course: '-',
-    admission_year: '-',
-    form_education: '-',
-    speciality: '-',
-    profile: '-',
-    birthDate: 'Поле не заполнено',
-    address: 'Поле не заполнено'
+    admissionYear: '-',
+    formEducation: '-',
+    specialty: '-',
+    profile: '-'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Функция для получения данных группы
+  // Заполняем данные из контекста пользователя
+  useEffect(() => {
+    if (user) {
+      const studentData = {
+        firstName: user.name || '',
+        lastName: user.lastName || '',
+        middleName: user.patronymic || '',
+        email: user.email || '',
+        phone: user.telephone || '',
+        birthDate: user.birthDate || '',
+        address: user.address || ''
+      };
+
+      setUserData(studentData);
+
+      // Если это студент, получаем данные группы
+      if (isStudent && 'numberGroup' in user && user.numberGroup) {
+        fetchGroupData(user.numberGroup);
+      }
+    }
+  }, [user, isStudent]);
+
   const fetchGroupData = async (groupId: number) => {
     try {
       setLoading(true);
-      setError(null);
+      const groupData = await apiService.getGroupData(groupId);
       
-      const response = await fetch(`http://localhost:8080/api/v1/groups/number/${groupId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      setGroupData({
+        group: groupData.numberGroup.toString(),
+        course: groupData.course.toString(),
+        admissionYear: groupData.admissionYear.toString(),
+        formEducation: groupData.formEducation,
+        specialty: groupData.specialty,
+        profile: groupData.profile
       });
-
-      if (!response.ok) {
-        throw new Error(`Ошибка при получении данных группы: ${response.status}`);
-      }
-
-      const groupData: GroupData = await response.json();
-      
-      return groupData;
     } catch (err) {
       console.error('Ошибка при загрузке данных группы:', err);
       setError('Не удалось загрузить данные группы');
-      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // Заполняем данные из контекста пользователя и получаем данные группы
-  useEffect(() => {
-    const initializeUserData = async () => {
-      if (user) {
-        // Сначала устанавливаем базовые данные из контекста
-        const baseData = {
-          firstName: user.name || '',
-          lastName: user.surname || '',
-          middleName: user.lastName || '',
-          group: user.numberGroup ? user.numberGroup.toString() : ''
-        };
+  const handleSave = async () => {
+    if (!user || !isStudent) return;
 
-        setUserData(prev => ({ ...prev, ...baseData }));
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccessMessage(null);
 
-        // Если есть номер группы, получаем данные группы
-        if (user.numberGroup) {
-          const groupData = await fetchGroupData(user.numberGroup);
-          
-          if (groupData) {
-            setUserData(prev => ({
-              ...prev,
-              ...baseData,
-              course: groupData.course || '-',
-              admission_year: groupData.admission_year || '-',
-              form_education: groupData.formEducation || '-',
-              speciality: groupData.specialty || '-',
-              profile: groupData.profile || '-'
-            }));
-          }
-        }
-      }
-    };
-
-    initializeUserData();
-  }, [user]);
-
-  const handleSave = () => {
-    setIsEditing(false);
-    // Здесь будет логика сохранения данных на сервер
-    console.log('Сохраненные данные:', userData);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    // Восстанавливаем оригинальные данные
-    if (user) {
-      const baseData = {
-        firstName: user.name || '',
-        lastName: user.surname || '',
-        middleName: user.lastName || '',
-        group: user.numberGroup ? user.numberGroup.toString() : ''
+      // Подготавливаем данные для отправки
+      const updateData: StudentUpdateData = {
+        name: userData.firstName,
+        lastName: userData.lastName,
+        patronymic: userData.middleName,
+        email: userData.email || undefined,
+        telephone: userData.phone || undefined,
+        birthDate: userData.birthDate || undefined,
+        address: userData.address || undefined
       };
 
-      setUserData(prev => ({ ...prev, ...baseData }));
+      // Отправляем запрос на обновление данных
+      await apiService.updateStudentData(user.id, updateData);
       
-      // При отмене можно также перезапросить данные группы
-      if (user.numberGroup) {
-        fetchGroupData(user.numberGroup).then(groupData => {
-          if (groupData) {
-            setUserData(prev => ({
-              ...prev,
-              ...baseData,
-              course: groupData.course || '-',
-              admission_year: groupData.admission_year || '-',
-              form_education: groupData.formEducation || '-',
-              speciality: groupData.specialty || '-',
-              profile: groupData.profile || '-'
-            }));
-          }
-        });
-      }
+      setSuccessMessage('Данные успешно сохранены');
+      setIsEditing(false);
+      
+      // Обновляем данные в localStorage
+      const updatedUser = {
+        ...user,
+        ...updateData
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+    } catch (err) {
+      console.error('Ошибка при сохранении данных:', err);
+      setError('Не удалось сохранить данные');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleCancel = () => {
+    if (user) {
+      const originalData = {
+        firstName: user.name || '',
+        lastName: user.lastName || '',
+        middleName: user.patronymic || '',
+        email: user.email || '',
+        phone: user.telephone || '',
+        birthDate: user.birthDate || '',
+        address: user.address || ''
+      };
+      setUserData(originalData);
+    }
+    setIsEditing(false);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handleChange = (field: keyof UserFormData, value: string) => {
     setUserData(prev => ({
       ...prev,
       [field]: value
@@ -161,6 +175,7 @@ export const PersonalCabinet: React.FC = () => {
           <button 
             className="pc-edit-btn"
             onClick={() => setIsEditing(true)}
+            disabled={!isStudent} // Только студенты могут редактировать
           >
             Редактировать
           </button>
@@ -169,12 +184,14 @@ export const PersonalCabinet: React.FC = () => {
             <button 
               className="pc-save-btn"
               onClick={handleSave}
+              disabled={loading}
             >
-              Сохранить
+              {loading ? 'Сохранение...' : 'Сохранить'}
             </button>
             <button 
               className="pc-cancel-btn"
               onClick={handleCancel}
+              disabled={loading}
             >
               Отмена
             </button>
@@ -185,13 +202,19 @@ export const PersonalCabinet: React.FC = () => {
       <div className="pc-content">
         {loading && (
           <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-            Загрузка данных ...
+            Загрузка данных...
           </div>
         )}
         
         {error && (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#e53e3e' }}>
+          <div className="pc-error-message">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="pc-success-message">
+            {successMessage}
           </div>
         )}
 
@@ -200,7 +223,7 @@ export const PersonalCabinet: React.FC = () => {
             <h3>Основная информация</h3>
             <div className="pc-info-item">
               <label>Фамилия</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="text"
                   value={userData.lastName}
@@ -214,7 +237,7 @@ export const PersonalCabinet: React.FC = () => {
             </div>
             <div className="pc-info-item">
               <label>Имя</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="text"
                   value={userData.firstName}
@@ -228,7 +251,7 @@ export const PersonalCabinet: React.FC = () => {
             </div>
             <div className="pc-info-item">
               <label>Отчество</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="text"
                   value={userData.middleName}
@@ -242,7 +265,7 @@ export const PersonalCabinet: React.FC = () => {
             </div>
             <div className="pc-info-item">
               <label>Дата рождения</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="date"
                   value={userData.birthDate}
@@ -250,7 +273,7 @@ export const PersonalCabinet: React.FC = () => {
                   className="pc-input"
                 />
               ) : (
-                <span>{userData.birthDate}</span>
+                <span>{userData.birthDate || 'Не указано'}</span>
               )}
             </div>
           </div>
@@ -259,7 +282,7 @@ export const PersonalCabinet: React.FC = () => {
             <h3>Контактная информация</h3>
             <div className="pc-info-item">
               <label>Email</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="email"
                   value={userData.email}
@@ -268,12 +291,12 @@ export const PersonalCabinet: React.FC = () => {
                   placeholder="example@email.com"
                 />
               ) : (
-                <span>{userData.email}</span>
+                <span>{userData.email || 'Не указано'}</span>
               )}
             </div>
             <div className="pc-info-item">
               <label>Телефон</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="tel"
                   value={userData.phone}
@@ -282,12 +305,12 @@ export const PersonalCabinet: React.FC = () => {
                   placeholder="+7 (XXX) XXX-XX-XX"
                 />
               ) : (
-                <span>{userData.phone}</span>
+                <span>{userData.phone || 'Не указано'}</span>
               )}
             </div>
             <div className="pc-info-item">
               <label>Адрес</label>
-              {isEditing ? (
+              {isEditing && isStudent ? (
                 <input
                   type="text"
                   value={userData.address}
@@ -296,44 +319,48 @@ export const PersonalCabinet: React.FC = () => {
                   placeholder="Введите адрес проживания"
                 />
               ) : (
-                <span>{userData.address}</span>
+                <span>{userData.address || 'Не указано'}</span>
               )}
             </div>
           </div>
 
-          <div className="pc-info-group">
-            <h3>Учебная информация</h3>
-            <div className="pc-info-item">
-              <label>Группа</label>
-              <span>{userData.group || 'Не указана'}</span>
+          {isStudent && (
+            <div className="pc-info-group">
+              <h3>Учебная информация</h3>
+              <div className="pc-info-item">
+                <label>Группа</label>
+                <span>{groupData.group || 'Не указана'}</span>
+              </div>
+              <div className="pc-info-item">
+                <label>Курс</label>
+                <span>{groupData.course}</span>
+              </div>
+              <div className="pc-info-item">
+                <label>Специальность</label>
+                <span>{groupData.specialty}</span>
+              </div>
+              <div className="pc-info-item">
+                <label>Профиль</label>
+                <span>{groupData.profile}</span>
+              </div>
+              <div className="pc-info-item">
+                <label>Год поступления</label>
+                <span>{groupData.admissionYear}</span>
+              </div>
+              <div className="pc-info-item">
+                <label>Форма обучения</label>
+                <span>{groupData.formEducation}</span>
+              </div>
             </div>
-            <div className="pc-info-item">
-              <label>Курс</label>
-              <span>{userData.course}</span>
-            </div>
-            <div className="pc-info-item">
-              <label>Специальность</label>
-              <span>{userData.speciality}</span>
-            </div>
-            <div className="pc-info-item">
-              <label>Профиль</label>
-              <span>{userData.profile}</span>
-            </div>
-            <div className="pc-info-item">
-              <label>Год поступления</label>
-              <span>{userData.admission_year}</span>
-            </div>
-            <div className="pc-info-item">
-              <label>Форма обучения</label>
-              <span>{userData.form_education}</span>
-            </div>
-          </div>
+          )}
         </div>
 
-        <div className="pc-additional-actions">
-          <button className="pc-action-btn">Сменить пароль</button>
-          <button className="pc-action-btn">Экспорт данных</button>
-        </div>
+        {isStudent && (
+          <div className="pc-additional-actions">
+            <button className="pc-action-btn">Сменить пароль</button>
+            <button className="pc-action-btn">Экспорт данных</button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import './HeaderStudentStyle.css';
 
@@ -7,8 +7,7 @@ export const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useUser();
+  const { user, isStudent } = useUser();
 
   // Закрытие dropdown при клике вне его области
   useEffect(() => {
@@ -29,21 +28,19 @@ export const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Очищаем данные пользователя
     localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const handleNavigation = (tab: string) => {
-    // Закрываем dropdown
+  const handlePersonalCabinet = () => {
+    navigate('/student?tab=personal');
     setIsDropdownOpen(false);
-    
-    // Если мы уже на странице студента, просто обновляем параметр tab
-    if (location.pathname === '/student') {
-      navigate(`/student?tab=${tab}`);
-    } else {
-      // Если мы на другой странице, переходим на страницу студента с нужным tab
-      navigate(`/student?tab=${tab}`);
-    }
+  };
+
+  const handleDocuments = () => {
+    navigate('/student?tab=documents');
+    setIsDropdownOpen(false);
   };
 
   // Форматируем ФИО
@@ -54,22 +51,20 @@ export const Header: React.FC = () => {
 
   const getFullNameWithPatronymic = () => {
     if (!user) return 'Фамилия Имя Отчество';
-    return `${user.lastName} ${user.name} ${user.surname}`;
+    return `${user.lastName} ${user.name} ${user.patronymic}`;
   };
 
-  // Обработчик клика по логотипу
-  const handleLogoClick = () => {
-    if (user?.userType === 'student') {
-      navigate('/student');
-    } else {
-      navigate('/');
-    }
+  // Получаем номер группы только для студентов
+  const getGroupNumber = () => {
+    if (!user || !isStudent) return '2992';
+    const student = user as import('../context/UserContext').Student;
+    return student.numberGroup?.toString() || '2992';
   };
 
   return (
     <header className="h-header-main">
       <div className="h-header-logo-area">
-        <div className="h-logo-mark" onClick={handleLogoClick} style={{cursor: 'pointer'}}>
+        <div className="h-logo-mark">
           <img src='blue_icon.svg' alt="" className='h-image'/>
           <div>
             <div className="h-logo-title">Цифровой дневник</div>
@@ -82,7 +77,7 @@ export const Header: React.FC = () => {
           <div className="h-profile-info">
             <span className="h-profile-name">{getFullName()}</span>
             <span className="h-profile-role">
-              {user?.userType === 'student' ? 'Студент' : ''}
+              {isStudent ? 'Студент' : user?.userType === 'teacher' ? 'Преподаватель' : 'Методист'}
             </span>
           </div>
           <span className={`h-profile-arrow ${isDropdownOpen ? 'h-rotated' : ''}`}>▼</span>
@@ -93,25 +88,18 @@ export const Header: React.FC = () => {
             <div className="h-dropdown-user-info">
               <div className="h-user-gradient-bg"></div>
               <span className="h-dropdown-fullname">{getFullNameWithPatronymic()}</span>
-              <span className="h-dropdown-group">Группа: {user?.numberGroup || '2992'}</span>
+              {isStudent && (
+                <span className="h-dropdown-group">Группа: {getGroupNumber()}</span>
+              )}
             </div>
             <div className="h-dropdown-menu">
-              <button 
-                className="h-dropdown-item" 
-                onClick={() => handleNavigation('main')}
-              >
-                Главная страница
-              </button>
-              <button 
-                className="h-dropdown-item" 
-                onClick={() => handleNavigation('personal')}
-              >
+              <button className="h-dropdown-item" onClick={handlePersonalCabinet}>
                 Личный кабинет
               </button>
-              <button 
-                className="h-dropdown-item" 
-                onClick={() => handleNavigation('documents')}
-              >
+              <button className="h-dropdown-item">
+                Статистика
+              </button>
+              <button className="h-dropdown-item" onClick={handleDocuments}>
                 Документы
               </button>
               <div className="h-dropdown-divider"></div>

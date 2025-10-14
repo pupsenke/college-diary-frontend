@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../context/UserContext";
+import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
 
 export const LoginPage: React.FC = () => {
@@ -17,7 +17,15 @@ export const LoginPage: React.FC = () => {
     setErrorMessage("");
     setIsLoading(true);
 
+    // Базовая валидация
+    if (!login.trim() || !password.trim()) {
+      setErrorMessage("Пожалуйста, заполните все поля");
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      // Пытаемся найти студента
       const studentResponse = await fetch(
         `http://localhost:8080/api/v1/students/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
@@ -27,11 +35,15 @@ export const LoginPage: React.FC = () => {
         if (studentData && studentData.id) {
           const userData = {
             id: studentData.id,
-            name: studentData.name,
-            surname: studentData.surname,
-            lastName: studentData.lastName,
-            login: studentData.login,
-            numberGroup: studentData.numberGroup,
+            name: studentData.name || "",
+            patronymic: studentData.patronymic || "",
+            lastName: studentData.lastName || "",
+            login: studentData.login || login,
+            numberGroup: studentData.numberGroup || 0,
+            email: studentData.email || "",
+            telephone: studentData.telephone || "",
+            birthDate: studentData.birthDate || "",
+            address: studentData.address || "",
             userType: 'student' as const
           };
           
@@ -41,7 +53,7 @@ export const LoginPage: React.FC = () => {
         }
       }
 
-      // если студент не найден, проверяем сотрудника
+      // Если студент не найден, проверяем сотрудника
       const staffResponse = await fetch(
         `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
@@ -49,33 +61,39 @@ export const LoginPage: React.FC = () => {
       if (staffResponse.ok) {
         const staffData = await staffResponse.json();
         if (staffData && staffData.id) {
-          // тип пользователя на основе должности
+          // Определяем тип пользователя на основе должности
           let userType: 'teacher' | 'metodist' = 'teacher';
           let positionName = '';
           
           if (staffData.staffPosition && staffData.staffPosition.length > 0) {
-            positionName = staffData.staffPosition[0].name;
+            positionName = staffData.staffPosition[0].name || '';
             
-            if (positionName === 'Методист' || positionName.toLowerCase().includes('методист')) {
+            const lowerPosition = positionName.toLowerCase();
+            if (lowerPosition.includes('методист')) {
               userType = 'metodist';
-            } else if (positionName === 'Преподаватель' || positionName.toLowerCase().includes('преподаватель')) {
+            } else if (lowerPosition.includes('преподаватель') || lowerPosition.includes('учитель')) {
               userType = 'teacher';
             }
           }
 
-          const userData = {
+          const userData: Staff = {
             id: staffData.id,
-            name: staffData.name,
-            surname: staffData.lastName, 
-            lastName: staffData.patronymic, 
-            login: staffData.login,
+            name: staffData.name || "",
+            patronymic: staffData.patronymic || "",
+            lastName: staffData.lastName || "",
+            login: staffData.login || login,
             position: positionName,
-            userType: userType
+            staffPosition: staffData.staffPosition || [],
+            userType: userType,
+            email: staffData.email || "",
+            telephone: staffData.telephone || "",
+            birthDate: staffData.birthDate || "",
+            address: staffData.address || ""
           };
           
           setUser(userData);
           
-          // перенаправляем в зависимости от типа пользователя
+          // Перенаправляем в зависимости от типа пользователя
           if (userType === 'metodist') {
             navigate("/metodist", { replace: true });
           } else {
@@ -85,12 +103,18 @@ export const LoginPage: React.FC = () => {
         }
       }
 
-      // если оба запроса не прошли
-      setErrorMessage("Неверный логин или пароль");
+      // Если оба запроса вернули ошибку
+      if (studentResponse.status === 404 && staffResponse.status === 404) {
+        setErrorMessage("Неверный логин или пароль");
+      } else if (studentResponse.status === 500 || staffResponse.status === 500) {
+        setErrorMessage("Ошибка сервера. Попробуйте позже.");
+      } else {
+        setErrorMessage("Ошибка при подключении к серверу");
+      }
       
     } catch (err) {
-      setErrorMessage("Ошибка при попытке входа. Попробуйте позже.");
-      console.error(err);
+      console.error("Login error:", err);
+      setErrorMessage("Ошибка при попытке входа. Проверьте подключение к интернету.");
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +122,10 @@ export const LoginPage: React.FC = () => {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
   const handleSupportClick = () => {
@@ -125,7 +153,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {errorMessage && (
-            <div className="error-message" style={{ color: "red", marginBottom: "10px" }}>
+            <div className="error-message">
               {errorMessage}
             </div>
           )}
@@ -140,6 +168,7 @@ export const LoginPage: React.FC = () => {
                 className="login-input"
                 required
                 disabled={isLoading}
+                autoComplete="username"
               />
             </div>
           </div>
@@ -154,14 +183,16 @@ export const LoginPage: React.FC = () => {
                 className="password-input"
                 required
                 disabled={isLoading}
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 className="password-toggle"
                 onClick={togglePasswordVisibility}
                 disabled={isLoading}
+                tabIndex={-1}
               >
-                <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
+              <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
               </button>
             </div>
           </div>
@@ -170,7 +201,8 @@ export const LoginPage: React.FC = () => {
             <button 
               type="button" 
               className="forgot-link"
-              onClick={() => navigate("/forgot-password")}
+              onClick={handleForgotPassword}
+              disabled={isLoading}
             >
               Забыли пароль?
             </button>
@@ -179,15 +211,26 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             className="login-button"
-            disabled={isLoading}
+            disabled={isLoading || !login.trim() || !password.trim()}
           >
-            {isLoading ? 'Вход...' : 'Войти в систему'}
+            {isLoading ? (
+              <span className="loading-text">
+                <span className="spinner"></span>
+                Вход...
+              </span>
+            ) : (
+              'Войти в систему'
+            )}
           </button>
 
           <div className="login-footer">
             <p className="support-text">
               Возникли проблемы?{" "}
-              <a href="https://t.me/digital_diary_support" className="support-link">
+              <a 
+                type="button" 
+                className="support-link"
+                onClick={handleSupportClick}
+              >
                 Служба поддержки
               </a>
             </p>

@@ -100,7 +100,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         const baseData = {
           firstName: user.name || '',
           lastName: user.lastName || '',
-          middleName: user.surname || '',
+          middleName: user.patronymic || '',
           email: user.email || 's123456@std.nosu.ru'
         };
 
