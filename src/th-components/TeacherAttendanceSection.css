@@ -89,10 +89,10 @@ body.menu-collapsed .teacher-attendance-section {
 }
 
 .back-button {
-  background: transparent;
+  background: white;
   border: none;
   padding: 0;
-  border-radius: 0;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -103,7 +103,7 @@ body.menu-collapsed .teacher-attendance-section {
 }
 
 .back-button:hover {
-  background: transparent;
+  background: white;
   transform: scale(1.1);
 }
 
@@ -113,9 +113,6 @@ body.menu-collapsed .teacher-attendance-section {
   transition: all 0.2s ease;
 }
 
-.back-button:hover img {
-  filter: brightness(0) saturate(100%) invert(16%) sepia(89%) saturate(3742%) hue-rotate(220deg) brightness(92%) contrast(101%);
-}
 
 /* Фильтры */
 .attendance-filters {
