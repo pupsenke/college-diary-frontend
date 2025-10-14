@@ -1,29 +1,42 @@
 /* TeacherAttendanceSection.css */
 .teacher-attendance-section {
-  background: transparent;
+  width: 1000px;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   padding: 0;
-  margin-bottom: 0px;
+  margin-bottom: 0;
+  position: relative;
+  transition: width 0.3s ease;
+}
+
+/* Стили для расширенного режима */
+.teacher-attendance-section.expanded {
+  width: 1200px !important;
+}
+
+/* Стили когда меню свернуто */
+body.menu-collapsed .teacher-attendance-section {
+  width: 1200px !important;
 }
 
 /* Заголовок */
 .attendance-header {
   margin-bottom: 24px;
   padding: 0 8px;
+  width: 100%;
 }
 
 .attendance-title-container {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
+  width: 100%;
 }
 
 .attendance-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
@@ -31,38 +44,25 @@
   font-size: 24px;
   font-weight: 600;
   color: #002FA7;
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
+  margin: 0;
 }
 
-.subject-title {
-  font-size: 14px;
+.subject-full-title {
+  font-size: 16px;
   color: #64748b;
   font-weight: 400;
-  line-height: 1.1;
-  max-width: 200px;
-  display: -webkit-box;
-  display: -moz-box;
-  display: box;
-  -webkit-line-clamp: 2;
-  -moz-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  -moz-box-orient: vertical;
-  box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
-  white-space: normal;
+  line-height: 1.4;
   text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 600px;
 }
 
 .attendance-actions {
+  margin-left: auto;
   display: flex;
-  align-items: center;
   gap: 16px;
-  flex-shrink: 0;
+  align-items: center;
 }
 
 /* Кнопки */
@@ -89,121 +89,247 @@
 }
 
 .back-button {
-  background: transparent;
+  background: white;
   border: none;
+  padding: 0;
+  border-radius: 50%;
   cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  width: 30px;
+  height: 30px;
 }
 
 .back-button:hover {
-  background: rgba(0, 47, 167, 0.1);
-}
-
-/* Фильтр семестров */
-.semester-filter {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 0 8px;
-}
-
-.semester-btn {
-  padding: 8px 16px;
-  border: 2px solid #e2e8f0;
   background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
+  transform: scale(1.1);
+}
+
+.back-button img {
+  width: 30px;
+  height: 30px;
   transition: all 0.2s ease;
-  color: #64748b;
 }
 
-.semester-btn.active {
-  background: #002FA7;
-  color: white;
-  border-color: #002FA7;
-}
 
-.semester-btn:hover:not(.disabled) {
-  border-color: #002FA7;
-  color: #002FA7;
-}
-
-.semester-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f1f5f9;
-}
-
-.lock-icon {
-  margin-left: 4px;
-  font-size: 12px;
-}
-
-/* Таблица - ОСНОВНЫЕ ИСПРАВЛЕНИЯ */
-.attendance-table-container {
+/* Фильтры */
+.attendance-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 0 8px;
+  margin-bottom: 20px;
+}
+
+.date-range-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-range-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-range-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
   white-space: nowrap;
 }
 
-.attendance-table-wrapper {
-  flex: 1;
+.date-range-input {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  min-width: 80px;
+  transition: all 0.2s ease;
+  height: 35px;
+}
+
+.date-range-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.subgroup-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-select {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  min-width: 160px;
+  transition: all 0.2s ease;
+  height: 35px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Контейнер таблицы */
+.attendance-table-container {
   width: 100%;
-  height: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.attendance-table-wrapper {
+  width: 100%;
   overflow-x: auto;
-  overflow-y: visible; 
+  position: relative;
 }
 
 .attendance-table {
-  width: auto;
-  min-width: max-content;
-  border-collapse: collapse;
-  background: white;
+  min-width: 100%;
+  width: 100%;
   table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* При расширенном режиме увеличиваем ширину таблицы */
+.teacher-attendance-section.expanded .attendance-table,
+body.menu-collapsed .attendance-table {
+  min-width: 1200px;
 }
 
 .attendance-table th {
-  background: #f8fafc;
+  background: white;
   color: #002c9c;
   font-size: 14px;
   font-weight: 500;
-  padding: 12px 8px;
+  padding: 16px 8px;
   text-align: center;
   border-bottom: 1px solid #e2e8f0;
   user-select: none;
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
+}
+
+/* Фиксированные заголовки */
+.attendance-table th.column-number {
+  position: sticky;
+  left: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.attendance-table th.column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.attendance-table th.column-subgroup {
+  position: sticky;
+  left: 310px;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.attendance-table th.column-percentage {
+  position: sticky;
+  right: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-left: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .attendance-table td {
-  padding: 8px;
+  padding: 12px 8px;
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.2s ease;
   white-space: nowrap;
+  text-align: center;
+  height: 50px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Колонки */
+/* Фиксированные ячейки */
+.attendance-table td.column-number {
+  position: sticky;
+  left: 0;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+}
+
+.attendance-table td.column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+.attendance-table td.column-subgroup {
+  position: sticky;
+  left: 310px;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+}
+
+.attendance-table td.column-percentage {
+  position: sticky;
+  right: 0;
+  z-index: 40;
+  background: white;
+  border-left: 2px solid #e2e8f0;
+}
+
+/* Подсветка при наведении на строку */
+.attendance-table tbody tr:hover td.column-number,
+.attendance-table tbody tr:hover td.column-name,
+.attendance-table tbody tr:hover td.column-subgroup,
+.attendance-table tbody tr:hover td.column-percentage {
+  background: #f0f4ff;
+}
+
+/* Конкретные размеры и позиции колонок */
 .column-number {
   width: 60px;
   min-width: 60px;
   max-width: 60px;
-  text-align: center;
-  position: sticky;
-  left: 0;
-  background: #f8fafc;
-  z-index: 5;
 }
 
 .column-name {
@@ -211,117 +337,201 @@
   min-width: 250px;
   max-width: 250px;
   text-align: left;
-  position: sticky;
-  left: 60px;
-  background: white;
-  z-index: 5;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.column-subgroup {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
 }
 
 .column-date {
+  width: 80px;
   min-width: 80px;
   max-width: 80px;
   cursor: pointer;
   position: relative;
-}
-
-.column-date:hover::after {
-  content: "Двойной клик для редактирования даты";
-  position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(99, 153, 254, 0.3);
-  color: #002FA7;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  z-index: 100;
+  z-index: 1;
 }
 
 .column-add-date {
   width: 60px;
   min-width: 60px;
   max-width: 60px;
-  position: sticky;
-  right: 0;
-  background: #f8fafc;
-  z-index: 5;
+  z-index: 1;
 }
 
-/* Ячейки */
+.column-percentage {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+/* При расширенном режиме увеличиваем ширину некоторых колонок */
+.teacher-attendance-section.expanded .column-name,
+body.menu-collapsed .column-name {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.teacher-attendance-section.expanded .column-date,
+body.menu-collapsed .column-date {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+/* Стили для ячеек */
 .cell-number {
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.cell-name {
+  text-align: left !important;
+  padding: 12px 16px !important;
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cell-subgroup {
   font-weight: 500;
   color: #64748b;
   font-size: 13px;
   text-align: center;
-  position: sticky;
-  left: 0;
-  background: white;
-  z-index: 2;
 }
 
-.cell-name {
-  text-align: left;
-  font-weight: 500;
-  color: #1e293b;
-  font-size: 13px;
-  padding: 8px 12px;
-  position: sticky;
-  left: 60px;
+.subgroup-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
   background: white;
-  z-index: 2;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subgroup-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* стили для статусов посещаемости */
+.cell-status-container {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: center;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  width: 100%;
 }
 
 .cell-status {
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  min-width: 40px;
-  height: 40px;
-  font-weight: 600;
+  height: 36px;
+  width: 36px;
+  border-radius: 8px;
+  font-weight: 700;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
-  position: relative;
-  font-size: 13px;
-  text-align: center;
-  box-sizing: border-box;
+  border: 2px solid transparent;
 }
 
-.cell-status:hover {
-  outline: 1px solid #002FA7;
-  border-color: transparent;
-  transform: none;
+.cell-status-container:hover .cell-status {
+  transform: scale(1.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
-.cell-status:hover::after {
-  content: "Клик: изменить статус | Двойной клик: изменить дату";
-  position: absolute;
-  bottom: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(99, 153, 254, 0.3);
-  color: #002FA7;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 100;
+.cell-status-container.editing {
+  border: 2px solid #002FA7;
+  border-radius: 6px;
+  background: white;
 }
 
-.cell-status.editing {
+/* Цвета для статусов */
+.status-present {
+  background: #2cbb00ff;
+}
+
+.status-absent {
+  background: #f59e0b;
+}
+
+.status-sick {
+  background: #6b7280;
+}
+
+.status-not {
+  background: #ef4444;
+}
+
+.status-empty {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #cbd5e1;
+  text-shadow: none;
+}
+
+.status-empty:hover {
   border-color: #002FA7;
-  background: white !important;
+  color: #002FA7;
+  background: #f0f4ff;
 }
 
-.cell-add {
-  background: #f8fafc;
-  position: sticky;
-  right: 0;
-  z-index: 2;
+/* Стили для процента посещаемости студентов */
+.cell-percentage {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Кнопка добавления даты */
+.add-date-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px dashed #cbd5e1;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-date-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f4ff;
+  transform: scale(1.1);
 }
 
 /* Inputs */
@@ -336,102 +546,114 @@
   font-size: 13px;
   color: #1e293b;
   outline: none;
-  position: relative;
 }
 
 .status-input::placeholder {
   color: #94a3b8;
   font-weight: 400;
-  text-align: center;
 }
 
 .date-input::placeholder {
   color: #94a3b8;
   font-weight: 400;
-  text-align: center;
 }
 
-.date-input {
-  color: #1e293b;
-  font-weight: 500;
-}
-
-/* Подсказки для инпутов */
-.status-input-container,
-.date-input-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.status-input-container::after,
-.date-input-container::after {
-  content: "";
-  position: absolute;
-  bottom: -25px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1e293b;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 100;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.status-input:focus + .status-input-container::after,
-.date-input:focus + .date-input-container::after {
-  opacity: 1;
-}
-
-.status-input-container::after {
-  content: "п - присутствует | у - уважительная | б - больничный | н - отсутствие";
-}
-
-.date-input-container::after {
-  content: "Формат: день.месяц (например: 05.09)";
-}
-
-/* Кнопка добавления даты */
-.add-date-btn {
-  width: 32px;
-  height: 32px;
-  border: 2px dashed #cbd5e1;
+/* Общая посещаемость группы */
+.group-attendance-footer {
+  padding: 16px 14px;
   background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 18px;
-  color: #64748b;
-  transition: all 0.2s ease;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.group-attendance-percentage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.percentage-circle {
+  width: 62px;
+  height: 62px;  
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  background: conic-gradient(
+    var(--percentage-color, #002FA7) 0% var(--percentage, 0%),
+    #f1f5f9 var(--percentage, 0%) 100%
+  );
 }
 
-.add-date-btn:hover {
-  border-color: #002FA7;
-  color: #002FA7;
-  background: #f0f4ff;
-}
-
-.add-date-btn:hover::after {
-  content: "Добавить новую дату";
+.percentage-circle::before {
+  content: '';
   position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1e293b;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  width: 52px;
+  height: 52px;
+  background: white;
+  border-radius: 50%;
+  align-items: center;
+}
+
+.percentage-value {
+  font-size: 15px; 
+  font-weight: 800;
+  z-index: 1;
+  color: var(--percentage-color, #002FA7);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.percentage-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  padding-right: 5px;
+}
+
+/* Двойной блок с процентами */
+.double-percentage-footer {
+  padding: 16px 14px;
+  background: transparent;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.double-percentage-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.percentage-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.percentage-item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
   white-space: nowrap;
-  z-index: 100;
 }
 
 /* Модальные окна */
@@ -532,9 +754,9 @@
   background: #f8fafc;
 }
 
-/* Стили для скроллбара - ТОЛЬКО ГОРИЗОНТАЛЬНЫЙ */
+/* Стили для скроллбара */
 .attendance-table-wrapper::-webkit-scrollbar {
-  height: 20px;
+  height: 8px;
 }
 
 .attendance-table-wrapper::-webkit-scrollbar-track {
@@ -554,35 +776,30 @@
 /* Адаптивность */
 @media (max-width: 768px) {
   .teacher-attendance-section {
+    width: 100%;
+    min-width: 100%;
     padding: 12px;
+  }
+  
+  .teacher-attendance-section.expanded,
+  body.menu-collapsed .teacher-attendance-section {
+    width: 100% !important;
+  }
+  
+  .attendance-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
   
   .attendance-title-container {
     flex-direction: column;
     gap: 16px;
-    align-items: stretch;
-  }
-  
-  .group-title {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .subject-title {
-    max-width: 100%;
-    -webkit-line-clamp: 3;
-    -moz-line-clamp: 3;
-    line-clamp: 3;
   }
   
   .attendance-actions {
     justify-content: space-between;
     width: 100%;
-  }
-  
-  .semester-filter {
-    flex-wrap: wrap;
   }
   
   .modal-content {
@@ -593,96 +810,39 @@
   .date-inputs {
     flex-direction: column;
   }
-
-  .cell-name {
-    font-size: 12px;
-    padding: 6px 8px;
-    left: 50px;
-  }
-
-  .cell-number {
-    font-size: 12px;
-    left: 0;
-    width: 50px;
-    min-width: 50px;
-  }
-
-  .cell-status {
-    font-size: 12px;
-    min-width: 35px;
-    height: 35px;
-  }
-
+  
   .column-name {
-    left: 50px;
     width: 200px;
     min-width: 200px;
   }
-
+  
   .column-number {
-    left: 0;
     width: 50px;
     min-width: 50px;
   }
-
-  /* Скрываем подсказки на мобильных */
-  .column-date:hover::after,
-  .cell-status:hover::after,
-  .add-date-btn:hover::after,
-  .status-input-container::after,
-  .date-input-container::after {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .attendance-actions {
-    flex-direction: column;
-    gap: 12px;
+  
+  .column-subgroup {
+    width: 80px;
+    min-width: 80px;
   }
   
-  .back-button,
-  .set-grades-btn {
-    width: 100%;
-    justify-content: center;
+  .percentage-circle {
+    width: 80px;
+    height: 80px;
   }
-
-  .cell-name {
-    font-size: 11px;
-    max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 6px 4px;
-    left: 40px;
+  
+  .percentage-circle::before {
+    width: 64px;
+    height: 64px;
   }
-
-  .cell-number {
-    font-size: 11px;
-    width: 40px;
-    min-width: 40px;
-    left: 0;
+  
+  .percentage-value {
+    font-size: 16px;
   }
-
+  
   .cell-status {
-    font-size: 11px;
-    min-width: 30px;
-    height: 30px;
-  }
-
-  .column-name {
-    left: 40px;
-    width: 150px;
-    min-width: 150px;
-  }
-
-  .column-number {
-    left: 0;
-    width: 40px;
-    min-width: 40px;
-  }
-
-  .column-date {
-    min-width: 70px;
-    max-width: 70px;
+    height: 32px;
+    width: 32px;
+    font-size: 12px;
   }
 }

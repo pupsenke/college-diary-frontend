@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TeacherAttendanceSection } from './TeacherAttendanceSection';
+import { TeacherPerformanceSection } from './TeacherPerformanceSection'; // Добавьте этот импорт
 import './GroupsSectionStyle.css';
 
 export interface Group {
@@ -26,6 +27,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [subjectSortOrder, setSubjectSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGroupRow, setSelectedGroupRow] = useState<number | null>(null);
   const [showAttendance, setShowAttendance] = useState<boolean>(false);
+  const [showPerformance, setShowPerformance] = useState<boolean>(false); // Перенесено сюда
   const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
 
   // Данные по группам - логически связаны с дисциплинами
@@ -161,8 +163,12 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
   const handleSetGrades = () => {
     if (!selectedGroupRow) return;
-    const selectedGroupData = groupsData.find(group => group.id === selectedGroupRow);
-    console.log('Выставление оценок для группы:', selectedGroupData?.name, 'по предмету:', selectedGroupData?.subject);
+      
+    const groupData = groupsData.find(group => group.id === selectedGroupRow);
+    if (groupData) {
+      setSelectedGroupData(groupData);
+      setShowPerformance(true);
+    }
   };
 
   const handleClearDiscipline = () => {
@@ -173,6 +179,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
   const handleBackToGroups = () => {
     setShowAttendance(false);
+    setShowPerformance(false);
     setSelectedGroupData(null);
   };
 
@@ -194,11 +201,11 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     { id: 14, lastName: 'Перлова', firstName: 'Екатерина', middleName: 'Андреевна' },
   ];
 
-  // Если показываем страницу посещаемости
-  if (showAttendance && selectedGroupData) {
+  // Условия отображения компонентов
+  if (showPerformance && selectedGroupData) {
     return (
-      <div className="teacher-attendance-page">
-        <TeacherAttendanceSection
+      <div className="teacher-performance-page">
+        <TeacherPerformanceSection
           groupNumber={selectedGroupData.name}
           subject={selectedGroupData.subject}
           students={mockStudents}
@@ -209,6 +216,19 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     );
   }
 
+  if (showAttendance && selectedGroupData) {
+    return (
+      <div className="teacher-attendance-page">
+        <TeacherAttendanceSection
+          groupNumber={selectedGroupData.name}
+          subject={selectedGroupData.subject}
+          students={mockStudents}
+          onBackToGroups={handleBackToGroups}
+          onSetGrades={handleSetGrades}
+        />
+      </div>
+    );
+  }
   return (
     <div className="gs-groups-section">
       {/* Блок выбранной дисциплины с кнопкой сброса фильтра */}

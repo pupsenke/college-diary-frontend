@@ -4,3 +4,4 @@ export { GroupsSection } from './GroupsSection';
 export { PersonalCabinet } from './PersonalCabinet';
 export { ScheduleSection } from './ScheduleSection';
 export { TeacherAttendanceSection } from './TeacherAttendanceSection';
+export { TeacherPerformanceSection } from './TeacherPerformanceSection';

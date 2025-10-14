@@ -5,6 +5,7 @@ import { GroupsSection } from '../th-components/GroupsSection';
 import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
 import { TeacherDashboard } from '../th-components/TeacherDashboard';
+
 import { useUser } from '../context/UserContext';
 import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
@@ -17,6 +18,20 @@ export const TeacherPage: React.FC = () => {
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const { user } = useUser();
   const navigate = useNavigate();
+
+  // Добавляем/убираем класс на body при сворачивании меню
+useEffect(() => {
+  if (sidebarCollapsed) {
+    document.body.classList.add('menu-collapsed');
+  } else {
+      document.body.classList.remove('menu-collapsed');
+  }
+    
+    // Очистка при размонтировании
+  return () => {
+    document.body.classList.remove('menu-collapsed');
+  };
+}, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!user) {
