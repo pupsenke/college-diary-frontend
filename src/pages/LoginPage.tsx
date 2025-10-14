@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
+import { apiService, GroupData, TeacherData } from '../services/apiService';
+
 
 export const LoginPage: React.FC = () => {
   const [login, setLogin] = useState("");
@@ -24,6 +26,8 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    
+
     try {
       // Пытаемся найти студента
       const studentResponse = await fetch(
@@ -31,27 +35,40 @@ export const LoginPage: React.FC = () => {
       );
 
       if (studentResponse.ok) {
-        const studentData = await studentResponse.json();
-        if (studentData && studentData.id) {
-          const userData = {
-            id: studentData.id,
-            name: studentData.name || "",
-            patronymic: studentData.patronymic || "",
-            lastName: studentData.lastName || "",
-            login: studentData.login || login,
-            numberGroup: studentData.numberGroup || 0,
-            email: studentData.email || "",
-            telephone: studentData.telephone || "",
-            birthDate: studentData.birthDate || "",
-            address: studentData.address || "",
-            userType: 'student' as const
-          };
-          
-          setUser(userData);
-          navigate("/student", { replace: true });
-          return;
-        }
-      }
+  const studentData = await studentResponse.json();
+  if (studentData && studentData.id) {
+    // Сначала получаем данные группы чтобы узнать numberGroup
+    let numberGroup = 0;
+    try {
+      const groupData = await apiService.getGroupData(studentData.idGroup);
+      numberGroup = groupData.numberGroup;
+    } catch (error) {
+      console.error('Error fetching group data:', error);
+      // Используем fallback
+      numberGroup = studentData.idGroup; // временное значение
+    }
+
+    const userData = {
+      id: studentData.id,
+      name: studentData.name || "",
+      patronymic: studentData.patronymic || "",
+      lastName: studentData.lastName || "",
+      login: studentData.login || login,
+      idGroup: studentData.idGroup,
+      numberGroup: numberGroup,
+      email: studentData.email || "",
+      telephone: studentData.telephone || "",
+      birthDate: studentData.birthDate || "",
+      address: studentData.address || "",
+      userType: 'student' as const
+    };
+    
+    console.log('🎯 Student user data:', userData);
+    setUser(userData);
+    navigate("/student", { replace: true });
+    return;
+  }
+}
 
       // Если студент не найден, проверяем сотрудника
       const staffResponse = await fetch(

@@ -16,7 +16,7 @@ export const DocumentsSection: React.FC = () => {
   // Данные из БД через контекст пользователя
   const userData = {
     fullName: user ? `${user.lastName} ${user.name} ${user.patronymic}` : 'ФИО не указано',
-    group: isStudent ? (user as import('../context/UserContext').Student).numberGroup?.toString() || '2992' : '2992',
+    group: isStudent ? (user as import('../context/UserContext').Student).idGroup?.toString() || '2992' : '2992',
     course: '4 курс',
     phone: '+7 (999) 999-99-99',
     departmentHead: 'Петрова Мария Сергеевна'

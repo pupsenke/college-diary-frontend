@@ -58,7 +58,7 @@ export const Header: React.FC = () => {
   const getGroupNumber = () => {
     if (!user || !isStudent) return '2992';
     const student = user as import('../context/UserContext').Student;
-    return student.numberGroup?.toString() || '2992';
+    return student.idGroup?.toString() || '2992';
   };
 
   return (

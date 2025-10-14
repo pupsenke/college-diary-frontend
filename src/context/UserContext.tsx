@@ -7,6 +7,7 @@ export interface Student {
   lastName: string;
   login: string;
   numberGroup: number;
+  idGroup: number; // Добавляем это поле
   email?: string;
   telephone?: string;
   birthDate?: string;

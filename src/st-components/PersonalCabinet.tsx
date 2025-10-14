@@ -63,8 +63,8 @@ export const PersonalCabinet: React.FC = () => {
       setUserData(studentData);
 
       // Если это студент, получаем данные группы
-      if (isStudent && 'numberGroup' in user && user.numberGroup) {
-        fetchGroupData(user.numberGroup);
+      if (isStudent && 'idGroup' in user && user.idGroup) {
+        fetchGroupData(user.idGroup);
       }
     }
   }, [user, isStudent]);

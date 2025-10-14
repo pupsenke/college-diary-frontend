@@ -37,50 +37,36 @@ export interface StudentData {
 }
 
 export const apiService = {
-  // Авторизация
-  async loginStudent(login: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/students/login/${login}/password/${password}`);
-    if (!response.ok) throw new Error('Ошибка авторизации студента');
-    const data: StudentData = await response.json();
-    return {
-      ...data,
-      userType: 'student' as const,
-      numberGroup: data.idGroup
-    };
-  },
-
-  async loginStaff(login: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/staffs/login/${login}/password/${password}`);
-    if (!response.ok) throw new Error('Ошибка авторизации сотрудника');
-    const data = await response.json();
+  // Получение данных группы по ID
+  async getGroupData(groupId: number): Promise<GroupData> {
+    console.log(`🔍 Fetching group data for ID: ${groupId}`);
+    const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
     
-    // Определяем тип пользователя на основе должности
-    const positions = data.staffPosition.map((pos: any) => pos.name.toLowerCase());
-    let userType: 'teacher' | 'metodist' = 'teacher';
-    
-    if (positions.includes('методист')) {
-      userType = 'metodist';
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки данных группы: ${response.status}`);
     }
     
-    return {
-      ...data,
-      userType
-    };
-  },
-
-  // Получение данных группы
-  async getGroupData(groupNumber: number): Promise<GroupData> {
-    const response = await fetch(`${API_BASE_URL}/groups/number/${groupNumber}`);
-    if (!response.ok) throw new Error('Ошибка загрузки данных группы');
-    const data: GroupData[] = await response.json();
-    return data[0]; // API возвращает массив, берем первый элемент
+    const data: GroupData = await response.json();
+    console.log('Group data received:', data);
+    return data;
   },
 
   // Получение данных преподавателя
   async getTeacherData(teacherId: number): Promise<TeacherData> {
+    console.log(`Fetching teacher data for ID: ${teacherId}`);
     const response = await fetch(`${API_BASE_URL}/teachers/id/${teacherId}`);
-    if (!response.ok) throw new Error('Ошибка загрузки данных преподавателя');
-    return await response.json();
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки данных преподавателя: ${response.status}`);
+    }
+    
+    const data: TeacherData = await response.json();
+    console.log('Teacher data received:', data);
+    return data;
   },
 
   // Обновление данных студента
@@ -94,5 +80,19 @@ export const apiService = {
     });
     if (!response.ok) throw new Error('Ошибка обновления данных студента');
     return await response.json();
+  },
+
+  // Авторизация студента
+  async loginStudent(login: string, password: string) {
+    const response = await fetch(`${API_BASE_URL}/students/login/${login}/password/${password}`);
+    if (!response.ok) throw new Error('Ошибка авторизации студента');
+    const data: StudentData = await response.json();
+    
+    // Преобразуем данные студента в нужный формат
+    return {
+      ...data,
+      userType: 'student' as const,
+      numberGroup: 0 // Временное значение, будет обновлено после получения данных группы
+    };
   }
 };
