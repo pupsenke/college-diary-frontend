@@ -41,15 +41,15 @@ export const StudentPage: React.FC = () => {
   };
 
   // Функция для форматирования ФИО куратора
-  const formatCuratorName = (curator: TeacherData | null) => {
-    if (!curator) return '';
-    
-    const lastName = curator.lastName || '';
-    const firstName = curator.name ? curator.name : '';
-    const middleName = curator.patronymic ? curator.patronymic : '';
-    
-    return `${lastName} ${firstName} ${middleName}`.trim();
-  };
+const formatCuratorName = (curator: TeacherData | null) => {
+  if (!curator) return '';
+  
+  const lastName = curator.lastName || '';
+  const firstName = curator.name ? `${curator.name.charAt(0)}.` : '';
+  const middleName = curator.patronymic ? `${curator.patronymic.charAt(0)}.` : '';
+  
+  return `${lastName} ${firstName}${middleName}`.trim();
+};
 
   // Загрузка данных группы и куратора
   useEffect(() => {

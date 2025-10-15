@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { apiService } from '../services/apiService';
 import './HeaderStudentStyle.css';
 
 export const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [groupNumber, setGroupNumber] = useState<string>('-');
+  const [loadingGroup, setLoadingGroup] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, isStudent } = useUser();
@@ -22,6 +25,34 @@ export const Header: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Загрузка номера группы для студента
+  useEffect(() => {
+    const fetchGroupNumber = async () => {
+      if (!user || !isStudent) return;
+
+      const student = user as import('../context/UserContext').Student;
+      const groupId = student.idGroup;
+
+      if (!groupId) {
+        setGroupNumber('-');
+        return;
+      }
+
+      try {
+        setLoadingGroup(true);
+        const groupData = await apiService.getGroupData(groupId);
+        setGroupNumber(groupData.numberGroup.toString());
+      } catch (error) {
+        console.error('Ошибка при загрузке номера группы:', error);
+        setGroupNumber('-');
+      } finally {
+        setLoadingGroup(false);
+      }
+    };
+
+    fetchGroupNumber();
+  }, [user, isStudent]);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -56,9 +87,8 @@ export const Header: React.FC = () => {
 
   // Получаем номер группы только для студентов
   const getGroupNumber = () => {
-    if (!user || !isStudent) return '2992';
-    const student = user as import('../context/UserContext').Student;
-    return student.idGroup?.toString() || '2992';
+    if (loadingGroup) return 'Загрузка...';
+    return groupNumber;
   };
 
   return (
@@ -95,9 +125,6 @@ export const Header: React.FC = () => {
             <div className="h-dropdown-menu">
               <button className="h-dropdown-item" onClick={handlePersonalCabinet}>
                 Личный кабинет
-              </button>
-              <button className="h-dropdown-item">
-                Статистика
               </button>
               <button className="h-dropdown-item" onClick={handleDocuments}>
                 Документы

@@ -147,13 +147,12 @@
 }
 
 .st-sidebar.collapsed .st-sidebar-toggle {
-  transform: rotate(180deg);
+  transform: rotate(360deg);
 }
 
 /* Контент боковой панели */
 .st-sidebar-header {
   text-align: center;
-  margin-bottom: 16px;
 }
 
 .st-user-info .st-user-name {
@@ -174,7 +173,7 @@
   color: #235bea;
   font-size: 14px;
   font-weight: 500;
-  margin: 0 0 18px 0;
+  margin: 18px 0 18px 0;
 }
 
 .st-user-group,
@@ -319,6 +318,22 @@
   padding: 0;
   flex-wrap: nowrap;
   min-width: 0;
+  gap: 12px;
+}
+
+.st-content-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.st-title-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .st-content-title {
@@ -340,11 +355,17 @@
   color: white;
   font-weight: 200;
   font-size: 14px;
-  margin-top: 15px;
-  margin-left: 40px;
-  width: 100%;
+  margin: 0;
   white-space: nowrap;
   text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* Альтернативный вариант без разделительной линии */
+.st-content-subtitle.without-border {
+  border-left: none;
+  padding-left: 0;
+  margin-left: 8px;
 }
 
 .st-content-card {

@@ -39,7 +39,7 @@ export interface StudentData {
 export const apiService = {
   // Получение данных группы по ID
   async getGroupData(groupId: number): Promise<GroupData> {
-    console.log(`🔍 Fetching group data for ID: ${groupId}`);
+    console.log(`Fetching group data for ID: ${groupId}`);
     const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
     
     if (!response.ok) {
@@ -56,7 +56,7 @@ export const apiService = {
   // Получение данных преподавателя
   async getTeacherData(teacherId: number): Promise<TeacherData> {
     console.log(`Fetching teacher data for ID: ${teacherId}`);
-    const response = await fetch(`${API_BASE_URL}/teachers/id/${teacherId}`);
+    const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -67,19 +67,6 @@ export const apiService = {
     const data: TeacherData = await response.json();
     console.log('Teacher data received:', data);
     return data;
-  },
-
-  // Обновление данных студента
-  async updateStudentData(studentId: number, data: Partial<StudentData>) {
-    const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Ошибка обновления данных студента');
-    return await response.json();
   },
 
   // Авторизация студента
@@ -94,5 +81,32 @@ export const apiService = {
       userType: 'student' as const,
       numberGroup: 0 // Временное значение, будет обновлено после получения данных группы
     };
+  },
+
+  // Обновление данных студента через PATCH запрос
+  async updateStudentData(studentId: number, data: Partial<StudentData>) {
+    console.log('Sending PATCH request for student:', studentId, data);
+    
+    const response = await fetch(`${API_BASE_URL}/students/update`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: studentId,
+        ...data
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PATCH request failed:', response.status, errorText);
+      throw new Error(`Ошибка обновления данных студента: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Student data updated successfully:', result);
+    return result;
   }
+
 };

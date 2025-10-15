@@ -195,3 +195,323 @@
     width: 100%;
   }
 }
+
+.pc-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pc-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.pc-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pc-readonly {
+  color: #6b7280;
+}
+
+.pc-edit-notice {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 20px;
+  color: #0369a1;
+  font-size: 14px;
+}
+
+/* Улучшенные стили для полей ввода */
+.pc-input:required {
+  border-left: 3px solid #3b82f6;
+}
+
+.pc-input:invalid {
+  border-color: #ef4444;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .pc-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pc-action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Стили для модального окна смены пароля */
+.pc-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.pc-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  width: 90%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modal-appear 0.2s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.pc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  border-radius: 12px 12px 0 0;
+  color: white;
+}
+
+.pc-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.pc-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 4px 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.pc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.pc-modal-content {
+  padding: 24px;
+}
+
+.pc-form-group {
+  margin-bottom: 20px;
+}
+
+.pc-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.pc-form-group label::after {
+  content: " *";
+  color: #ef4444;
+}
+
+.pc-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.pc-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pc-input::placeholder {
+  color: #9ca3af;
+}
+
+.pc-input:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.pc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pc-confirm-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pc-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.pc-confirm-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pc-confirm-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.pc-confirm-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Анимация загрузки для кнопки */
+.pc-confirm-btn:disabled::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: button-spinner 0.8s linear infinite;
+}
+
+@keyframes button-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Стили для валидации пароля */
+.pc-password-strength {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pc-password-requirements {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  border-left: 4px solid #3b82f6;
+}
+
+.pc-password-requirements h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.pc-password-requirements ul {
+  margin: 0;
+  padding-left: 16px;
+  color: #6b7280;
+}
+
+.pc-password-requirements li {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .pc-modal {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .pc-modal-header {
+    padding: 20px 20px 16px;
+  }
+  
+  .pc-modal-content {
+    padding: 20px;
+  }
+  
+  .pc-modal-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pc-confirm-btn {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
