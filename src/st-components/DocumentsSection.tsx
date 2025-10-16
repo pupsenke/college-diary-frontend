@@ -388,6 +388,7 @@ export const DocumentsSection: React.FC = () => {
     ? documents 
     : documents.filter(doc => doc.type === selectedDocumentType);
 
+    //комент
   return (
     <div className="document-section">
       <div className="ds-header">

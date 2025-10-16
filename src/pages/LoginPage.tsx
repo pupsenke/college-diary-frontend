@@ -63,7 +63,7 @@ export const LoginPage: React.FC = () => {
       userType: 'student' as const
     };
     
-    console.log('🎯 Student user data:', userData);
+    console.log('Student user data:', userData);
     setUser(userData);
     navigate("/student", { replace: true });
     return;
