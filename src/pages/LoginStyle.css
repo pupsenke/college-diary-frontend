@@ -140,7 +140,7 @@
 
 .card-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .login-card .auth-headline {
@@ -162,7 +162,7 @@
   color: #c53030;
   padding: 12px 16px;
   border-radius: 12px;
-  margin-bottom: 20px;
+  
   display: flex;
   align-items: center;
   gap: 8px;
@@ -176,6 +176,8 @@
 .login-card .error-message {
   font-size: 13px;
   text-align: center;
+  color: #c53030;
+  margin-bottom: 20px;
 }
 
 /* Поля ввода */
@@ -284,6 +286,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin-top: 30px;
 }
 
 .login-button:hover:not(:disabled) {

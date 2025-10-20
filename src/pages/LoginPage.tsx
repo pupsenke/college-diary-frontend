@@ -214,7 +214,7 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="forgot-row">
+          {/* <div className="forgot-row">
             <button 
               type="button" 
               className="forgot-link"
@@ -223,7 +223,7 @@ export const LoginPage: React.FC = () => {
             >
               Забыли пароль?
             </button>
-          </div>
+          </div> */}
 
           <button
             type="submit"

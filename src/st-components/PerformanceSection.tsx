@@ -17,6 +17,13 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import { 
+  apiService, 
+  StudentMark, 
+  SubjectMark, 
+  TeacherSubject, 
+  MarkChange 
+} from '../services/apiService';
 
 export interface Grade {
   id: number;
@@ -24,7 +31,6 @@ export interface Grade {
   grades: number[];
   average: number;
   examGrade: number;
-  finalGrade?: number;
   gradeDetails?: GradeDetail[];
 }
 
@@ -44,88 +50,184 @@ interface ChartData {
   color: string;
 }
 
-export const PerformanceSection: React.FC = () => {
+interface PerformanceSectionProps {
+  studentId: number;
+  teacherId?: number;
+}
+
+export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ 
+  studentId, 
+  teacherId = 1 // Значение по умолчанию
+}) => {
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'statistics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedGrade, setSelectedGrade] = useState<GradeDetail | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<{subject: string, grade: number, number: number, topic: string} | null>(null);
   const [gradePosition, setGradePosition] = useState<{ top: number; left: number } | null>(null);
   const [clickedGradeId, setClickedGradeId] = useState<number | null>(null);
+  const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
+  const [subjectMarks, setSubjectMarks] = useState<{[key: number]: SubjectMark[]}>({});
+  const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([]);
+  const [markChanges, setMarkChanges] = useState<MarkChange[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const gradeRefs = useRef<Map<number, HTMLElement>>(new Map());
 
-  // Заглушка данных из базы данных
-  const gradesData: Grade[] = [
-    {
-      id: 1,
-      subject: 'Русский язык',
-      grades: [5, 4, 3, 2, 5, 4, 3, 5, 4, 5, 3, 4, 5, 4, 3, 5, 4, 5, 3, 4, 5, 4, 3, 5, 4, 5, 3, 4, 5, 4],
-      average: 4.1,
-      examGrade: 4,
-      finalGrade: 4,
-      gradeDetails: [
-        { id: 1, date: '13.09.2024', topic: 'Введение. Основные термины', grade: 5, teacher: 'Иванова А.С.', type: 'Контрольная работа' },
-        { id: 2, date: '20.09.2024', topic: 'Синтаксис и пунктуация', grade: 4, teacher: 'Иванова А.С.', type: 'Практическая работа' },
-        { id: 3, date: '27.09.2024', topic: 'Морфология', grade: 3, teacher: 'Иванова А.С.', type: 'Тест' },
-        { id: 4, date: '04.10.2024', topic: 'Фонетика', grade: 2, teacher: 'Иванова А.С.', type: 'Самостоятельная работа' },
-      ]
-    },
-    {
-      id: 2,
-      subject: 'Литература',
-      grades: [3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 5],
-      average: 4.0,
-      examGrade: 4,
-      finalGrade: 4,
-      gradeDetails: [
-        { id: 1, date: '15.09.2024', topic: 'Русская классическая литература', grade: 3, teacher: 'Петрова М.В.', type: 'Анализ текста' },
-        { id: 2, date: '22.09.2024', topic: 'Поэзия Серебряного века', grade: 4, teacher: 'Петрова М.В.', type: 'Эссе' },
-        { id: 3, date: '29.09.2024', topic: 'Современная литература', grade: 5, teacher: 'Петрова М.В.', type: 'Доклад' },
-      ]
-    },
-    {
-      id: 3,
-      subject: 'Математика',
-      grades: [5, 5, 4, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5, 5, 4, 5],
-      average: 4.7,
-      examGrade: 5,
-      finalGrade: 5,
-      gradeDetails: [
-        { id: 1, date: '14.09.2024', topic: 'Алгебраические уравнения', grade: 5, teacher: 'Сидоров В.П.', type: 'Контрольная работа' },
-        { id: 2, date: '21.09.2024', topic: 'Геометрия', grade: 5, teacher: 'Сидоров В.П.', type: 'Практическая работа' },
-        { id: 3, date: '28.09.2024', topic: 'Тригонометрия', grade: 4, teacher: 'Сидоров В.П.', type: 'Тест' },
-      ]
-    },
-    {
-      id: 4,
-      subject: 'Программирование',
-      grades: [5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 4, 5, 5],
-      average: 4.8,
-      examGrade: 5,
-      finalGrade: 5,
-      gradeDetails: [
-        { id: 1, date: '16.09.2024', topic: 'Основы JavaScript', grade: 5, teacher: 'Козлов Д.А.', type: 'Лабораторная работа' },
-        { id: 2, date: '23.09.2024', topic: 'React компоненты', grade: 5, teacher: 'Козлов Д.А.', type: 'Проект' },
-        { id: 3, date: '30.09.2024', topic: 'Работа с API', grade: 5, teacher: 'Козлов Д.А.', type: 'Практическая работа' },
-        { id: 4, date: '07.10.2024', topic: 'TypeScript', grade: 4, teacher: 'Козлов Д.А.', type: 'Тест' },
-      ]
-    },
-    {
-      id: 5,
-      subject: 'Базы данных',
-      grades: [4, 5, 4, 3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 5, 4],
-      average: 4.1,
-      examGrade: 4,
-      finalGrade: 4,
-      gradeDetails: [
-        { id: 1, date: '17.09.2024', topic: 'SQL запросы', grade: 4, teacher: 'Николаев С.В.', type: 'Практическая работа' },
-        { id: 2, date: '24.09.2024', topic: 'Нормализация баз данных', grade: 5, teacher: 'Николаев С.В.', type: 'Тест' },
-        { id: 3, date: '01.10.2024', topic: 'Транзакции', grade: 4, teacher: 'Николаев С.В.', type: 'Лабораторная работа' },
-        { id: 4, date: '08.10.2024', topic: 'Оптимизация запросов', grade: 3, teacher: 'Николаев С.В.', type: 'Контрольная работа' },
-      ]
-    }
-  ];
+  // Загрузка данных студента
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      try {
+        setLoading(true);
+        
+        // Загрузка оценок студента через apiService
+        const marksData = await apiService.getStudentMarks(studentId);
+        setStudentMarks(marksData);
 
+        // Загрузка детальной информации по каждому предмету
+        const subjectMarksData: {[key: number]: SubjectMark[]} = {};
+        for (const mark of marksData) {
+          const subjectId = mark.stNameSubjectDTO.idSubject;
+          try {
+            const subjectMarkData = await apiService.getSubjectMarks(studentId, subjectId);
+            subjectMarksData[subjectId] = subjectMarkData;
+          } catch (error) {
+            console.error(`Ошибка при загрузке данных по предмету ${subjectId}:`, error);
+            subjectMarksData[subjectId] = [];
+          }
+        }
+        setSubjectMarks(subjectMarksData);
+
+        // Загрузка информации о преподавателе и предметах
+        const teacherData = await apiService.getTeacherSubjects(teacherId);
+        setTeacherSubjects(teacherData);
+
+      } catch (error) {
+        console.error('Ошибка при загрузке данных:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [studentId, teacherId]);
+
+  // Загрузка информации об оценке при клике
+  const fetchMarkChanges = async (markNumber: number) => {
+    try {
+      // Используем studentId из пропсов и teacherId для stId
+      const changes = await apiService.getMarkChanges(studentId, teacherId, markNumber);
+      setMarkChanges(changes);
+    } catch (error) {
+      console.error('Ошибка при загрузке истории оценки:', error);
+    }
+  };
+
+  // Функция для определения семестра по дате
+  const getSemesterByDate = (dateString: string): 'first' | 'second' => {
+    try {
+      const [day, month, year] = dateString.split('.').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      const monthNum = date.getMonth() + 1;
+      const dayNum = date.getDate();
+      
+      // Первый семестр: 1 сентября - 31 декабря
+      if (monthNum === 9 && dayNum >= 1) return 'first';
+      if (monthNum >= 10 && monthNum <= 12) return 'first';
+      
+      // Второй семестр: 1 января - 31 августа
+      return 'second';
+    } catch (error) {
+      console.error('Ошибка при определении семестра:', error);
+      return 'first';
+    }
+  };
+
+  // Функция для получения темы урока из данных API
+  const getLessonTopic = (subjectId: number, markNumber: number): string => {
+    const marks = subjectMarks[subjectId];
+    if (!marks) return `Работа ${markNumber}`;
+    
+    const mark = marks.find(m => m.number === markNumber);
+    if (!mark) return `Работа ${markNumber}`;
+    
+    // Используем typeMark как тему урока
+    return mark.typeMark || `Работа ${markNumber}`;
+  };
+
+  // Функция для получения даты урока из данных API
+  const getLessonDate = (subjectId: number, markNumber: number): string => {
+    const marks = subjectMarks[subjectId];
+    if (!marks) {
+      // Генерируем дату на основе текущего времени и номера оценки
+      const currentDate = new Date();
+      const gradeDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - markNumber * 7);
+      return gradeDate.toLocaleDateString('ru-RU');
+    }
+    
+    const mark = marks.find(m => m.number === markNumber);
+    if (!mark || !mark.dateLesson) {
+      // Генерируем дату на основе текущего времени и номера оценки
+      const currentDate = new Date();
+      const gradeDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - markNumber * 7);
+      return gradeDate.toLocaleDateString('ru-RU');
+    }
+    
+    // Преобразуем дату из API в нужный формат
+    try {
+      const date = new Date(mark.dateLesson);
+      return date.toLocaleDateString('ru-RU');
+    } catch (error) {
+      console.error('Ошибка при преобразовании даты:', error);
+      const currentDate = new Date();
+      const gradeDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - markNumber * 7);
+      return gradeDate.toLocaleDateString('ru-RU');
+    }
+  };
+
+  // Преобразование данных из API в формат компонента с разделением по семестрам
+  const transformStudentMarksToGrades = (semester: 'first' | 'second'): Grade[] => {
+    return studentMarks.map((studentMark) => {
+      const subjectId = studentMark.stNameSubjectDTO.idSubject;
+      
+      // Создаем детали оценок на основе доступных данных
+      const gradeDetails: GradeDetail[] = studentMark.marksBySt.map((mark, markIndex) => {
+        const lessonDate = getLessonDate(subjectId, mark.number);
+        const lessonTopic = getLessonTopic(subjectId, mark.number);
+
+        return {
+          id: mark.number,
+          date: lessonDate,
+          topic: lessonTopic,
+          grade: mark.value,
+          teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+          type: 'Работа'
+        };
+      });
+
+      // Фильтруем оценки по семестру
+      const semesterGradeDetails = gradeDetails.filter(detail => 
+        getSemesterByDate(detail.date) === semester
+      );
+
+      const semesterGrades = semesterGradeDetails.map(detail => detail.grade);
+      const average = semesterGrades.length > 0 
+        ? semesterGrades.reduce((sum, grade) => sum + grade, 0) / semesterGrades.length 
+        : 0;
+
+      return {
+        id: studentMark.stNameSubjectDTO.idSubject,
+        subject: studentMark.stNameSubjectDTO.nameSubject,
+        grades: semesterGrades,
+        average: parseFloat(average.toFixed(1)),
+        examGrade: 0, // Убираем оценку за сессию
+        gradeDetails: semesterGradeDetails
+      };
+    }).filter(grade => grade.grades.length > 0); // Фильтруем предметы без оценок в выбранном семестре
+  };
+
+  // Получаем данные для текущего выбранного семестра
+  const gradesData = transformStudentMarksToGrades(selectedSemester);
   const subjects = gradesData.map(grade => grade.subject);
 
   // Функция для подсчета общей статистики успеваемости
@@ -140,21 +242,19 @@ export const PerformanceSection: React.FC = () => {
     gradesData.forEach(subject => {
       subject.grades.forEach(grade => {
         totalGrades++;
-        switch (grade) {
-          case 5: grade5++; break;
-          case 4: grade4++; break;
-          case 3: grade3++; break;
-          case 2: grade2++; break;
-        }
+        if (grade >= 4.5) grade5++;
+        else if (grade >= 3.5) grade4++;
+        else if (grade >= 2.5) grade3++;
+        else grade2++;
       });
       totalAverage += subject.average;
     });
 
-    const overallAverage = totalAverage / gradesData.length;
-    const excellentPercentage = (grade5 / totalGrades) * 100;
-    const goodPercentage = (grade4 / totalGrades) * 100;
-    const satisfactoryPercentage = (grade3 / totalGrades) * 100;
-    const unsatisfactoryPercentage = (grade2 / totalGrades) * 100;
+    const overallAverage = totalAverage / (gradesData.length || 1);
+    const excellentPercentage = totalGrades > 0 ? (grade5 / totalGrades) * 100 : 0;
+    const goodPercentage = totalGrades > 0 ? (grade4 / totalGrades) * 100 : 0;
+    const satisfactoryPercentage = totalGrades > 0 ? (grade3 / totalGrades) * 100 : 0;
+    const unsatisfactoryPercentage = totalGrades > 0 ? (grade2 / totalGrades) * 100 : 0;
 
     return {
       totalGrades,
@@ -170,13 +270,81 @@ export const PerformanceSection: React.FC = () => {
     };
   };
 
-  const handleGradeClick = (gradeDetail: GradeDetail, gradeIndex: number, event: React.MouseEvent) => {
+  // Функция для расчета динамики успеваемости по двухнедельным периодам
+  const calculateBiWeeklyPerformance = () => {
+    const allGrades: { date: Date; grade: number }[] = [];
+    
+    // Собираем все оценки с датами
+    gradesData.forEach(subject => {
+      subject.gradeDetails?.forEach(detail => {
+        const [day, month, year] = detail.date.split('.').map(Number);
+        allGrades.push({
+          date: new Date(year, month - 1, day),
+          grade: detail.grade
+        });
+      });
+    });
+
+    // Сортируем оценки по дате
+    allGrades.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (allGrades.length === 0) {
+      return [{ period: 'Нет данных', average: 0 }];
+    }
+
+    // Группируем оценки по двухнедельным периодам
+    const periods: { period: string; grades: number[] }[] = [];
+    const startDate = new Date(allGrades[0].date);
+    
+    let currentPeriodStart = new Date(startDate);
+    let currentPeriodEnd = new Date(currentPeriodStart);
+    currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 13); // +14 дней включая начальный
+
+    let currentPeriodGrades: number[] = [];
+
+    allGrades.forEach(gradeItem => {
+      while (gradeItem.date > currentPeriodEnd) {
+        // Завершаем текущий период и начинаем новый
+        if (currentPeriodGrades.length > 0) {
+          periods.push({
+            period: `${currentPeriodStart.toLocaleDateString('ru-RU')} - ${currentPeriodEnd.toLocaleDateString('ru-RU')}`,
+            grades: [...currentPeriodGrades]
+          });
+        }
+        
+        currentPeriodStart.setDate(currentPeriodStart.getDate() + 14);
+        currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 14);
+        currentPeriodGrades = [];
+      }
+      
+      currentPeriodGrades.push(gradeItem.grade);
+    });
+
+    // Добавляем последний период
+    if (currentPeriodGrades.length > 0) {
+      periods.push({
+        period: `${currentPeriodStart.toLocaleDateString('ru-RU')} - ${currentPeriodEnd.toLocaleDateString('ru-RU')}`,
+        grades: [...currentPeriodGrades]
+      });
+    }
+
+    // Рассчитываем средние значения для каждого периода
+    return periods.map(period => ({
+      period: period.period.split(' - ')[0], // Берем только начальную дату для краткости
+      average: period.grades.reduce((sum, grade) => sum + grade, 0) / period.grades.length
+    }));
+  };
+
+  const handleGradeClick = async (subject: string, grade: number, gradeNumber: number, topic: string, event: React.MouseEvent) => {
     const target = event.currentTarget as HTMLElement;
-    const uniqueId = Date.now() + gradeIndex;
+    const uniqueId = Date.now() + gradeNumber;
     
     gradeRefs.current.set(uniqueId, target);
     setClickedGradeId(uniqueId);
-    setSelectedGrade(gradeDetail);
+    setSelectedGrade({ subject, grade, number: gradeNumber, topic });
+    
+    // Загружаем историю изменений оценки
+    await fetchMarkChanges(gradeNumber);
     
     document.body.style.overflow = 'hidden';
   };
@@ -209,22 +377,20 @@ export const PerformanceSection: React.FC = () => {
     setSelectedGrade(null);
     setGradePosition(null);
     setClickedGradeId(null);
+    setMarkChanges([]);
     document.body.style.overflow = 'auto';
   };
 
   const calculateOverallAverage = () => {
     const averages = gradesData.map(grade => grade.average);
-    return (averages.reduce((sum, avg) => sum + avg, 0) / averages.length).toFixed(1);
+    return (averages.reduce((sum, avg) => sum + avg, 0) / (averages.length || 1)).toFixed(1);
   };
 
   const getGradeColor = (grade: number) => {
-    switch (grade) {
-      case 5: return '#2cbb00ff';
-      case 4: return '#a5db28ff';
-      case 3: return '#f59e0b';
-      case 2: return '#ef4444';
-      default: return '#6b7280';
-    }
+    if (grade >= 4.5) return '#2cbb00ff';
+    if (grade >= 3.5) return '#a5db28ff';
+    if (grade >= 2.5) return '#f59e0b';
+    return '#ef4444';
   };
 
   const getAverageGradeColor = (average: number) => {
@@ -234,18 +400,9 @@ export const PerformanceSection: React.FC = () => {
     return '#ef4444';
   };
 
-  const getFinalGradeColor = (finalGrade?: number) => {
-    if (!finalGrade) return '#6b7280';
-    return getGradeColor(finalGrade);
-  };
-
-  const getExamGradeColor = (examGrade?: number) => {
-    if (!examGrade) return '#6b7280';
-    return getGradeColor(examGrade);
-  };
-
   const selectedSubjectData = gradesData.find(grade => grade.subject === selectedSubject);
   const statistics = calculatePerformanceStatistics();
+  const biWeeklyPerformanceData = calculateBiWeeklyPerformance();
 
   // Данные для графиков
   const gradeDistributionData: ChartData[] = [
@@ -262,26 +419,6 @@ export const PerformanceSection: React.FC = () => {
     { name: 'Неудовлетворительно', value: statistics.unsatisfactoryPercentage, color: '#ef4444' }
   ];
 
-  const progressData = [
-    { name: 'Текущий средний балл', value: statistics.overallAverage, color: '#2cbb00ff' },
-    { name: 'До максимального', value: 5 - statistics.overallAverage, color: '#e5e7eb' }
-  ];
-
-  const subjectPerformanceData = gradesData.map(subject => ({
-    subject: subject.subject.length > 15 ? subject.subject.substring(0, 15) + '...' : subject.subject,
-    average: subject.average,
-    color: getAverageGradeColor(subject.average)
-  }));
-
-  const monthlyPerformanceData = [
-    { month: 'Сентябрь', average: 4.2 },
-    { month: 'Октябрь', average: 4.1 },
-    { month: 'Ноябрь', average: 4.5 },
-    { month: 'Декабрь', average: 4.3 },
-    { month: 'Январь', average: 4.6 },
-    { month: 'Февраль', average: 4.4 }
-  ];
-
   // Кастомный тултип для графиков
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -289,7 +426,7 @@ export const PerformanceSection: React.FC = () => {
         <div className="pf-custom-tooltip">
           <p className="pf-tooltip-label">{label}</p>
           <p className="pf-tooltip-value">
-            {payload[0].name}: {payload[0].value}
+            Средний балл: {payload[0].value.toFixed(1)}
           </p>
         </div>
       );
@@ -323,14 +460,36 @@ export const PerformanceSection: React.FC = () => {
     );
   };
 
+  // Компонент выбора семестра
+  const SemesterSelector = () => (
+    <div className="semester-controls">
+      <div className="semester-tabs">
+        <button
+          className={`semester-tab ${selectedSemester === 'first' ? 'active' : ''}`}
+          onClick={() => setSelectedSemester('first')}
+        >
+          1-ый семестр (01.09-31.12)
+        </button>
+        <button
+          className={`semester-tab ${selectedSemester === 'second' ? 'active' : ''}`}
+          onClick={() => setSelectedSemester('second')}
+        >
+          2-ой семестр (01.01-31.08)
+        </button>
+      </div>
+    </div>
+  );
+
   // Рендер секции статистики
   const renderStatisticsSection = () => {
     return (
       <div className="pf-statistics-section">
         <div className="pf-statistics-header">
           <h2>Статистика успеваемости</h2>
-          <p>Общий обзор вашей успеваемости за семестр</p>
+          <p>Общий обзор вашей успеваемости за {selectedSemester === 'first' ? 'первый' : 'второй'} семестр</p>
         </div>
+
+        <SemesterSelector />
 
         <div className="pf-statistics-grid">
           {/* Карточка с общей статистикой */}
@@ -433,16 +592,19 @@ export const PerformanceSection: React.FC = () => {
 
           {/* Линейный график динамики успеваемости */}
           <div className="pf-chart-card pf-line-chart">
-            <h3>Динамика успеваемости по месяцам</h3>
+            <h3>Динамика успеваемости по двухнедельным периодам</h3>
             <ResponsiveContainer width="100%" height="80%">
               <AreaChart
-                data={monthlyPerformanceData}
+                data={biWeeklyPerformanceData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
-                  dataKey="month" 
+                  dataKey="period" 
                   tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
@@ -469,6 +631,17 @@ export const PerformanceSection: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="grades-section">
+        <div className="pf-loading">
+          <div className="pf-loading-spinner"></div>
+          Загрузка данных...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grades-section">
@@ -498,22 +671,7 @@ export const PerformanceSection: React.FC = () => {
       <div className="grades-content">
         {activeTab === 'semesters' ? (
           <>
-            <div className="semester-controls">
-              <div className="semester-tabs">
-                <button
-                  className={`semester-tab ${selectedSemester === 'first' ? 'active' : ''}`}
-                  onClick={() => setSelectedSemester('first')}
-                >
-                  1-ый семестр
-                </button>
-                <button
-                  className={`semester-tab ${selectedSemester === 'second' ? 'active' : ''}`}
-                  onClick={() => setSelectedSemester('second')}
-                >
-                  2-ой семестр
-                </button>
-              </div>
-            </div>
+            <SemesterSelector />
 
             <div className="grades-table-container">
               <table className="grades-table">
@@ -524,7 +682,6 @@ export const PerformanceSection: React.FC = () => {
                     <th>Оценки</th>
                     <th>Ср. балл</th>
                     <th>Сессия</th>
-                    <th>Итог</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -534,22 +691,27 @@ export const PerformanceSection: React.FC = () => {
                       <td className="subject-name">{subject.subject}</td>
                       <td className="grades-list">
                         <div className="grades-scroll-container">
-                          {subject.grades.map((grade, gradeIndex) => (
-                            <span
-                              key={gradeIndex}
-                              className="grade-bubble"
-                              style={{ backgroundColor: getGradeColor(grade) }}
-                              onClick={(e) => 
-                                handleGradeClick(
-                                  subject.gradeDetails![gradeIndex % subject.gradeDetails!.length], 
-                                  gradeIndex, 
-                                  e
-                                )
-                              }
-                            >
-                              {grade}
-                            </span>
-                          ))}
+                          {subject.grades.map((grade, gradeIndex) => {
+                            const gradeDetail = subject.gradeDetails?.[gradeIndex];
+                            return (
+                              <span
+                                key={gradeIndex}
+                                className="grade-bubble"
+                                style={{ backgroundColor: getGradeColor(grade) }}
+                                onClick={(e) => 
+                                  handleGradeClick(
+                                    subject.subject,
+                                    grade,
+                                    gradeIndex + 1,
+                                    gradeDetail?.topic || `Работа ${gradeIndex + 1}`,
+                                    e
+                                  )
+                                }
+                              >
+                                {grade}
+                              </span>
+                            );
+                          })}
                         </div>
                       </td>
                       <td className="average-grade">
@@ -561,28 +723,7 @@ export const PerformanceSection: React.FC = () => {
                         </span>
                       </td>
                       <td className="exam-grade">
-                        {subject.finalGrade ? (
-                          <span 
-                            className="grade-bubble final-grade-bubble"
-                            style={{ backgroundColor: getExamGradeColor(subject.examGrade) }}
-                          >
-                            {subject.examGrade}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                        </td>
-                      <td className="final-grade">
-                        {subject.finalGrade ? (
-                          <span 
-                            className="grade-bubble final-grade-bubble"
-                            style={{ backgroundColor: getFinalGradeColor(subject.finalGrade) }}
-                          >
-                            {subject.finalGrade}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
+                        -
                       </td>
                     </tr>
                   ))}
@@ -592,6 +733,8 @@ export const PerformanceSection: React.FC = () => {
           </>
         ) : activeTab === 'subjects' ? (
           <>
+            <SemesterSelector />
+
             <div className="subject-controls">
               <div className="subject-filter">
                 <label htmlFor="subject-select">Предмет:</label>
@@ -654,12 +797,8 @@ export const PerformanceSection: React.FC = () => {
                 <div className="stat-label-grade">Средняя оценка</div>
               </div>
               <div className="stat-card">
-                <div className="stat-value-grade">5</div>
-                <div className="stat-label-grade">Экзамен</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value-grade">5</div>
-                <div className="stat-label-grade">Итоговая оценка</div>
+                <div className="stat-value-grade">-</div>
+                <div className="stat-label-grade">Сессия</div>
               </div>
             </div>
           </>
@@ -685,20 +824,12 @@ export const PerformanceSection: React.FC = () => {
             </div>
             <div className="grade-popup-content">
               <div className="grade-info-row">
-                <span className="grade-info-label">Дата:</span>
-                <span className="grade-info-value">{selectedGrade.date}</span>
+                <span className="grade-info-label">Предмет:</span>
+                <span className="grade-info-value">{selectedGrade.subject}</span>
               </div>
               <div className="grade-info-row">
                 <span className="grade-info-label">Тема:</span>
                 <span className="grade-info-value">{selectedGrade.topic}</span>
-              </div>
-              <div className="grade-info-row">
-                <span className="grade-info-label">Тип работы:</span>
-                <span className="grade-info-value">{selectedGrade.type}</span>
-              </div>
-              <div className="grade-info-row">
-                <span className="grade-info-label">Преподаватель:</span>
-                <span className="grade-info-value">{selectedGrade.teacher}</span>
               </div>
               <div className="grade-info-row">
                 <span className="grade-info-label">Оценка:</span>
@@ -709,6 +840,41 @@ export const PerformanceSection: React.FC = () => {
                   {selectedGrade.grade}
                 </span>
               </div>
+              
+              {markChanges.length > 0 && (
+                <>
+                  <div className="grade-info-row" style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+                    <span className="grade-info-label" style={{marginBottom: '8px'}}>История изменений:</span>
+                    <div style={{width: '100%'}}>
+                      {markChanges.map((change, index) => (
+                        <div key={change.id} style={{
+                          padding: '6px 0',
+                          borderBottom: index < markChanges.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          fontSize: '12px'
+                        }}>
+                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                            <span style={{color: '#64748b'}}>
+                              {new Date(change.dateTime).toLocaleDateString('ru-RU')}
+                            </span>
+                            <span style={{
+                              color: change.action.includes('добавление') ? '#2cbb00ff' : 
+                                     change.action.includes('изменение') ? '#f59e0b' : '#64748b',
+                              fontWeight: '500'
+                            }}>
+                              {change.action}
+                            </span>
+                          </div>
+                          {change.newValue && (
+                            <div style={{textAlign: 'right', color: '#1e293b', marginTop: '2px'}}>
+                              Новое значение: {change.newValue}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </>

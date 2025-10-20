@@ -143,8 +143,8 @@ const formatCuratorName = (curator: TeacherData | null) => {
     switch (activeTab) {
       case 'attendance':
         return <AttendanceSection />;
-      case 'performance':
-        return <PerformanceSection />;
+       case 'performance':
+      return <PerformanceSection studentId={student.id} />;
       case 'personal':
         return <PersonalCabinet />;
       case 'schedule':

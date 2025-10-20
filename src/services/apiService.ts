@@ -1,4 +1,3 @@
-// src/services/apiService.ts
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 export interface GroupData {
@@ -34,6 +33,47 @@ export interface StudentData {
   birthDate?: string;
   address?: string;
   email?: string;
+}
+
+// Интерфейсы для успеваемости
+export interface StudentMark {
+  stNameSubjectDTO: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    idTeacher: number;
+    lastnameTeacher: string;
+    nameTeacher: string;
+    patronymicTeacher: string;
+  };
+  marksBySt: Array<{
+    number: number;
+    value: number;
+  }>;
+}
+
+export interface SubjectMark {
+  number: number;
+  value: number;
+  comment: string | null;
+  typeMark: string;
+  dateLesson: string | null;
+}
+
+export interface TeacherSubject {
+  idTeacher: number;
+  idSubject: number;
+  subjectName: string;
+  idGroups: number[];
+}
+
+export interface MarkChange {
+  id: number;
+  dateTime: string;
+  action: string;
+  idSupplement: number | null;
+  teacherOrStudent: boolean;
+  newValue: number | null;
 }
 
 export const apiService = {
@@ -107,6 +147,70 @@ export const apiService = {
     const result = await response.json();
     console.log('Student data updated successfully:', result);
     return result;
+  },
+
+  // Получение оценок студента
+  async getStudentMarks(studentId: number): Promise<StudentMark[]> {
+    console.log(`Fetching student marks for ID: ${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
+    }
+    
+    const data: StudentMark[] = await response.json();
+    console.log('Student marks received:', data);
+    return data;
+  },
+
+  // Получение оценок по предмету
+  async getSubjectMarks(studentId: number, subjectId: number): Promise<SubjectMark[]> {
+    console.log(`Fetching subject marks for student ${studentId}, subject ${subjectId}`);
+    const response = await fetch(`${API_BASE_URL}/marks/student/${studentId}/subject/${subjectId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки оценок по предмету: ${response.status}`);
+    }
+    
+    const data: SubjectMark[] = await response.json();
+    console.log('Subject marks received:', data);
+    return data;
+  },
+
+  // Получение предметов преподавателя
+  async getTeacherSubjects(teacherId: number): Promise<TeacherSubject[]> {
+    console.log(`Fetching teacher subjects for ID: ${teacherId}`);
+    const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки предметов преподавателя: ${response.status}`);
+    }
+    
+    const data: TeacherSubject[] = await response.json();
+    console.log('Teacher subjects received:', data);
+    return data;
+  },
+
+  // Получение истории изменений оценки
+  async getMarkChanges(studentId: number, stId: number, markNumber: number): Promise<MarkChange[]> {
+    console.log(`Fetching mark changes for student ${studentId}, st ${stId}, mark ${markNumber}`);
+    const response = await fetch(`${API_BASE_URL}/changes/mark/st/${stId}/student/${studentId}/number/${markNumber}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки истории оценки: ${response.status}`);
+    }
+    
+    const data: MarkChange[] = await response.json();
+    console.log('Mark changes received:', data);
+    return data;
   }
 
 };

@@ -158,7 +158,7 @@
   font-size: 14px;
   font-weight: 500;
   padding: 16px 8px; /* Уменьшаем отступы */
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
   min-width: 20px; /* Минимальная ширина для ячеек */
@@ -253,8 +253,7 @@
 }
 
 .average-grade,
-.exam-grade,
-.final-grade {
+.exam-grade{
   text-align: center;
   min-width: 60px; /* Уменьшаем минимальную ширину */
   white-space: nowrap;
@@ -390,8 +389,7 @@
   }
   
   .average-grade,
-  .exam-grade,
-  .final-grade {
+  .exam-grade {
     min-width: 40px;
     font-size: 8px;
   }
@@ -434,8 +432,7 @@
   }
   
   .average-grade,
-  .exam-grade,
-  .final-grade {
+  .exam-grade {
     min-width: 35px;
     font-size: 8px;
   }
@@ -1077,7 +1074,7 @@
 /* Стили для статистики оценок - красивый современный дизайн */
 .grades-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   width: 100%;
   max-width: 100%;
