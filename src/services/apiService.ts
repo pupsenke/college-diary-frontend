@@ -76,6 +76,26 @@ export interface MarkChange {
   newValue: number | null;
 }
 
+export interface Document {
+  id: number;
+  nameFile: string;
+  pathToFile: string;
+  accessStudent: number | null;
+  accessTeacher: any;
+  staffs: any[];
+  title?: string;
+  type?: string;
+  creationDate?: string;
+  studentId?: number;
+}
+
+export interface UploadDocumentResponse {
+  id: number;
+  nameFile: string;
+  pathToFile: string;
+  message: string;
+}
+
 export const apiService = {
   // Получение данных группы по ID
   async getGroupData(groupId: number): Promise<GroupData> {
@@ -211,6 +231,133 @@ export const apiService = {
     const data: MarkChange[] = await response.json();
     console.log('Mark changes received:', data);
     return data;
-  }
+  },
 
+  // === ДОКУМЕНТЫ ===
+
+  // Получение всех документов
+  async getAllDocuments(): Promise<Document[]> {
+    console.log('Fetching all documents');
+    const response = await fetch(`${API_BASE_URL}/paths`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки документов: ${response.status}`);
+    }
+    
+    const data: Document[] = await response.json();
+    console.log('All documents received:', data);
+    return data;
+  },
+
+  // Получить список документов по id студента
+  async fetchDocumentsByStudent(studentId: number): Promise<Document[]> {
+    console.log(`Fetching documents for student ID: ${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/paths`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка получения списка документов: ${response.status}`);
+    }
+    
+    const data: Document[] = await response.json();
+    // Фильтрация документов, где accessStudent совпадает с studentId
+    const studentDocuments = data.filter(doc => doc.accessStudent === studentId);
+    console.log(`Student documents received: ${studentDocuments.length} documents`);
+    return studentDocuments;
+  },
+
+  // Загрузка документа на сервер (PUT запрос)
+  async uploadDocument(file: File): Promise<void> {
+    console.log('Uploading document:', { fileName: file.name });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/paths/upload`, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Upload failed:', response.status, errorText);
+      throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Document uploaded successfully');
+  },
+
+  // Скачивание документа
+  async downloadDocument(id: number): Promise<void> {
+    console.log(`Downloading document with ID: ${id}`);
+    const response = await fetch(`${API_BASE_URL}/paths/id/${id}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка скачивания документа: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Попытка получить имя файла из заголовков
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = 'document';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    console.log('Document downloaded successfully');
+  },
+
+  // Удаление документа
+  async deleteDocument(id: number): Promise<void> {
+    console.log(`Deleting document with ID: ${id}`);
+    const response = await fetch(`${API_BASE_URL}/paths/delete/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка удаления документа: ${response.status}`);
+    }
+
+    console.log('Document deleted successfully');
+  },
+
+  // Старая функция для совместимости (можно удалить после рефакторинга)
+  async getStudentDocuments(studentId: number): Promise<Document[]> {
+    return this.fetchDocumentsByStudent(studentId);
+  },
+
+  // Старая функция для совместимости (можно удалить после рефакторинга)
+  async getDocumentById(documentId: number): Promise<Document> {
+    console.log(`Fetching document with ID: ${documentId}`);
+    const response = await fetch(`${API_BASE_URL}/paths/id/${documentId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки документа: ${response.status}`);
+    }
+    
+    const data: Document = await response.json();
+    console.log('Document received:', data);
+    return data;
+  }
 };

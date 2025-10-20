@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { apiService } from '../services/apiService';
+import { apiService, Document } from '../services/apiService';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
 import "./DocumentSectionStyle.css"
 
-interface Document {
-  id: string;
-  title: string;
-  type: string;
-  creationDate: string;
-}
-
 interface UserData {
   fullName: string;
+  fullNameGenitive: string;
   group: string;
   course: string;
   phone: string;
@@ -40,7 +34,8 @@ export const DocumentsSection: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState('Все документы');
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [groupData, setGroupData] = useState<any>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<FormData>({
     documentTitle: '',
@@ -62,47 +57,76 @@ export const DocumentsSection: React.FC = () => {
     'Заявление на отчисление в связи с переводом',
     'Заявление на пропуск занятий',
     'Объяснительная записка о причинах опоздания',
-    'Объяснительная записка о причинах пропусков занятия'
+    'Объяснительная записка о причины пропусков занятия'
   ];
 
-  // Пример данных для выпадающих списков
-  const subjects = ['Математика', 'Физика', 'Химия', 'Информатика', 'История'];
-  const teachers = ['Иванов А.А.', 'Петрова Б.Б.', 'Сидоров В.В.', 'Кузнецова Г.Г.'];
-  const months = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-  ];
+  // Загрузка документов студента
+  useEffect(() => {
+    const loadDocuments = async () => {
+      if (!user || !isStudent) return;
+      
+      try {
+        const student = user as any;
+        const studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+        setDocuments(studentDocuments);
+        setError(null);
+      } catch (error) {
+        console.error('Ошибка загрузки документов:', error);
+        setError('Не удалось загрузить документы');
+      }
+    };
 
-  // Пустой список документов
-  const [documents, setDocuments] = useState<Document[]>([]);
+    loadDocuments();
+  }, [user, isStudent]);
 
-  // Загрузка данных пользователя и группы
+  // Функция для преобразования ФИО в родительный падеж
+  const getGenitiveCase = (fullName: string): string => {
+    const parts = fullName.split(' ');
+    if (parts.length < 3) return fullName;
+    
+    const [lastName, firstName, patronymic] = parts;
+    
+    const lastNameGenitive = lastName.endsWith('ов') ? lastName + 'а' :
+                            lastName.endsWith('ев') ? lastName + 'а' :
+                            lastName.endsWith('ин') ? lastName + 'а' :
+                            lastName.endsWith('ый') ? lastName.replace('ый', 'ого') :
+                            lastName.endsWith('ая') ? lastName.replace('ая', 'ой') :
+                            lastName + 'а';
+    
+    const firstNameGenitive = firstName.endsWith('й') ? firstName.replace('й', 'я') :
+                             firstName.endsWith('а') ? firstName.replace('а', 'ы') :
+                             firstName.endsWith('я') ? firstName.replace('я', 'и') :
+                             firstName + 'а';
+    
+    const patronymicGenitive = patronymic.endsWith('ч') ? patronymic + 'а' :
+                              patronymic.endsWith('на') ? patronymic.replace('на', 'ны') :
+                              patronymic;
+    
+    return `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
+  };
+
+  // Загрузка данных пользователя
   useEffect(() => {
     const loadUserData = async () => {
       if (!user || !isStudent) return;
 
       try {
-        // Приводим тип к Student для доступа к студенческим полям
         const student = user as any;
-        
-        // Загружаем данные группы
-        const groupData = await apiService.getGroupData(student.idGroup);
-        setGroupData(groupData);
-
-        // Формируем данные пользователя
         const userPhone = student.telephone || '';
+        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+        const fullNameGenitive = getGenitiveCase(fullName);
         
         const userData: UserData = {
-          fullName: `${student.lastName} ${student.name} ${student.patronymic}`,
+          fullName: fullName,
+          fullNameGenitive: fullNameGenitive,
           group: student.numberGroup.toString(),
-          course: `${groupData.course} курс`,
+          course: `${student.course || 'Неизвестно'} курс`,
           phone: userPhone,
           departmentHead: 'Петрова Мария Сергеевна'
         };
 
         setUserData(userData);
         
-        // Устанавливаем телефон из БД в форму, если он есть
         if (userPhone) {
           setFormData(prev => ({
             ...prev,
@@ -112,10 +136,13 @@ export const DocumentsSection: React.FC = () => {
 
       } catch (error) {
         console.error('Ошибка загрузки данных пользователя:', error);
-        // Устанавливаем данные по умолчанию в случае ошибки
         const student = user as any;
+        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+        const fullNameGenitive = getGenitiveCase(fullName);
+        
         setUserData({
-          fullName: `${student.lastName} ${student.name} ${student.patronymic}`,
+          fullName: fullName,
+          fullNameGenitive: fullNameGenitive,
           group: student.numberGroup?.toString() || 'Неизвестно',
           course: 'Неизвестно',
           phone: student.telephone || '',
@@ -127,24 +154,10 @@ export const DocumentsSection: React.FC = () => {
     loadUserData();
   }, [user, isStudent]);
 
-  // Если пользователь не студент, показываем сообщение
-  if (!isStudent) {
-    return (
-      <div className="document-section">
-        <div className="ds-content">
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-            Раздел документов доступен только для студентов
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Функции для работы с модальным окном
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
-    // Сбрасываем форму
     setFormData({
       documentTitle: '',
       startDate: '',
@@ -176,22 +189,48 @@ export const DocumentsSection: React.FC = () => {
     return months[monthNumber - 1];
   };
 
-  // Форматирование даты для документа (день, месяц, год отдельно)
+  // Форматирование даты для документа
   const formatDateForDocument = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
     const month = getMonthName(date.getMonth() + 1);
-    const year = date.getFullYear().toString().slice(-2);
+    const year = date.getFullYear().toString();
     return { day, month, year };
   };
 
-  // Форматирование даты для отображения в тексте
-  const formatDateForText = (dateString: string) => {
+  // Форматирование даты в формат дд.мм.гг для заявления на пропуск
+  const formatDateDDMMYY = (dateString: string) => {
     const date = new Date(dateString);
-    const day = date.getDate();
-    const month = getMonthName(date.getMonth() + 1);
-    const year = date.getFullYear();
-    return `${day} ${month} ${year} года`;
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day}.${month}.${year}`;
+  };
+
+  // Функция для загрузки документа на сервер
+  const uploadDocumentToServer = async (blob: Blob, fileName: string) => {
+    if (!user || !isStudent) return;
+
+    try {
+      const file = new File([blob], fileName, { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+
+      // Загружаем документ на сервер
+      await apiService.uploadDocument(file);
+
+      // Обновляем список документов
+      const student = user as any;
+      const studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+      setDocuments(studentDocuments);
+      setError(null);
+
+      console.log('Документ успешно загружен на сервер');
+      
+    } catch (error) {
+      console.error('Ошибка загрузки документа на сервер:', error);
+      setError('Документ создан локально, но не загружен на сервер: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
+    }
   };
 
   // Основная функция для генерации docx
@@ -208,71 +247,29 @@ export const DocumentsSection: React.FC = () => {
       const arrayBuffer = await response.arrayBuffer();
       const zip = new PizZip(arrayBuffer);
       
-      // Пробуем разные варианты разделителей
-      let doc;
-      let renderSuccess = false;
+      // Современный синтаксис Docxtemplater
+      const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+      });
 
-      // Вариант 1: Двойные фигурные скобки {{ }}
-      try {
-        doc = new Docxtemplater(zip, {
-          paragraphLoop: true,
-          linebreaks: true,
-          delimiters: {
-            start: '{{',
-            end: '}}'
-          }
-        });
-        doc.setData(data);
-        doc.render();
-        renderSuccess = true;
-      } catch (error) {
-        console.log('Вариант с {{ }} не сработал, пробуем с { }');
-      }
-
-      // Вариант 2: Одинарные фигурные скобки { }
-      if (!renderSuccess) {
-        try {
-          doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-            delimiters: {
-              start: '{',
-              end: '}'
-            }
-          });
-          doc.setData(data);
-          doc.render();
-          renderSuccess = true;
-        } catch (error) {
-          console.log('Вариант с { } не сработал');
-          throw new Error('Не удалось отрендерить шаблон. Проверьте синтаксис тегов в документе.');
-        }
-      }
-
-      if (!doc || !renderSuccess) {
-        throw new Error('Не удалось инициализировать документ');
-      }
+      doc.render(data);
 
       const blob = doc.getZip().generate({ 
         type: 'blob',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
-      
+
+      // Сохраняем локально
       saveAs(blob, fileName);
       
-      // Добавляем созданный документ в список
-      const newDocument: Document = {
-        id: Date.now().toString(),
-        title: formData.documentTitle || fileName.replace('.docx', ''),
-        type: selectedDocumentType,
-        creationDate: new Date().toISOString().split('T')[0]
-      };
+      // Загружаем на сервер
+      await uploadDocumentToServer(blob, fileName);
       
-      setDocuments(prev => [...prev, newDocument]);
       closeModal();
     } catch (error) {
       console.error('Ошибка генерации документа:', error);
-      alert('Не удалось создать документ: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
+      setError('Не удалось создать документ: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
     } finally {
       setIsLoading(false);
     }
@@ -281,22 +278,21 @@ export const DocumentsSection: React.FC = () => {
   // Обработчик создания документа
   const handleCreateDocument = () => {
     if (!userData) {
-      alert('Данные пользователя не загружены');
+      setError('Данные пользователя не загружены');
       return;
     }
 
     // Проверка обязательных полей
     if (!formData.documentTitle.trim()) {
-      alert('Пожалуйста, введите название документа');
+      setError('Пожалуйста, введите название документа');
       return;
     }
 
     if (!formData.phone.trim()) {
-      alert('Пожалуйста, введите номер телефона');
+      setError('Пожалуйста, введите номер телефона');
       return;
     }
 
-    // Проверка специфичных полей для каждого типа документа
     let templateUrl = '';
     let fileName = '';
     let templateData = {};
@@ -306,14 +302,14 @@ export const DocumentsSection: React.FC = () => {
     switch (selectedDocumentType) {
       case 'Заявление на отчисление по собственному желанию':
         if (!formData.startDate) {
-          alert('Пожалуйста, выберите дату отчисления');
+          setError('Пожалуйста, выберите дату отчисления');
           return;
         }
         const dismissalDate1 = formatDateForDocument(formData.startDate);
-        templateUrl = '/voluntary_deduction.docx';
+        templateUrl = '/templates/dismissal_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullName,
+          fullName: userData.fullNameGenitive,
           group: userData.group,
           phone: formData.phone,
           departmentHead: userData.departmentHead,
@@ -328,14 +324,14 @@ export const DocumentsSection: React.FC = () => {
 
       case 'Заявление на отчисление в связи с переводом':
         if (!formData.startDate || !formData.institutionName.trim()) {
-          alert('Пожалуйста, заполните дату отчисления и название учебного заведения');
+          setError('Пожалуйста, заполните дату отчисления и название учебного заведения');
           return;
         }
         const dismissalDate2 = formatDateForDocument(formData.startDate);
-        templateUrl = '/transfer_dismissal_template.docx';
+        templateUrl = '/templates/transfer_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullName,
+          fullName: userData.fullNameGenitive,
           group: userData.group,
           phone: formData.phone,
           institutionName: formData.institutionName,
@@ -351,20 +347,23 @@ export const DocumentsSection: React.FC = () => {
 
       case 'Заявление на пропуск занятий':
         if (!formData.startDate || !formData.endDate || !formData.reason.trim()) {
-          alert('Пожалуйста, заполните даты пропуска и причину');
+          setError('Пожалуйста, заполните даты пропуска и причину');
           return;
         }
-        const startDate = formatDateForText(formData.startDate);
-        const endDate = formatDateForText(formData.endDate);
-        templateUrl = '/absence_template.docx';
+        const startDate = formatDateDDMMYY(formData.startDate);
+        const endDate = formatDateDDMMYY(formData.endDate);
+        
+        const courseNumber = userData.course.match(/\d+/)?.[0] || '4';
+        
+        templateUrl = '/templates/absence_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullName,
+          fullName: userData.fullNameGenitive,
           group: userData.group,
-          course: userData.course,
+          course: courseNumber,
           dateStart: startDate,
           dateEnd: endDate,
-          reason: formData.reason,
+          reason: formData.reason.toLowerCase(),
           currentDay: currentDate.day,
           currentMonth: currentDate.month,
           currentYear: currentDate.year
@@ -372,43 +371,44 @@ export const DocumentsSection: React.FC = () => {
         break;
 
       case 'Объяснительная записка о причинах опоздания':
-        if (!formData.subject || !formData.teacher || !formData.reason.trim()) {
-          alert('Пожалуйста, заполните все обязательные поля');
-          return;
-        }
-        // Добавьте логику для этого типа документа
-        alert('Функция создания объяснительной записки будет добавлена позже');
+        setError('Функция создания объяснительной записки будет добавлена позже');
         return;
 
-      case 'Объяснительная записка о причинах пропусков занятия':
-        if (!formData.month || !formData.hours || !formData.reason.trim()) {
-          alert('Пожалуйста, заполните все обязательные поля');
-          return;
-        }
-        // Добавьте логику для этого типа документа
-        alert('Функция создания объяснительной записки будет добавлена позже');
+      case 'Объяснительная записка о причины пропусков занятия':
+        setError('Функция создания объяснительной записки будет добавлена позже');
         return;
 
       default:
-        alert('Неизвестный тип документа');
+        setError('Неизвестный тип документа');
         return;
     }
 
+    setError(null);
     generateDocxFromTemplate(templateUrl, templateData, fileName);
   };
 
-  // Обработчики для кнопок действий
-  const handleDownloadDocument = (id: string) => {
-    const document = documents.find(doc => doc.id === id);
-    if (document) {
-      alert(`Скачивание документа: ${document.title}`);
-      // Здесь можно добавить логику скачивания
+  // Обработчик скачивания документа
+  const handleDownloadDocument = async (documentId: number) => {
+    try {
+      await apiService.downloadDocument(documentId);
+      setError(null);
+    } catch (error) {
+      console.error('Ошибка скачивания документа:', error);
+      setError('Не удалось скачать документ');
     }
   };
 
-  const handleDeleteDocument = (id: string) => {
+  // Обработчик удаления документа
+  const handleDeleteDocument = async (id: number) => {
     if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
-      setDocuments(prev => prev.filter(doc => doc.id !== id));
+      try {
+        await apiService.deleteDocument(id);
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
+        setError(null);
+      } catch (error) {
+        console.error('Ошибка удаления документа:', error);
+        setError('Не удалось удалить документ с сервера');
+      }
     }
   };
 
@@ -428,6 +428,8 @@ export const DocumentsSection: React.FC = () => {
             <div className="ds-modal-type">
               <strong>Тип документа:</strong> {selectedDocumentType}
             </div>
+
+            {error && <div className="ds-error-message">{error}</div>}
 
             <div className="ds-form-sections">
               {/* Общая информация */}
@@ -483,7 +485,7 @@ export const DocumentsSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Специфичные поля для заявления на отчисление по собственному желанию */}
+              {/* Специфичные поля для разных типов документов */}
               {selectedDocumentType === 'Заявление на отчисление по собственному желанию' && (
                 <div className="ds-form-section">
                   <h4>Данные для заявления</h4>
@@ -506,7 +508,6 @@ export const DocumentsSection: React.FC = () => {
                 </div>
               )}
 
-              {/* Специфичные поля для заявления на отчисление в связи с переводом */}
               {selectedDocumentType === 'Заявление на отчисление в связи с переводом' && (
                 <div className="ds-form-section">
                   <h4>Данные для заявления</h4>
@@ -540,7 +541,6 @@ export const DocumentsSection: React.FC = () => {
                 </div>
               )}
 
-              {/* Специфичные поля для заявления на пропуск занятий */}
               {selectedDocumentType === 'Заявление на пропуск занятий' && (
                 <div className="ds-form-section">
                   <h4>Данные для заявления</h4>
@@ -572,15 +572,13 @@ export const DocumentsSection: React.FC = () => {
                       value={formData.reason}
                       onChange={(e) => handleInputChange('reason', e.target.value)}
                       className="ds-textarea"
-                      placeholder="Укажите причину пропуска занятий"
+                      placeholder="В связи с ..."
                       rows={3}
                       required
                     />
                   </div>
                 </div>
               )}
-
-              {/* Добавьте остальные типы документов аналогично */}
             </div>
 
             <div className="ds-modal-footer">
@@ -645,6 +643,8 @@ export const DocumentsSection: React.FC = () => {
         </div>
       </div>
 
+      {error && <div className="ds-error-message">{error}</div>}
+
       <div className="ds-content">
         {filteredDocuments.length > 0 ? (
           <table className="ds-table">
@@ -657,13 +657,14 @@ export const DocumentsSection: React.FC = () => {
                 <th>Действия</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredDocuments.map((document, index) => (
                 <tr key={document.id}>
                   <td>{index + 1}.</td>
-                  <td>{document.title}</td>
-                  <td>{document.type}</td>
-                  <td>{document.creationDate}</td>
+                  <td>{document.nameFile}</td>
+                  <td>{document.type || 'Не указан'}</td>
+                  <td>{document.creationDate || 'Не указана'}</td>
                   <td>
                     <div className="ds-action-buttons">
                       <button 
