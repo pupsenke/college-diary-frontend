@@ -3,7 +3,7 @@ import { Header } from '../st-components/HeaderStudent';
 import { AttendanceSection } from '../st-components/AttendanceSection';
 import { PerformanceSection } from '../st-components/PerformanceSection';
 import { PersonalCabinet } from '../st-components/PersonalCabinet';
-import { DocumentsSection } from '../st-components/DocumentsSection';
+import { DocumentsSection } from '../st-components/DocumentSection';
 import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
