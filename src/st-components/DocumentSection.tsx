@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { apiService, Document } from '../services/apiService';
+import { apiService, Document, TeacherSubject } from '../services/apiService';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
@@ -28,6 +28,18 @@ interface FormData {
   hours: string;
 }
 
+interface Subject {
+  id: number;
+  subjectName: string;
+}
+
+interface Teacher {
+  id: number;
+  name: string;
+  lastName: string;
+  patronymic: string;
+}
+
 export const DocumentsSection: React.FC = () => {
   const { user, isStudent } = useUser();
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +48,12 @@ export const DocumentsSection: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Новые состояния для предметов и преподавателей
+  const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
   
   const [formData, setFormData] = useState<FormData>({
     documentTitle: '',
@@ -57,8 +75,20 @@ export const DocumentsSection: React.FC = () => {
     'Заявление на отчисление в связи с переводом',
     'Заявление на пропуск занятий',
     'Объяснительная записка о причинах опоздания',
-    'Объяснительная записка о причины пропусков занятия'
+    'Объяснительная записка о причинах пропусков занятия'
   ];
+
+  // Месяцы для выбора
+  const months = [
+    'январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
+    'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'
+  ];
+
+  // Функция для проверки, требуется ли телефон для выбранного типа документа
+  const isPhoneRequired = (): boolean => {
+    return selectedDocumentType === 'Заявление на отчисление по собственному желанию' || 
+           selectedDocumentType === 'Заявление на отчисление в связи с переводом';
+  };
 
   // Загрузка документов студента
   useEffect(() => {
@@ -77,6 +107,63 @@ export const DocumentsSection: React.FC = () => {
     };
 
     loadDocuments();
+  }, [user, isStudent]);
+
+  // Загрузка данных о предметах и преподавателях
+  useEffect(() => {
+    const loadTeacherSubjects = async () => {
+      if (!user || !isStudent) return;
+      
+      try {
+        const student = user as any;
+        
+        // Загружаем связи преподавателей и предметов
+        const teacherSubjectsData = await apiService.getTeacherSubjects(student.id);
+        setTeacherSubjects(teacherSubjectsData);
+        
+        // Получаем уникальные ID предметов (исправленная версия)
+        const subjectIdsSet = new Set<number>();
+        teacherSubjectsData.forEach(ts => subjectIdsSet.add(ts.idSubject));
+        const subjectIds = Array.from(subjectIdsSet);
+        
+        // Загружаем информацию о предметах
+        const subjectsData: Subject[] = [];
+        for (const subjectId of subjectIds) {
+          try {
+            const subject = await apiService.getSubjectById(subjectId);
+            subjectsData.push(subject);
+          } catch (error) {
+            console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
+          }
+        }
+        setSubjects(subjectsData);
+        
+        // Загружаем информацию о преподавателях (исправленная версия)
+        const teacherIdsSet = new Set<number>();
+        teacherSubjectsData.forEach(ts => {
+          if (ts.idTeacher) {
+            teacherIdsSet.add(ts.idTeacher);
+          }
+        });
+        const teacherIds = Array.from(teacherIdsSet);
+        
+        const teachersData: Teacher[] = [];
+        for (const teacherId of teacherIds) {
+          try {
+            const teacher = await apiService.getTeacherData(teacherId);
+            teachersData.push(teacher);
+          } catch (error) {
+            console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
+          }
+        }
+        setTeachers(teachersData);
+        
+      } catch (error) {
+        console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
+      }
+    };
+
+    loadTeacherSubjects();
   }, [user, isStudent]);
 
   // Функция для преобразования ФИО в родительный падеж
@@ -105,6 +192,17 @@ export const DocumentsSection: React.FC = () => {
     return `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
   };
 
+  // Функция для получения курса студента из данных группы
+  const getStudentCourse = async (student: any): Promise<string> => {
+    try {
+      const groupData = await apiService.getGroupData(student.idGroup);
+      return groupData.course.toString();
+    } catch (error) {
+      console.error('Ошибка получения данных группы:', error);
+      return student.course?.toString() || 'Неизвестно';
+    }
+  };
+
   // Загрузка данных пользователя
   useEffect(() => {
     const loadUserData = async () => {
@@ -115,12 +213,13 @@ export const DocumentsSection: React.FC = () => {
         const userPhone = student.telephone || '';
         const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
         const fullNameGenitive = getGenitiveCase(fullName);
+        const course = await getStudentCourse(student);
         
         const userData: UserData = {
           fullName: fullName,
           fullNameGenitive: fullNameGenitive,
           group: student.numberGroup.toString(),
-          course: `${student.course || 'Неизвестно'} курс`,
+          course: course,
           phone: userPhone,
           departmentHead: 'Петрова Мария Сергеевна'
         };
@@ -154,6 +253,39 @@ export const DocumentsSection: React.FC = () => {
     loadUserData();
   }, [user, isStudent]);
 
+  // Обработчик изменения предмета - обновляет список доступных преподавателей
+  const handleSubjectChange = (subjectId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subject: subjectId,
+      teacher: '' // Сбрасываем выбор преподавателя
+    }));
+
+    if (!subjectId) {
+      setAvailableTeachers([]);
+      return;
+    }
+
+    const selectedSubjectId = parseInt(subjectId);
+    
+    // Находим связи для выбранного предмета
+    const subjectRelations = teacherSubjects.filter(ts => ts.idSubject === selectedSubjectId);
+    
+    // Получаем ID преподавателей для этого предмета (исправленная версия)
+    const teacherIdsSet = new Set<number>();
+    subjectRelations.forEach(ts => {
+      if (ts.idTeacher) {
+        teacherIdsSet.add(ts.idTeacher);
+      }
+    });
+    const teacherIds = Array.from(teacherIdsSet);
+    
+    // Фильтруем преподавателей
+    const filteredTeachers = teachers.filter(teacher => teacherIds.includes(teacher.id));
+    
+    setAvailableTeachers(filteredTeachers);
+  };
+
   // Функции для работы с модальным окном
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
@@ -170,14 +302,19 @@ export const DocumentsSection: React.FC = () => {
       month: '',
       hours: ''
     });
+    setAvailableTeachers([]);
   };
 
   // Обработчик изменения полей формы
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (field === 'subject') {
+      handleSubjectChange(value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   // Функция для получения названия месяца по номеру
@@ -207,6 +344,12 @@ export const DocumentsSection: React.FC = () => {
     return `${day}.${month}.${year}`;
   };
 
+  // Функция для преобразования причины пропуска (только первая буква строчная)
+  const formatReason = (reason: string): string => {
+    if (!reason) return '';
+    return reason.charAt(0).toLowerCase() + reason.slice(1);
+  };
+
   // Функция для загрузки документа на сервер
   const uploadDocumentToServer = async (blob: Blob, fileName: string) => {
     if (!user || !isStudent) return;
@@ -216,10 +359,8 @@ export const DocumentsSection: React.FC = () => {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
       });
 
-      // Загружаем документ на сервер
       await apiService.uploadDocument(file);
 
-      // Обновляем список документов
       const student = user as any;
       const studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
       setDocuments(studentDocuments);
@@ -247,7 +388,6 @@ export const DocumentsSection: React.FC = () => {
       const arrayBuffer = await response.arrayBuffer();
       const zip = new PizZip(arrayBuffer);
       
-      // Современный синтаксис Docxtemplater
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
@@ -260,12 +400,8 @@ export const DocumentsSection: React.FC = () => {
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
 
-      // Сохраняем локально
       saveAs(blob, fileName);
-      
-      // Загружаем на сервер
       await uploadDocumentToServer(blob, fileName);
-      
       closeModal();
     } catch (error) {
       console.error('Ошибка генерации документа:', error);
@@ -288,7 +424,8 @@ export const DocumentsSection: React.FC = () => {
       return;
     }
 
-    if (!formData.phone.trim()) {
+    // Проверка телефона только для определенных типов документов
+    if (isPhoneRequired() && !formData.phone.trim()) {
       setError('Пожалуйста, введите номер телефона');
       return;
     }
@@ -363,7 +500,7 @@ export const DocumentsSection: React.FC = () => {
           course: courseNumber,
           dateStart: startDate,
           dateEnd: endDate,
-          reason: formData.reason.toLowerCase(),
+          reason: formatReason(formData.reason),
           currentDay: currentDate.day,
           currentMonth: currentDate.month,
           currentYear: currentDate.year
@@ -371,12 +508,59 @@ export const DocumentsSection: React.FC = () => {
         break;
 
       case 'Объяснительная записка о причинах опоздания':
-        setError('Функция создания объяснительной записки будет добавлена позже');
-        return;
+        if (!formData.subject || !formData.teacher || !formData.reason.trim()) {
+          setError('Пожалуйста, заполните все обязательные поля');
+          return;
+        }
+        // Находим выбранный предмет и преподавателя
+        const selectedSubject = subjects.find(s => s.id === parseInt(formData.subject));
+        const selectedTeacher = teachers.find(t => t.id === parseInt(formData.teacher));
+        
+        if (!selectedSubject || !selectedTeacher) {
+          setError('Не удалось найти выбранный предмет или преподавателя');
+          return;
+        }
+        
+        // Преобразуем ФИО преподавателя в родительный падеж
+        const teacherFullName = `${selectedTeacher.lastName} ${selectedTeacher.name} ${selectedTeacher.patronymic}`;
+        const teacherGenitive = getGenitiveCase(teacherFullName);
+        
+        templateUrl = '/templates/lateness_explanation_template.docx';
+        fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
+        templateData = {
+          fullNameGenitive: userData.fullNameGenitive,
+          fullName: userData.fullName,
+          group: userData.group,
+          course: userData.course,
+          subject: selectedSubject.subjectName,
+          teacher: teacherGenitive, // Используем ФИО в родительном падеже
+          reason: formatReason(formData.reason),
+          currentDay: currentDate.day,
+          currentMonth: currentDate.month,
+          currentYear: currentDate.year
+        };
+        break;
 
-      case 'Объяснительная записка о причины пропусков занятия':
-        setError('Функция создания объяснительной записки будет добавлена позже');
-        return;
+      case 'Объяснительная записка о причинах пропусков занятия':
+        if (!formData.month || !formData.hours || !formData.reason.trim()) {
+          setError('Пожалуйста, заполните все обязательные поля');
+          return;
+        }
+        templateUrl = '/templates/absence_explanation_template.docx';
+        fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
+        templateData = {
+          fullNameGenitive: userData.fullNameGenitive,
+          fullName: userData.fullName,
+          group: userData.group,
+          course: userData.course,
+          month: formData.month,
+          quantityHours: formData.hours,
+          reason: formatReason(formData.reason),
+          currentDay: currentDate.day,
+          currentMonth: currentDate.month,
+          currentYear: currentDate.year
+        };
+        break;
 
       default:
         setError('Неизвестный тип документа');
@@ -462,28 +646,30 @@ export const DocumentsSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Телефон - обязательное поле */}
-              <div className="ds-form-section">
-                <h4>Контактные данные</h4>
-                <div className="ds-form-grid">
-                  <div className="ds-form-field full-width">
-                    <label>Телефон * {!userData.phone && <span style={{color: 'red'}}>(не указан в профиле)</span>}</label>
-                    <input 
-                      type="tel" 
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="ds-input"
-                      placeholder="Введите номер телефона"
-                      required
-                    />
-                    {!userData.phone && (
-                      <div style={{fontSize: '12px', color: '#666', marginTop: '5px'}}>
-                        Телефон не указан в вашем профиле. Пожалуйста, введите его для создания документа.
-                      </div>
-                    )}
+              {/* Телефон - обязательное поле только для первых двух документов */}
+              {isPhoneRequired() && (
+                <div className="ds-form-section">
+                  <h4>Контактные данные</h4>
+                  <div className="ds-form-grid">
+                    <div className="ds-form-field full-width">
+                      <label>Телефон * {!userData.phone && <span style={{color: 'red'}}>(не указан в профиле)</span>}</label>
+                      <input 
+                        type="tel" 
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className="ds-input"
+                        placeholder="Введите номер телефона"
+                        required
+                      />
+                      {!userData.phone && (
+                        <div style={{fontSize: '12px', color: '#666', marginTop: '5px'}}>
+                          Телефон не указан в вашем профиле. Пожалуйста, введите его для создания документа.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Специфичные поля для разных типов документов */}
               {selectedDocumentType === 'Заявление на отчисление по собственному желанию' && (
@@ -579,6 +765,107 @@ export const DocumentsSection: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Поля для объяснительной записки о причинах опоздания */}
+              {selectedDocumentType === 'Объяснительная записка о причинах опоздания' && (
+                <div className="ds-form-section">
+                  <h4>Данные для объяснительной записки</h4>
+                  <div className="ds-form-grid">
+                    <div className="ds-form-field">
+                      <label>Предмет *</label>
+                      <select 
+                        value={formData.subject}
+                        onChange={(e) => handleInputChange('subject', e.target.value)}
+                        className="ds-input"
+                        required
+                      >
+                        <option value="">Выберите предмет</option>
+                        {subjects.map(subject => (
+                          <option key={subject.id} value={subject.id}>
+                            {subject.subjectName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="ds-form-field">
+                      <label>Преподаватель *</label>
+                      <select 
+                        value={formData.teacher}
+                        onChange={(e) => handleInputChange('teacher', e.target.value)}
+                        className="ds-input"
+                        required
+                        disabled={!formData.subject}
+                      >
+                        <option value="">Выберите преподавателя</option>
+                        {availableTeachers.map(teacher => (
+                          <option key={teacher.id} value={teacher.id}>
+                            {teacher.lastName} {teacher.name} {teacher.patronymic}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="ds-form-field full-width">
+                    <label>Причина опоздания *</label>
+                    <textarea 
+                      value={formData.reason}
+                      onChange={(e) => handleInputChange('reason', e.target.value)}
+                      className="ds-textarea"
+                      placeholder="Опишите причину опоздания"
+                      rows={3}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Поля для объяснительной записки о причинах пропусков занятия */}
+              {selectedDocumentType === 'Объяснительная записка о причинах пропусков занятия' && (
+                <div className="ds-form-section">
+                  <h4>Данные для объяснительной записки</h4>
+                  <div className="ds-form-grid">
+                    <div className="ds-form-field">
+                      <label>Месяц *</label>
+                      <select 
+                        value={formData.month}
+                        onChange={(e) => handleInputChange('month', e.target.value)}
+                        className="ds-input"
+                        required
+                      >
+                        <option value="">Выберите месяц</option>
+                        {months.map((month, index) => (
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="ds-form-field">
+                      <label>Количество пропущенных часов *</label>
+                      <input 
+                        type="number" 
+                        value={formData.hours}
+                        onChange={(e) => handleInputChange('hours', e.target.value)}
+                        className="ds-input"
+                        placeholder="Введите количество часов"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="ds-form-field full-width">
+                    <label>Причина пропуска *</label>
+                    <textarea 
+                      value={formData.reason}
+                      onChange={(e) => handleInputChange('reason', e.target.value)}
+                      className="ds-textarea"
+                      placeholder="Опишите причину пропуска"
+                      rows={3}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="ds-modal-footer">
@@ -588,7 +875,7 @@ export const DocumentsSection: React.FC = () => {
               <button 
                 className="ds-create-btn" 
                 onClick={handleCreateDocument}
-                disabled={isLoading || !formData.phone.trim() || !formData.documentTitle.trim()}
+                disabled={isLoading || !formData.documentTitle.trim() || (isPhoneRequired() && !formData.phone.trim())}
               >
                 {isLoading ? 'Создание...' : 'Создать документ'}
               </button>

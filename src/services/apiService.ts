@@ -129,6 +129,22 @@ export const apiService = {
     return data;
   },
 
+  // Получение предмета по ID
+  async getSubjectById(subjectId: number): Promise<any> {
+    console.log(`Fetching subject data for ID: ${subjectId}`);
+    const response = await fetch(`${API_BASE_URL}/subjects/id/${subjectId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки данных предмета: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Subject data received:', data);
+    return data;
+  },
+
   // Авторизация студента
   async loginStudent(login: string, password: string) {
     const response = await fetch(`${API_BASE_URL}/students/login/${login}/password/${password}`);
