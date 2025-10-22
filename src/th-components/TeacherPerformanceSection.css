@@ -1,35 +1,41 @@
-/* TeacherPerformanceSection.css */
 .teacher-performance-section {
-  background: transparent;
   width: 1000px;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   padding: 0;
-  margin-bottom: 0px;
+  margin-bottom: 0;
+  position: relative;
+  transition: width 0.3s ease;
 }
 
-/* Стили для состояния со скрытым меню */
-.menu-collapsed .teacher-performance-section {
-  width: 1200px;
+/* Стили для расширенного режима */
+.teacher-performance-section.expanded {
+  width: 1200px !important;
+}
+
+/* Стили когда меню свернуто */
+body.menu-collapsed .teacher-performance-section {
+  width: 1200px !important;
 }
 
 /* Заголовок */
 .performance-header {
   margin-bottom: 24px;
   padding: 0 8px;
+  width: 100%;
 }
 
 .performance-title-container {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
+  width: 100%;
 }
 
 .performance-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
@@ -37,31 +43,25 @@
   font-size: 24px;
   font-weight: 600;
   color: #002FA7;
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
+  margin: 0;
 }
 
-.subject-title {
-  font-size: 14px;
+.subject-full-title {
+  font-size: 16px;
   color: #64748b;
   font-weight: 400;
-  line-height: 1.1;
-  max-width: 200px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
-  white-space: normal;
+  line-height: 1.4;
   text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 600px;
 }
 
 .performance-actions {
+  margin-left: auto;
   display: flex;
-  align-items: center;
   gap: 16px;
-  flex-shrink: 0;
+  align-items: center;
 }
 
 /* Кнопки */
@@ -83,58 +83,83 @@
   box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
 }
 
-.set-attendance-btn {
-  min-width: 140px;
+.back-button {
+  background: white;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
 }
 
+.back-button:hover {
+  background: white;
+  transform: scale(1.1);  
+}
+
+.back-button img {
+  width: 30px;
+  height: 30px;
+  transition: all 0.2s ease;
+}
 
 /* Фильтры */
 .performance-filters {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  width: 100%;
   padding: 0 8px;
+  margin-bottom: 20px;
 }
 
-.semester-filter {
+.date-range-filter {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.filter-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.semester-btn {
-  padding: 8px 16px;
-  border: 2px solid #e2e8f0;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  color: #64748b;
-}
-
-.semester-btn.active {
-  background: #002FA7;
-  color: white;
-  border-color: #002FA7;
-}
-
-.semester-btn:hover:not(.active) {
-  border-color: #002FA7;
-  color: #002FA7;
-}
-
-.additional-filters {
+.date-range-group {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-range-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.date-range-input {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  min-width: 80px;
+  transition: all 0.2s ease;
+  height: 35px;
+}
+
+.date-range-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.type-filters {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
 }
 
 .filter-group {
@@ -143,86 +168,183 @@
   gap: 8px;
 }
 
-.filter-group label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-  white-space: nowrap;
-}
-
 .filter-select {
-  padding: 6px 12px;
+  padding: 8px 10px;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
+  text-align: left;
   color: #1e293b;
   background: white;
   cursor: pointer;
-  min-width: 150px;
+  min-width: 160px;
+  transition: all 0.2s ease;
+  height: 35px;
 }
 
-/* Таблица */
+.filter-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Контейнер таблицы */
 .performance-table-container {
   width: 100%;
-  overflow-x: auto;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .performance-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  position: relative;
 }
 
 .performance-table {
-  width: auto;
   min-width: 100%;
-  border-collapse: collapse;
-  background: white;
+  width: 100%;
   table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* При расширенном режиме увеличиваем ширину таблицы */
+.teacher-performance-section.expanded .performance-table,
+body.menu-collapsed .performance-table {
+  min-width: 1200px;
 }
 
 .performance-table th {
-  background: #f8fafc;
+  background: white;
   color: #002c9c;
   font-size: 14px;
   font-weight: 500;
-  padding: 12px 8px;
+  padding: 16px 8px;
   text-align: center;
   border-bottom: 1px solid #e2e8f0;
   user-select: none;
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
+}
+
+/* Выделенные колонки */
+.highlight-col {
+  background: #f0f4ff !important;
+}
+
+/* Фиксированные заголовки */
+.performance-table th.column-number {
+  position: sticky;
+  left: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.performance-table th.column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.performance-table th.column-subgroup {
+  position: sticky;
+  left: 310px;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.performance-table th.column-average {
+  position: sticky;
+  right: 120px;
+  z-index: 50;
+  background: #f8fafc;
+  border-left: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.performance-table th.column-exam {
+  position: sticky;
+  right: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-left: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .performance-table td {
-  padding: 8px;
+  padding: 8px 4px;
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.2s ease;
   white-space: nowrap;
   text-align: center;
-  height: 40px;
+  height: 70px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Фиксированные колонки */
-.fixed-left {
+/* Фиксированные ячейки */
+.performance-table td.column-number {
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 40;
   background: white;
+  border-right: 2px solid #e2e8f0;
 }
 
-.fixed-right {
+.performance-table td.column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+.performance-table td.column-subgroup {
+  position: sticky;
+  left: 310px;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+}
+
+.performance-table td.column-average {
+  position: sticky;
+  right: 120px;
+  z-index: 40;
+  background: white;
+  border-left: 2px solid #e2e8f0;
+}
+
+.performance-table td.column-exam {
   position: sticky;
   right: 0;
-  z-index: 5;
+  z-index: 40;
   background: white;
+  border-left: 2px solid #e2e8f0;
 }
 
-/* Конкретные размеры колонок */
+/* Подсветка при наведении на строку */
+.performance-table tbody tr:hover td.column-number,
+.performance-table tbody tr:hover td.column-name,
+.performance-table tbody tr:hover td.column-subgroup,
+.performance-table tbody tr:hover td.column-average,
+.performance-table tbody tr:hover td.column-exam {
+  background: #f0f4ff;
+}
+
+/* Конкретные размеры и позиции колонок */
 .column-number {
   width: 60px;
   min-width: 60px;
@@ -243,154 +365,308 @@
 }
 
 .column-date {
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
-.column-add-date {
-  width: 60px;
-  min-width: 60px;
-  max-width: 60px;
-}
-
-.column-average,
-.column-exam,
-.column-final {
+.column-average {
   width: 120px;
   min-width: 120px;
   max-width: 120px;
 }
 
+.column-exam {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+/* При расширенном режиме увеличиваем ширину некоторых колонок */
+.teacher-performance-section.expanded .column-name,
+body.menu-collapsed .column-name {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.teacher-performance-section.expanded .column-date,
+body.menu-collapsed .column-date {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
 /* Стили для ячеек */
 .cell-number {
-  font-weight: 500;
-  color: #64748b;
-  font-size: 13px;
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
 }
 
 .cell-name {
-  text-align: left;
+  text-align: left !important;
+  padding: 12px 16px !important;
   font-weight: 500;
   color: #1e293b;
   font-size: 13px;
-  padding: 8px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-subgroup {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.cell-grade {
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-  position: relative;
-  font-size: 13px;
-}
-
-.cell-grade:hover {
-  outline: 1px solid #002FA7;
-  border-color: transparent;
-}
-
-.cell-grade.editing {
-  border-color: #002FA7;
-  background: white !important;
-}
-
-.cell-average {
-  font-weight: 600;
-  color: #002FA7;
-  font-size: 13px;
-}
-
-.cell-final {
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 13px;
-}
-
-/* Кнопка экзамена */
-.exam-btn {
-  padding: 6px 12px;
-  border: 1px solid #002FA7;
-  background: transparent;
-  border-radius: 4px;
-  color: #002FA7;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.exam-btn:hover {
-  background: #002FA7;
-  color: white;
-}
-
-/* Заголовок даты */
-.date-header {
-  cursor: pointer;
-  position: relative;
-  padding: 4px;
   font-weight: 500;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
 }
 
-.subject-type {
+.subgroup-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
   font-size: 12px;
-  color: #64748b;
-  margin-left: 2px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Кнопка добавления даты */
-.add-date-btn {
-  width: 32px;
-  height: 32px;
-  border: 2px dashed #cbd5e1;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 18px;
-  color: #64748b;
+.subgroup-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Контейнер ячейки с оценкой */
+.grade-cell-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Увеличили расстояние между элементами */
+  align-items: center;
+  height: 100%;
+  justify-content: center;
+  padding: 4px 0; /* Добавили отступы сверху и снизу */
+}
+
+/* Оценка - дизайн как у студента */
+.grade-cell {
+  height: 36px;
+  width: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+/* Стили для текста оценок */
+.grade-value, .exam-grade-value, .average-grade {
+  color: white !important;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.add-date-btn:hover {
+/* Для пустых ячеек */
+.grade-empty .grade-value,
+.exam-grade-empty .exam-grade-value {
+  color: inherit !important;
+}
+
+
+
+/* Размеры для разных оценок */
+.grade-cell.small {
+  width: 35px;
+  height: 35px;
+  font-size: 14px;
+}
+
+.grade-cell.medium {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.grade-cell.large {
+  width: 45px;
+  height: 45px;
+  font-size: 12px;
+  min-width: 45px;
+  min-height: 45px;
+}
+
+.grade-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Цвета для оценок */
+.grade-excellent {
+  background: #2cbb00;
+}
+
+.grade-good {
+  background: #a5db28;
+}
+
+.grade-satisfactory {
+  background: #f59e0b;
+}
+
+.grade-unsatisfactory {
+  background: #ef4444;
+}
+
+.grade-empty {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #94a3b8 !important;
+  text-shadow: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.grade-empty:hover {
   border-color: #002FA7;
-  color: #002FA7;
+  color: #002FA7 !important;
   background: #f0f4ff;
 }
 
-/* Inputs */
-.grade-input,
-.date-input {
+/* Стили для input при редактировании */
+.grade-input {
   width: 100%;
-  height: 100%;
   border: none;
   background: transparent;
   text-align: center;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 13px;
-  color: #1e293b;
+  color: #1e293b !important; /* Черный цвет при вводе */
   outline: none;
 }
 
 .grade-input::placeholder {
-  color: #94a3b8;
+  color: rgba(156, 156, 156, 0.7);
   font-weight: 400;
 }
 
-.date-input::placeholder {
-  color: #94a3b8;
-  font-weight: 400;
+/* Средний балл - новый дизайн */
+.average-grade {
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  border: 2px solid transparent;
+}
+
+/* Экзамен */
+.exam-cell-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px; /* Увеличили отступы */
+}
+
+.exam-grade {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: white; /* Белый цвет цифр */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  min-width: 40px;
+  min-height: 30px;
+}
+
+.exam-grade:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Цвета для экзаменационных оценок */
+.exam-grade-excellent {
+  background: #2cbb00;
+}
+
+.exam-grade-good {
+  background: #a5db28;
+}
+
+.exam-grade-satisfactory {
+  background: #f59e0b;
+}
+
+.exam-grade-unsatisfactory {
+  background: #ef4444;
+}
+
+.exam-grade-pass {
+  background: #2cbb00;
+}
+
+.exam-grade-fail {
+  background: #ef4444;
+}
+
+.exam-grade-empty {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #94a3b8 !important; /* Серый цвет как в посещаемости */
+  text-shadow: none;
+  font-weight: 600;
+}
+
+.exam-grade-empty:hover {
+  border-color: #002FA7;
+  color: #002FA7 !important;
+  background: #f0f4ff;
+}
+
+.exam-grade-select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #1e293b !important; /* Черный цвет при редактировании */
+  outline: none;
+  cursor: pointer;
+}
+
+.exam-grade-value {
+  padding: 2px 4px;
 }
 
 /* Модальные окна */
@@ -412,8 +688,8 @@
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  min-width: 400px;
-  max-width: 500px;
+  min-width: 500px;
+  max-width: 600px;
 }
 
 .modal-content h3 {
@@ -422,37 +698,18 @@
   font-size: 18px;
 }
 
-.exam-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.input-group label {
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
   font-size: 14px;
-  font-weight: 500;
-  color: #002FA7;
+  margin-bottom: 16px;
 }
 
-.exam-type-select,
-.exam-grade-select {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  background: white;
-  cursor: pointer;
-}
-
-.exam-type-select:focus,
-.exam-grade-select:focus {
+.modal-content textarea:focus {
   outline: none;
   border-color: #002FA7;
 }
@@ -502,21 +759,362 @@
 @media (max-width: 768px) {
   .teacher-performance-section {
     width: 100%;
+    min-width: 100%;
     padding: 12px;
+  }
+  
+  .teacher-performance-section.expanded,
+  body.menu-collapsed .teacher-performance-section {
+    width: 100% !important;
   }
   
   .performance-filters {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
   
-  .additional-filters {
+  .performance-title-container {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+  }
+  
+  .performance-actions {
+    justify-content: space-between;
+    width: 100%;
   }
   
   .modal-content {
     min-width: 90vw;
     margin: 20px;
   }
+  
+  .column-name {
+    width: 200px;
+    min-width: 200px;
+  }
+  
+  .column-number {
+    width: 50px;
+    min-width: 50px;
+  }
+  
+  .column-subgroup {
+    width: 80px;
+    min-width: 80px;
+  }
+  
+  .grade-cell {
+    min-width: 35px;
+    min-height: 25px;
+    font-size: 12px;
+  }
+}
+
+/* Стили для типа занятия в заголовке */
+.lesson-type-header {
+  font-size: 11px !important;
+  padding: 8px 4px !important;
+  font-weight: 400 !important;
+  color: #64748b !important;
+  border-top: none !important;
+}
+
+.lesson-type-select {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lesson-type-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Глобальный выбор типа экзамена */
+.global-exam-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.global-exam-select {
+  flex: 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 4px 6px;
+  background: white;
+  cursor: pointer;
+}
+
+.global-exam-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.grade-cell.has-comment {
+  position: relative;
+}
+
+.grade-cell.has-comment::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  z-index: 2;
+}
+
+/* Индикатор комментария */
+.grade-cell.has-comment-alt::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+/* Блок среднего балла группы */
+.group-average-footer {
+  padding: 16px 14px;
+  background: transparent;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.group-average-percentage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.average-circle {
+  width: 62px;
+  height: 62px;  
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: conic-gradient(
+    var(--average-color, #ffffff) 0% var(--average, 0%),
+    #f1f5f9 var(--average, 0%) 100%
+  );
+}
+
+.average-circle::before {
+  content: '';
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  background: white;
+  border-radius: 50%;
+  align-items: center;
+}
+
+.average-value {
+  font-size: 15px; 
+  font-weight: 800;
+  z-index: 1;
+  color: var(--average-color, #ffffff);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.average-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  padding-right: 5px;
+}
+
+/* Стили для расширенного модального окна комментария */
+.comment-attachments {
+  margin-top: 16px;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.attachment-icon {
+  font-size: 16px;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.attachment-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.attachment-btn:hover {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.add-attachment-btn {
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.add-attachment-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f4ff;
+}
+
+/* Новые стили для заголовка таблицы с rowspan */
+.table-header-rowspan {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.lesson-type-header-row {
+  border-top: none !important;
+}
+
+/* Стили для выбора типа занятия под датой */
+.date-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Увеличили расстояние между датой и выпадающим списком */
+  align-items: center;
+  padding: 8px 4px; /* Добавили отступы */
+}
+
+.date-title {
+  font-weight: 500;
+  color: #002c9c;
+}
+
+.lesson-type-select-container {
+  width: 20%;
+  margin-bottom: 0;
+}
+
+.lesson-type-select-under-date {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 4px 6px; /* Увеличили padding */
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 24px; /* Увеличили высоту */
+}
+
+.lesson-type-select-under-date:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Стили для глобального выбора типа экзамена */
+.global-exam-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Увеличили расстояние между заголовком и выпадающим списком */
+  align-items: center;
+  padding: 8px 4px; /* Добавили отступы */
+}
+
+.global-exam-select {
+  width: 54%;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 4px 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 24px; /* Увеличили высоту */
+}
+
+.global-exam-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Кнопка комментария */
+.comment-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px;
+  color: #64748b;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+
+.comment-btn:hover {
+  color: white;
+  border-color: #8f949b;
+  transform: scale(1.05);
 }

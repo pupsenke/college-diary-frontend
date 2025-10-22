@@ -209,7 +209,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           groupNumber={selectedGroupData.name}
           subject={selectedGroupData.subject}
           students={mockStudents}
-          currentSemester={selectedGroupData.semester as 1 | 2}
           onBackToGroups={handleBackToGroups}
         />
       </div>
