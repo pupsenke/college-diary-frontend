@@ -5,6 +5,17 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
+.loading, .error {
+  text-align: center;
+  padding: 20px;
+  font-size: 18px;
+  color: #0033a0;
+}
+
+.error {
+  color: #ef4444;
+}
+
 /*стиль для блока полное расписание*/
 .schedule-section {
   border-radius: 12px;
