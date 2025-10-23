@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AttendanceSectionStyle.css';
+// Библиотеки для статистики
 import {
   BarChart,
   Bar,
@@ -64,6 +65,7 @@ export const AttendanceSection: React.FC = () => {
   const attendanceRefs = useRef<Map<number, HTMLElement>>(new Map());
 
   // Данные по посещаемости
+  // ЗАГЛУШКИ !!!
   const attendanceData: Attendance[] = [
     {
       id: 1,

@@ -35,6 +35,7 @@ export interface StudentData {
   email?: string;
 }
 
+
 // Интерфейсы для успеваемости
 export interface StudentMark {
   stNameSubjectDTO: {
@@ -151,15 +152,14 @@ export const apiService = {
     if (!response.ok) throw new Error('Ошибка авторизации студента');
     const data: StudentData = await response.json();
     
-    // Преобразуем данные студента в нужный формат
     return {
       ...data,
       userType: 'student' as const,
-      numberGroup: 0 // Временное значение, будет обновлено после получения данных группы
+      numberGroup: 0 // Временное значение, обновляется после получения данных группы
     };
   },
 
-  // Обновление данных студента через PATCH запрос
+  // Обновление данных студента 
   async updateStudentData(studentId: number, data: Partial<StudentData>) {
     console.log('Sending PATCH request for student:', studentId, data);
     
@@ -184,6 +184,9 @@ export const apiService = {
     console.log('Student data updated successfully:', result);
     return result;
   },
+
+
+  // === УСПЕВАЕМОСТЬ ===
 
   // Получение оценок студента
   async getStudentMarks(studentId: number): Promise<StudentMark[]> {
@@ -249,6 +252,7 @@ export const apiService = {
     return data;
   },
 
+
   // === ДОКУМЕНТЫ ===
 
   // Получение всех документов
@@ -267,7 +271,7 @@ export const apiService = {
     return data;
   },
 
-  // Получить список документов по id студента
+  // Список документов по id студента
   async fetchDocumentsByStudent(studentId: number): Promise<Document[]> {
     console.log(`Fetching documents for student ID: ${studentId}`);
     const response = await fetch(`${API_BASE_URL}/paths`);
@@ -306,38 +310,83 @@ export const apiService = {
     console.log('Document uploaded successfully');
   },
 
-  // Скачивание документа
+  // Исправленная функция скачивания документа
   async downloadDocument(id: number): Promise<void> {
     console.log(`Downloading document with ID: ${id}`);
-    const response = await fetch(`${API_BASE_URL}/paths/id/${id}`);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`Ошибка скачивания документа: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-
-    // Попытка получить имя файла из заголовков
-    const contentDisposition = response.headers.get('Content-Disposition');
-    let filename = 'document';
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="?([^"]+)"?/);
-      if (match && match[1]) {
-        filename = match[1];
+    try {
+      // 1. Получаем информацию о документе
+      const docsResponse = await fetch(`${API_BASE_URL}/paths`);
+      if (!docsResponse.ok) {
+        throw new Error('Не удалось получить список документов');
       }
+      
+      const allDocuments = await docsResponse.json();
+      const documentInfo = allDocuments.find((doc: Document) => doc.id === id);
+      
+      if (!documentInfo) {
+        throw new Error(`Документ с ID ${id} не найден`);
+      }
+
+      console.log('Found document:', documentInfo);
+
+      // 2. Скачиваем файл - важно указать правильные заголовки
+      const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/octet-stream', // Важно для бинарных данных
+        },
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error(`HTTP error! status: ${fileResponse.status}`);
+      }
+
+      // 3. Получаем blob с правильным типом
+      const blob = await fileResponse.blob();
+      
+      // 4. Определяем MIME тип и имя файла
+      let filename = documentInfo.nameFile;
+      let mimeType = 'application/octet-stream'; // тип по умолчанию
+
+      // Определяем MIME тип по расширению файла
+      if (filename) {
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const mimeTypes: { [key: string]: string } = {
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'doc': 'application/msword',
+          'pdf': 'application/pdf',
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'txt': 'text/plain',
+        };
+        mimeType = mimeTypes[extension] || 'application/octet-stream';
+      }
+
+      // 5. Создаем blob с правильным типом
+      const typedBlob = new Blob([blob], { type: mimeType });
+
+      // 6. Создаем ссылку для скачивания
+      const url = window.URL.createObjectURL(typedBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `document_${id}`;
+      
+      // 7. Добавляем в DOM и кликаем
+      document.body.appendChild(link);
+      link.click();
+      
+      // 8. Очистка
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log(`Document downloaded successfully: ${filename}`);
+
+    } catch (error) {
+      console.error('Download error:', error);
+      throw new Error(`Не удалось скачать документ: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    
-    console.log('Document downloaded successfully');
   },
 
   // Удаление документа
@@ -355,25 +404,4 @@ export const apiService = {
 
     console.log('Document deleted successfully');
   },
-
-  // Старая функция для совместимости (можно удалить после рефакторинга)
-  async getStudentDocuments(studentId: number): Promise<Document[]> {
-    return this.fetchDocumentsByStudent(studentId);
-  },
-
-  // Старая функция для совместимости (можно удалить после рефакторинга)
-  async getDocumentById(documentId: number): Promise<Document> {
-    console.log(`Fetching document with ID: ${documentId}`);
-    const response = await fetch(`${API_BASE_URL}/paths/id/${documentId}`);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`Ошибка загрузки документа: ${response.status}`);
-    }
-    
-    const data: Document = await response.json();
-    console.log('Document received:', data);
-    return data;
-  }
-};
+}

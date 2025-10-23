@@ -186,47 +186,62 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   };
 
   // Преобразование данных из API в формат компонента с разделением по семестрам
+  // Преобразование данных из API в формат компонента с разделением по семестрам
   const transformStudentMarksToGrades = (semester: 'first' | 'second'): Grade[] => {
     if (!studentMarks) return [];
 
     return studentMarks
-      .filter(studentMark => studentMark && Array.isArray(studentMark.marksBySt)) // фильтрация невалидных
+      .filter(studentMark => studentMark && studentMark.stNameSubjectDTO) // Фильтруем только валидные предметы
       .map((studentMark) => {
         const subjectId = studentMark.stNameSubjectDTO?.idSubject;
         
-        if (!subjectId) return null; // Если idSubject отсутствует, пропускаем
+        if (!subjectId) return null;
 
         // Создаём детали оценок с проверками
-        const gradeDetails: GradeDetail[] = studentMark.marksBySt.map((mark) => {
-          const lessonDate = getLessonDate(subjectId, mark.number);
-          const lessonTopic = getLessonTopic(subjectId, mark.number);
+        const gradeDetails: GradeDetail[] = [];
+        
+        // Если есть оценки, обрабатываем их
+        if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
+          studentMark.marksBySt
+            .filter(mark => mark.value != null) // Фильтруем только оценки с значениями
+            .forEach((mark) => {
+              const lessonDate = getLessonDate(subjectId, mark.number);
+              const lessonTopic = getLessonTopic(subjectId, mark.number);
 
-          return {
-            id: mark.number,
-            date: lessonDate,
-            topic: lessonTopic,
-            grade: mark.value,
-            teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
-            type: 'Работа'
-          };
-        });
+              gradeDetails.push({
+                id: mark.number,
+                date: lessonDate,
+                topic: lessonTopic,
+                grade: mark.value,
+                teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+                type: 'Работа'
+              });
+            });
+        }
 
-        const semesterGradeDetails = gradeDetails.filter(detail => detail && getSemesterByDate(detail.date) === semester);
-        const semesterGrades = semesterGradeDetails.map(detail => detail.grade);
-        const average = semesterGrades.length > 0 
-          ? semesterGrades.reduce((sum, grade) => sum + grade, 0) / semesterGrades.length 
+        // Фильтруем оценки по семестру
+        const semesterGradeDetails = gradeDetails.filter(detail => 
+          getSemesterByDate(detail.date) === semester
+        );
+        
+        // Получаем только валидные оценки (без null)
+        const validSemesterGrades = semesterGradeDetails.map(detail => detail.grade);
+        
+        // Рассчитываем средний балл только по валидным оценкам
+        const average = validSemesterGrades.length > 0 
+          ? validSemesterGrades.reduce((sum, grade) => sum + grade, 0) / validSemesterGrades.length 
           : 0;
 
         return {
           id: subjectId,
           subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
-          grades: semesterGrades,
+          grades: validSemesterGrades, // Используем только валидные оценки
           average: parseFloat(average.toFixed(1)),
           examGrade: 0,
           gradeDetails: semesterGradeDetails
         };
       })
-      .filter(grade => grade !== null && grade.grades.length > 0) as Grade[];
+      .filter(grade => grade !== null) as Grade[]; // Убираем только полностью невалидные записи
   };
 
 
@@ -242,19 +257,28 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     let grade3 = 0;
     let grade2 = 0;
     let totalAverage = 0;
+    let subjectsWithGrades = 0;
 
     gradesData.forEach(subject => {
-      subject.grades.forEach(grade => {
-        totalGrades++;
-        if (grade >= 4.5) grade5++;
-        else if (grade >= 3.5) grade4++;
-        else if (grade >= 2.5) grade3++;
-        else grade2++;
-      });
-      totalAverage += subject.average;
+      // Учитываем только предметы с оценками
+      if (subject.grades.length > 0) {
+        subjectsWithGrades++;
+        
+        // Фильтруем null оценки перед подсчетом
+        const validGrades = subject.grades.filter(grade => grade != null);
+        
+        validGrades.forEach(grade => {
+          totalGrades++;
+          if (grade >= 4.5) grade5++;
+          else if (grade >= 3.5) grade4++;
+          else if (grade >= 2.5) grade3++;
+          else grade2++;
+        });
+        totalAverage += subject.average;
+      }
     });
 
-    const overallAverage = totalAverage / (gradesData.length || 1);
+    const overallAverage = subjectsWithGrades > 0 ? totalAverage / subjectsWithGrades : 0;
     const excellentPercentage = totalGrades > 0 ? (grade5 / totalGrades) * 100 : 0;
     const goodPercentage = totalGrades > 0 ? (grade4 / totalGrades) * 100 : 0;
     const satisfactoryPercentage = totalGrades > 0 ? (grade3 / totalGrades) * 100 : 0;
@@ -270,7 +294,9 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       excellentPercentage: parseFloat(excellentPercentage.toFixed(1)),
       goodPercentage: parseFloat(goodPercentage.toFixed(1)),
       satisfactoryPercentage: parseFloat(satisfactoryPercentage.toFixed(1)),
-      unsatisfactoryPercentage: parseFloat(unsatisfactoryPercentage.toFixed(1))
+      unsatisfactoryPercentage: parseFloat(unsatisfactoryPercentage.toFixed(1)),
+      totalSubjects: gradesData.length,
+      subjectsWithGrades
     };
   };
 
@@ -394,15 +420,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (grade >= 4.5) return '#2cbb00ff';
     if (grade >= 3.5) return '#a5db28ff';
     if (grade >= 2.5) return '#f59e0b';
-    if (grade == null) return '#c7ccd7ff'
-    return '#ef4444';
+    return '#c0c6d1ff';
   };
 
   const getAverageGradeColor = (average: number) => {
     if (average >= 4.5) return '#2cbb00ff';
     if (average >= 3.5) return '#a5db28ff';
     if (average >= 2.5) return '#f59e0b';
-    return '#ef4444';
+    return '#c0c6d1ff';
   };
 
   const selectedSubjectData = gradesData.find(grade => grade.subject === selectedSubject);
@@ -524,6 +549,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
               <div className="pf-stat-item">
                 <span className="pf-stat-label">Процент отличных оценок:</span>
                 <span className="pf-stat-value">{statistics.excellentPercentage}%</span>
+              </div>
+              <div className="pf-stat-item">
+                <span className="pf-stat-label">Всего предметов:</span>
+                <span className="pf-stat-value">{statistics.totalSubjects}</span>
+              </div>
+              <div className="pf-stat-item">
+                <span className="pf-stat-label">Предметов с оценками:</span>
+                <span className="pf-stat-value">{statistics.subjectsWithGrades}</span>
               </div>
             </div>
           </div>
@@ -696,39 +729,63 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                       <td className="subject-name">{subject.subject}</td>
                       <td className="grades-list">
                         <div className="grades-scroll-container">
-                          {subject.grades.map((grade, gradeIndex) => {
-                            const gradeDetail = subject.gradeDetails?.[gradeIndex];
-                            return (
-                              <span
-                                key={gradeIndex}
-                                className="grade-bubble"
-                                style={{ backgroundColor: getGradeColor(grade) }}
-                                onClick={(e) => 
-                                  handleGradeClick(
-                                    subject.subject,
-                                    grade,
-                                    gradeIndex + 1,
-                                    gradeDetail?.topic || `Работа ${gradeIndex + 1}`,
-                                    e
-                                  )
-                                }
-                              >
-                                {grade}
-                              </span>
-                            );
-                          })}
+                          {subject.grades.length > 0 ? (
+                            subject.grades.map((grade, gradeIndex) => {
+                              const gradeDetail = subject.gradeDetails?.[gradeIndex];
+                              return (
+                                <span
+                                  key={gradeIndex}
+                                  className="grade-bubble"
+                                  style={{ backgroundColor: getGradeColor(grade) }}
+                                  onClick={(e) => 
+                                    handleGradeClick(
+                                      subject.subject,
+                                      grade,
+                                      gradeIndex + 1,
+                                      gradeDetail?.topic || `Работа ${gradeIndex + 1}`,
+                                      e
+                                    )
+                                  }
+                                >
+                                  {grade}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span style={{ 
+                              color: '#64748b', 
+                              fontStyle: 'italic',
+                              fontSize: '12px'
+                            }}>
+                              Нет оценок
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="average-grade">
-                        <span 
-                          className="grade-bubble average-grade-bubble"
-                          style={{ backgroundColor: getAverageGradeColor(subject.average) }}
-                        >
-                          {subject.average.toFixed(1)}
-                        </span>
+                        {subject.grades.length > 0 ? (
+                          <span 
+                            className="grade-bubble average-grade-bubble"
+                            style={{ backgroundColor: getAverageGradeColor(subject.average) }}
+                          >
+                            {subject.average.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            color: '#64748b',
+                            fontSize: '12px'
+                          }}>
+                            -
+                          </span>
+                        )}
                       </td>
                       <td className="exam-grade">
-                        -
+                        <span style={{ 
+                          color: '#64748b',
+                          fontSize: '12px'
+                        }}>
+                          -
+                        </span>
                       </td>
                     </tr>
                   ))}

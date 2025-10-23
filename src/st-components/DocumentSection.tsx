@@ -80,8 +80,8 @@ export const DocumentsSection: React.FC = () => {
 
   // Месяцы для выбора
   const months = [
-    'январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
-    'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'
+    'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+    'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
   ];
 
   // Функция для проверки, требуется ли телефон для выбранного типа документа
@@ -168,28 +168,177 @@ export const DocumentsSection: React.FC = () => {
 
   // Функция для преобразования ФИО в родительный падеж
   const getGenitiveCase = (fullName: string): string => {
-    const parts = fullName.split(' ');
+    if (!fullName || typeof fullName !== 'string') return fullName;
+    
+    const parts = fullName.trim().split(/\s+/).filter(part => part.trim() !== '');
     if (parts.length < 3) return fullName;
     
-    const [lastName, firstName, patronymic] = parts;
-    
-    const lastNameGenitive = lastName.endsWith('ов') ? lastName + 'а' :
-                            lastName.endsWith('ев') ? lastName + 'а' :
-                            lastName.endsWith('ин') ? lastName + 'а' :
-                            lastName.endsWith('ый') ? lastName.replace('ый', 'ого') :
-                            lastName.endsWith('ая') ? lastName.replace('ая', 'ой') :
-                            lastName + 'а';
-    
-    const firstNameGenitive = firstName.endsWith('й') ? firstName.replace('й', 'я') :
-                             firstName.endsWith('а') ? firstName.replace('а', 'ы') :
-                             firstName.endsWith('я') ? firstName.replace('я', 'и') :
-                             firstName + 'а';
-    
-    const patronymicGenitive = patronymic.endsWith('ч') ? patronymic + 'а' :
-                              patronymic.endsWith('на') ? patronymic.replace('на', 'ны') :
-                              patronymic;
-    
-    return `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
+    let [lastName, firstName, patronymic] = parts;
+
+    // Функция для исправления опечаток
+    const fixTypos = (name: string): string => {
+      // Приводим к нижнему регистру для сравнения
+      const lowerName = name.toLowerCase();
+      
+      // Исправляем опечатки
+      if (lowerName === 'шкипероваа') return 'Шкиперова';
+      if (lowerName === 'анытольевна') return 'Анатольевна';
+      if (lowerName === 'александравна') return 'Александровна';
+      if (lowerName === 'сергеевнаа') return 'Сергеевна';
+      if (lowerName === 'ивановнаа') return 'Ивановна';
+      if (lowerName === 'петровнаа') return 'Петровна';
+      if (lowerName === 'сидоровнаа') return 'Сидоровна';
+      if (lowerName === 'валерьевич') return 'Валерьевич';
+      if (lowerName === 'сергеевичч') return 'Сергеевич';
+      if (lowerName === 'ивановичч') return 'Иванович';
+      if (lowerName === 'петровичч') return 'Петрович';
+      
+      // Если нет опечаток, возвращаем оригинал с правильной капитализацией
+      return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+    };
+
+    // Применяем исправление опечаток
+    lastName = fixTypos(lastName);
+    firstName = fixTypos(firstName);
+    patronymic = fixTypos(patronymic);
+
+    console.log('После исправления опечаток:', { lastName, firstName, patronymic });
+
+    // Склонение фамилий
+    const declineLastName = (name: string): string => {
+      const lowerName = name.toLowerCase();
+      
+      // Женские фамилии
+      if (lowerName.endsWith('ая')) return name.slice(0, -2) + 'ой';
+      if (lowerName.endsWith('кая')) return name.slice(0, -3) + 'кой';
+      if (lowerName.endsWith('ская')) return name.slice(0, -3) + 'ской';
+      if (lowerName.endsWith('цкая')) return name.slice(0, -3) + 'цкой';
+      
+      // Фамилии на -ова, -ева, -ина, -ына
+      if (lowerName.endsWith('ова') || lowerName.endsWith('ева') || 
+          lowerName.endsWith('ина') || lowerName.endsWith('ына')) {
+        return name.slice(0, -1) + 'ой';
+      }
+      
+      // Фамилии на -а (женские)
+      if (lowerName.endsWith('а') && !lowerName.endsWith('ова') && 
+          !lowerName.endsWith('ева') && !lowerName.endsWith('ина') && !lowerName.endsWith('ына')) {
+        return name.slice(0, -1) + 'ой';
+      }
+      
+      // Мужские фамилии
+      if (lowerName.endsWith('ов') || lowerName.endsWith('ев') || 
+          lowerName.endsWith('ин') || lowerName.endsWith('ын')) {
+        return name + 'а';
+      }
+      if (lowerName.endsWith('ский') || lowerName.endsWith('цкий') || 
+          lowerName.endsWith('ой') || lowerName.endsWith('ий') || lowerName.endsWith('ый')) {
+        return name.slice(0, -2) + 'ого';
+      }
+      
+      // Общие случаи
+      if (lowerName.endsWith('я')) return name.slice(0, -1) + 'и';
+      if (lowerName.endsWith('ь')) return name.slice(0, -1) + 'я';
+      
+      return name + 'а';
+    };
+
+    // Склонение имен
+    const declineFirstName = (name: string): string => {
+      const lowerName = name.toLowerCase();
+      
+      // Специальные случаи
+      const specialCases: { [key: string]: string } = {
+        'павел': 'Павла',
+        'лев': 'Льва', 
+        'пётр': 'Петра',
+        'николай': 'Николая',
+        'георгий': 'Георгия',
+        'дмитрий': 'Дмитрия',
+        'евгений': 'Евгения',
+        'валерий': 'Валерия',
+        'валерия': 'Валерии',
+        'юрий': 'Юрия',
+        'григорий': 'Григория',
+        'вячеслав': 'Вячеслава',
+        'яков': 'Якова',
+        'макар': 'Макара',
+        'прокофий': 'Прокофия',
+        'любовь': 'Любови',
+        'нелли': 'Нелли',
+        'николь': 'Николь',
+        'рашель': 'Рашели',
+        'софья': 'Софьи',
+        'ольга': 'Ольги',
+        'елена': 'Елены',
+        'светлана': 'Светланы',
+        'марина': 'Марины',
+        'алёна': 'Алёны',
+        'анна': 'Анны',
+        'мария': 'Марии',
+        'екатерина': 'Екатерины',
+        'наталья': 'Натальи',
+        'ирина': 'Ирины',
+        'татьяна': 'Татьяны'
+      };
+      
+      if (specialCases[lowerName]) {
+        return specialCases[lowerName];
+      }
+      
+      // Женские имена
+      if (lowerName.endsWith('ия')) return name.slice(0, -1) + 'и';
+      if (lowerName.endsWith('ья')) return name.slice(0, -2) + 'ьи';
+      if (lowerName.endsWith('а')) return name.slice(0, -1) + 'ы';
+      if (lowerName.endsWith('я')) return name.slice(0, -1) + 'и';
+      
+      // Мужские имена  
+      if (lowerName.endsWith('й')) return name.slice(0, -1) + 'я';
+      if (lowerName.endsWith('ь')) return name.slice(0, -1) + 'я';
+      if (lowerName.endsWith('ей') || lowerName.endsWith('ий')) {
+        return name.slice(0, -2) + 'ея';
+      }
+      if (lowerName.endsWith('ел') || lowerName.endsWith('ил')) return name + 'а';
+      
+      return name + 'а';
+    };
+
+    // Склонение отчеств
+    const declinePatronymic = (name: string): string => {
+      const lowerName = name.toLowerCase();
+      
+      // Мужские отчества
+      if (lowerName.endsWith('ич')) return name + 'а';
+      
+      // Женские отчества
+      if (lowerName.endsWith('на')) {
+        if (lowerName.endsWith('вна') || lowerName.endsWith('чна')) {
+          return name.slice(0, -2) + 'ы';
+        }
+        return name.slice(0, -1) + 'ы';
+      }
+      
+      return name + 'а';
+    };
+
+    try {
+      const lastNameGenitive = declineLastName(lastName);
+      const firstNameGenitive = declineFirstName(firstName);
+      const patronymicGenitive = declinePatronymic(patronymic);
+
+      const result = `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
+      
+      console.log('Результат склонения:', {
+        original: fullName,
+        fixed: `${lastName} ${firstName} ${patronymic}`,
+        result: result
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Ошибка при склонении ФИО:', error, fullName);
+      return fullName;
+    }
   };
 
   // Функция для получения курса студента из данных группы
@@ -221,7 +370,7 @@ export const DocumentsSection: React.FC = () => {
           group: student.numberGroup.toString(),
           course: course,
           phone: userPhone,
-          departmentHead: 'Петрова Мария Сергеевна'
+          departmentHead: 'Голубева Галина Анатольенва'
         };
 
         setUserData(userData);
@@ -245,7 +394,7 @@ export const DocumentsSection: React.FC = () => {
           group: student.numberGroup?.toString() || 'Неизвестно',
           course: 'Неизвестно',
           phone: student.telephone || '',
-          departmentHead: 'Петрова Мария Сергеевна'
+          departmentHead: 'Голубева Галина Анатольевна'
         });
       }
     };
@@ -319,12 +468,50 @@ export const DocumentsSection: React.FC = () => {
 
   // Функция для получения названия месяца по номеру
   const getMonthName = (monthNumber: number) => {
-    const months = [
-      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-    ];
-    return months[monthNumber - 1];
+  const monthsGenitive = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ];
+  return monthsGenitive[monthNumber - 1];
+};
+
+// Функция для преобразования месяца из именительного в родительный падеж
+const getMonthGenitive = (monthNominative: string): string => {
+  const monthMap: { [key: string]: string } = {
+    'январь': 'января',
+    'февраль': 'февраля',
+    'март': 'марта',
+    'апрель': 'апреля',
+    'май': 'мая',
+    'июнь': 'июня',
+    'июль': 'июля',
+    'август': 'августа',
+    'сентябрь': 'сентября',
+    'октябрь': 'октября',
+    'ноябрь': 'ноября',
+    'декабрь': 'декабря'
   };
+  return monthMap[monthNominative] || monthNominative;
+};
+
+// Функция для преобразования месяца из именительного в предложный падеж
+const getMonthPrepositional = (monthNominative: string): string => {
+  const monthMap: { [key: string]: string } = {
+    'январь': 'январе',
+    'февраль': 'феврале',
+    'март': 'марте',
+    'апрель': 'апреле',
+    'май': 'мае',
+    'июнь': 'июне',
+    'июль': 'июле',
+    'август': 'августе',
+    'сентябрь': 'сентябре',
+    'октябрь': 'октябре',
+    'ноябрь': 'ноябре',
+    'декабрь': 'декабре'
+  };
+  return monthMap[monthNominative] || monthNominative;
+};
 
   // Форматирование даты для документа
   const formatDateForDocument = (dateString: string) => {
@@ -553,7 +740,7 @@ export const DocumentsSection: React.FC = () => {
           fullName: userData.fullName,
           group: userData.group,
           course: userData.course,
-          month: formData.month,
+          month: getMonthPrepositional(formData.month), 
           quantityHours: formData.hours,
           reason: formatReason(formData.reason),
           currentDay: currentDate.day,
@@ -574,11 +761,19 @@ export const DocumentsSection: React.FC = () => {
   // Обработчик скачивания документа
   const handleDownloadDocument = async (documentId: number) => {
     try {
-      await apiService.downloadDocument(documentId);
+      setIsLoading(true);
       setError(null);
+      
+      await apiService.downloadDocument(documentId);
+      
+      // Можно добавить уведомление об успешном скачивании
+      console.log('Документ успешно скачан');
+      
     } catch (error) {
       console.error('Ошибка скачивания документа:', error);
-      setError('Не удалось скачать документ');
+      setError(`Не удалось скачать документ: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -929,6 +1124,13 @@ export const DocumentsSection: React.FC = () => {
           </button>
         </div>
       </div>
+      {/* Временная кнопка для тестирования - можно удалить после проверки */}
+      <button 
+        onClick={() => handleDownloadDocument(33)}
+        style={{marginLeft: '10px', padding: '5px 10px', background: '#ff6b6b', color: 'white', border: 'none', borderRadius: '4px'}}
+      >
+        Тест скачивания ID 33
+      </button>
 
       {error && <div className="ds-error-message">{error}</div>}
 
@@ -966,6 +1168,7 @@ export const DocumentsSection: React.FC = () => {
                       >
                         Удалить
                       </button>
+                      
                     </div>
                   </td>
                 </tr>

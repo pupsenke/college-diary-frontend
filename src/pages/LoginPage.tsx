@@ -19,17 +19,14 @@ export const LoginPage: React.FC = () => {
     setErrorMessage("");
     setIsLoading(true);
 
-    // Базовая валидация
+    // Валидация на пустые поля
     if (!login.trim() || !password.trim()) {
       setErrorMessage("Пожалуйста, заполните все поля");
       setIsLoading(false);
       return;
     }
-
-    
-
     try {
-      // Пытаемся найти студента
+      // Поиск студента
       const studentResponse = await fetch(
         `http://localhost:8080/api/v1/students/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
@@ -37,14 +34,14 @@ export const LoginPage: React.FC = () => {
       if (studentResponse.ok) {
   const studentData = await studentResponse.json();
   if (studentData && studentData.id) {
-    // Сначала получаем данные группы чтобы узнать numberGroup
+    // Получение данных группы чтобы получить numberGroup
     let numberGroup = 0;
     try {
       const groupData = await apiService.getGroupData(studentData.idGroup);
       numberGroup = groupData.numberGroup;
     } catch (error) {
       console.error('Error fetching group data:', error);
-      // Используем fallback
+
       numberGroup = studentData.idGroup; // временное значение
     }
 
@@ -70,7 +67,7 @@ export const LoginPage: React.FC = () => {
   }
 }
 
-      // Если студент не найден, проверяем сотрудника
+      // Если студент не найден, поиск сотрудника
       const staffResponse = await fetch(
         `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
@@ -110,7 +107,7 @@ export const LoginPage: React.FC = () => {
           
           setUser(userData);
           
-          // Перенаправляем в зависимости от типа пользователя
+          // Перенаправление на нужную панель в зависимости от типа пользователя
           if (userType === 'metodist') {
             navigate("/metodist", { replace: true });
           } else {
