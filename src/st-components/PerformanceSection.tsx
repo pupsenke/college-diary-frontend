@@ -81,7 +81,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         
         // Загрузка оценок студента через apiService
         const marksData = await apiService.getStudentMarks(studentId);
-        setStudentMarks(marksData);
+        setStudentMarks(marksData ?? []);
 
         // Загрузка детальной информации по каждому предмету
         const subjectMarksData: {[key: number]: SubjectMark[]} = {};
@@ -187,44 +187,48 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Преобразование данных из API в формат компонента с разделением по семестрам
   const transformStudentMarksToGrades = (semester: 'first' | 'second'): Grade[] => {
-    return studentMarks.map((studentMark) => {
-      const subjectId = studentMark.stNameSubjectDTO.idSubject;
-      
-      // Создаем детали оценок на основе доступных данных
-      const gradeDetails: GradeDetail[] = studentMark.marksBySt.map((mark, markIndex) => {
-        const lessonDate = getLessonDate(subjectId, mark.number);
-        const lessonTopic = getLessonTopic(subjectId, mark.number);
+    if (!studentMarks) return [];
+
+    return studentMarks
+      .filter(studentMark => studentMark && Array.isArray(studentMark.marksBySt)) // фильтрация невалидных
+      .map((studentMark) => {
+        const subjectId = studentMark.stNameSubjectDTO?.idSubject;
+        
+        if (!subjectId) return null; // Если idSubject отсутствует, пропускаем
+
+        // Создаём детали оценок с проверками
+        const gradeDetails: GradeDetail[] = studentMark.marksBySt.map((mark) => {
+          const lessonDate = getLessonDate(subjectId, mark.number);
+          const lessonTopic = getLessonTopic(subjectId, mark.number);
+
+          return {
+            id: mark.number,
+            date: lessonDate,
+            topic: lessonTopic,
+            grade: mark.value,
+            teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+            type: 'Работа'
+          };
+        });
+
+        const semesterGradeDetails = gradeDetails.filter(detail => detail && getSemesterByDate(detail.date) === semester);
+        const semesterGrades = semesterGradeDetails.map(detail => detail.grade);
+        const average = semesterGrades.length > 0 
+          ? semesterGrades.reduce((sum, grade) => sum + grade, 0) / semesterGrades.length 
+          : 0;
 
         return {
-          id: mark.number,
-          date: lessonDate,
-          topic: lessonTopic,
-          grade: mark.value,
-          teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
-          type: 'Работа'
+          id: subjectId,
+          subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
+          grades: semesterGrades,
+          average: parseFloat(average.toFixed(1)),
+          examGrade: 0,
+          gradeDetails: semesterGradeDetails
         };
-      });
-
-      // Фильтруем оценки по семестру
-      const semesterGradeDetails = gradeDetails.filter(detail => 
-        getSemesterByDate(detail.date) === semester
-      );
-
-      const semesterGrades = semesterGradeDetails.map(detail => detail.grade);
-      const average = semesterGrades.length > 0 
-        ? semesterGrades.reduce((sum, grade) => sum + grade, 0) / semesterGrades.length 
-        : 0;
-
-      return {
-        id: studentMark.stNameSubjectDTO.idSubject,
-        subject: studentMark.stNameSubjectDTO.nameSubject,
-        grades: semesterGrades,
-        average: parseFloat(average.toFixed(1)),
-        examGrade: 0, // Убираем оценку за сессию
-        gradeDetails: semesterGradeDetails
-      };
-    }).filter(grade => grade.grades.length > 0); // Фильтруем предметы без оценок в выбранном семестре
+      })
+      .filter(grade => grade !== null && grade.grades.length > 0) as Grade[];
   };
+
 
   // Получаем данные для текущего выбранного семестра
   const gradesData = transformStudentMarksToGrades(selectedSemester);
@@ -390,6 +394,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (grade >= 4.5) return '#2cbb00ff';
     if (grade >= 3.5) return '#a5db28ff';
     if (grade >= 2.5) return '#f59e0b';
+    if (grade == null) return '#c7ccd7ff'
     return '#ef4444';
   };
 
