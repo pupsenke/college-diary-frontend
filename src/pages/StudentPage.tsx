@@ -41,21 +41,21 @@ export const StudentPage: React.FC = () => {
   };
 
   // Функция для форматирования ФИО куратора
-const formatCuratorName = (curator: TeacherData | null) => {
-  if (!curator) return '';
-  
-  const lastName = curator.lastName || '';
-  const firstName = curator.name ? `${curator.name.charAt(0)}.` : '';
-  const middleName = curator.patronymic ? `${curator.patronymic.charAt(0)}.` : '';
-  
-  return `${lastName} ${firstName}${middleName}`.trim();
-};
+  const formatCuratorName = (curator: TeacherData | null) => {
+    if (!curator) return '';
+    
+    const lastName = curator.lastName || '';
+    const firstName = curator.name ? `${curator.name.charAt(0)}.` : '';
+    const middleName = curator.patronymic ? `${curator.patronymic.charAt(0)}.` : '';
+    
+    return `${lastName} ${firstName}${middleName}`.trim();
+  };
 
   // Загрузка данных группы и куратора
   useEffect(() => {
     const loadGroupData = async () => {
       if (!user || !isStudent) {
-        console.log('No student data, redirecting to login');
+        console.log('No student data');
         navigate('/login');
         return;
       }
@@ -142,7 +142,7 @@ const formatCuratorName = (curator: TeacherData | null) => {
 
     switch (activeTab) {
       case 'attendance':
-        return <AttendanceSection />;
+        return <AttendanceSection studentId={student.id}/>;
        case 'performance':
       return <PerformanceSection studentId={student.id} />;
       case 'personal':
@@ -152,10 +152,11 @@ const formatCuratorName = (curator: TeacherData | null) => {
       case 'documents':
         return <DocumentsSection />;
       default:
-        return <AttendanceSection />;
+        return <AttendanceSection studentId={student.id}/>;
     }
   };
 
+  // Иконки для sidebar
   const getTabIcon = (tabName: string) => {
     const icons = {
       attendance: '/st-icons/attendance_icon.svg',
@@ -167,6 +168,7 @@ const formatCuratorName = (curator: TeacherData | null) => {
     return <img src={icons[tabName as keyof typeof icons]} alt="" className="st-nav-svg-icon" />;
   };
 
+  // Белые иконки на content-area
   const getIcon = (tabName: string) => {
     const icons = {
       attendance: '/st-icons/white_attendance_icon.svg',
