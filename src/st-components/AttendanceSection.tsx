@@ -63,8 +63,8 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
         const data: Attendance[] = [
           {
             id: 1,
-            subject: 'Русский язык',
-            teacher: 'Иванова А.С.',
+            subject: 'Разработка программных модулей',
+            teacher: 'Цымбалюк Л.Н.',
             statuses: ['п', 'п', 'у', 'п', 'п', 'н', 'п', 'п', 'б', 'п'],
             quantity: 10,
             percent: 80,
@@ -83,8 +83,8 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           },
           {
             id: 2,
-            subject: 'Математика',
-            teacher: 'Сидоров В.П.',
+            subject: 'Внедрение и поддержка компьютерных систем',
+            teacher: 'Богданов М.М.',
             statuses: ['п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п'],
             quantity: 10,
             percent: 100,
@@ -96,8 +96,8 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           },
           {
             id: 3,
-            subject: 'Программирование',
-            teacher: 'Козлов Д.А.',
+            subject: 'Поддержка и тестирование программных модулей',
+            teacher: 'Андреев А.И.',
             statuses: ['п', 'п', 'п', 'у', 'п', 'п', 'п', 'п', 'п', 'п'],
             quantity: 10,
             percent: 90,
@@ -110,8 +110,8 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           },
           {
             id: 4,
-            subject: 'Базы данных',
-            teacher: 'Николаев С.В.',
+            subject: 'Системное программирование',
+            teacher: 'Иванов А.',
             statuses: ['п', 'п', 'н', 'п', 'у', 'п', 'п', 'н', 'п', 'п'],
             quantity: 10,
             percent: 70,
@@ -453,12 +453,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           </div>
         </div>
 
-        <div className="at-stat-card">
-          <div className="at-stat-content">
-            <div className="at-stat-value">{attendanceData.length}</div>
-            <div className="at-stat-label">Всего предметов</div>
-          </div>
-        </div>
       </div>
 
       <div className="at-charts-grid">

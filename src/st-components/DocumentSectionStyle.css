@@ -1,278 +1,242 @@
+/* DocumentSectionStyle.css */
+
+/* Основные стили */
 .document-section {
   background: transparent;
-  border-radius: 16px;
   padding: 0;
   overflow: hidden;
+  min-height: 100vh;
 }
 
 .ds-header {
-  background: white;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.ds-header-row {
-  display: flex;
-  justify-content: between;
-  align-items: flex-end;
-  gap: 16px;
-  width: 100%;
+  background: transparent;
+  margin-bottom: 24px;
+  padding: 0 8px;
 }
 
 .ds-controls {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
-  max-width: 100%;
-  padding-bottom: 12px;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .ds-filter-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 100%;
-}
-
-.ds-filter-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  flex-wrap: wrap;
+  flex: 1;
+  min-width: 300px;
 }
 
 .ds-filter-label {
-  color: #64748b;
+  color: #002FA7;
+  font-weight: 600;
   font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-  min-width: 120px;
 }
 
 .ds-select {
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 14px;
   color: #1e293b;
   background: white;
-  flex: 1;
-  min-width: 200px;
-  transition: all 0.2s ease;
   cursor: pointer;
-  width: 100%;
+  transition: all 0.3s ease;
+  font-family: inherit;
 }
 
 .ds-select:focus {
   outline: none;
   border-color: #5986f7;
-  box-shadow: 0 0 0 3px rgba(89, 134, 247, 0.1);
-}
-
-.ds-select option {
-  background: white;
-  color: #1e293b;
-  padding: 12px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.ds-select option:hover {
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%) !important;
-  color: white !important;
-  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(89, 134, 247, 0.15);
 }
 
 .ds-create-main-btn {
   background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
-  border: none;
+  border: 2px solid rgba(66, 92, 177, 0.508);
   color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.2);
   white-space: nowrap;
-  width: 100%;
-  max-width: 200px;
-  align-self: flex-end;
 }
 
 .ds-create-main-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #011080 0%, #0f53ff 80%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.4);
 }
 
 .ds-create-main-btn:disabled {
-  background: #cbd5e1;
+  background: #9ca3af;
+  border: 2px solid rgba(180, 180, 180, 0.642);
   cursor: not-allowed;
-  opacity: 0.6;
   transform: none;
   box-shadow: none;
 }
 
-.ds-content {
-  overflow-x: auto;
+/* Сообщения об ошибках */
+.ds-error-message {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-weight: 500;
+  border-left: 4px solid #ef4444;
 }
 
+/* Контент */
+.ds-content {
+  padding: 8px 0;
+}
+
+/* Таблица документов */
 .ds-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-width: 600px;
-}
-
-.ds-table thead {
-  background: #f8fafc;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .ds-table th {
-  color: #002FA7;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 16px 12px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  padding: 16px 20px;
   text-align: left;
+  font-weight: 600;
+  font-size: 14px;
   border-bottom: 1px solid #e2e8f0;
-  white-space: nowrap;
 }
 
 .ds-table td {
-  padding: 16px 12px;
+  padding: 16px 20px;
   border-bottom: 1px solid #f1f5f9;
   color: #1e293b;
   font-size: 14px;
-  transition: all 0.3s ease;
+}
+
+.ds-table tr:hover {
+  background: rgba(0, 47, 167, 0.02);
 }
 
 .ds-table tr:last-child td {
   border-bottom: none;
 }
 
-.ds-table tbody tr {
-  transition: all 0.3s ease;
-}
-
-.ds-table tbody tr:hover {
-  background: #f8fafc;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.ds-table tbody tr:hover td {
-  color: #002FA7;
-  font-weight: 500;
-}
-
-.ds-document-type {
-  background: #f1f5f9;
-  color: #475569;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: default;
-  display: inline-block;
-  text-align: center;
-}
-
+/* Кнопки действий */
 .ds-action-buttons {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .ds-download-btn {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
   color: white;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
   font-weight: 500;
+  font-size: 12px;
   transition: all 0.3s ease;
-  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
 .ds-download-btn:hover {
-  background: #059669;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .ds-delete-btn {
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
   color: white;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
   font-weight: 500;
+  font-size: 12px;
   transition: all 0.3s ease;
-  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 .ds-delete-btn:hover {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* Состояние пустого списка */
 .ds-empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
   color: #64748b;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .ds-empty-state p {
-  margin-bottom: 20px;
   font-size: 16px;
+  margin: 0;
+  font-weight: 500;
 }
 
-/* Полноэкранное модальное окно */
+/* Модальное окно */
 .ds-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(97, 97, 97, 0.204);
+  background: rgba(50, 64, 124, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
-  padding: 10px;
-  backdrop-filter: blur(1px);
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  animation: ds-modal-fade-in 0.3s ease;
+}
+
+@keyframes ds-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .ds-modal-container {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 900px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  padding: 0;
+  width: 90%;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-  animation: modalAppear 0.3s ease-out;
-  z-index: 10000;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: ds-modal-slide-up 0.3s ease;
+  border: 1px solid #e2e8f0;
 }
 
-@keyframes modalAppear {
+@keyframes ds-modal-slide-up {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -280,60 +244,68 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  border-radius: 16px 16px 0 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  padding: 28px 28px 20px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  border-radius: 20px 20px 0 0;
+  color: white;
+  position: relative;
+}
+
+.ds-modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 28px;
+  right: 28px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .ds-modal-header h3 {
   margin: 0;
-  color: #002FA7;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.ds-modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #64748b;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.ds-modal-close:hover {
-  background: #ef4444;
+  font-size: 22px;
+  font-weight: 700;
   color: white;
 }
 
+.ds-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.ds-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1) rotate(90deg);
+}
+
 .ds-modal-content {
-  padding: 20px;
+  padding: 28px;
 }
 
 .ds-modal-type {
-  background: #f1f5f9;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border-left: 4px solid #002FA7;
-}
-
-.ds-modal-type strong {
+  background: linear-gradient(135deg, #f0f2ff 0%, #e0e7fe 100%);
+  border: 1px solid #899ff8c0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
   color: #002FA7;
-  padding-right: 10px;
+  font-weight: 600;
+  border-left: 4px solid #2d50a8;
 }
 
+/* Секции формы */
 .ds-form-sections {
   display: flex;
   flex-direction: column;
@@ -341,17 +313,25 @@
 }
 
 .ds-form-section {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
+  background: white;
   border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.ds-form-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .ds-form-section h4 {
-  margin: 0 0 16px 0;
   color: #002FA7;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
 }
 
 .ds-form-grid {
@@ -372,33 +352,45 @@
 }
 
 .ds-form-field label {
-  color: #475569;
+  color: #374151;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.ds-input, .ds-textarea {
-  padding: 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+.ds-form-field label::after {
+  content: " *";
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.ds-input,
+.ds-textarea,
+.ds-select {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 14px;
   color: #1e293b;
   background: white;
-  transition: all 0.2s ease;
-  width: 100%;
-  box-sizing: border-box;
+  transition: all 0.3s ease;
+  font-family: inherit;
 }
 
-.ds-input:focus, .ds-textarea:focus {
+.ds-input:focus,
+.ds-textarea:focus,
+.ds-select:focus {
   outline: none;
   border-color: #5986f7;
-  box-shadow: 0 0 0 3px rgba(89, 134, 247, 0.1);
+  box-shadow: 0 0 0 4px rgba(89, 134, 247, 0.15);
+  transform: translateY(-1px);
 }
 
-.ds-input.disabled {
-  background: #f1f5f9;
+.ds-input.disabled,
+.ds-select:disabled {
+  background: #f8fafc;
   color: #64748b;
   cursor: not-allowed;
+  border-color: #d1d5db;
 }
 
 .ds-textarea {
@@ -407,93 +399,100 @@
   font-family: inherit;
 }
 
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Футер модального окна */
 .ds-modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 20px;
-  margin-top: 20px;
-  border-top: 1px solid #e2e8f0;
-  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .ds-cancel-btn {
-  background: #64748b;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+  color: #475569;
+  padding: 12px 24px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   transition: all 0.3s ease;
-  min-width: 120px;
 }
 
-.ds-cancel-btn:hover {
-  background: #475569;
+.ds-cancel-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #002FA7;
   transform: translateY(-1px);
 }
 
 .ds-create-btn {
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
   color: white;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 12px 32px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   transition: all 0.3s ease;
-  min-width: 120px;
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
-.ds-create-btn:hover {
-  background: linear-gradient(135deg, #002FA7 40%, #5986f7 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+.ds-create-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 80%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.5);
 }
 
-/* Адаптивность для мобильных устройств */
+.ds-create-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+  .ds-modal-container {
+    width: 95%;
+    max-width: 700px;
+  }
+  
+  .ds-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .ds-header {
-    gap: 12px;
-  }
-  
-  .ds-header-row {
+  .ds-controls {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 16px;
   }
   
-  .ds-filter-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .ds-filter-label {
-    min-width: auto;
-    text-align: left;
-  }
-  
-  .ds-select {
+  .ds-filter-section {
     min-width: auto;
   }
   
   .ds-create-main-btn {
-    max-width: 100%;
-    align-self: stretch;
-    margin-top: 8px;
+    width: 100%;
+    text-align: center;
   }
-  
   
   .ds-table {
-    min-width: 500px;
-    font-size: 13px;
-  }
-  
-  .ds-table th,
-  .ds-table td {
-    padding: 12px 8px;
+    display: block;
+    overflow-x: auto;
   }
   
   .ds-action-buttons {
@@ -503,220 +502,104 @@
   
   .ds-download-btn,
   .ds-delete-btn {
-    padding: 6px 10px;
-    font-size: 11px;
     width: 100%;
-  }
-  
-  .ds-modal-overlay {
-    padding: 5px;
-  }
-  
-  .ds-modal-container {
-    max-height: 95vh;
-    border-radius: 12px;
-  }
-  
-  .ds-modal-header {
-    padding: 16px;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-  
-  .ds-modal-header h3 {
-    font-size: 18px;
     text-align: center;
   }
   
-  .ds-modal-close {
-    align-self: flex-end;
-    margin-top: -40px;
+  .ds-modal-container {
+    width: 98%;
+    margin: 10px;
+  }
+  
+  .ds-modal-header {
+    padding: 20px 20px 16px;
   }
   
   .ds-modal-content {
-    padding: 16px;
-  }
-  
-  .ds-modal-type {
-    padding: 12px;
-    margin-bottom: 16px;
+    padding: 20px;
   }
   
   .ds-form-section {
     padding: 16px;
   }
   
-  .ds-form-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .ds-form-section h4 {
-    font-size: 15px;
-  }
-  
-  .ds-input, .ds-textarea {
-    padding: 10px;
-    font-size: 16px; /* Улучшает UX на мобильных */
-  }
-  
   .ds-modal-footer {
-    flex-direction: column-reverse;
-    gap: 8px;
-    padding-top: 16px;
-    margin-top: 16px;
+    flex-direction: column;
+    gap: 12px;
   }
   
   .ds-cancel-btn,
   .ds-create-btn {
     width: 100%;
-    min-width: auto;
-    padding: 14px 20px;
+    text-align: center;
   }
 }
 
 @media (max-width: 480px) {
-  .document-section {
-    border-radius: 12px;
-  }
-  
-  .ds-table {
-    min-width: 400px;
+  .ds-table th,
+  .ds-table td {
+    padding: 12px 8px;
     font-size: 12px;
   }
   
-  .ds-table th,
-  .ds-table td {
-    padding: 10px 6px;
-  }
-  
-  .ds-document-type {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-  
   .ds-modal-header h3 {
-    font-size: 16px;
-  }
-  
-  .ds-modal-type {
-    padding: 10px;
-    font-size: 14px;
-  }
-  
-  .ds-form-section {
-    padding: 12px;
+    font-size: 18px;
   }
   
   .ds-form-section h4 {
     font-size: 14px;
   }
   
-  .ds-input, .ds-textarea {
-    padding: 8px;
-  }
-  
-  .ds-empty-state {
-    padding: 30px 15px;
-  }
-  
-  .ds-empty-state p {
-    font-size: 14px;
+  .ds-input,
+  .ds-textarea,
+  .ds-select {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 
-/* Очень маленькие экраны (до 360px) */
-@media (max-width: 360px) {
-  .ds-table {
-    min-width: 320px;
-    font-size: 11px;
-  }
-  
-  .ds-table th,
-  .ds-table td {
-    padding: 8px 4px;
-  }
-  
-  .ds-document-type {
-    font-size: 10px;
-    padding: 3px 6px;
-  }
-  
+/* Дополнительные улучшения */
+.ds-form-field:focus-within label {
+  color: #002FA7;
+}
+
+.ds-input:required:not(.disabled) {
+  border-left: 4px solid #5986f7;
+}
+
+.ds-input:invalid:not(:focus):not(.disabled) {
+  border-color: #fca5a5;
+}
+
+/* Плавные переходы для всех интерактивных элементов */
+.ds-create-main-btn,
+.ds-download-btn,
+.ds-delete-btn,
+.ds-modal-close,
+.ds-cancel-btn,
+.ds-create-btn,
+.ds-input,
+.ds-textarea,
+.ds-select,
+.ds-form-section {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Улучшенная доступность */
+@media (prefers-reduced-motion: reduce) {
+  .ds-create-main-btn,
+  .ds-download-btn,
+  .ds-delete-btn,
+  .ds-modal-close,
+  .ds-cancel-btn,
+  .ds-create-btn,
+  .ds-input,
+  .ds-textarea,
+  .ds-select,
+  .ds-form-section,
   .ds-modal-container {
-    border-radius: 8px;
-  }
-  
-  .ds-modal-header,
-  .ds-modal-content,
-  .ds-form-section {
-    padding: 12px;
+    transition: none;
+    animation: none;
   }
 }
 
-/* Планшеты в портретной ориентации */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .ds-modal-container {
-    max-width: 95%;
-    margin: 20px;
-  }
-  
-  .ds-form-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-}
-
-/* Большие экраны */
-@media (min-width: 1200px) {
-  .ds-header {
-    padding: 4px;
-  }
-  
-}
-
-/* Стили для скроллбара в модальном окне */
-.ds-modal-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.ds-modal-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.ds-modal-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.ds-modal-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Улучшение для touch-устройств */
-@media (hover: none) and (pointer: coarse) {
-  .ds-table tbody tr:hover {
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .ds-create-main-btn:hover,
-  .ds-download-btn:hover,
-  .ds-delete-btn:hover,
-  .ds-cancel-btn:hover,
-  .ds-create-btn:hover {
-    transform: none;
-  }
-  
-  .ds-table tbody tr:active {
-    background: #f1f5f9;
-  }
-  
-  .ds-create-main-btn:active,
-  .ds-download-btn:active,
-  .ds-delete-btn:active,
-  .ds-cancel-btn:active,
-  .ds-create-btn:active {
-    transform: scale(0.98);
-  }
-}

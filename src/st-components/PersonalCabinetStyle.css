@@ -270,7 +270,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(50, 64, 124, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -430,30 +430,6 @@
 .pc-confirm-btn:disabled:hover {
   transform: none;
   box-shadow: none;
-}
-
-/* Анимация загрузки для кнопки */
-.pc-confirm-btn:disabled::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid transparent;
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: button-spinner 0.8s linear infinite;
-}
-
-@keyframes button-spinner {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 /* Стили для валидации пароля */

@@ -26,6 +26,7 @@ interface FormData {
   teacher: string;
   month: string;
   hours: string;
+  fullNameGenitive: string;
 }
 
 interface Subject {
@@ -65,7 +66,8 @@ export const DocumentsSection: React.FC = () => {
     subject: '',
     teacher: '',
     month: '',
-    hours: ''
+    hours: '',
+    fullNameGenitive: ''
   });
 
   // Типы документов
@@ -361,12 +363,11 @@ export const DocumentsSection: React.FC = () => {
         const student = user as any;
         const userPhone = student.telephone || '';
         const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
-        const fullNameGenitive = getGenitiveCase(fullName);
         const course = await getStudentCourse(student);
         
         const userData: UserData = {
           fullName: fullName,
-          fullNameGenitive: fullNameGenitive,
+          fullNameGenitive: '',
           group: student.numberGroup.toString(),
           course: course,
           phone: userPhone,
@@ -449,7 +450,8 @@ export const DocumentsSection: React.FC = () => {
       subject: '',
       teacher: '',
       month: '',
-      hours: ''
+      hours: '',
+      fullNameGenitive: ''
     });
     setAvailableTeachers([]);
   };
@@ -633,7 +635,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
         templateUrl = '/templates/dismissal_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullNameGenitive,
+          fullName: formData.fullNameGenitive,
           group: userData.group,
           phone: formData.phone,
           departmentHead: userData.departmentHead,
@@ -655,7 +657,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
         templateUrl = '/templates/transfer_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullNameGenitive,
+          fullName: formData.fullNameGenitive,
           group: userData.group,
           phone: formData.phone,
           institutionName: formData.institutionName,
@@ -682,7 +684,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
         templateUrl = '/templates/absence_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullName: userData.fullNameGenitive,
+          fullName: formData.fullNameGenitive,
           group: userData.group,
           course: courseNumber,
           dateStart: startDate,
@@ -715,7 +717,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
         templateUrl = '/templates/lateness_explanation_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullNameGenitive: userData.fullNameGenitive,
+          fullNameGenitive: formData.fullNameGenitive,
           fullName: userData.fullName,
           group: userData.group,
           course: userData.course,
@@ -736,7 +738,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
         templateUrl = '/templates/absence_explanation_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
         templateData = {
-          fullNameGenitive: userData.fullNameGenitive,
+          fullNameGenitive: formData.fullNameGenitive,
           fullName: userData.fullName,
           group: userData.group,
           course: userData.course,
@@ -827,8 +829,22 @@ const getMonthPrepositional = (monthNominative: string): string => {
                     />
                   </div>
                   <div className="ds-form-field">
-                    <label>ФИО студента</label>
+                    <label>ФИО студента (именительный падеж)</label>
                     <input type="text" value={userData.fullName} disabled className="ds-input disabled" />
+                  </div>
+                  <div className="ds-form-field">
+                    <label>ФИО студента (родительный падеж) *</label>
+                    <input 
+                      type="text" 
+                      value={formData.fullNameGenitive}
+                      onChange={(e) => handleInputChange('fullNameGenitive', e.target.value)}
+                      className="ds-input"
+                      placeholder="Введите ФИО в родительном падеже"
+                      required
+                    />
+                    <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                      Пример: Иванова Ивана Ивановича
+                    </div>
                   </div>
                   <div className="ds-form-field">
                     <label>Группа</label>

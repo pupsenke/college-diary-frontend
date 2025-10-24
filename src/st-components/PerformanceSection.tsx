@@ -227,16 +227,16 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Компоненты
   const SemesterSelector = () => (
-    <div className="modern-semester-selector">
-      <div className="semester-buttons">
+    <div className="pf-semester-selector">
+      <div className="pf-semester-buttons">
         <button
-          className={`semester-btn ${selectedSemester === 'first' ? 'active' : ''}`}
+          className={`pf-semester-btn ${selectedSemester === 'first' ? 'pf-active' : ''}`}
           onClick={() => setSelectedSemester('first')}
         >
           1 семестр
         </button>
         <button
-          className={`semester-btn ${selectedSemester === 'second' ? 'active' : ''}`}
+          className={`pf-semester-btn ${selectedSemester === 'second' ? 'pf-active' : ''}`}
           onClick={() => setSelectedSemester('second')}
         >
           2 семестр
@@ -246,15 +246,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   );
 
   const ViewToggle = () => (
-    <div className="view-toggle">
+    <div className="pf-view-toggle">
       <button
-        className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+        className={`pf-toggle-btn ${viewMode === 'grid' ? 'pf-active' : ''}`}
         onClick={() => setViewMode('grid')}
       >
         Сетка
       </button>
       <button
-        className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+        className={`pf-toggle-btn ${viewMode === 'list' ? 'pf-active' : ''}`}
         onClick={() => setViewMode('list')}
       >
         Список
@@ -264,18 +264,18 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Рендер карточек предметов
   const renderSubjectCards = () => (
-    <div className="subjects-grid">
+    <div className="pf-subjects-grid">
       {gradesData.map((subject, index) => (
-        <div key={subject.id} className="subject-card">
-          <div className="card-header">
-            <h3 className="subject-title">{subject.subject}</h3>
+        <div key={subject.id} className="pf-subject-card">
+          <div className="pf-card-header">
+            <h3 className="pf-subject-title">{subject.subject}</h3>
           </div>
           
-          <div className="grades-preview">
+          <div className="pf-grades-preview">
             {subject.gradeDetails?.slice(0, 8).map((detail, gradeIndex) => (
               <div
                 key={detail.id}
-                className={`preview-grade ${!detail.hasValue ? 'no-data' : ''}`}
+                className={`pf-preview-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                 style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
                 onClick={() => handleGradeClick(
                   subject.subject,
@@ -289,24 +289,24 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
               </div>
             ))}
             {subject.gradeDetails && subject.gradeDetails.length > 8 && (
-              <div className="more-grades">+{subject.gradeDetails.length - 8}</div>
+              <div className="pf-more-grades">+{subject.gradeDetails.length - 8}</div>
             )}
             {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
-              <div className="no-grades">Нет оценок</div>
+              <div className="pf-no-grades">Нет оценок</div>
             )}
           </div>
 
-          <div className="card-footer">
-            <div className="average-score">
-              <span className="average-label">Средний балл:</span>
+          <div className="pf-card-footer">
+            <div className="pf-average-score">
+              <span className="pf-average-label">Средний балл:</span>
               <span 
-                className="average-value"
+                className="pf-average-value"
                 style={{ color: getPerformanceColor(subject.average) }}
               >
                 {subject.average > 0 ? subject.average.toFixed(1) : '-'}
               </span>
             </div>
-            <div className="grades-count">
+            <div className="pf-grades-count">
               {subject.grades.length} оценок
             </div>
           </div>
@@ -317,8 +317,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Рендер таблицы предметов
   const renderSubjectsTable = () => (
-    <div className="subjects-table-container">
-      <table className="modern-subjects-table">
+    <div className="pf-subjects-table-container">
+      <table className="pf-subjects-table">
         <thead>
           <tr>
             <th>Предмет</th>
@@ -330,17 +330,17 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         <tbody>
           {gradesData.map((subject) => (
             <tr key={subject.id}>
-              <td className="subject-cell">
-                <div className="subject-info">
-                  <span className="subject-name">{subject.subject}</span>
+              <td className="pf-subject-cell">
+                <div className="pf-subject-info">
+                  <span className="pf-subject-name">{subject.subject}</span>
                 </div>
               </td>
-              <td className="grades-cell">
-                <div className="grades-stack">
-                  {subject.gradeDetails?.slice(0, 12).map((detail) => (
+              <td className="pf-grades-cell">
+                <div className="pf-grades-stack">
+                  {subject.gradeDetails?.slice(0, 24).map((detail) => (
                     <span
                       key={detail.id}
-                      className={`stack-grade ${!detail.hasValue ? 'no-data' : ''}`}
+                      className={`pf-stack-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                       style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
                       onClick={() => handleGradeClick(
                         subject.subject,
@@ -354,13 +354,13 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     </span>
                   ))}
                   {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
-                    <span className="no-data-text">Нет оценок</span>
+                    <span className="pf-no-data-text">Нет оценок</span>
                   )}
                 </div>
               </td>
-              <td className="average-cell">
+              <td className="pf-average-cell">
                 <div 
-                  className="average-badge"
+                  className="pf-average-badge"
                   style={{ 
                     backgroundColor: subject.average > 0 ? getPerformanceColor(subject.average) + '20' : '#f8fafc',
                     color: subject.average > 0 ? getPerformanceColor(subject.average) : '#64748b'
@@ -369,9 +369,9 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   {subject.average > 0 ? subject.average.toFixed(1) : '-'}
                 </div>
               </td>
-              <td className="session-cell">
+              <td className="pf-session-cell">
                 <div 
-                  className="session-grade"
+                  className="pf-session-grade"
                   style={{ 
                     backgroundColor: subject.examGrade !== null ? getGradeColor(subject.examGrade) : '#f8fafc',
                     color: subject.examGrade !== null ? 'white' : '#64748b'
@@ -389,37 +389,37 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Рендер аналитики
   const renderAnalytics = () => (
-    <div className="analytics-container">
-      <div className="analytics-header">
+    <div className="pf-analytics-container">
+      <div className="pf-analytics-header">
         <h2>Аналитика успеваемости</h2>
         <p>Подробная статистика за {selectedSemester === 'first' ? 'первый' : 'второй'} семестр</p>
       </div>
 
-      <div className="stats-cards">
-        <div className="stat-card modern">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.overallAverage}</div>
-            <div className="stat-label">Средний балл</div>
+      <div className="pf-stats-cards">
+        <div className="pf-stat-card">
+          <div className="pf-stat-content">
+            <div className="pf-stat-value">{statistics.overallAverage}</div>
+            <div className="pf-stat-label">Средний балл</div>
           </div>
         </div>
 
-        <div className="stat-card modern">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.excellentPercentage}%</div>
-            <div className="stat-label">Оценок 4+</div>
+        <div className="pf-stat-card">
+          <div className="pf-stat-content">
+            <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
+            <div className="pf-stat-label">Оценок 4+</div>
           </div>
         </div>
 
-        <div className="stat-card modern">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.totalSubjects}</div>
-            <div className="stat-label">Всего предметов</div>
+        <div className="pf-stat-card">
+          <div className="pf-stat-content">
+            <div className="pf-stat-value">{statistics.totalSubjects}</div>
+            <div className="pf-stat-label">Всего предметов</div>
           </div>
         </div>
       </div>
 
-      <div className="charts-grid">
-        <div className="chart-card large">
+      <div className="pf-charts-grid">
+        <div className="pf-chart-card pf-large">
           <h3>Распределение оценок</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={performanceData}>
@@ -436,7 +436,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           </ResponsiveContainer>
         </div>
 
-        <div className="chart-card large">
+        <div className="pf-chart-card pf-large">
           <h3>Прогресс обучения</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={progressData}>
@@ -460,31 +460,31 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   if (loading) {
     return (
-      <div className="modern-loading">
-        <div className="loading-spinner"></div>
+      <div className="pf-loading">
+        <div className="pf-loading-spinner"></div>
         <p>Загрузка данных об успеваемости...</p>
       </div>
     );
   }
 
   return (
-    <div className="modern-performance-section">
+    <div className="pf-performance-section">
       {/* Навигация */}
-      <div className="modern-nav">
+      <div className="pf-nav">
         <button
-          className={`nav-btn ${activeTab === 'semesters' ? 'active' : ''}`}
+          className={`pf-nav-btn ${activeTab === 'semesters' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('semesters')}
         >
           По семестрам
         </button>
         <button
-          className={`nav-btn ${activeTab === 'subjects' ? 'active' : ''}`}
+          className={`pf-nav-btn ${activeTab === 'subjects' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('subjects')}
         >
           По предметам
         </button>
         <button
-          className={`nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          className={`pf-nav-btn ${activeTab === 'analytics' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('analytics')}
         >
           Аналитика
@@ -492,27 +492,27 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       </div>
 
       {/* Контролы */}
-      <div className="controls-section">
+      <div className="pf-controls-section">
         <SemesterSelector />
         <ViewToggle />
       </div>
 
       {/* Контент */}
-      <div className="modern-content">
+      <div className="pf-content">
         {activeTab === 'semesters' && (
-          <div className="tab-content">
+          <div className="pf-tab-content">
             {viewMode === 'grid' ? renderSubjectCards() : renderSubjectsTable()}
           </div>
         )}
 
         {activeTab === 'subjects' && (
-          <div className="tab-content">
-            <div className="subject-detail-container">
-              <div className="subject-selector">
+          <div className="pf-tab-content">
+            <div className="pf-subject-detail-container">
+              <div className="pf-subject-selector">
                 <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="modern-select"
+                  className="pf-select"
                 >
                   <option value="">Выберите предмет</option>
                   {subjects.map(subject => (
@@ -522,26 +522,26 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
               </div>
 
               {selectedSubjectData ? (
-                <div className="subject-detail">
-                  <div className="detail-header">
+                <div className="pf-subject-detail">
+                  <div className="pf-detail-header">
                     <h2>{selectedSubjectData.subject}</h2>
-                    <div className="subject-meta">
-                      <span className="meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
-                      <span className="meta-item">Средний балл: {selectedSubjectData.average.toFixed(1)}</span>
+                    <div className="pf-subject-meta">
+                      <span className="pf-meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
+                      <span className="pf-meta-item">Средний балл: {selectedSubjectData.average.toFixed(1)}</span>
                     </div>
                   </div>
 
-                  <div className="grades-timeline">
+                  <div className="pf-grades-timeline">
                     {selectedSubjectData.gradeDetails?.map((detail) => (
-                      <div key={detail.id} className="timeline-item">
-                        <div className="timeline-content">
-                          <div className="grade-header">
-                            <span className="grade-topic">{detail.topic}</span>
-                            <span className="grade-date">{detail.date}</span>
+                      <div key={detail.id} className="pf-timeline-item">
+                        <div className="pf-timeline-content">
+                          <div className="pf-grade-header">
+                            <span className="pf-grade-topic">{detail.topic}</span>
+                            <span className="pf-grade-date">{detail.date}</span>
                           </div>
-                          <div className="grade-details">
+                          <div className="pf-grade-details">
                             <span 
-                              className={`grade-value ${!detail.hasValue ? 'no-data' : ''}`}
+                              className={`pf-grade-value ${!detail.hasValue ? 'pf-no-data' : ''}`}
                               style={{ 
                                 backgroundColor: detail.hasValue ? getGradeColor(detail.grade) : '#d1d5db'
                               }}
@@ -562,8 +562,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="no-subject-selected">
-                  <div className="empty-state">
+                <div className="pf-no-subject-selected">
+                  <div className="pf-empty-state">
                     <h3>Выберите предмет</h3>
                     <p>Для просмотра детальной информации выберите предмет из списка</p>
                   </div>
@@ -578,43 +578,43 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
       {/* Попап с информацией об оценке */}
       {selectedGrade && (
-        <div className="modern-popup-overlay" onClick={closeGradePopup}>
-          <div className="modern-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="popup-header">
+        <div className="pf-popup-overlay" onClick={closeGradePopup}>
+          <div className="pf-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pf-popup-header">
               <h3>Информация об оценке</h3>
-              <button className="popup-close" onClick={closeGradePopup}>
+              <button className="pf-popup-close" onClick={closeGradePopup}>
                 <span>×</span>
               </button>
             </div>
-            <div className="popup-content">
-              <div className="grade-info-minimal">
+            <div className="pf-popup-content">
+              <div className="pf-grade-info-minimal">
                 <div 
-                  className="grade-circle-minimal"
+                  className="pf-grade-circle-minimal"
                   style={{ 
                     backgroundColor: getGradeColor(selectedGrade.grade),
                     borderColor: getGradeColor(selectedGrade.grade)
                   }}
                 >
-                  <span className="grade-number-minimal">
+                  <span className="pf-grade-number-minimal">
                     {selectedGrade.grade || '-'}
                   </span>
                 </div>
-                <div className="grade-details-minimal">
-                  <div className="detail-item">
-                    <span className="detail-label">Предмет</span>
-                    <span className="detail-value">{selectedGrade.subject}</span>
+                <div className="pf-grade-details-minimal">
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Предмет</span>
+                    <span className="pf-detail-value">{selectedGrade.subject}</span>
                   </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Тема работы</span>
-                    <span className="detail-value">{selectedGrade.topic}</span>
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Тема работы</span>
+                    <span className="pf-detail-value">{selectedGrade.topic}</span>
                   </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Номер работы</span>
-                    <span className="detail-value">{selectedGrade.number}</span>
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Номер работы</span>
+                    <span className="pf-detail-value">{selectedGrade.number}</span>
                   </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Преподаватель</span>
-                    <span className="detail-value teacher">{selectedGrade.teacher}</span>
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Преподаватель</span>
+                    <span className="pf-detail-value pf-teacher">{selectedGrade.teacher}</span>
                   </div>
                 </div>
               </div>

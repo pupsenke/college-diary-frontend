@@ -4,7 +4,7 @@
 .at-attendance-section {
   min-height: 100vh;
   background: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Montserrat', sans-serif !important;
   color: #1f2937;
 }
 
@@ -44,7 +44,7 @@
   justify-content: center;
   gap: 10px;
   margin-bottom: 30px;
-  padding: 0 40px;
+  width: 100%;
 }
 
 .at-nav-btn {
@@ -57,6 +57,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 1em;
+  width: 30%;
 }
 
 .at-nav-btn:hover {
