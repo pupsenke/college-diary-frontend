@@ -110,13 +110,13 @@
 }
 
 .ds-table th {
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-  color: white;
-  padding: 16px 20px;
+  background: rgba(0, 47, 167, 0.05);
+  padding: 20px;
   text-align: left;
   font-weight: 600;
-  font-size: 14px;
+  color: #4a5568;
   border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
 }
 
 .ds-table td {

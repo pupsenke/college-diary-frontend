@@ -269,7 +269,11 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         <div key={subject.id} className="pf-subject-card">
           <div className="pf-card-header">
             <h3 className="pf-subject-title">{subject.subject}</h3>
+            <div className="at-teacher-badge">
+              {subject.teacher}
+            </div>
           </div>
+          
           
           <div className="pf-grades-preview">
             {subject.gradeDetails?.slice(0, 8).map((detail, gradeIndex) => (

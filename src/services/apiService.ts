@@ -81,7 +81,7 @@ export interface Document {
   id: number;
   nameFile: string;
   pathToFile: string;
-  accessStudent: number | null;
+  idStudent: number | null;
   accessTeacher: any;
   staffs: any[];
   title?: string;
@@ -96,6 +96,7 @@ export interface UploadDocumentResponse {
   pathToFile: string;
   message: string;
 }
+
 
 export const apiService = {
   // Получение данных группы по ID
@@ -188,21 +189,21 @@ export const apiService = {
 
   // === УСПЕВАЕМОСТЬ ===
 
-  // Получение оценок студента
-  async getStudentMarks(studentId: number): Promise<StudentMark[]> {
-    console.log(`Fetching student marks for ID: ${studentId}`);
-    const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
+  // // Получение оценок студента
+  // async getStudentMarks(studentId: number): Promise<StudentMark[]> {
+  //   console.log(`Fetching student marks for ID: ${studentId}`);
+  //   const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
-    }
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+  //     throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
+  //   }
     
-    const data: StudentMark[] = await response.json();
-    console.log('Student marks received:', data);
-    return data;
-  },
+  //   const data: StudentMark[] = await response.json();
+  //   console.log('Student marks received:', data);
+  //   return data;
+  // },
 
   // Получение оценок по предмету
   async getSubjectMarks(studentId: number, subjectId: number): Promise<SubjectMark[]> {
@@ -271,6 +272,47 @@ export const apiService = {
     return data;
   },
 
+  // Получение документов по типу
+  async getDocumentsByType(type: string): Promise<Document[]> {
+    console.log(`Fetching documents by type: ${type}`);
+    
+    // Кодируем тип для URL (заменяем пробелы на %20)
+    const encodedType = encodeURIComponent(type);
+    const response = await fetch(`${API_BASE_URL}/paths/type?type=${encodedType}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки документов по типу: ${response.status}`);
+    }
+    
+    const data: Document[] = await response.json();
+    console.log(`Documents by type "${type}" received:`, data);
+    return data;
+  },
+
+  // Получение документов студента по типу
+  async getStudentDocumentsByType(studentId: number, type: string): Promise<Document[]> {
+    console.log(`Fetching student ${studentId} documents by type: ${type}`);
+    
+    try {
+      // Получаем все документы студента
+      const allStudentDocs = await this.fetchDocumentsByStudent(studentId);
+      
+      // Фильтруем по типу (учитываем, что type может быть undefined)
+      const filteredDocs = allStudentDocs.filter(doc => 
+        doc.type?.toLowerCase() === type.toLowerCase()
+      );
+      
+      console.log(`Student ${studentId} documents by type "${type}":`, filteredDocs);
+      return filteredDocs;
+      
+    } catch (error) {
+      console.error(`Error fetching student documents by type:`, error);
+      throw error;
+    }
+  },
+
   // Список документов по id студента
   async fetchDocumentsByStudent(studentId: number): Promise<Document[]> {
     console.log(`Fetching documents for student ID: ${studentId}`);
@@ -283,28 +325,45 @@ export const apiService = {
     }
     
     const data: Document[] = await response.json();
-    // Фильтрация документов, где accessStudent совпадает с studentId
-    const studentDocuments = data.filter(doc => doc.accessStudent === studentId);
-    console.log(`Student documents received: ${studentDocuments.length} documents`);
+    console.log('All documents received from server:', data);
+    
+    // Исправленная фильтрация - проверяем оба возможных поля
+    const studentDocuments = data.filter(doc => 
+      doc.idStudent === studentId || doc.studentId === studentId
+    );
+    
+    console.log(`Filtered documents for student ${studentId}:`, studentDocuments);
     return studentDocuments;
   },
 
   // Загрузка документа на сервер (PUT запрос)
-  async uploadDocument(file: File): Promise<void> {
-    console.log('Uploading document:', { fileName: file.name });
+  async uploadDocument(file: File, studentId: number, documentType?: string): Promise<void> {
+    console.log('Uploading document:', { 
+        fileName: file.name, 
+        studentId, 
+        documentType 
+    });
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Добавляем обязательный параметр student
+    formData.append('student', studentId.toString());
+    
+    // Если указан тип документа, добавляем его
+    if (documentType) {
+        formData.append('type', documentType);
+    }
 
     const response = await fetch(`${API_BASE_URL}/paths/upload`, {
-      method: 'PUT',
-      body: formData,
+        method: 'PUT',
+        body: formData,
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Upload failed:', response.status, errorText);
-      throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
+        const errorText = await response.text();
+        console.error('Upload failed:', response.status, errorText);
+        throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
     }
 
     console.log('Document uploaded successfully');
@@ -334,7 +393,7 @@ export const apiService = {
       const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/octet-stream', // Важно для бинарных данных
+          'Accept': 'application/octet-stream',
         },
       });
 
@@ -347,7 +406,7 @@ export const apiService = {
       
       // 4. Определяем MIME тип и имя файла
       let filename = documentInfo.nameFile;
-      let mimeType = 'application/octet-stream'; // тип по умолчанию
+      let mimeType = 'application/octet-stream';
 
       // Определяем MIME тип по расширению файла
       if (filename) {

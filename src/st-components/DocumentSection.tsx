@@ -93,13 +93,23 @@ export const DocumentsSection: React.FC = () => {
   };
 
   // Загрузка документов студента
+  // Загрузка документов студента с фильтрацией по типу
   useEffect(() => {
     const loadDocuments = async () => {
       if (!user || !isStudent) return;
       
       try {
         const student = user as any;
-        const studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+        let studentDocuments: Document[] = [];
+
+        if (selectedDocumentType === 'Все документы') {
+          // Загружаем все документы студента
+          studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+        } else {
+          // Загружаем документы только определенного типа
+          studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
+        }
+        
         setDocuments(studentDocuments);
         setError(null);
       } catch (error) {
@@ -109,7 +119,7 @@ export const DocumentsSection: React.FC = () => {
     };
 
     loadDocuments();
-  }, [user, isStudent]);
+  }, [user, isStudent, selectedDocumentType]);
 
   // Загрузка данных о предметах и преподавателях
   useEffect(() => {
@@ -371,7 +381,7 @@ export const DocumentsSection: React.FC = () => {
           group: student.numberGroup.toString(),
           course: course,
           phone: userPhone,
-          departmentHead: 'Голубева Галина Анатольенва'
+          departmentHead: 'Голубева Галина Анатольевна'
         };
 
         setUserData(userData);
@@ -539,27 +549,48 @@ const getMonthPrepositional = (monthNominative: string): string => {
     return reason.charAt(0).toLowerCase() + reason.slice(1);
   };
 
-  // Функция для загрузки документа на сервер
+  // Исправленная функция загрузки документа в компоненте
   const uploadDocumentToServer = async (blob: Blob, fileName: string) => {
     if (!user || !isStudent) return;
 
     try {
+      const student = user as any;
       const file = new File([blob], fileName, { 
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
       });
 
-      await apiService.uploadDocument(file);
+      // Загружаем документ и получаем ответ
+      const uploadResponse = await apiService.uploadDocument(file, student.id, selectedDocumentType);
+      console.log('Upload response:', uploadResponse);
 
-      const student = user as any;
-      const studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
-      setDocuments(studentDocuments);
-      setError(null);
+      // Ждем немного перед обновлением списка (серверу нужно время на обработку)
+      setTimeout(async () => {
+        try {
+          let studentDocuments: Document[] = [];
 
-      console.log('Документ успешно загружен на сервер');
-      
+          if (selectedDocumentType === 'Все документы') {
+            studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+          } else {
+            studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
+          }
+          
+          setDocuments(studentDocuments);
+          setError(null);
+          console.log('Documents list updated after upload');
+
+          // Показываем сообщение об успехе
+          alert('Документ успешно создан и загружен на сервер');
+          
+        } catch (refreshError) {
+          console.error('Error refreshing documents:', refreshError);
+          setError('Документ создан, но не удалось обновить список');
+        }
+      }, 1000);
+
     } catch (error) {
       console.error('Ошибка загрузки документа на сервер:', error);
-      setError('Документ создан локально, но не загружен на сервер: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
+      setError('Документ создан локально, но не загружен на сервер: ' + 
+        (error instanceof Error ? error.message : 'Неизвестная ошибка'));
     }
   };
 
@@ -1140,13 +1171,6 @@ const getMonthPrepositional = (monthNominative: string): string => {
           </button>
         </div>
       </div>
-      {/* Временная кнопка для тестирования - можно удалить после проверки */}
-      <button 
-        onClick={() => handleDownloadDocument(33)}
-        style={{marginLeft: '10px', padding: '5px 10px', background: '#ff6b6b', color: 'white', border: 'none', borderRadius: '4px'}}
-      >
-        Тест скачивания ID 33
-      </button>
 
       {error && <div className="ds-error-message">{error}</div>}
 
