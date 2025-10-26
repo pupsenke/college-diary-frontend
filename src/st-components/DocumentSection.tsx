@@ -577,9 +577,6 @@ const getMonthPrepositional = (monthNominative: string): string => {
           setDocuments(studentDocuments);
           setError(null);
           console.log('Documents list updated after upload');
-
-          // Показываем сообщение об успехе
-          alert('Документ успешно создан и загружен на сервер');
           
         } catch (refreshError) {
           console.error('Error refreshing documents:', refreshError);

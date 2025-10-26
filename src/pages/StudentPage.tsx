@@ -8,7 +8,7 @@ import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiService, GroupData, TeacherData } from '../services/apiService';
+import { apiService, GroupData, TeacherData, StudentMark } from '../services/apiService';
 
 export const StudentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('attendance');
@@ -20,6 +20,11 @@ export const StudentPage: React.FC = () => {
   const { user, isStudent } = useUser();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Новые состояния для статистики
+  const [attendancePercentage, setAttendancePercentage] = useState<number>(0);
+  const [averageGrade, setAverageGrade] = useState<number>(0);
+  const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
 
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
@@ -51,9 +56,51 @@ export const StudentPage: React.FC = () => {
     return `${lastName} ${firstName}${middleName}`.trim();
   };
 
-  // Загрузка данных группы и куратора
+  // Функция для расчета среднего балла из оценок
+  const calculateAverageGrade = (marks: StudentMark[]): number => {
+    if (!marks || marks.length === 0) return 0;
+
+    let totalGrade = 0;
+    let gradeCount = 0;
+
+    marks.forEach(subject => {
+      if (subject.marksBySt && Array.isArray(subject.marksBySt)) {
+        subject.marksBySt.forEach(mark => {
+          if (mark.value !== null && mark.value > 0) {
+            totalGrade += mark.value;
+            gradeCount++;
+          }
+        });
+      }
+    });
+
+    return gradeCount > 0 ? parseFloat((totalGrade / gradeCount).toFixed(1)) : 0;
+  };
+
+  // Функция для расчета процента посещаемости
+  const calculateAttendancePercentage = (marks: StudentMark[]): number => {
+    if (!marks || marks.length === 0) return 0;
+
+    let totalLessons = 0;
+    let attendedLessons = 0;
+
+    marks.forEach(subject => {
+      if (subject.marksBySt && Array.isArray(subject.marksBySt)) {
+        subject.marksBySt.forEach(mark => {
+          totalLessons++;
+          if (mark.value !== null) {
+            attendedLessons++;
+          }
+        });
+      }
+    });
+
+    return totalLessons > 0 ? Math.round((attendedLessons / totalLessons) * 100) : 0;
+  };
+
+  // Загрузка данных студента
   useEffect(() => {
-    const loadGroupData = async () => {
+    const loadStudentData = async () => {
       if (!user || !isStudent) {
         console.log('No student data');
         navigate('/login');
@@ -96,6 +143,31 @@ export const StudentPage: React.FC = () => {
           setCuratorData(null);
         }
 
+        // Загружаем оценки студента для расчета статистики
+        console.log('Loading student marks for statistics...');
+        try {
+          const marksData = await apiService.getStudentMarks(student.id);
+          console.log('Student marks loaded for statistics:', marksData);
+          setStudentMarks(marksData || []);
+
+          // Рассчитываем статистику
+          const avgGrade = calculateAverageGrade(marksData || []);
+          const attendancePercent = calculateAttendancePercentage(marksData || []);
+
+          console.log('Calculated statistics:', {
+            averageGrade: avgGrade,
+            attendancePercentage: attendancePercent
+          });
+
+          setAverageGrade(avgGrade);
+          setAttendancePercentage(attendancePercent);
+        } catch (marksError) {
+          console.warn('Could not load student marks for statistics:', marksError);
+          // Устанавливаем значения по умолчанию если не удалось загрузить оценки
+          setAverageGrade(0);
+          setAttendancePercentage(0);
+        }
+
       } catch (err) {
         console.error('Error loading data:', err);
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
@@ -104,7 +176,7 @@ export const StudentPage: React.FC = () => {
       }
     };
 
-    loadGroupData();
+    loadStudentData();
   }, [user, isStudent, navigate]);
 
   const renderContent = () => {
@@ -143,8 +215,8 @@ export const StudentPage: React.FC = () => {
     switch (activeTab) {
       case 'attendance':
         return <AttendanceSection studentId={student.id}/>;
-       case 'performance':
-      return <PerformanceSection studentId={student.id} />;
+      case 'performance':
+        return <PerformanceSection studentId={student.id} />;
       case 'personal':
         return <PersonalCabinet />;
       case 'schedule':
@@ -304,14 +376,18 @@ export const StudentPage: React.FC = () => {
             <div className="st-sidebar-footer">
               <div className="st-quick-stats">
                 <div className="st-stat-item">
-                  <p className="st-stat-value">
-                    {loading ? '...' : '85%'}
+                  <p 
+                    className="st-stat-value"
+                  >
+                    {loading ? '...' : `${attendancePercentage}%`}
                   </p>
                   <p className="st-stat-label">Посещаемость</p>
                 </div>
                 <div className="st-stat-item">
-                  <p className="st-stat-value">
-                    {loading ? '...' : '4.5'}
+                  <p 
+                    className="st-stat-value"
+                  >
+                    {loading ? '...' : (averageGrade > 0 ? averageGrade.toFixed(1) : '0.0')}
                   </p>
                   <p className="st-stat-label">Средний балл</p>
                 </div>

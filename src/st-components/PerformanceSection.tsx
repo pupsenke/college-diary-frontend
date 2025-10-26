@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './PerformanceSectionStyle.css';
+import { apiService } from '../services/apiService'; // Добавьте этот импорт
 import {
   BarChart,
   Bar,
@@ -30,6 +31,7 @@ export interface StudentMark {
     number: number;
     value: number | null;
   }> | null;
+  certification: number | null; 
 }
 
 interface PerformanceSectionProps {
@@ -63,6 +65,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
     fetchStudentData();
   }, [studentId]);
+
+  // Обработчик клика по предмету - переключает на вкладку предметов
+  const handleSubjectClick = (subjectName: string) => {
+    setSelectedSubject(subjectName);
+    setActiveTab('subjects');
+  };
 
   // Преобразование данных из API
   const transformStudentMarksToGrades = (semester: 'first' | 'second'): Grade[] => {
@@ -112,7 +120,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
           grades: validGrades,
           average: parseFloat(average.toFixed(1)),
-          examGrade: null, // Будет заполняться из API
+          examGrade: studentMark.certification, // Используем certification из API
           gradeDetails: gradeDetails,
           teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
         };
@@ -266,7 +274,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   const renderSubjectCards = () => (
     <div className="pf-subjects-grid">
       {gradesData.map((subject, index) => (
-        <div key={subject.id} className="pf-subject-card">
+        <div 
+          key={subject.id} 
+          className="pf-subject-card"
+          onClick={() => handleSubjectClick(subject.subject)}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="pf-card-header">
             <h3 className="pf-subject-title">{subject.subject}</h3>
             <div className="at-teacher-badge">
@@ -274,20 +287,22 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             </div>
           </div>
           
-          
           <div className="pf-grades-preview">
             {subject.gradeDetails?.slice(0, 8).map((detail, gradeIndex) => (
               <div
                 key={detail.id}
                 className={`pf-preview-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                 style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
-                onClick={() => handleGradeClick(
-                  subject.subject,
-                  detail.hasValue ? detail.grade : null,
-                  detail.id,
-                  detail.topic,
-                  subject.teacher
-                )}
+                onClick={(e) => {
+                  e.stopPropagation(); // Предотвращаем всплытие клика на карточку
+                  handleGradeClick(
+                    subject.subject,
+                    detail.hasValue ? detail.grade : null,
+                    detail.id,
+                    detail.topic,
+                    subject.teacher
+                  );
+                }}
               >
                 {detail.hasValue ? detail.grade : '-'}
               </div>
@@ -333,7 +348,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         </thead>
         <tbody>
           {gradesData.map((subject) => (
-            <tr key={subject.id}>
+            <tr 
+              key={subject.id}
+              className="pf-subject-row"
+              onClick={() => handleSubjectClick(subject.subject)}
+              style={{ cursor: 'pointer' }}
+            >
               <td className="pf-subject-cell">
                 <div className="pf-subject-info">
                   <span className="pf-subject-name">{subject.subject}</span>
@@ -346,13 +366,16 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                       key={detail.id}
                       className={`pf-stack-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                       style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
-                      onClick={() => handleGradeClick(
-                        subject.subject,
-                        detail.hasValue ? detail.grade : null,
-                        detail.id,
-                        detail.topic,
-                        subject.teacher
-                      )}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Предотвращаем всплытие клика на строку
+                        handleGradeClick(
+                          subject.subject,
+                          detail.hasValue ? detail.grade : null,
+                          detail.id,
+                          detail.topic,
+                          subject.teacher
+                        );
+                      }}
                     >
                       {detail.hasValue ? detail.grade : '-'}
                     </span>
@@ -394,11 +417,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   // Рендер аналитики
   const renderAnalytics = () => (
     <div className="pf-analytics-container">
-      <div className="pf-analytics-header">
-        <h2>Аналитика успеваемости</h2>
-        <p>Подробная статистика за {selectedSemester === 'first' ? 'первый' : 'второй'} семестр</p>
-      </div>
-
       <div className="pf-stats-cards">
         <div className="pf-stat-card">
           <div className="pf-stat-content">
@@ -414,10 +432,11 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           </div>
         </div>
 
+        {/* ИЗМЕНЕНИЕ: Вместо "Всего предметов" теперь "Всего оценок" */}
         <div className="pf-stat-card">
           <div className="pf-stat-content">
-            <div className="pf-stat-value">{statistics.totalSubjects}</div>
-            <div className="pf-stat-label">Всего предметов</div>
+            <div className="pf-stat-value">{statistics.totalGrades}</div>
+            <div className="pf-stat-label">Всего оценок</div>
           </div>
         </div>
       </div>
@@ -569,7 +588,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 <div className="pf-no-subject-selected">
                   <div className="pf-empty-state">
                     <h3>Выберите предмет</h3>
-                    <p>Для просмотра детальной информации выберите предмет из списка</p>
+                    <p>Для просмотра детальной информации выберите предмет из списка или кликните на предмет в семестре</p>
                   </div>
                 </div>
               )}
@@ -650,15 +669,3 @@ export interface GradeDetail {
   type: string;
   hasValue: boolean;
 }
-
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-
-export const apiService = {
-  async getStudentMarks(studentId: number): Promise<StudentMark[]> {
-    const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
-    if (!response.ok) {
-      throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
-    }
-    return await response.json();
-  },
-};

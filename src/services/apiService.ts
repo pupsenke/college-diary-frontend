@@ -11,6 +11,8 @@ export interface GroupData {
   specialty: string;
 }
 
+
+
 export interface TeacherData {
   id: number;
   name: string;
@@ -51,8 +53,27 @@ export interface StudentMark {
     number: number;
     value: number;
   }>;
+  certification: number | null;
+}
+export interface Grade {
+  id: number;
+  subject: string;
+  grades: number[];
+  average: number;
+  examGrade: number | null;
+  gradeDetails?: GradeDetail[];
+  teacher: string;
 }
 
+export interface GradeDetail {
+  id: number;
+  date: string;
+  topic: string;
+  grade: number;
+  teacher: string;
+  type: string;
+  hasValue: boolean;
+}
 export interface SubjectMark {
   number: number;
   value: number;
@@ -204,6 +225,22 @@ export const apiService = {
   //   console.log('Student marks received:', data);
   //   return data;
   // },
+
+  // Получение оценок студента
+  async getStudentMarks(studentId: number): Promise<StudentMark[]> {
+    console.log(`Fetching student marks for ID: ${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
+    }
+    
+    const data: StudentMark[] = await response.json();
+    console.log('Student marks received:', data);
+    return data;
+  },
 
   // Получение оценок по предмету
   async getSubjectMarks(studentId: number, subjectId: number): Promise<SubjectMark[]> {

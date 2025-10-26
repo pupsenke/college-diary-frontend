@@ -426,10 +426,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   // Рендер аналитики
   const renderAnalytics = () => (
     <div className="at-analytics-container">
-      <div className="at-analytics-header">
-        <h2>Аналитика посещаемости</h2>
-        <p>Подробная статистика за {selectedSemester === 'first' ? 'первый' : 'второй'} семестр</p>
-      </div>
 
       <div className="at-stats-cards">
         <div className="at-stat-card">
