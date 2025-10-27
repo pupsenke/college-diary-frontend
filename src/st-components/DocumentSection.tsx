@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { apiService, Document, TeacherSubject } from '../services/apiService';
+import { apiService, Document, TeacherSubject } from '../services/studentApiService';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
@@ -49,6 +49,7 @@ export const DocumentsSection: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   
   // Новые состояния для предметов и преподавателей
   const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([]);
@@ -99,6 +100,7 @@ export const DocumentsSection: React.FC = () => {
       if (!user || !isStudent) return;
       
       try {
+        setLoading(true)
         const student = user as any;
         let studentDocuments: Document[] = [];
 
@@ -115,6 +117,8 @@ export const DocumentsSection: React.FC = () => {
       } catch (error) {
         console.error('Ошибка загрузки документов:', error);
         setError('Не удалось загрузить документы');
+      }finally {
+        setLoading(false);
       }
     };
 
@@ -1131,16 +1135,12 @@ const getMonthPrepositional = (monthNominative: string): string => {
 
   if (!userData) {
     return (
-      <div className="document-section">
-        <div className="ds-content">
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-            Загрузка данных...
-          </div>
-        </div>
+      <div className="ds-loading">
+        <div className="ds-loading-spinner"></div>
+        <p>Загрузка документов...</p>
       </div>
     );
   }
-
   return (
     <div className="document-section">
       <div className="ds-header">

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
-import { apiService, GroupData, TeacherData } from '../services/apiService';
+import { apiService, GroupData, TeacherData } from '../services/studentApiService';
 
 
 export const LoginPage: React.FC = () => {

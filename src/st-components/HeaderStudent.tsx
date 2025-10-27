@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { apiService } from '../services/apiService';
+import { apiService } from '../services/studentApiService';
 import './HeaderStudentStyle.css';
 
 export const Header: React.FC = () => {

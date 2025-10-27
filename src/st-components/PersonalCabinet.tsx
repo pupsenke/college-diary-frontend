@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, Student } from '../context/UserContext';
-import { apiService } from '../services/apiService';
+import { apiService } from '../services/studentApiService';
 import './PersonalCabinetStyle.css';
 
 interface UserFormData {
