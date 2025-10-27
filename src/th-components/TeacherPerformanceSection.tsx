@@ -59,15 +59,26 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const [editValue, setEditValue] = useState('');
   const [showCommentModal, setShowCommentModal] = useState<{studentId: number; date: string} | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [showTopicModal, setShowTopicModal] = useState<string | null>(null);
+  const [topicText, setTopicText] = useState('');
   const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II' | undefined>>({});
+  const [subgroupTeachers, setSubgroupTeachers] = useState<Record<string, string>>({
+    'I': 'Иванов И.И.',
+    'II': 'Петров П.П.'
+  });
+  const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
+  const [teacherEditValue, setTeacherEditValue] = useState('');
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({
     start: '',
     end: ''
   });
   const [globalLessonTypes, setGlobalLessonTypes] = useState<Record<string, LessonType>>({});
+  const [globalLessonTopics, setGlobalLessonTopics] = useState<Record<string, string>>({});
   const [globalExamType, setGlobalExamType] = useState<string>('');
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const teacherInputRef = useRef<HTMLInputElement>(null);
+  const examInputRef = useRef<HTMLSelectElement>(null);
 
   // Допустимые оценки
   const validGrades = [
@@ -113,6 +124,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const getGradeColor = (grade: string) => {
     if (!grade) return '';
     
+    if (grade === 'з') return '#2cbb00';
+    if (grade === 'нз') return '#ef4444';
+    
     const numericGrade = parseFloat(grade);
     if (numericGrade >= 4.5) return '#2cbb00';
     if (numericGrade >= 3.5) return '#a5db28';
@@ -122,7 +136,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
   // Функция для определения размера ячейки
   const getGradeSize = (grade: string): 'small' | 'medium' | 'large' => {
-    const simpleGrades = ['5', '4', '3', '2', '1', '0', ''];
+    const simpleGrades = ['5', '4', '3', '2', '1', '0', '', 'з', 'нз'];
     if (simpleGrades.includes(grade)) {
       return 'small';
     } else if (grade && grade.length <= 4) {
@@ -231,68 +245,70 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   // Навигация по таблице с клавишами
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!editingCell || editingCell.field !== 'grade') return;
+      if (!editingCell) return;
 
-      const currentStudentIndex = filteredStudents.findIndex(s => s.id === editingCell.studentId);
-      const currentDateIndex = filteredDates.findIndex(d => d === editingCell.date);
-      
-      let newStudentIndex = currentStudentIndex;
-      let newDateIndex = currentDateIndex;
-
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault();
-          newStudentIndex = Math.max(0, currentStudentIndex - 1);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          newStudentIndex = Math.min(filteredStudents.length - 1, currentStudentIndex + 1);
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          newDateIndex = Math.max(0, currentDateIndex - 1);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          newDateIndex = Math.min(filteredDates.length - 1, currentDateIndex + 1);
-          break;
-        case 'Tab':
-          e.preventDefault();
-          if (e.shiftKey) {
-            // Shift+Tab - двигаемся назад
-            if (currentDateIndex > 0) {
-              newDateIndex = currentDateIndex - 1;
-            } else if (currentStudentIndex > 0) {
-              newStudentIndex = currentStudentIndex - 1;
-              newDateIndex = filteredDates.length - 1;
-            }
-          } else {
-            // Tab - двигаемся вперед
-            if (currentDateIndex < filteredDates.length - 1) {
-              newDateIndex = currentDateIndex + 1;
-            } else if (currentStudentIndex < filteredStudents.length - 1) {
-              newStudentIndex = currentStudentIndex + 1;
-              newDateIndex = 0;
-            }
-          }
-          break;
-        default:
-          return;
-      }
-
-      // Если позиция изменилась, переходим к новой ячейке
-      if (newStudentIndex !== currentStudentIndex || newDateIndex !== currentDateIndex) {
-        const newStudent = filteredStudents[newStudentIndex];
-        const newDate = filteredDates[newDateIndex];
+      if (editingCell.field === 'grade') {
+        const currentStudentIndex = filteredStudents.findIndex(s => s.id === editingCell.studentId);
+        const currentDateIndex = filteredDates.findIndex(d => d === editingCell.date);
         
-        if (newStudent && newDate) {
-          const record = getGradeRecord(newStudent.id, newDate);
-          setEditingCell({ 
-            studentId: newStudent.id, 
-            date: newDate, 
-            field: 'grade'
-          });
-          setEditValue(record.grade);
+        let newStudentIndex = currentStudentIndex;
+        let newDateIndex = currentDateIndex;
+
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            newStudentIndex = Math.max(0, currentStudentIndex - 1);
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            newStudentIndex = Math.min(filteredStudents.length - 1, currentStudentIndex + 1);
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            newDateIndex = Math.max(0, currentDateIndex - 1);
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            newDateIndex = Math.min(filteredDates.length - 1, currentDateIndex + 1);
+            break;
+          case 'Tab':
+            e.preventDefault();
+            if (e.shiftKey) {
+              // Shift+Tab - двигаемся назад
+              if (currentDateIndex > 0) {
+                newDateIndex = currentDateIndex - 1;
+              } else if (currentStudentIndex > 0) {
+                newStudentIndex = currentStudentIndex - 1;
+                newDateIndex = filteredDates.length - 1;
+              }
+            } else {
+              // Tab - двигаемся вперед
+              if (currentDateIndex < filteredDates.length - 1) {
+                newDateIndex = currentDateIndex + 1;
+              } else if (currentStudentIndex < filteredStudents.length - 1) {
+                newStudentIndex = currentStudentIndex + 1;
+                newDateIndex = 0;
+              }
+            }
+            break;
+          default:
+            return;
+        }
+
+        // Если позиция изменилась, переходим к новой ячейке
+        if (newStudentIndex !== currentStudentIndex || newDateIndex !== currentDateIndex) {
+          const newStudent = filteredStudents[newStudentIndex];
+          const newDate = filteredDates[newDateIndex];
+          
+          if (newStudent && newDate) {
+            const record = getGradeRecord(newStudent.id, newDate);
+            setEditingCell({ 
+              studentId: newStudent.id, 
+              date: newDate, 
+              field: 'grade'
+            });
+            setEditValue(record.grade);
+          }
         }
       }
     };
@@ -303,9 +319,24 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
   // Фокус на input при редактировании
   useEffect(() => {
-    if (editingCell && editingCell.field === 'grade' && inputRef.current) {
+    if (editingCell && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
+    }
+  }, [editingCell]);
+
+  // Фокус на input при редактировании преподавателя
+  useEffect(() => {
+    if (editingTeacher && teacherInputRef.current) {
+      teacherInputRef.current.focus();
+      teacherInputRef.current.select();
+    }
+  }, [editingTeacher]);
+
+  // Фокус на select при редактировании экзамена
+  useEffect(() => {
+    if (editingCell && editingCell.field === 'exam' && examInputRef.current) {
+      examInputRef.current.focus();
     }
   }, [editingCell]);
 
@@ -321,19 +352,26 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     
     // Если записи нет, создаем новую с глобальным типом занятия
     const globalLessonType = globalLessonTypes[date] || '';
+    const globalTopic = globalLessonTopics[date] || '';
     return {
       id: Date.now() + Math.random(),
       studentId,
       date,
       lessonType: globalLessonType as LessonType,
-      topic: '',
+      topic: globalTopic,
       grade: ''
     };
   };
 
   // Получение экзаменационной записи для студента
   const getExamRecord = (studentId: number): ExamRecord => {
-    return examRecords.find(record => record.studentId === studentId) || {
+    const record = examRecords.find(record => record.studentId === studentId);
+    if (record) {
+      return record;
+    }
+    
+    // Если записи нет, создаем новую
+    return {
       id: Date.now() + Math.random(),
       studentId,
       examType: globalExamType as any,
@@ -357,12 +395,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         return newRecords;
       } else {
         const globalLessonType = globalLessonTypes[date] || '';
+        const globalTopic = globalLessonTopics[date] || '';
         const newRecord: GradeRecord = {
           id: Date.now() + Math.random(),
           studentId,
           date,
           lessonType: globalLessonType as LessonType,
-          topic: '',
+          topic: globalTopic,
           grade: '',
           ...updates
         };
@@ -400,6 +439,14 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }));
   };
 
+  // Обновление преподавателя подгруппы
+  const updateSubgroupTeacher = (subgroup: string, teacher: string) => {
+    setSubgroupTeachers(prev => ({
+      ...prev,
+      [subgroup]: teacher
+    }));
+  };
+
   // Начало редактирования ячейки
   const handleCellClick = (
     studentId: number, 
@@ -427,8 +474,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     } else if (editingCell.field === 'topic') {
       updateGradeRecord(editingCell.studentId, editingCell.date, { topic: editValue });
     } else if (editingCell.field === 'exam') {
-      // Исправлено: теперь экзамен сохраняется корректно
-      if (editValue === '' || examGrades[globalExamType as keyof typeof examGrades]?.includes(editValue)) {
+      // Сохранение экзаменационной оценки
+      const examRecord = getExamRecord(editingCell.studentId);
+      const allowedGrades = examGrades[examRecord.examType as keyof typeof examGrades] || [];
+      
+      if (editValue === '' || allowedGrades.includes(editValue)) {
         updateExamRecord(editingCell.studentId, { grade: editValue });
       }
     }
@@ -465,6 +515,87 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
+  // Обработка двойного клика по теме
+  const handleTopicDoubleClick = (date: string) => {
+    setShowTopicModal(date);
+    setTopicText(globalLessonTopics[date] || '');
+  };
+
+  // Сохранение темы занятия
+  const handleSaveTopic = () => {
+    if (showTopicModal) {
+      setGlobalLessonTopics(prev => ({
+        ...prev,
+        [showTopicModal]: topicText
+      }));
+      
+      // Обновляем тему у всех студентов для этой даты
+      filteredStudents.forEach(student => {
+        updateGradeRecord(student.id, showTopicModal, { topic: topicText });
+      });
+      
+      setShowTopicModal(null);
+      setTopicText('');
+    }
+  };
+
+  // Начало редактирования преподавателя
+  const handleTeacherEditStart = (subgroup: string) => {
+    setEditingTeacher(subgroup);
+    setTeacherEditValue(subgroupTeachers[subgroup]);
+  };
+
+  // Сохранение преподавателя
+  const handleTeacherSave = () => {
+    if (editingTeacher) {
+      updateSubgroupTeacher(editingTeacher, teacherEditValue);
+      setEditingTeacher(null);
+      setTeacherEditValue('');
+    }
+  };
+
+  // Отмена редактирования преподавателя
+  const handleTeacherCancel = () => {
+    setEditingTeacher(null);
+    setTeacherEditValue('');
+  };
+
+  // Обработка изменения глобального типа занятия для даты
+  const handleGlobalLessonTypeChange = (date: string, lessonType: string) => {
+    const lessonTypeValue = lessonType as LessonType;
+    setGlobalLessonTypes(prev => ({
+      ...prev,
+      [date]: lessonTypeValue
+    }));
+    
+    // Автоматически применяем ко всем студентам для этой даты
+    if (lessonTypeValue) {
+      filteredStudents.forEach(student => {
+        updateGradeRecord(student.id, date, { lessonType: lessonTypeValue });
+      });
+    }
+  };
+
+  // Обработка изменения глобального типа экзамена
+  const handleGlobalExamTypeChange = (examType: string) => {
+    setGlobalExamType(examType);
+    
+    // Автоматически применяем ко всем студентам
+    filteredStudents.forEach(student => {
+      updateExamRecord(student.id, { examType: examType as any });
+    });
+  };
+
+  // Обработчик клика по кнопке "Выставить посещаемость"
+  const handleSetAttendance = () => {
+    if (onSetAttendance) {
+      onSetAttendance();
+    } else {
+      // Если пропс не передан, показываем сообщение
+      console.warn('Пропс не передан');
+    }
+  };
+
   // Расчет среднего балла для студента
   const calculateAverageGrade = (studentId: number): number => {
     const studentGrades = gradeRecords
@@ -497,6 +628,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const getGradeClass = (grade: string): string => {
     if (!grade) return 'grade-empty';
     
+    if (grade === 'з') return 'grade-excellent';
+    if (grade === 'нз') return 'grade-unsatisfactory';
+    
     const numericGrade = parseFloat(grade);
     if (numericGrade >= 4.5) return 'grade-excellent';
     if (numericGrade >= 3.5) return 'grade-good';
@@ -519,38 +653,23 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Обработка изменения глобального типа занятия для даты
-  const handleGlobalLessonTypeChange = (date: string, lessonType: string) => {
-    const lessonTypeValue = lessonType as LessonType;
-    setGlobalLessonTypes(prev => ({
-      ...prev,
-      [date]: lessonTypeValue
-    }));
-    
-    // Автоматически применяем ко всем студентам для этой даты
-    if (lessonTypeValue) {
-      filteredStudents.forEach(student => {
-        updateGradeRecord(student.id, date, { lessonType: lessonTypeValue });
-      });
-    }
+  // Получение доступных оценок для текущего типа экзамена
+  const getAvailableExamGrades = (examType: string) => {
+    return examGrades[examType as keyof typeof examGrades] || [];
   };
 
-  // Обработка изменения глобального типа экзамена
-  const handleGlobalExamTypeChange = (examType: string) => {
-    setGlobalExamType(examType);
-    
-    // Автоматически применяем ко всем студентам
-    if (examType) {
-      filteredStudents.forEach(student => {
-        updateExamRecord(student.id, { examType: examType as any });
-      });
-    }
+  // Обработчик изменения оценки экзамена
+  const handleExamGradeChange = (studentId: number, newGrade: string) => {
+    updateExamRecord(studentId, { grade: newGrade });
   };
 
-  // Обработчик клика по кнопке "Выставить посещаемость"
-  const handleSetAttendance = () => {
-    if (onSetAttendance) {
-      onSetAttendance();
+  // Обработчик клика по ячейке экзамена
+  const handleExamCellClick = (studentId: number, currentGrade: string) => {
+    if (globalExamType) {
+      setEditingCell({ studentId, date: '', field: 'exam' });
+      setEditValue(currentGrade);
+    } else {
+      alert('Сначала выберите тип экзамена в заголовке столбца');
     }
   };
 
@@ -566,11 +685,26 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               <th className="column-name sticky-col table-header-rowspan" rowSpan={2}>ФИО</th>
               <th className="column-subgroup sticky-col table-header-rowspan" rowSpan={2}>Подгруппа</th>
               
-              {/* Динамические колонки с датами - теперь каждая дата это одна колонка */}
+              {/* Динамические колонки с датами */}
               {filteredDates.map((date, index) => (
                 <th key={index} className="column-date" rowSpan={2}>
                   <div className="date-header">
+                    {/* Тема занятия - редактируется по двойному клику через модальное окно */}
+                    <div 
+                      className={`topic-display ${globalLessonTopics[date] ? 'has-topic scrollable' : ''}`}
+                      onDoubleClick={() => handleTopicDoubleClick(date)}
+                      title={globalLessonTopics[date] 
+                        ? `Тема: ${globalLessonTopics[date]}\nДвойное нажатие для редактирования` 
+                        : 'Двойное нажатие для добавления темы'
+                      }
+                    >
+                      <span className="topic-text">
+                        {globalLessonTopics[date]}
+                      </span>
+                    </div>
+                    
                     <div className="date-title">{date}</div>
+                    
                     <div className="lesson-type-select-under-date-container">
                       <select 
                         value={globalLessonTypes[date] || ''}
@@ -614,6 +748,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             {filteredStudents.map((student, studentIndex) => {
               const averageGrade = calculateAverageGrade(student.id);
               const examRecord = getExamRecord(student.id);
+              const isEditingExam = editingCell?.studentId === student.id && editingCell?.field === 'exam';
               
               return (
                 <tr key={student.id}>
@@ -640,11 +775,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                     </div>
                   </td>
                   
-                  {/* Ячейки с оценками по датам - теперь только оценка */}
+                  {/* Ячейки с оценками по датам */}
                   {filteredDates.map((date, dateIndex) => {
                     const record = getGradeRecord(student.id, date);
                     const isEditing = editingCell?.studentId === student.id && 
-                                    editingCell?.date === date;
+                                    editingCell?.date === date &&
+                                    editingCell?.field === 'grade';
                     
                     return (
                       <td key={dateIndex} className="column-date">
@@ -657,7 +793,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                               backgroundColor: getGradeColor(record.grade)
                             }}
                           >
-                            {isEditing && editingCell?.field === 'grade' ? (
+                            {isEditing ? (
                               <input
                                 ref={inputRef}
                                 type="text"
@@ -717,34 +853,45 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                     <div className="exam-cell-container">
                       <div 
                         className={`exam-grade ${getExamGradeClass(examRecord.grade, examRecord.examType)}`}
-                        onClick={() => handleCellClick(student.id, '', 'exam', examRecord.grade)}
+                        onClick={() => handleExamCellClick(student.id, examRecord.grade)}
                         style={{
-                          backgroundColor: examRecord.grade ? getGradeColor(examRecord.grade === 'з' ? '5' : examRecord.grade === 'нз' ? '2' : examRecord.grade) : ''
+                          backgroundColor: getGradeColor(examRecord.grade)
                         }}
                       >
-                        {editingCell?.studentId === student.id && editingCell?.field === 'exam' ? (
+                        {isEditingExam ? (
                           <select
+                            ref={examInputRef}
                             value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
+                            onChange={(e) => {
+                              setEditValue(e.target.value);
+                              handleExamGradeChange(student.id, e.target.value);
+                            }}
                             onBlur={handleSaveEdit}
                             className="exam-grade-select"
                             style={{
                               backgroundColor: 'transparent',
                               border: 'none',
                               textAlign: 'center',
-                              width: '100%'
+                              width: '100%',
+                              cursor: 'pointer'
                             }}
                           >
                             <option value="">-</option>
-                            {(examGrades[examRecord.examType as keyof typeof examGrades] || []).map(grade => (
+                            {getAvailableExamGrades(examRecord.examType).map(grade => (
                               <option key={grade} value={grade}>
-                                {grade || '-'}
+                                {grade === 'з' ? 'з' : 
+                                 grade === 'нз' ? 'нз' : 
+                                 grade || '-'}
                               </option>
                             ))}
                           </select>
                         ) : (
                           <div className="exam-grade-value">
-                            {examRecord.grade || '-'}
+                            {examRecord.grade ? (
+                              examRecord.grade === 'з' ? 'Зачет' : 
+                              examRecord.grade === 'нз' ? 'Незачет' : 
+                              examRecord.grade
+                            ) : '-'}
                           </div>
                         )}
                       </div>
@@ -766,7 +913,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна комментария с поддержкой вложений
+  // Рендер модального окна комментария
   const renderCommentModal = () => {
     if (!showCommentModal) return null;
 
@@ -777,9 +924,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       <div className="modal-overlay">
         <div className="modal-content">
           <h3>
-            Комментарий к оценке {student && 
-              `${student.lastName} ${student.firstName} ${student.middleName}`
-            }
+            Комментарий к оценке
           </h3>
           
           <textarea
@@ -789,39 +934,42 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             rows={4}
           />
           
-          {/* Блок для вложений (заготовка для будущего функционала) */}
-          <div className="comment-attachments">
-            <div className="attachments-list">
-              {/* Здесь будут отображаться прикрепленные файлы */}
-              {record.attachments && record.attachments.length > 0 ? (
-                record.attachments.map((attachment, index) => (
-                  <div key={index} className="attachment-item">
-                    <span className="attachment-icon">📎</span>
-                    <span className="attachment-name">{attachment}</span>
-                    <div className="attachment-actions">
-                      <button className="attachment-btn" title="Просмотреть"></button>
-                      <button className="attachment-btn" title="Удалить"></button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: '14px', color: '#64748b', textAlign: 'center', padding: '8px' }}>
-                  Нет прикрепленных файлов
-                </div>
-              )}
-            </div>
-            
-            <button className="add-attachment-btn">
-              <span>+</span>
-              <span>Прикрепить файл</span>
-            </button>
-          </div>
-          
           <div className="modal-actions">
             <button className="gradient-btn" onClick={handleSaveComment}>
               Сохранить
             </button>
             <button className="cancel-btn" onClick={() => setShowCommentModal(null)}>
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер модального окна темы занятия
+  const renderTopicModal = () => {
+    if (!showTopicModal) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3>
+            Тема занятия {showTopicModal}
+          </h3>
+          
+          <textarea
+            value={topicText}
+            onChange={(e) => setTopicText(e.target.value)}
+            placeholder="Введите тему занятия..."
+            rows={4}
+          />
+          
+          <div className="modal-actions">
+            <button className="gradient-btn" onClick={handleSaveTopic}>
+              Сохранить
+            </button>
+            <button className="cancel-btn" onClick={() => setShowTopicModal(null)}>
               Отмена
             </button>
           </div>
@@ -849,7 +997,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 <img src="/th-icons/arrow_icon.svg" alt="Назад" />
               </button>
             )}
-            <button className="gradient-btn" onClick={handleSetAttendance}>
+            <button className="gradient-btn set-attendance-btn" onClick={handleSetAttendance}>
               Выставить посещаемость
             </button>
           </div>
@@ -880,6 +1028,47 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         </div>
 
         <div className="type-filters">
+          {/* Отображение преподавателя только при выборе конкретной подгруппы */}
+          {selectedSubgroup !== 'all' && (
+            <div className="filter-group teacher-display">
+              {editingTeacher === selectedSubgroup ? (
+                <div className="teacher-edit-container">
+                  <input
+                    ref={teacherInputRef}
+                    type="text"
+                    value={teacherEditValue}
+                    onChange={(e) => setTeacherEditValue(e.target.value)}
+                    onBlur={handleTeacherSave}
+                    onKeyPress={(e) => e.key === 'Enter' && handleTeacherSave()}
+                    className="teacher-edit-input"
+                  />
+                  <button 
+                    className="teacher-save-btn"
+                    onClick={handleTeacherSave}
+                    title="Сохранить"
+                  >
+                    ✓
+                  </button>
+                  <button 
+                    className="teacher-cancel-btn"
+                    onClick={handleTeacherCancel}
+                    title="Отмена"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  className="teacher-value"
+                  onClick={() => handleTeacherEditStart(selectedSubgroup)}
+                  title="Нажмите для редактирования"
+                >
+                  {subgroupTeachers[selectedSubgroup]}
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="filter-group">
             <select 
               value={selectedSubgroup} 
@@ -932,8 +1121,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         </div>
       </div>
 
-      {/* Модальное окно комментария */}
+      {/* Модальные окна */}
       {renderCommentModal()}
+      {renderTopicModal()}
     </div>
   );
 };

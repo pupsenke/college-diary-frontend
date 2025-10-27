@@ -1033,13 +1033,205 @@ body.menu-collapsed .column-date {
   border-top: none !important;
 }
 
-/* Стили для выбора типа занятия под датой */
+/* Стили для заголовка подгруппы с преподавателями */
+.subgroup-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subgroup-teachers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.subgroup-teacher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.teacher-input {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 10px;
+  width: 80px;
+}
+
+.teacher-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Стили для кнопки темы занятия */
+.topic-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px 4px;
+  color: #64748b;
+  transition: all 0.2s ease;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.topic-btn:hover {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.topic-preview {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 2px;
+  padding: 2px 4px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  border: 1px dashed #cbd5e1;
+  cursor: help;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Стили для отображения преподавателя в фильтрах */
+.teacher-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.teacher-value {
+  font-size: 14px;
+  color: #002FA7;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.teacher-value:hover {
+  background: #f0f4ff;
+}
+
+.teacher-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.teacher-edit-input {
+  border: 1px solid #002FA7;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  width: 120px;
+}
+
+.teacher-edit-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.teacher-save-btn,
+.teacher-cancel-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.teacher-save-btn:hover {
+  background: #2cbb00;
+  color: white;
+  border-color: #2cbb00;
+}
+
+.teacher-cancel-btn:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+/* Стили для темы занятия над датой */
+.topic-display {
+  padding: 4px 6px;
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px dashed #cbd5e1;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 24px;
+  max-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 80px;
+}
+
+.topic-display:hover {
+  border-color: #5986f7;
+  background: #f0f4ff;
+}
+
+.topic-display.has-topic {
+  background: #f8fafc;
+  border: 1px solid #f8fafc;
+}
+
+.topic-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 11px;
+  color: #1e293b;
+  outline: none;
+}
+
+.topic-text {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  width: 100%;
+}
+
+.topic-display.has-topic .topic-text {
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Обновленные стили для заголовка даты */
 .date-header {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Увеличили расстояние между датой и выпадающим списком */
+  gap: 6px;
   align-items: center;
-  padding: 8px 4px; /* Добавили отступы */
+  padding: 8px 4px;
+}
+
+.lesson-type-select-under-date-container {
+  width: 100%;
 }
 
 .date-title {
@@ -1057,11 +1249,11 @@ body.menu-collapsed .column-date {
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   font-size: 11px;
-  padding: 4px 6px; /* Увеличили padding */
+  padding: 4px 6px;
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 24px; /* Увеличили высоту */
+  height: 24px;
 }
 
 .lesson-type-select-under-date:focus {
@@ -1073,9 +1265,9 @@ body.menu-collapsed .column-date {
 .global-exam-header {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Увеличили расстояние между заголовком и выпадающим списком */
+  gap: 10px;
   align-items: center;
-  padding: 8px 4px; /* Добавили отступы */
+  padding: 8px 4px;
 }
 
 .global-exam-select {
@@ -1087,7 +1279,7 @@ body.menu-collapsed .column-date {
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 24px; /* Увеличили высоту */
+  height: 24px;
 }
 
 .global-exam-select:focus {

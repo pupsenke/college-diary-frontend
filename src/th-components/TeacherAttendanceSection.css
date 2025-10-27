@@ -283,6 +283,79 @@ body.menu-collapsed .attendance-table {
   z-index: 1;
 }
 
+/* Добавьте стили для преподавателей (аналогично успеваемости) */
+.teacher-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.teacher-value {
+  font-size: 14px;
+  color: #002FA7;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.teacher-value:hover {
+  background: #f0f4ff;
+}
+
+.teacher-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.teacher-edit-input {
+  border: 1px solid #002FA7;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  width: 120px;
+}
+
+.teacher-edit-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.teacher-save-btn,
+.teacher-cancel-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.teacher-save-btn:hover {
+  background: #2cbb00;
+  color: white;
+  border-color: #2cbb00;
+}
+
+.teacher-cancel-btn:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.type-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* Фиксированные ячейки */
 .attendance-table td.column-number {
   position: sticky;
@@ -354,12 +427,6 @@ body.menu-collapsed .attendance-table {
   z-index: 1;
 }
 
-.column-add-date {
-  width: 60px;
-  min-width: 60px;
-  max-width: 60px;
-  z-index: 1;
-}
 
 .column-percentage {
   width: 120px;
@@ -509,29 +576,6 @@ body.menu-collapsed .column-date {
   display: inline-block;
   min-width: 60px;
   text-align: center;
-}
-
-/* Кнопка добавления даты */
-.add-date-btn {
-  width: 36px;
-  height: 36px;
-  border: 2px dashed #cbd5e1;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 18px;
-  color: #64748b;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.add-date-btn:hover {
-  border-color: #002FA7;
-  color: #002FA7;
-  background: #f0f4ff;
-  transform: scale(1.1);
 }
 
 /* Inputs */

@@ -7,8 +7,8 @@ interface TeacherData {
   lastName: string;
   middleName: string;
   email: string;
-  specialty: string;
-  experience: string;
+  // specialty: string;
+  // experience: string;
   disciplines: string[];
 }
 
@@ -27,8 +27,8 @@ export const PersonalCabinet: React.FC<Props> = ({
     lastName: '',
     middleName: '',
     email: 's123456@std.nosu.ru',
-    specialty: 'Математика и информатика',
-    experience: '27 лет',
+    /* specialty: 'Математика и информатика',
+    experience: '27 лет', */
     disciplines: [
       'Разработка программных модулей',
       'Дипломное проектирование',
@@ -106,7 +106,7 @@ export const PersonalCabinet: React.FC<Props> = ({
 
         setTeacherData(prev => ({ ...prev, ...baseData }));
 
-        // Получаем дополнительные данные преподавателя
+        /* // Получаем дополнительные данные преподавателя
         if (user.id) {
           const teacherData = await fetchTeacherData(user.id);
           const disciplines = await fetchTeacherDisciplines(user.id);
@@ -115,12 +115,12 @@ export const PersonalCabinet: React.FC<Props> = ({
             setTeacherData(prev => ({
               ...prev,
               ...baseData,
-              specialty: teacherData.specialty || 'Математика и информатика',
-              experience: teacherData.experience || '27 лет',
+              // specialty: teacherData.specialty || 'Математика и информатика',
+              // experience: teacherData.experience || '27 лет',
               disciplines: disciplines.length > 0 ? disciplines : prev.disciplines
-            }));
+            })); 
           }
-        }
+        }*/
       }
     };
 
@@ -189,7 +189,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="professional-info-main">
+      {/* <div className="professional-info-main">
         <div className="professional-info-section">
           <div className="info-column">
             <div className="info-item">
@@ -202,7 +202,7 @@ export const PersonalCabinet: React.FC<Props> = ({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="disciplines-section">
         <div className="disciplines-header">

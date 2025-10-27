@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TeacherAttendanceSection } from './TeacherAttendanceSection';
-import { TeacherPerformanceSection } from './TeacherPerformanceSection'; // Добавьте этот импорт
+import { TeacherPerformanceSection } from './TeacherPerformanceSection';
 import './GroupsSectionStyle.css';
 
 export interface Group {
@@ -27,7 +27,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [subjectSortOrder, setSubjectSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGroupRow, setSelectedGroupRow] = useState<number | null>(null);
   const [showAttendance, setShowAttendance] = useState<boolean>(false);
-  const [showPerformance, setShowPerformance] = useState<boolean>(false); // Перенесено сюда
+  const [showPerformance, setShowPerformance] = useState<boolean>(false);
   const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
 
   // Данные по группам - логически связаны с дисциплинами
@@ -183,6 +183,18 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     setSelectedGroupData(null);
   };
 
+  // от успеваемости к посещаемости
+  const handleSetAttendanceFromPerformance = () => {
+    setShowPerformance(false);
+    setShowAttendance(true);
+  };
+
+  // от посещаемости к успеваемости
+  const handleSetGradesFromAttendance = () => {
+    setShowAttendance(false);
+    setShowPerformance(true);
+  };
+
   // Моковые данные студентов для демонстрации
   const mockStudents = [
     { id: 1, lastName: 'Абрамов', firstName: 'Кирилл', middleName: 'Денисович' },
@@ -210,6 +222,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           subject={selectedGroupData.subject}
           students={mockStudents}
           onBackToGroups={handleBackToGroups}
+          onSetAttendance={handleSetAttendanceFromPerformance}
         />
       </div>
     );
@@ -223,7 +236,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           subject={selectedGroupData.subject}
           students={mockStudents}
           onBackToGroups={handleBackToGroups}
-          onSetGrades={handleSetGrades}
+          onSetGrades={handleSetGradesFromAttendance}
         />
       </div>
     );
@@ -402,7 +415,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
               </div>
               
               <div className="gs-group-selector">
-                <label htmlFor="gs-group-select">Выберите группу:</label>
+                <label htmlFor="gs-group-select"></label>
                 <select
                   id="gs-group-select"
                   value={selectedGroup}
