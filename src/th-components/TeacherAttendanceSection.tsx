@@ -38,7 +38,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   const [selectedSubgroup, setSelectedSubgroup] = useState<string>('all');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [allDates, setAllDates] = useState<string[]>([]);
-  const [editingCell, setEditingCell] = useState<{studentId: number, date: string, type: 'date' | 'status'} | null>(null);
+  const [editingCell, setEditingCell] = useState<{studentId: number, date: string, type: 'status'} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [showReasonModal, setShowReasonModal] = useState<{studentId: number, date: string} | null>(null);
   const [reasonText, setReasonText] = useState('');
@@ -46,12 +46,19 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   const [sickStartDate, setSickStartDate] = useState('');
   const [sickEndDate, setSickEndDate] = useState('');
   const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II' | undefined>>({});
+  const [subgroupTeachers, setSubgroupTeachers] = useState<Record<string, string>>({
+    'I': 'Иванов И.И.',
+    'II': 'Петров П.П.'
+  });
+  const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
+  const [teacherEditValue, setTeacherEditValue] = useState('');
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({
     start: '',
     end: ''
   });
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const teacherInputRef = useRef<HTMLInputElement>(null);
 
   // Функция для получения цвета процента
   const getPercentColor = (percent: number) => {
@@ -72,8 +79,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   };
 
-    // Вспомогательная функция для парсинга дат
-    const parseDate = (dateStr: string): number => {
+  // Вспомогательная функция для парсинга дат
+  const parseDate = (dateStr: string): number => {
     if (!dateStr) return 0;
     
     if (dateStr.includes('.')) {
@@ -86,14 +93,14 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   };
   
-    // Фильтрация студентов по подгруппе
-    const filteredStudents = students.filter(student => {
-      if (selectedSubgroup === 'all') return true;
-      return studentSubgroups[student.id] === selectedSubgroup;
-    });
+  // Фильтрация студентов по подгруппе
+  const filteredStudents = students.filter(student => {
+    if (selectedSubgroup === 'all') return true;
+    return studentSubgroups[student.id] === selectedSubgroup;
+  });
 
-    // Фильтрация дат по выбранному диапазону
-    const filteredDates = allDates.filter(date => {
+  // Фильтрация дат по выбранному диапазону
+  const filteredDates = allDates.filter(date => {
     if (!dateRange.start && !dateRange.end) return true;
     
     const currentDate = parseDate(date);
@@ -232,6 +239,14 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   }, [editingCell]);
 
+  // Фокус на input при редактировании преподавателя
+  useEffect(() => {
+    if (editingTeacher && teacherInputRef.current) {
+      teacherInputRef.current.focus();
+      teacherInputRef.current.select();
+    }
+  }, [editingTeacher]);
+
   // Получение записи посещаемости для студента и даты
   const getAttendanceRecord = (studentId: number, date: string): AttendanceRecord => {
     return attendanceRecords.find(record => 
@@ -275,8 +290,16 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }));
   };
 
+  // Обновление преподавателя подгруппы
+  const updateSubgroupTeacher = (subgroup: string, teacher: string) => {
+    setSubgroupTeachers(prev => ({
+      ...prev,
+      [subgroup]: teacher
+    }));
+  };
+
   // Начало редактирования ячейки
-  const handleCellClick = (studentId: number, date: string, type: 'date' | 'status', currentValue: string) => {
+  const handleCellClick = (studentId: number, date: string, type: 'status', currentValue: string) => {
     setEditingCell({ studentId, date, type });
     setEditValue(currentValue);
   };
@@ -285,34 +308,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   const handleSaveEdit = () => {
     if (!editingCell) return;
 
-    if (editingCell.type === 'date') {
-      // Валидация формата даты
-      const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])$/;
-      if (dateRegex.test(editValue)) {
-        // Обновляем дату во всех записях для этого студента
-        const oldDate = editingCell.date;
-        
-        setAttendanceRecords(prev => 
-          prev.map(record => 
-            record.studentId === editingCell.studentId && record.date === oldDate
-              ? { ...record, date: editValue }
-              : record
-          )
-        );
-        
-        // Обновляем массив дат
-        setAllDates(prev => {
-          const newDates = [...prev];
-          const index = newDates.indexOf(oldDate);
-          if (index >= 0) {
-            newDates[index] = editValue;
-          }
-          return newDates;
-        });
-      }
-      setEditingCell(null);
-      setEditValue('');
-    } else if (editingCell.type === 'status') {
+    if (editingCell.type === 'status') {
         const lowerCaseValue = editValue.toLowerCase();
 
         const isValidStatus = (value: string): value is 'п' | 'у' | 'б' | 'н' | '' => {
@@ -350,6 +346,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
             }
         }
     }
+    setEditingCell(null);
+    setEditValue('');
   };
 
   // Отмена редактирования
@@ -401,31 +399,25 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   };
 
-  // Добавление новой даты
-  const handleAddDate = () => {
-    const newDate = 'Новая дата';
-    
-    setAllDates(prev => [...prev, newDate]);
-    
-    // Добавляем записи для всех студентов
-    const newRecords: AttendanceRecord[] = students.map(student => ({
-      id: Date.now() + Math.random(),
-      studentId: student.id,
-      date: newDate,
-      status: ''
-    }));
-    
-    setAttendanceRecords(prev => [...prev, ...newRecords]);
-    
-    // Начинаем редактирование первой ячейки новой даты
-    if (students.length > 0) {
-      setEditingCell({ 
-        studentId: students[0].id, 
-        date: newDate, 
-        type: 'date' 
-      });
-      setEditValue(newDate);
+  // Начало редактирования преподавателя
+  const handleTeacherEditStart = (subgroup: string) => {
+    setEditingTeacher(subgroup);
+    setTeacherEditValue(subgroupTeachers[subgroup]);
+  };
+
+  // Сохранение преподавателя
+  const handleTeacherSave = () => {
+    if (editingTeacher) {
+      updateSubgroupTeacher(editingTeacher, teacherEditValue);
+      setEditingTeacher(null);
+      setTeacherEditValue('');
     }
+  };
+
+  // Отмена редактирования преподавателя
+  const handleTeacherCancel = () => {
+    setEditingTeacher(null);
+    setTeacherEditValue('');
   };
 
   // Расчет процента посещаемости для студента в выбранном диапазоне дат
@@ -454,30 +446,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     return totalPercentage / filteredStudents.length;
   };
 
-    const calculateTotalAttendancePercentage = (studentId: number): number => {
-    const studentRecords = attendanceRecords.filter(record => 
-      record.studentId === studentId
-    );
-    
-    if (studentRecords.length === 0) return 0;
-    
-    const presentCount = studentRecords.filter(record => 
-      record.status === 'п'
-    ).length;
-    
-    return (presentCount / studentRecords.length) * 100;
-  };
-
-  const calculateTotalGroupAttendancePercentage = (): number => {
-    if (filteredStudents.length === 0) return 0;
-    
-    const totalPercentage = filteredStudents.reduce((sum, student) => {
-      return sum + calculateTotalAttendancePercentage(student.id);
-    }, 0);
-    
-    return totalPercentage / filteredStudents.length;
-  };
-
   // Обработчик клика по кнопке "Выставить оценки"
   const handleSetGrades = () => {
     if (onSetGrades) {
@@ -499,34 +467,10 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               
               {/* Динамические колонки с датами */}
               {filteredDates.map((date, index) => (
-                <th 
-                  key={index}
-                  className="column-date"
-                  onDoubleClick={() => {
-                    if (students.length > 0) {
-                      setEditingCell({ 
-                        studentId: students[0].id, 
-                        date, 
-                        type: 'date' 
-                      });
-                      setEditValue(date);
-                    }
-                  }}
-                >
+                <th key={index} className="column-date">
                   {date}
                 </th>
               ))}
-              
-              {/* Кнопка добавления даты */}
-              <th className="column-add-date">
-                <button 
-                  className="add-date-btn" 
-                  onClick={handleAddDate}
-                  title="Добавить дату"
-                >
-                  +
-                </button>
-              </th>
               
               {/* Фиксированные колонки справа */}
               <th className="column-percentage sticky-col-right"></th>
@@ -589,20 +533,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                                 placeholder="п/у/б/н"
                               />
                             </div>
-                          ) : isEditing && editingCell?.type === 'date' ? (
-                            <div className="date-input-container">
-                              <input
-                                ref={inputRef}
-                                type="text"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onBlur={handleSaveEdit}
-                                onKeyPress={handleKeyPress}
-                                maxLength={5}
-                                className="date-input"
-                                placeholder="дд.мм"
-                              />
-                            </div>
                           ) : (
                             <div className={`cell-status ${getStatusClass(record.status)}`}>
                               {record.status || '+'}
@@ -613,24 +543,19 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                     );
                   })}
                   
-                {/* Ячейка добавления даты */}
-                <td className="column-add-date">
-                  <div className="cell-add-date"></div>
-                </td>
-                
-                {/* Фиксированная ячейка справа - процент посещаемости */}
-                <td className="column-percentage sticky-col-right">
-                  <div 
-                    className="cell-percentage"
-                    style={{ 
-                      backgroundColor: getPercentColor(attendancePercentage),
-                      color: 'white'
-                    }}
-                  >
-                    {attendancePercentage.toFixed(1)}%
-                  </div>
-                </td>
-              </tr>
+                  {/* Фиксированная ячейка справа - процент посещаемости */}
+                  <td className="column-percentage sticky-col-right">
+                    <div 
+                      className="cell-percentage"
+                      style={{ 
+                        backgroundColor: getPercentColor(attendancePercentage),
+                        color: 'white'
+                      }}
+                    >
+                      {attendancePercentage.toFixed(1)}%
+                    </div>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
@@ -691,7 +616,48 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
           </div>
         </div>
 
-        <div className="subgroup-filter">
+        <div className="type-filters">
+          {/* Отображение преподавателя только при выборе конкретной подгруппы */}
+          {selectedSubgroup !== 'all' && (
+            <div className="filter-group teacher-display">
+              {editingTeacher === selectedSubgroup ? (
+                <div className="teacher-edit-container">
+                  <input
+                    ref={teacherInputRef}
+                    type="text"
+                    value={teacherEditValue}
+                    onChange={(e) => setTeacherEditValue(e.target.value)}
+                    onBlur={handleTeacherSave}
+                    onKeyPress={(e) => e.key === 'Enter' && handleTeacherSave()}
+                    className="teacher-edit-input"
+                  />
+                  <button 
+                    className="teacher-save-btn"
+                    onClick={handleTeacherSave}
+                    title="Сохранить"
+                  >
+                    ✓
+                  </button>
+                  <button 
+                    className="teacher-cancel-btn"
+                    onClick={handleTeacherCancel}
+                    title="Отмена"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  className="teacher-value"
+                  onClick={() => handleTeacherEditStart(selectedSubgroup)}
+                  title="Нажмите для редактирования"
+                >
+                  {subgroupTeachers[selectedSubgroup]}
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="filter-group">
             <select 
               value={selectedSubgroup} 

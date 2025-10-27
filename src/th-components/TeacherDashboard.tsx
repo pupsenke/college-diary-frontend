@@ -3,6 +3,7 @@ import { DisciplinesSection } from './DisciplinesSection';
 import { GroupsSection } from './GroupsSection';
 
 export const TeacherDashboard: React.FC = () => {
+  
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>();
 
   const handleDisciplineSelect = (disciplineName: string) => {

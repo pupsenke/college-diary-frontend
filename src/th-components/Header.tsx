@@ -33,23 +33,13 @@ export const Header: React.FC = () => {
     navigate('/login');
   };
 
-  const handlePersonalCabinet = () => {
-    navigate('/teacher?tab=personal');
-    setIsDropdownOpen(false);
-  };
-
   const handleDisciplines = () => {
-    navigate('/teacher?tab=disciplines');
+    navigate('/teacher/disciplines');
     setIsDropdownOpen(false);
   };
-
-  const handleGroups = () => {
-    navigate('/teacher?tab=groups');
-    setIsDropdownOpen(false);
-  };
-
+  
   const handleSchedule = () => {
-    navigate('/teacher?tab=schedule');
+    navigate('/teacher/schedule');
     setIsDropdownOpen(false);
   };
 
@@ -70,7 +60,7 @@ export const Header: React.FC = () => {
         <div className="th-logo-mark">
           <img src='blue_icon.svg' alt="" className='th-image'/>
           <div>
-            <div className="th-logo-title">Цифровой дневник</div>
+            <div className="th-logo-title">Цифровой двойник</div>
             <div className="th-logo-subtitle">Политехнический колледж НовГУ</div>
           </div>
         </div>
@@ -92,14 +82,8 @@ export const Header: React.FC = () => {
               <span className="th-dropdown-department">Преподаватель</span>
             </div>
             <div className="th-dropdown-menu">
-              <button className="th-dropdown-item" onClick={handlePersonalCabinet}>
-                Личный кабинет
-              </button>
               <button className="th-dropdown-item" onClick={handleDisciplines}>
                 Дисциплины
-              </button>
-              <button className="th-dropdown-item" onClick={handleGroups}>
-                Группы
               </button>
               <button className="th-dropdown-item" onClick={handleSchedule}>
                 Расписание
