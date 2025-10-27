@@ -8,7 +8,7 @@ import { useUser } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiService, GroupData, TeacherData, StudentMark } from '../services/apiService';
+import { apiService, GroupData, TeacherData, StudentMark } from '../services/studentApiService';
 
 export const StudentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('attendance');

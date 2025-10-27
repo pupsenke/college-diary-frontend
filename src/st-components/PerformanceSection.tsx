@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './PerformanceSectionStyle.css';
-import { apiService } from '../services/apiService'; // Добавьте этот импорт
+import { apiService } from '../services/studentApiService'; // Добавьте этот импорт
 import {
   BarChart,
   Bar,
