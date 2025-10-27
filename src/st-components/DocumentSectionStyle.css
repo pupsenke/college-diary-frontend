@@ -588,6 +588,74 @@
   }
 }
 
+/* Добавьте в DocumentSectionStyle.css */
+.ds-cache-status {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.cache-indicator {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #1976d2;
+}
+
+.ds-refresh-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ds-refresh-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-refresh-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.ds-refresh-btn:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.ds-loading {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .ds-refresh-controls {
+    flex-direction: column;
+  }
+  
+  .ds-refresh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ds-cache-status {
+    justify-content: center;
+  }
+}
+
 /* Дополнительные улучшения */
 .ds-form-field:focus-within label {
   color: #002FA7;

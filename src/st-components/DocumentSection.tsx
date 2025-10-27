@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+// src/st-components/DocumentSection.tsx
+import React, { useState, useEffect, useMemo } from 'react';
 import { useUser } from '../context/UserContext';
-import { apiService, Document, TeacherSubject } from '../services/studentApiService';
+import { apiService, Document } from '../services/studentApiService';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
@@ -52,7 +53,7 @@ export const DocumentsSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   // Новые состояния для предметов и преподавателей
-  const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([]);
+  const [teacherSubjects, setTeacherSubjects] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
@@ -94,13 +95,12 @@ export const DocumentsSection: React.FC = () => {
   };
 
   // Загрузка документов студента
-  // Загрузка документов студента с фильтрацией по типу
   useEffect(() => {
     const loadDocuments = async () => {
       if (!user || !isStudent) return;
       
       try {
-        setLoading(true)
+        setLoading(true);
         const student = user as any;
         let studentDocuments: Document[] = [];
 
@@ -117,7 +117,7 @@ export const DocumentsSection: React.FC = () => {
       } catch (error) {
         console.error('Ошибка загрузки документов:', error);
         setError('Не удалось загрузить документы');
-      }finally {
+      } finally {
         setLoading(false);
       }
     };
@@ -137,7 +137,7 @@ export const DocumentsSection: React.FC = () => {
         const teacherSubjectsData = await apiService.getTeacherSubjects(student.id);
         setTeacherSubjects(teacherSubjectsData);
         
-        // Получаем уникальные ID предметов (исправленная версия)
+        // Получаем уникальные ID предметов
         const subjectIdsSet = new Set<number>();
         teacherSubjectsData.forEach(ts => subjectIdsSet.add(ts.idSubject));
         const subjectIds = Array.from(subjectIdsSet);
@@ -154,7 +154,7 @@ export const DocumentsSection: React.FC = () => {
         }
         setSubjects(subjectsData);
         
-        // Загружаем информацию о преподавателях (исправленная версия)
+        // Загружаем информацию о преподавателях
         const teacherIdsSet = new Set<number>();
         teacherSubjectsData.forEach(ts => {
           if (ts.idTeacher) {
@@ -193,7 +193,6 @@ export const DocumentsSection: React.FC = () => {
 
     // Функция для исправления опечаток
     const fixTypos = (name: string): string => {
-      // Приводим к нижнему регистру для сравнения
       const lowerName = name.toLowerCase();
       
       // Исправляем опечатки
@@ -209,7 +208,6 @@ export const DocumentsSection: React.FC = () => {
       if (lowerName === 'ивановичч') return 'Иванович';
       if (lowerName === 'петровичч') return 'Петрович';
       
-      // Если нет опечаток, возвращаем оригинал с правильной капитализацией
       return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     };
 
@@ -217,8 +215,6 @@ export const DocumentsSection: React.FC = () => {
     lastName = fixTypos(lastName);
     firstName = fixTypos(firstName);
     patronymic = fixTypos(patronymic);
-
-    console.log('После исправления опечаток:', { lastName, firstName, patronymic });
 
     // Склонение фамилий
     const declineLastName = (name: string): string => {
@@ -344,27 +340,10 @@ export const DocumentsSection: React.FC = () => {
 
       const result = `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
       
-      console.log('Результат склонения:', {
-        original: fullName,
-        fixed: `${lastName} ${firstName} ${patronymic}`,
-        result: result
-      });
-
       return result;
     } catch (error) {
       console.error('Ошибка при склонении ФИО:', error, fullName);
       return fullName;
-    }
-  };
-
-  // Функция для получения курса студента из данных группы
-  const getStudentCourse = async (student: any): Promise<string> => {
-    try {
-      const groupData = await apiService.getGroupData(student.idGroup);
-      return groupData.course.toString();
-    } catch (error) {
-      console.error('Ошибка получения данных группы:', error);
-      return student.course?.toString() || 'Неизвестно';
     }
   };
 
@@ -374,16 +353,14 @@ export const DocumentsSection: React.FC = () => {
       if (!user || !isStudent) return;
 
       try {
-        const student = user as any;
-        const userPhone = student.telephone || '';
-        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
-        const course = await getStudentCourse(student);
+        const userPhone = user.telephone || '';
+        const fullName = `${user.lastName} ${user.name} ${user.patronymic}`;
         
         const userData: UserData = {
           fullName: fullName,
-          fullNameGenitive: '',
-          group: student.numberGroup.toString(),
-          course: course,
+          fullNameGenitive: getGenitiveCase(fullName),
+          group: (user as any).numberGroup?.toString() || 'Неизвестно',
+          course: 'Неизвестно',
           phone: userPhone,
           departmentHead: 'Голубева Галина Анатольевна'
         };
@@ -399,16 +376,15 @@ export const DocumentsSection: React.FC = () => {
 
       } catch (error) {
         console.error('Ошибка загрузки данных пользователя:', error);
-        const student = user as any;
-        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+        const fullName = `${user.lastName} ${user.name} ${user.patronymic}`;
         const fullNameGenitive = getGenitiveCase(fullName);
         
         setUserData({
           fullName: fullName,
           fullNameGenitive: fullNameGenitive,
-          group: student.numberGroup?.toString() || 'Неизвестно',
+          group: (user as any).numberGroup?.toString() || 'Неизвестно',
           course: 'Неизвестно',
-          phone: student.telephone || '',
+          phone: user.telephone || '',
           departmentHead: 'Голубева Галина Анатольевна'
         });
       }
@@ -435,7 +411,7 @@ export const DocumentsSection: React.FC = () => {
     // Находим связи для выбранного предмета
     const subjectRelations = teacherSubjects.filter(ts => ts.idSubject === selectedSubjectId);
     
-    // Получаем ID преподавателей для этого предмета (исправленная версия)
+    // Получаем ID преподавателей для этого предмета
     const teacherIdsSet = new Set<number>();
     subjectRelations.forEach(ts => {
       if (ts.idTeacher) {
@@ -465,7 +441,7 @@ export const DocumentsSection: React.FC = () => {
       teacher: '',
       month: '',
       hours: '',
-      fullNameGenitive: ''
+      fullNameGenitive: userData?.fullNameGenitive || ''
     });
     setAvailableTeachers([]);
   };
@@ -484,50 +460,50 @@ export const DocumentsSection: React.FC = () => {
 
   // Функция для получения названия месяца по номеру
   const getMonthName = (monthNumber: number) => {
-  const monthsGenitive = [
-    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-  ];
-  return monthsGenitive[monthNumber - 1];
-};
-
-// Функция для преобразования месяца из именительного в родительный падеж
-const getMonthGenitive = (monthNominative: string): string => {
-  const monthMap: { [key: string]: string } = {
-    'январь': 'января',
-    'февраль': 'февраля',
-    'март': 'марта',
-    'апрель': 'апреля',
-    'май': 'мая',
-    'июнь': 'июня',
-    'июль': 'июля',
-    'август': 'августа',
-    'сентябрь': 'сентября',
-    'октябрь': 'октября',
-    'ноябрь': 'ноября',
-    'декабрь': 'декабря'
+    const monthsGenitive = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    return monthsGenitive[monthNumber - 1];
   };
-  return monthMap[monthNominative] || monthNominative;
-};
 
-// Функция для преобразования месяца из именительного в предложный падеж
-const getMonthPrepositional = (monthNominative: string): string => {
-  const monthMap: { [key: string]: string } = {
-    'январь': 'январе',
-    'февраль': 'феврале',
-    'март': 'марте',
-    'апрель': 'апреле',
-    'май': 'мае',
-    'июнь': 'июне',
-    'июль': 'июле',
-    'август': 'августе',
-    'сентябрь': 'сентябре',
-    'октябрь': 'октябре',
-    'ноябрь': 'ноябре',
-    'декабрь': 'декабре'
+  // Функция для преобразования месяца из именительного в родительный падеж
+  const getMonthGenitive = (monthNominative: string): string => {
+    const monthMap: { [key: string]: string } = {
+      'январь': 'января',
+      'февраль': 'февраля',
+      'март': 'марта',
+      'апрель': 'апреля',
+      'май': 'мая',
+      'июнь': 'июня',
+      'июль': 'июля',
+      'август': 'августа',
+      'сентябрь': 'сентября',
+      'октябрь': 'октября',
+      'ноябрь': 'ноября',
+      'декабрь': 'декабря'
+    };
+    return monthMap[monthNominative] || monthNominative;
   };
-  return monthMap[monthNominative] || monthNominative;
-};
+
+  // Функция для преобразования месяца из именительного в предложный падеж
+  const getMonthPrepositional = (monthNominative: string): string => {
+    const monthMap: { [key: string]: string } = {
+      'январь': 'январе',
+      'февраль': 'феврале',
+      'март': 'марте',
+      'апрель': 'апреле',
+      'май': 'мае',
+      'июнь': 'июне',
+      'июль': 'июле',
+      'август': 'августе',
+      'сентябрь': 'сентябре',
+      'октябрь': 'октябре',
+      'ноябрь': 'ноябре',
+      'декабрь': 'декабре'
+    };
+    return monthMap[monthNominative] || monthNominative;
+  };
 
   // Форматирование даты для документа
   const formatDateForDocument = (dateString: string) => {
@@ -564,8 +540,8 @@ const getMonthPrepositional = (monthNominative: string): string => {
       });
 
       // Загружаем документ и получаем ответ
-      const uploadResponse = await apiService.uploadDocument(file, student.id, selectedDocumentType);
-      console.log('Upload response:', uploadResponse);
+      await apiService.uploadDocument(file, student.id, selectedDocumentType);
+      console.log('Document uploaded successfully');
 
       // Ждем немного перед обновлением списка (серверу нужно время на обработку)
       setTimeout(async () => {
@@ -800,7 +776,6 @@ const getMonthPrepositional = (monthNominative: string): string => {
       
       await apiService.downloadDocument(documentId);
       
-      // Можно добавить уведомление об успешном скачивании
       console.log('Документ успешно скачан');
       
     } catch (error) {
@@ -816,7 +791,18 @@ const getMonthPrepositional = (monthNominative: string): string => {
     if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
       try {
         await apiService.deleteDocument(id);
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
+        
+        // Обновляем список документов после удаления
+        const student = user as any;
+        let studentDocuments: Document[] = [];
+
+        if (selectedDocumentType === 'Все документы') {
+          studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
+        } else {
+          studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
+        }
+        
+        setDocuments(studentDocuments);
         setError(null);
       } catch (error) {
         console.error('Ошибка удаления документа:', error);
@@ -1062,7 +1048,7 @@ const getMonthPrepositional = (monthNominative: string): string => {
                 </div>
               )}
 
-              {/* Поля для объяснительной записки о причинах пропусков занятия */}
+              {/* Поля для объяснительной записки о причины пропусков занятия */}
               {selectedDocumentType === 'Объяснительная записка о причинах пропусков занятия' && (
                 <div className="ds-form-section">
                   <h4>Данные для объяснительной записки</h4>
@@ -1135,12 +1121,16 @@ const getMonthPrepositional = (monthNominative: string): string => {
 
   if (!userData) {
     return (
-      <div className="ds-loading">
-        <div className="ds-loading-spinner"></div>
-        <p>Загрузка документов...</p>
+      <div className="document-section">
+        <div className="ds-content">
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+            Загрузка данных...
+          </div>
+        </div>
       </div>
     );
   }
+
   return (
     <div className="document-section">
       <div className="ds-header">
@@ -1172,7 +1162,11 @@ const getMonthPrepositional = (monthNominative: string): string => {
       {error && <div className="ds-error-message">{error}</div>}
 
       <div className="ds-content">
-        {filteredDocuments.length > 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+            Загрузка документов...
+          </div>
+        ) : filteredDocuments.length > 0 ? (
           <table className="ds-table">
             <thead>
               <tr>
@@ -1196,16 +1190,17 @@ const getMonthPrepositional = (monthNominative: string): string => {
                       <button 
                         className="ds-download-btn"
                         onClick={() => handleDownloadDocument(document.id)}
+                        disabled={isLoading}
                       >
                         Скачать
                       </button>
                       <button 
                         className="ds-delete-btn"
                         onClick={() => handleDeleteDocument(document.id)}
+                        disabled={isLoading}
                       >
                         Удалить
                       </button>
-                      
                     </div>
                   </td>
                 </tr>

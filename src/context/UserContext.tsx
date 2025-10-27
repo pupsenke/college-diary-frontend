@@ -7,7 +7,7 @@ export interface Student {
   lastName: string;
   login: string;
   numberGroup: number;
-  idGroup: number;
+  idGroup: number; 
   email?: string;
   telephone?: string;
   birthDate?: string;
@@ -23,7 +23,7 @@ export interface Staff {
   login: string;
   position: string;
   staffPosition?: any[];
-  userType: 'teacher' | 'metodist';
+  userType: 'teacher' | 'metodist'; // добавь потом остальные роли!!!
   email?: string;
   telephone?: string;
   birthDate?: string;
@@ -38,7 +38,6 @@ interface UserContextType {
   isStudent: boolean;
   isTeacher: boolean;
   isMetodist: boolean;
-  logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -48,38 +47,14 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  const setUserWithStorage = (user: User | null) => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-    setUser(user);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-  };
+  const [user, setUser] = useState<User | null>(null);
 
   const isStudent = user?.userType === 'student';
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      setUser: setUserWithStorage, 
-      isStudent, 
-      isTeacher, 
-      isMetodist,
-      logout 
-    }}>
+    <UserContext.Provider value={{ user, setUser, isStudent, isTeacher, isMetodist }}>
       {children}
     </UserContext.Provider>
   );

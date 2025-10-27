@@ -1,3 +1,5 @@
+import { cacheService } from './casheService';
+
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 export interface GroupData {
@@ -120,8 +122,16 @@ export interface UploadDocumentResponse {
 
 
 export const apiService = {
-  // Получение данных группы по ID
+  // Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
+    const cacheKey = `group_${groupId}`;
+    
+    // Пытаемся получить из кэша
+    const cached = cacheService.get<GroupData>(cacheKey, { ttl: 30 * 60 * 1000 }); // 30 минут
+    if (cached) {
+      return cached;
+    }
+
     console.log(`Fetching group data for ID: ${groupId}`);
     const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
     
@@ -133,11 +143,22 @@ export const apiService = {
     
     const data: GroupData = await response.json();
     console.log('Group data received:', data);
+    
+    // Сохраняем в кэш
+    cacheService.set(cacheKey, data, { ttl: 30 * 60 * 1000 });
+    
     return data;
   },
 
-  // Получение данных преподавателя
+  // Получение данных преподавателя с кэшированием
   async getTeacherData(teacherId: number): Promise<TeacherData> {
+    const cacheKey = `teacher_${teacherId}`;
+    
+    const cached = cacheService.get<TeacherData>(cacheKey, { ttl: 60 * 60 * 1000 }); // 1 час
+    if (cached) {
+      return cached;
+    }
+
     console.log(`Fetching teacher data for ID: ${teacherId}`);
     const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`);
     
@@ -149,11 +170,21 @@ export const apiService = {
     
     const data: TeacherData = await response.json();
     console.log('Teacher data received:', data);
+    
+    cacheService.set(cacheKey, data, { ttl: 60 * 60 * 1000 });
+    
     return data;
   },
 
-  // Получение предмета по ID
+  // Получение предмета по ID с кэшированием
   async getSubjectById(subjectId: number): Promise<any> {
+    const cacheKey = `subject_${subjectId}`;
+    
+    const cached = cacheService.get<any>(cacheKey, { ttl: 60 * 60 * 1000 }); // 1 час
+    if (cached) {
+      return cached;
+    }
+
     console.log(`Fetching subject data for ID: ${subjectId}`);
     const response = await fetch(`${API_BASE_URL}/subjects/id/${subjectId}`);
     
@@ -165,6 +196,9 @@ export const apiService = {
     
     const data = await response.json();
     console.log('Subject data received:', data);
+    
+    cacheService.set(cacheKey, data, { ttl: 60 * 60 * 1000 });
+    
     return data;
   },
 
@@ -226,8 +260,15 @@ export const apiService = {
   //   return data;
   // },
 
-  // Получение оценок студента
+  // Получение оценок студента с кэшированием
   async getStudentMarks(studentId: number): Promise<StudentMark[]> {
+    const cacheKey = `marks_${studentId}`;
+    
+    const cached = cacheService.get<StudentMark[]>(cacheKey, { ttl: 10 * 60 * 1000 }); // 10 минут
+    if (cached) {
+      return cached;
+    }
+
     console.log(`Fetching student marks for ID: ${studentId}`);
     const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
     
@@ -239,6 +280,9 @@ export const apiService = {
     
     const data: StudentMark[] = await response.json();
     console.log('Student marks received:', data);
+    
+    cacheService.set(cacheKey, data, { ttl: 10 * 60 * 1000 });
+    
     return data;
   },
 
@@ -293,8 +337,15 @@ export const apiService = {
 
   // === ДОКУМЕНТЫ ===
 
-  // Получение всех документов
+  // Получение всех документов с кэшированием
   async getAllDocuments(): Promise<Document[]> {
+    const cacheKey = 'all_documents';
+    
+    const cached = cacheService.get<Document[]>(cacheKey, { ttl: 15 * 60 * 1000 }); // 15 минут
+    if (cached) {
+      return cached;
+    }
+
     console.log('Fetching all documents');
     const response = await fetch(`${API_BASE_URL}/paths`);
     
@@ -306,9 +357,11 @@ export const apiService = {
     
     const data: Document[] = await response.json();
     console.log('All documents received:', data);
+    
+    cacheService.set(cacheKey, data, { ttl: 15 * 60 * 1000 });
+    
     return data;
   },
-
   // Получение документов по типу
   async getDocumentsByType(type: string): Promise<Document[]> {
     console.log(`Fetching documents by type: ${type}`);

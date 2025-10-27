@@ -1,10 +1,11 @@
+// src/pages/StudentPage.tsx
 import React, { useState, useEffect } from 'react';
 import { Header } from '../st-components/HeaderStudent';
 import { AttendanceSection } from '../st-components/AttendanceSection';
 import { PerformanceSection } from '../st-components/PerformanceSection';
 import { PersonalCabinet } from '../st-components/PersonalCabinet';
 import { DocumentsSection } from '../st-components/DocumentSection';
-import { useUser } from '../context/UserContext';
+import { useUser, Student } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSection';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -21,7 +22,6 @@ export const StudentPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Новые состояния для статистики
   const [attendancePercentage, setAttendancePercentage] = useState<number>(0);
   const [averageGrade, setAverageGrade] = useState<number>(0);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
@@ -38,14 +38,12 @@ export const StudentPage: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
-  // Функция для смены вкладки
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     searchParams.set('tab', tab);
     setSearchParams(searchParams);
   };
 
-  // Функция для форматирования ФИО куратора
   const formatCuratorName = (curator: TeacherData | null) => {
     if (!curator) return '';
     
@@ -56,7 +54,6 @@ export const StudentPage: React.FC = () => {
     return `${lastName} ${firstName}${middleName}`.trim();
   };
 
-  // Функция для расчета среднего балла из оценок
   const calculateAverageGrade = (marks: StudentMark[]): number => {
     if (!marks || marks.length === 0) return 0;
 
@@ -77,7 +74,6 @@ export const StudentPage: React.FC = () => {
     return gradeCount > 0 ? parseFloat((totalGrade / gradeCount).toFixed(1)) : 0;
   };
 
-  // Функция для расчета процента посещаемости
   const calculateAttendancePercentage = (marks: StudentMark[]): number => {
     if (!marks || marks.length === 0) return 0;
 
@@ -107,15 +103,14 @@ export const StudentPage: React.FC = () => {
         return;
       }
 
-      const student = user;
+      const student = user as Student;
       console.log('Student data:', student);
       
       setLoading(true);
       setError(null);
 
       try {
-        // Получаем ID группы из данных студента
-        const groupId = (student as any).idGroup;
+        const groupId = student.idGroup;
         console.log('Loading group data for ID:', groupId);
 
         if (!groupId) {
@@ -163,7 +158,6 @@ export const StudentPage: React.FC = () => {
           setAttendancePercentage(attendancePercent);
         } catch (marksError) {
           console.warn('Could not load student marks for statistics:', marksError);
-          // Устанавливаем значения по умолчанию если не удалось загрузить оценки
           setAverageGrade(0);
           setAttendancePercentage(0);
         }
@@ -211,6 +205,8 @@ export const StudentPage: React.FC = () => {
         </div>
       );
     }
+
+    const student = user as Student;
 
     switch (activeTab) {
       case 'attendance':
@@ -290,7 +286,7 @@ export const StudentPage: React.FC = () => {
     );
   }
 
-  const student = user;
+  const student = user as Student;
 
   return (
     <div className="st-container">
@@ -323,7 +319,6 @@ export const StudentPage: React.FC = () => {
                 <p className="st-user-patronymic">{student.patronymic}</p>
                 <p className="st-user-role">Студент</p>
                 
-                {/* Номер группы */}
                 <p className="st-user-group">
                   <strong>Группа:</strong>{' '}
                   {loading ? (
@@ -333,7 +328,6 @@ export const StudentPage: React.FC = () => {
                   )}
                 </p>
                 
-                {/* Специальность */}
                 <p className="st-user-speciality">
                   <strong>Специальность:</strong>{' '}
                   {loading ? (
@@ -343,7 +337,6 @@ export const StudentPage: React.FC = () => {
                   )}
                 </p>
                 
-                {/* Куратор */}
                 <p className="st-user-curator">
                   <strong>Куратор:</strong>{' '}
                   {loading ? (
@@ -376,17 +369,13 @@ export const StudentPage: React.FC = () => {
             <div className="st-sidebar-footer">
               <div className="st-quick-stats">
                 <div className="st-stat-item">
-                  <p 
-                    className="st-stat-value"
-                  >
+                  <p className="st-stat-value">
                     {loading ? '...' : `${attendancePercentage}%`}
                   </p>
                   <p className="st-stat-label">Посещаемость</p>
                 </div>
                 <div className="st-stat-item">
-                  <p 
-                    className="st-stat-value"
-                  >
+                  <p className="st-stat-value">
                     {loading ? '...' : (averageGrade > 0 ? averageGrade.toFixed(1) : '0.0')}
                   </p>
                   <p className="st-stat-label">Средний балл</p>

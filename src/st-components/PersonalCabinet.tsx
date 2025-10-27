@@ -1,7 +1,9 @@
+// src/st-components/PersonalCabinet.tsx
 import React, { useState, useEffect } from 'react';
-import { useUser, Student } from '../context/UserContext';
+import { useUser, Student } from '../context/UserContext'; // Добавляем импорт Student
 import { apiService } from '../services/studentApiService';
 import './PersonalCabinetStyle.css';
+import { useCachedData } from '../hooks/useCachedData'; // Добавляем импорт хука
 
 interface UserFormData {
   firstName: string;
@@ -62,6 +64,36 @@ export const PersonalCabinet: React.FC = () => {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Приводим тип пользователя к Student для доступа к idGroup
+  const student = user as Student;
+
+  // Кэширование данных группы
+  const { 
+    data: cachedGroupData, 
+    loading: groupLoading, 
+    error: groupError,
+    isCached: isGroupCached 
+  } = useCachedData(
+    `group_${student?.idGroup}`,
+    () => apiService.getGroupData(student.idGroup),
+    { 
+      ttl: 30 * 60 * 1000, // 30 минут
+      enabled: !!student?.idGroup && isStudent
+    }
+  );
+
+  // Функция для обновления состояния группы
+  const updateGroupState = (groupData: any) => {
+    setGroupData({
+      group: groupData.numberGroup.toString(),
+      course: groupData.course.toString(),
+      admissionYear: groupData.admissionYear.toString(),
+      formEducation: groupData.formEducation,
+      specialty: groupData.specialty,
+      profile: groupData.profile
+    });
+  };
+
   useEffect(() => {
     if (user) {
       const studentData = {
@@ -77,28 +109,37 @@ export const PersonalCabinet: React.FC = () => {
       setUserData(studentData);
       setOriginalData(studentData);
 
-      if (isStudent && 'idGroup' in user && user.idGroup) {
-        fetchGroupData(user.idGroup);
+      if (isStudent && student?.idGroup) {
+        fetchGroupData(student.idGroup);
       }
     }
-  }, [user, isStudent]);
+  }, [user, isStudent, student]);
 
   const fetchGroupData = async (groupId: number) => {
     try {
       setLoading(true);
-      const groupData = await apiService.getGroupData(groupId);
       
-      setGroupData({
-        group: groupData.numberGroup.toString(),
-        course: groupData.course.toString(),
-        admissionYear: groupData.admissionYear.toString(),
-        formEducation: groupData.formEducation,
-        specialty: groupData.specialty,
-        profile: groupData.profile
-      });
+      // Используем кэшированные данные
+      if (cachedGroupData) {
+        updateGroupState(cachedGroupData);
+        setLoading(false);
+        return;
+      }
+
+      // Если нет в кэше, загружаем
+      const groupData = await apiService.getGroupData(groupId);
+      updateGroupState(groupData);
+      
     } catch (err) {
       console.error('Ошибка при загрузке данных группы:', err);
-      setError('Не удалось загрузить данные группы');
+      
+      // Если есть ошибка, но данные в кэше - используем их
+      if (cachedGroupData) {
+        updateGroupState(cachedGroupData);
+        setError('Используются кэшированные данные. Данные могут быть устаревшими.');
+      } else {
+        setError('Не удалось загрузить данные группы');
+      }
     } finally {
       setLoading(false);
     }
@@ -355,6 +396,7 @@ export const PersonalCabinet: React.FC = () => {
 
   return (
     <div className="personal-cabinet">
+
       <div className="pc-header">
         {!isEditing ? (
           <button 
