@@ -1,12 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { UserProvider } from './context/UserContext';
 import { LoginPage } from './pages/LoginPage';
 import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
-import { UserProvider } from './context/UserContext';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { TeacherDashboard } from './th-components/TeacherDashboard';
 import { MetodistPage } from './pages/MetodistPage';
+import { ProtectedRoute } from './st-components/ProtectedRoute';
 
 function App() {
   return (
@@ -14,11 +13,36 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/student" element={<StudentPage />} />
-          <Route path="/teacher" element={<TeacherPage />} />
-          <Route path="/metodist" element={<MetodistPage />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/" element={<LoginPage />} />
+          
+          <Route 
+            path="/student/*" 
+            element={
+              <ProtectedRoute requiredUserType="student">
+                <StudentPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/teacher/*" 
+            element={
+              <ProtectedRoute requiredUserType="teacher">
+                <TeacherPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/metodist/*" 
+            element={
+              <ProtectedRoute requiredUserType="metodist">
+                <MetodistPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </UserProvider>

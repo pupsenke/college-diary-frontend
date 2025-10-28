@@ -32,18 +32,18 @@ export const LoginPage: React.FC = () => {
       );
 
       if (studentResponse.ok) {
-  const studentData = await studentResponse.json();
-  if (studentData && studentData.id) {
-    // Получение данных группы чтобы получить numberGroup
-    let numberGroup = 0;
-    try {
-      const groupData = await apiService.getGroupData(studentData.idGroup);
-      numberGroup = groupData.numberGroup;
-    } catch (error) {
-      console.error('Error fetching group data:', error);
+        const studentData = await studentResponse.json();
+        if (studentData && studentData.id) {
+        // Получение данных группы чтобы получить numberGroup
+        let numberGroup = 0;
+        try {
+          const groupData = await apiService.getGroupData(studentData.idGroup);
+          numberGroup = groupData.numberGroup;
+        } catch (error) {
+          console.error('Error fetching group data:', error);
 
-      numberGroup = studentData.idGroup; // временное значение
-    }
+          numberGroup = studentData.idGroup; // временное значение
+        }
 
     const userData = {
       id: studentData.id,

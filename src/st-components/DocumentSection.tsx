@@ -1,10 +1,11 @@
-// src/st-components/DocumentSection.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { apiService, Document } from '../services/studentApiService';
+import { useStudentDocuments, useStudentDocumentsByType } from '../hooks/useDocuments';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
+
 import "./DocumentSectionStyle.css"
 
 interface UserData {
@@ -44,13 +45,11 @@ interface Teacher {
 
 export const DocumentsSection: React.FC = () => {
   const { user, isStudent } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState('Все документы');
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Новые состояния для предметов и преподавателей
   const [teacherSubjects, setTeacherSubjects] = useState<any[]>([]);
@@ -71,6 +70,52 @@ export const DocumentsSection: React.FC = () => {
     hours: '',
     fullNameGenitive: ''
   });
+
+  // Используем кэшированные хуки для документов
+  const studentId = (user as any)?.id;
+  
+  const {
+    data: allDocuments,
+    loading: allDocumentsLoading,
+    error: allDocumentsError,
+    isCached: allDocumentsCached,
+    refresh: refreshAllDocuments
+  } = useStudentDocuments(studentId);
+  
+  const {
+    data: typedDocuments,
+    loading: typedDocumentsLoading,
+    error: typedDocumentsError,
+    isCached: typedDocumentsCached,
+    refresh: refreshTypedDocuments
+  } = useStudentDocumentsByType(
+    studentId, 
+    selectedDocumentType === 'Все документы' ? undefined : selectedDocumentType
+  );
+
+  // Определяем какие данные использовать
+  const documents = selectedDocumentType === 'Все документы' 
+    ? allDocuments || [] 
+    : typedDocuments || [];
+  
+  const loading = selectedDocumentType === 'Все документы' 
+    ? allDocumentsLoading 
+    : typedDocumentsLoading;
+
+  const isCached = selectedDocumentType === 'Все документы' 
+    ? allDocumentsCached 
+    : typedDocumentsCached;
+
+  // Обработка ошибок из хуков
+  useEffect(() => {
+    if (allDocumentsError) {
+      setError(allDocumentsError);
+    } else if (typedDocumentsError) {
+      setError(typedDocumentsError);
+    } else {
+      setError(null);
+    }
+  }, [allDocumentsError, typedDocumentsError]);
 
   // Типы документов
   const documentTypes = [
@@ -94,273 +139,37 @@ export const DocumentsSection: React.FC = () => {
            selectedDocumentType === 'Заявление на отчисление в связи с переводом';
   };
 
-  // Загрузка документов студента
-  useEffect(() => {
-    const loadDocuments = async () => {
-      if (!user || !isStudent) return;
-      
-      try {
-        setLoading(true);
-        const student = user as any;
-        let studentDocuments: Document[] = [];
-
-        if (selectedDocumentType === 'Все документы') {
-          // Загружаем все документы студента
-          studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
-        } else {
-          // Загружаем документы только определенного типа
-          studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
-        }
-        
-        setDocuments(studentDocuments);
-        setError(null);
-      } catch (error) {
-        console.error('Ошибка загрузки документов:', error);
-        setError('Не удалось загрузить документы');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDocuments();
-  }, [user, isStudent, selectedDocumentType]);
-
-  // Загрузка данных о предметах и преподавателях
-  useEffect(() => {
-    const loadTeacherSubjects = async () => {
-      if (!user || !isStudent) return;
-      
-      try {
-        const student = user as any;
-        
-        // Загружаем связи преподавателей и предметов
-        const teacherSubjectsData = await apiService.getTeacherSubjects(student.id);
-        setTeacherSubjects(teacherSubjectsData);
-        
-        // Получаем уникальные ID предметов
-        const subjectIdsSet = new Set<number>();
-        teacherSubjectsData.forEach(ts => subjectIdsSet.add(ts.idSubject));
-        const subjectIds = Array.from(subjectIdsSet);
-        
-        // Загружаем информацию о предметах
-        const subjectsData: Subject[] = [];
-        for (const subjectId of subjectIds) {
-          try {
-            const subject = await apiService.getSubjectById(subjectId);
-            subjectsData.push(subject);
-          } catch (error) {
-            console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
-          }
-        }
-        setSubjects(subjectsData);
-        
-        // Загружаем информацию о преподавателях
-        const teacherIdsSet = new Set<number>();
-        teacherSubjectsData.forEach(ts => {
-          if (ts.idTeacher) {
-            teacherIdsSet.add(ts.idTeacher);
-          }
-        });
-        const teacherIds = Array.from(teacherIdsSet);
-        
-        const teachersData: Teacher[] = [];
-        for (const teacherId of teacherIds) {
-          try {
-            const teacher = await apiService.getTeacherData(teacherId);
-            teachersData.push(teacher);
-          } catch (error) {
-            console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
-          }
-        }
-        setTeachers(teachersData);
-        
-      } catch (error) {
-        console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
-      }
-    };
-
-    loadTeacherSubjects();
-  }, [user, isStudent]);
-
-  // Функция для преобразования ФИО в родительный падеж
-  const getGenitiveCase = (fullName: string): string => {
-    if (!fullName || typeof fullName !== 'string') return fullName;
-    
-    const parts = fullName.trim().split(/\s+/).filter(part => part.trim() !== '');
-    if (parts.length < 3) return fullName;
-    
-    let [lastName, firstName, patronymic] = parts;
-
-    // Функция для исправления опечаток
-    const fixTypos = (name: string): string => {
-      const lowerName = name.toLowerCase();
-      
-      // Исправляем опечатки
-      if (lowerName === 'шкипероваа') return 'Шкиперова';
-      if (lowerName === 'анытольевна') return 'Анатольевна';
-      if (lowerName === 'александравна') return 'Александровна';
-      if (lowerName === 'сергеевнаа') return 'Сергеевна';
-      if (lowerName === 'ивановнаа') return 'Ивановна';
-      if (lowerName === 'петровнаа') return 'Петровна';
-      if (lowerName === 'сидоровнаа') return 'Сидоровна';
-      if (lowerName === 'валерьевич') return 'Валерьевич';
-      if (lowerName === 'сергеевичч') return 'Сергеевич';
-      if (lowerName === 'ивановичч') return 'Иванович';
-      if (lowerName === 'петровичч') return 'Петрович';
-      
-      return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-    };
-
-    // Применяем исправление опечаток
-    lastName = fixTypos(lastName);
-    firstName = fixTypos(firstName);
-    patronymic = fixTypos(patronymic);
-
-    // Склонение фамилий
-    const declineLastName = (name: string): string => {
-      const lowerName = name.toLowerCase();
-      
-      // Женские фамилии
-      if (lowerName.endsWith('ая')) return name.slice(0, -2) + 'ой';
-      if (lowerName.endsWith('кая')) return name.slice(0, -3) + 'кой';
-      if (lowerName.endsWith('ская')) return name.slice(0, -3) + 'ской';
-      if (lowerName.endsWith('цкая')) return name.slice(0, -3) + 'цкой';
-      
-      // Фамилии на -ова, -ева, -ина, -ына
-      if (lowerName.endsWith('ова') || lowerName.endsWith('ева') || 
-          lowerName.endsWith('ина') || lowerName.endsWith('ына')) {
-        return name.slice(0, -1) + 'ой';
-      }
-      
-      // Фамилии на -а (женские)
-      if (lowerName.endsWith('а') && !lowerName.endsWith('ова') && 
-          !lowerName.endsWith('ева') && !lowerName.endsWith('ина') && !lowerName.endsWith('ына')) {
-        return name.slice(0, -1) + 'ой';
-      }
-      
-      // Мужские фамилии
-      if (lowerName.endsWith('ов') || lowerName.endsWith('ев') || 
-          lowerName.endsWith('ин') || lowerName.endsWith('ын')) {
-        return name + 'а';
-      }
-      if (lowerName.endsWith('ский') || lowerName.endsWith('цкий') || 
-          lowerName.endsWith('ой') || lowerName.endsWith('ий') || lowerName.endsWith('ый')) {
-        return name.slice(0, -2) + 'ого';
-      }
-      
-      // Общие случаи
-      if (lowerName.endsWith('я')) return name.slice(0, -1) + 'и';
-      if (lowerName.endsWith('ь')) return name.slice(0, -1) + 'я';
-      
-      return name + 'а';
-    };
-
-    // Склонение имен
-    const declineFirstName = (name: string): string => {
-      const lowerName = name.toLowerCase();
-      
-      // Специальные случаи
-      const specialCases: { [key: string]: string } = {
-        'павел': 'Павла',
-        'лев': 'Льва', 
-        'пётр': 'Петра',
-        'николай': 'Николая',
-        'георгий': 'Георгия',
-        'дмитрий': 'Дмитрия',
-        'евгений': 'Евгения',
-        'валерий': 'Валерия',
-        'валерия': 'Валерии',
-        'юрий': 'Юрия',
-        'григорий': 'Григория',
-        'вячеслав': 'Вячеслава',
-        'яков': 'Якова',
-        'макар': 'Макара',
-        'прокофий': 'Прокофия',
-        'любовь': 'Любови',
-        'нелли': 'Нелли',
-        'николь': 'Николь',
-        'рашель': 'Рашели',
-        'софья': 'Софьи',
-        'ольга': 'Ольги',
-        'елена': 'Елены',
-        'светлана': 'Светланы',
-        'марина': 'Марины',
-        'алёна': 'Алёны',
-        'анна': 'Анны',
-        'мария': 'Марии',
-        'екатерина': 'Екатерины',
-        'наталья': 'Натальи',
-        'ирина': 'Ирины',
-        'татьяна': 'Татьяны'
-      };
-      
-      if (specialCases[lowerName]) {
-        return specialCases[lowerName];
-      }
-      
-      // Женские имена
-      if (lowerName.endsWith('ия')) return name.slice(0, -1) + 'и';
-      if (lowerName.endsWith('ья')) return name.slice(0, -2) + 'ьи';
-      if (lowerName.endsWith('а')) return name.slice(0, -1) + 'ы';
-      if (lowerName.endsWith('я')) return name.slice(0, -1) + 'и';
-      
-      // Мужские имена  
-      if (lowerName.endsWith('й')) return name.slice(0, -1) + 'я';
-      if (lowerName.endsWith('ь')) return name.slice(0, -1) + 'я';
-      if (lowerName.endsWith('ей') || lowerName.endsWith('ий')) {
-        return name.slice(0, -2) + 'ея';
-      }
-      if (lowerName.endsWith('ел') || lowerName.endsWith('ил')) return name + 'а';
-      
-      return name + 'а';
-    };
-
-    // Склонение отчеств
-    const declinePatronymic = (name: string): string => {
-      const lowerName = name.toLowerCase();
-      
-      // Мужские отчества
-      if (lowerName.endsWith('ич')) return name + 'а';
-      
-      // Женские отчества
-      if (lowerName.endsWith('на')) {
-        if (lowerName.endsWith('вна') || lowerName.endsWith('чна')) {
-          return name.slice(0, -2) + 'ы';
-        }
-        return name.slice(0, -1) + 'ы';
-      }
-      
-      return name + 'а';
-    };
-
-    try {
-      const lastNameGenitive = declineLastName(lastName);
-      const firstNameGenitive = declineFirstName(firstName);
-      const patronymicGenitive = declinePatronymic(patronymic);
-
-      const result = `${lastNameGenitive} ${firstNameGenitive} ${patronymicGenitive}`;
-      
-      return result;
-    } catch (error) {
-      console.error('Ошибка при склонении ФИО:', error, fullName);
-      return fullName;
-    }
-  };
-
   // Загрузка данных пользователя
   useEffect(() => {
     const loadUserData = async () => {
       if (!user || !isStudent) return;
 
       try {
+        const student = user as any;
         const userPhone = user.telephone || '';
         const fullName = `${user.lastName} ${user.name} ${user.patronymic}`;
         
+        // Загружаем данные группы для получения курса и номера группы
+        let groupNumber = 'Неизвестно';
+        let course = 'Неизвестно';
+        
+        try {
+          const groupData = await apiService.getGroupData(student.idGroup);
+          groupNumber = groupData.numberGroup?.toString() || 'Неизвестно';
+          course = groupData.course?.toString() || 'Неизвестно';
+          console.log('Group data loaded:', { groupNumber, course });
+        } catch (groupError) {
+          console.error('Ошибка загрузки данных группы:', groupError);
+          // Используем данные из пользователя как fallback
+          groupNumber = student.numberGroup?.toString() || 'Неизвестно';
+          course = student.course?.toString() || 'Неизвестно';
+        }
+
         const userData: UserData = {
           fullName: fullName,
-          fullNameGenitive: getGenitiveCase(fullName),
-          group: (user as any).numberGroup?.toString() || 'Неизвестно',
-          course: 'Неизвестно',
+          fullNameGenitive: formData.fullNameGenitive,
+          group: groupNumber,
+          course: course,
           phone: userPhone,
           departmentHead: 'Голубева Галина Анатольевна'
         };
@@ -374,16 +183,19 @@ export const DocumentsSection: React.FC = () => {
           }));
         }
 
+        console.log('User data loaded:', userData);
+
       } catch (error) {
         console.error('Ошибка загрузки данных пользователя:', error);
         const fullName = `${user.lastName} ${user.name} ${user.patronymic}`;
-        const fullNameGenitive = getGenitiveCase(fullName);
         
+        // Fallback данные
+        const student = user as any;
         setUserData({
           fullName: fullName,
-          fullNameGenitive: fullNameGenitive,
-          group: (user as any).numberGroup?.toString() || 'Неизвестно',
-          course: 'Неизвестно',
+          fullNameGenitive: formData.fullNameGenitive,
+          group: student.numberGroup?.toString() || 'Неизвестно',
+          course: student.course?.toString() || 'Неизвестно',
           phone: user.telephone || '',
           departmentHead: 'Голубева Галина Анатольевна'
         });
@@ -391,6 +203,104 @@ export const DocumentsSection: React.FC = () => {
     };
 
     loadUserData();
+  }, [user, isStudent]);
+
+  // Функция для принудительного обновления документов
+  const refreshDocuments = useCallback(() => {
+    setError(null);
+    console.log('Manual refresh triggered for type:', selectedDocumentType);
+    
+    if (selectedDocumentType === 'Все документы') {
+      refreshAllDocuments();
+    } else {
+      refreshTypedDocuments();
+    }
+    
+    // Также инвалидируем кэш на уровне API
+    apiService.invalidateDocumentCache(studentId, selectedDocumentType);
+  }, [selectedDocumentType, studentId, refreshAllDocuments, refreshTypedDocuments]);
+
+  // Загрузка данных о предметах и преподавателях
+  useEffect(() => {
+    const loadTeacherSubjects = async () => {
+      if (!user || !isStudent) return;
+      
+      try {
+        const student = user as any;
+        console.log('Loading teacher subjects for student:', student.id);
+        
+        // Получаем оценки студента чтобы узнать какие предметы у него есть
+        const studentMarks = await apiService.getStudentMarks(student.id);
+        console.log('Student marks:', studentMarks);
+        
+        // Из оценок получаем уникальные ID преподавателей
+        const teacherIdsSet = new Set<number>();
+        const subjectIdsSet = new Set<number>();
+        
+        studentMarks.forEach(mark => {
+          if (mark.stNameSubjectDTO.idTeacher) {
+            teacherIdsSet.add(mark.stNameSubjectDTO.idTeacher);
+          }
+          if (mark.stNameSubjectDTO.idSubject) {
+            subjectIdsSet.add(mark.stNameSubjectDTO.idSubject);
+          }
+        });
+        
+        const teacherIds = Array.from(teacherIdsSet);
+        const subjectIds = Array.from(subjectIdsSet);
+        
+        console.log('Found teacher IDs:', teacherIds);
+        console.log('Found subject IDs:', subjectIds);
+        
+        // Загружаем информацию о предметах
+        const subjectsData: Subject[] = [];
+        for (const subjectId of subjectIds) {
+          try {
+            const subject = await apiService.getSubjectById(subjectId);
+            subjectsData.push({
+              id: subjectId,
+              subjectName: subject.subjectName 
+            });
+          } catch (error) {
+            console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
+          }
+        }
+        setSubjects(subjectsData);
+        console.log('Subjects loaded:', subjectsData);
+        
+        // Загружаем информацию о преподавателях
+        const teachersData: Teacher[] = [];
+        for (const teacherId of teacherIds) {
+          try {
+            const teacher = await apiService.getTeacherData(teacherId);
+            teachersData.push({
+              id: teacherId,
+              name: teacher.name,
+              lastName: teacher.lastName,
+              patronymic: teacher.patronymic
+            });
+          } catch (error) {
+            console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
+          }
+        }
+        setTeachers(teachersData);
+        console.log('Teachers loaded:', teachersData);
+        
+        // Создаем связи преподавателей и предметов из оценок
+        const teacherSubjectsData = studentMarks.map(mark => ({
+          idTeacher: mark.stNameSubjectDTO.idTeacher,
+          idSubject: mark.stNameSubjectDTO.idSubject,
+          subjectName: mark.stNameSubjectDTO.nameSubject
+        }));
+        setTeacherSubjects(teacherSubjectsData);
+        console.log('Teacher subjects loaded:', teacherSubjectsData);
+        
+      } catch (error) {
+        console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
+      }
+    };
+
+    loadTeacherSubjects();
   }, [user, isStudent]);
 
   // Обработчик изменения предмета - обновляет список доступных преподавателей
@@ -539,29 +449,12 @@ export const DocumentsSection: React.FC = () => {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
       });
 
-      // Загружаем документ и получаем ответ
       await apiService.uploadDocument(file, student.id, selectedDocumentType);
-      console.log('Document uploaded successfully');
+      console.log('📁 Document uploaded, cache will be invalidated');
 
-      // Ждем немного перед обновлением списка (серверу нужно время на обработку)
-      setTimeout(async () => {
-        try {
-          let studentDocuments: Document[] = [];
-
-          if (selectedDocumentType === 'Все документы') {
-            studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
-          } else {
-            studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
-          }
-          
-          setDocuments(studentDocuments);
-          setError(null);
-          console.log('Documents list updated after upload');
-          
-        } catch (refreshError) {
-          console.error('Error refreshing documents:', refreshError);
-          setError('Документ создан, но не удалось обновить список');
-        }
+      // Ждем немного и обновляем данные
+      setTimeout(() => {
+        refreshDocuments();
       }, 1000);
 
     } catch (error) {
@@ -720,7 +613,6 @@ export const DocumentsSection: React.FC = () => {
         
         // Преобразуем ФИО преподавателя в родительный падеж
         const teacherFullName = `${selectedTeacher.lastName} ${selectedTeacher.name} ${selectedTeacher.patronymic}`;
-        const teacherGenitive = getGenitiveCase(teacherFullName);
         
         templateUrl = '/templates/lateness_explanation_template.docx';
         fileName = `${formData.documentTitle.replace(/\s+/g, '_')}.docx`;
@@ -730,7 +622,7 @@ export const DocumentsSection: React.FC = () => {
           group: userData.group,
           course: userData.course,
           subject: selectedSubject.subjectName,
-          teacher: teacherGenitive, // Используем ФИО в родительном падеже
+          teacher: teacherFullName, 
           reason: formatReason(formData.reason),
           currentDay: currentDate.day,
           currentMonth: currentDate.month,
@@ -791,19 +683,11 @@ export const DocumentsSection: React.FC = () => {
     if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
       try {
         await apiService.deleteDocument(id);
+        console.log('📁 Document deleted, cache invalidated');
         
-        // Обновляем список документов после удаления
-        const student = user as any;
-        let studentDocuments: Document[] = [];
-
-        if (selectedDocumentType === 'Все документы') {
-          studentDocuments = await apiService.fetchDocumentsByStudent(student.id);
-        } else {
-          studentDocuments = await apiService.getStudentDocumentsByType(student.id, selectedDocumentType);
-        }
+        // Обновляем список документов
+        refreshDocuments();
         
-        setDocuments(studentDocuments);
-        setError(null);
       } catch (error) {
         console.error('Ошибка удаления документа:', error);
         setError('Не удалось удалить документ с сервера');
@@ -1115,10 +999,6 @@ export const DocumentsSection: React.FC = () => {
     );
   };
 
-  const filteredDocuments = selectedDocumentType === 'Все документы' 
-    ? documents 
-    : documents.filter(doc => doc.type === selectedDocumentType);
-
   if (!userData) {
     return (
       <div className="document-section">
@@ -1149,24 +1029,24 @@ export const DocumentsSection: React.FC = () => {
             </select>
           </div>
           
-          <button 
-            className="ds-create-main-btn"
-            onClick={openModal}
-            disabled={selectedDocumentType === 'Все документы'}
-          >
-            Создать документ
-          </button>
+          <div>
+            <button 
+              className="ds-create-main-btn"
+              onClick={openModal}
+              disabled={selectedDocumentType === 'Все документы'}
+            >
+              Создать документ
+            </button>
+          </div>
         </div>
       </div>
-
-      {error && <div className="ds-error-message">{error}</div>}
 
       <div className="ds-content">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
             Загрузка документов...
           </div>
-        ) : filteredDocuments.length > 0 ? (
+        ) : documents.length > 0 ? (
           <table className="ds-table">
             <thead>
               <tr>
@@ -1179,7 +1059,7 @@ export const DocumentsSection: React.FC = () => {
             </thead>
 
             <tbody>
-              {filteredDocuments.map((document, index) => (
+              {documents.map((document, index) => (
                 <tr key={document.id}>
                   <td>{index + 1}.</td>
                   <td>{document.nameFile}</td>

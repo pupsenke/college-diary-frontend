@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface Student {
   id: number;
@@ -23,7 +23,7 @@ export interface Staff {
   login: string;
   position: string;
   staffPosition?: any[];
-  userType: 'teacher' | 'metodist'; // добавь потом остальные роли!!!
+  userType: 'teacher' | 'metodist';
   email?: string;
   telephone?: string;
   birthDate?: string;
@@ -32,12 +32,21 @@ export interface Staff {
 
 export type User = Student | Staff;
 
+// Интерфейс для сохраненной сессии
+interface UserSession {
+  user: User;
+  timestamp: number;
+  expiresAt: number;
+}
+
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   isStudent: boolean;
   isTeacher: boolean;
   isMetodist: boolean;
+  isLoading: boolean; // Добавляем состояние загрузки
+  logout: () => void; // Функция выхода
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -46,15 +55,151 @@ interface UserProviderProps {
   children: ReactNode;
 }
 
+// Ключи для localStorage
+const SESSION_STORAGE_KEY = 'user_session';
+const SESSION_DURATION = 60 * 60 * 1000; // 1 час в миллисекундах
+
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Начальное состояние загрузки
 
   const isStudent = user?.userType === 'student';
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
 
+  // Сохранение пользователя в сессию
+  const saveUserToSession = (userData: User) => {
+    const session: UserSession = {
+      user: userData,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + SESSION_DURATION
+    };
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    console.log('Сессия пользователя сохранена');
+  };
+
+  // Восстановление пользователя из сессии
+  const restoreUserFromSession = (): User | null => {
+    try {
+      const sessionData = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!sessionData) return null;
+
+      const session: UserSession = JSON.parse(sessionData);
+      
+      // Проверяем не истекла ли сессия
+      if (Date.now() > session.expiresAt) {
+        console.log('Сессия истекла');
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+        return null;
+      }
+
+      console.log('Сессия пользователя восстановлена');
+      return session.user;
+    } catch (error) {
+      console.error('Ошибка при восстановлении сессии:', error);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+  };
+
+  // Очистка сессии
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    console.log('Сессия очищена');
+  };
+
+  // Функция выхода
+  const logout = () => {
+    setUser(null);
+    clearSession();
+    console.log('Пользователь вышел из системы');
+  };
+
+  // Обновленная функция setUser с сохранением в сессию
+  const setUserWithSession = (userData: User | null) => {
+    if (userData) {
+      setUser(userData);
+      saveUserToSession(userData);
+    } else {
+      setUser(null);
+      clearSession();
+    }
+  };
+
+  // Восстановление сессии при монтировании компонента
+  useEffect(() => {
+    const initializeUser = async () => {
+      setIsLoading(true);
+      
+      try {
+        const savedUser = restoreUserFromSession();
+        
+        if (savedUser) {
+          // Можно добавить проверку валидности токена на сервере здесь
+          // Пока просто восстанавливаем пользователя из localStorage
+          setUser(savedUser);
+          console.log('Пользователь автоматически авторизован');
+        } else {
+          console.log('Сессия не найдена или истекла');
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Ошибка при инициализации пользователя:', error);
+        setUser(null);
+        clearSession();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeUser();
+  }, []);
+
+  // Автоматическое продление сессии при активности пользователя
+  useEffect(() => {
+    if (!user) return;
+
+    const handleUserActivity = () => {
+      const sessionData = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (sessionData && user) {
+        try {
+          const session: UserSession = JSON.parse(sessionData);
+          // Продлеваем сессию только если осталось меньше 30 минут
+          if (session.expiresAt - Date.now() < 30 * 60 * 1000) {
+            saveUserToSession(user);
+            console.log('Сессия продлена');
+          }
+        } catch (error) {
+          console.error('Ошибка при продлении сессии:', error);
+        }
+      }
+    };
+
+    // Слушаем события активности пользователя
+    const events = ['click', 'keypress', 'scroll', 'mousemove'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, { passive: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity);
+      });
+    };
+  }, [user]);
+
+  const value: UserContextType = {
+    user,
+    setUser: setUserWithSession,
+    isStudent,
+    isTeacher,
+    isMetodist,
+    isLoading,
+    logout
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser, isStudent, isTeacher, isMetodist }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );

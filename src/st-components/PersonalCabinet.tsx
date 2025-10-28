@@ -1,10 +1,11 @@
-// src/st-components/PersonalCabinet.tsx
-import React, { useState, useEffect } from 'react';
-import { useUser, Student } from '../context/UserContext'; // Добавляем импорт Student
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useUser, Student } from '../context/UserContext';
 import { apiService } from '../services/studentApiService';
 import './PersonalCabinetStyle.css';
-import { useCachedData } from '../hooks/useCachedData'; // Добавляем импорт хука
+import { useCachedData } from '../hooks/useCachedData';
+import { CACHE_TTL } from '../services/cacheConstants';
 
+// Выносим интерфейсы за пределы компонента
 interface UserFormData {
   firstName: string;
   lastName: string;
@@ -31,7 +32,8 @@ interface PasswordChangeData {
   confirmPassword: string;
 }
 
-export const PersonalCabinet: React.FC = () => {
+// Основной компонент
+const PersonalCabinetComponent: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { user, isStudent, setUser } = useUser();
@@ -67,33 +69,51 @@ export const PersonalCabinet: React.FC = () => {
   // Приводим тип пользователя к Student для доступа к idGroup
   const student = user as Student;
 
+  // Мемоизируем ключ для кэша
+  const groupCacheKey = useMemo(() => 
+    student?.idGroup ? `group_${student.idGroup}` : undefined, 
+    [student?.idGroup]
+  );
+
+  // Стабилизируем функцию получения данных группы
+  const fetchGroupDataFn = useCallback(() => {
+    if (!student?.idGroup) {
+      throw new Error('No group ID available');
+    }
+    return apiService.getGroupData(student.idGroup);
+  }, [student?.idGroup]);
+
   // Кэширование данных группы
   const { 
     data: cachedGroupData, 
     loading: groupLoading, 
     error: groupError,
-    isCached: isGroupCached 
+    isCached: isGroupCached,
+    refresh: refreshGroupData
   } = useCachedData(
-    `group_${student?.idGroup}`,
-    () => apiService.getGroupData(student.idGroup),
+    groupCacheKey,
+    fetchGroupDataFn,
     { 
-      ttl: 30 * 60 * 1000, // 30 минут
+      ttl: CACHE_TTL.GROUP_DATA,
       enabled: !!student?.idGroup && isStudent
     }
   );
 
   // Функция для обновления состояния группы
-  const updateGroupState = (groupData: any) => {
+  const updateGroupState = useCallback((groupData: any) => {
+    if (!groupData) return;
+    
     setGroupData({
-      group: groupData.numberGroup.toString(),
-      course: groupData.course.toString(),
-      admissionYear: groupData.admissionYear.toString(),
-      formEducation: groupData.formEducation,
-      specialty: groupData.specialty,
-      profile: groupData.profile
+      group: groupData.numberGroup?.toString() || '',
+      course: groupData.course?.toString() || '-',
+      admissionYear: groupData.admissionYear?.toString() || '-',
+      formEducation: groupData.formEducation || '-',
+      specialty: groupData.specialty || '-',
+      profile: groupData.profile || '-'
     });
-  };
+  }, []);
 
+  // Инициализация данных пользователя
   useEffect(() => {
     if (user) {
       const studentData = {
@@ -108,42 +128,24 @@ export const PersonalCabinet: React.FC = () => {
 
       setUserData(studentData);
       setOriginalData(studentData);
-
-      if (isStudent && student?.idGroup) {
-        fetchGroupData(student.idGroup);
-      }
     }
-  }, [user, isStudent, student]);
+  }, [user]);
 
-  const fetchGroupData = async (groupId: number) => {
-    try {
-      setLoading(true);
-      
-      // Используем кэшированные данные
-      if (cachedGroupData) {
-        updateGroupState(cachedGroupData);
-        setLoading(false);
-        return;
-      }
-
-      // Если нет в кэше, загружаем
-      const groupData = await apiService.getGroupData(groupId);
-      updateGroupState(groupData);
-      
-    } catch (err) {
-      console.error('Ошибка при загрузке данных группы:', err);
-      
-      // Если есть ошибка, но данные в кэше - используем их
-      if (cachedGroupData) {
-        updateGroupState(cachedGroupData);
-        setError('Используются кэшированные данные. Данные могут быть устаревшими.');
-      } else {
-        setError('Не удалось загрузить данные группы');
-      }
-    } finally {
-      setLoading(false);
+  // Обновление данных группы при изменении кэшированных данных
+  useEffect(() => {
+    if (cachedGroupData && isStudent) {
+      updateGroupState(cachedGroupData);
     }
-  };
+  }, [cachedGroupData, isStudent, updateGroupState]);
+
+  // Обработка ошибок загрузки группы
+  useEffect(() => {
+    if (groupError && !cachedGroupData) {
+      setError('Не удалось загрузить данные группы');
+    } else if (groupError && cachedGroupData) {
+      setError('Используются кэшированные данные. Данные могут быть устаревшими.');
+    }
+  }, [groupError, cachedGroupData]);
 
   const handlePasswordChange = async () => {
     if (!user) return;
@@ -193,22 +195,23 @@ export const PersonalCabinet: React.FC = () => {
     }
   };
 
-  const resetPasswordForm = () => {
+  const resetPasswordForm = useCallback(() => {
     setPasswordData({
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     });
-  };
+  }, []);
 
-  const handlePasswordModalOpen = () => {
+  const handlePasswordModalOpen = useCallback(() => {
     setShowPasswordModal(true);
     resetPasswordForm();
     setError(null);
-  };
+    setSuccessMessage(null);
+  }, [resetPasswordForm]);
 
   // Упрощенная функция экспорта в PDF без jspdf-autotable
-  const exportToPDF = () => {
+  const exportToPDF = useCallback(() => {
     // Создаем HTML контент для печати
     const printContent = `
       <!DOCTYPE html>
@@ -273,8 +276,7 @@ export const PersonalCabinet: React.FC = () => {
         printWindow.close();
       }, 250);
     }
-    
-  };
+  }, [userData, groupData, isStudent]);
 
   const handleSave = async () => {
     if (!user || !isStudent || !originalData) return;
@@ -352,35 +354,35 @@ export const PersonalCabinet: React.FC = () => {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (originalData) {
       setUserData(originalData);
     }
     setIsEditing(false);
     setError(null);
     setSuccessMessage(null);
-  };
+  }, [originalData]);
 
-  const handleChange = (field: keyof UserFormData, value: string) => {
+  const handleChange = useCallback((field: keyof UserFormData, value: string) => {
     setUserData(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleEditStart = () => {
+  const handleEditStart = useCallback(() => {
     setOriginalData(userData);
     setIsEditing(true);
     setError(null);
     setSuccessMessage(null);
-  };
+  }, [userData]);
 
-  const handlePasswordDataChange = (field: keyof PasswordChangeData, value: string) => {
+  const handlePasswordDataChange = useCallback((field: keyof PasswordChangeData, value: string) => {
     setPasswordData(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   if (!user) {
     return (
@@ -396,7 +398,6 @@ export const PersonalCabinet: React.FC = () => {
 
   return (
     <div className="personal-cabinet">
-
       <div className="pc-header">
         {!isEditing ? (
           <button 
@@ -664,3 +665,6 @@ export const PersonalCabinet: React.FC = () => {
     </div>
   );
 };
+
+// Экспорт под другим именем чтобы избежать циклических зависимостей
+export const PersonalCabinet = PersonalCabinetComponent;

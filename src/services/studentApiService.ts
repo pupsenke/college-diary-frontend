@@ -1,7 +1,6 @@
-import { cacheService } from './casheService';
-
+import { cacheService } from './cacheService';
+import { CACHE_TTL } from './cacheConstants';
 const API_BASE_URL = 'http://localhost:8080/api/v1';
-
 export interface GroupData {
   id: number;
   numberGroup: number;
@@ -12,8 +11,6 @@ export interface GroupData {
   profile: string;
   specialty: string;
 }
-
-
 
 export interface TeacherData {
   id: number;
@@ -39,7 +36,6 @@ export interface StudentData {
   email?: string;
 }
 
-
 // Интерфейсы для успеваемости
 export interface StudentMark {
   stNameSubjectDTO: {
@@ -57,6 +53,7 @@ export interface StudentMark {
   }>;
   certification: number | null;
 }
+
 export interface Grade {
   id: number;
   subject: string;
@@ -76,6 +73,7 @@ export interface GradeDetail {
   type: string;
   hasValue: boolean;
 }
+
 export interface SubjectMark {
   number: number;
   value: number;
@@ -120,18 +118,15 @@ export interface UploadDocumentResponse {
   message: string;
 }
 
-
 export const apiService = {
-  // Получение данных группы по ID с кэшированием
+// Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
     const cacheKey = `group_${groupId}`;
     
-    // Пытаемся получить из кэша
-    const cached = cacheService.get<GroupData>(cacheKey, { ttl: 30 * 60 * 1000 }); // 30 минут
+    const cached = cacheService.get<GroupData>(cacheKey, { ttl: CACHE_TTL.GROUP_DATA });
     if (cached) {
       return cached;
     }
-
     console.log(`Fetching group data for ID: ${groupId}`);
     const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
     
@@ -144,8 +139,7 @@ export const apiService = {
     const data: GroupData = await response.json();
     console.log('Group data received:', data);
     
-    // Сохраняем в кэш
-    cacheService.set(cacheKey, data, { ttl: 30 * 60 * 1000 });
+    cacheService.set(cacheKey, data, { ttl: CACHE_TTL.GROUP_DATA });
     
     return data;
   },
@@ -158,7 +152,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-
     console.log(`Fetching teacher data for ID: ${teacherId}`);
     const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`);
     
@@ -184,7 +177,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-
     console.log(`Fetching subject data for ID: ${subjectId}`);
     const response = await fetch(`${API_BASE_URL}/subjects/id/${subjectId}`);
     
@@ -244,22 +236,6 @@ export const apiService = {
 
   // === УСПЕВАЕМОСТЬ ===
 
-  // // Получение оценок студента
-  // async getStudentMarks(studentId: number): Promise<StudentMark[]> {
-  //   console.log(`Fetching student marks for ID: ${studentId}`);
-  //   const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
-    
-  //   if (!response.ok) {
-  //     const errorText = await response.text();
-  //     console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-  //     throw new Error(`Ошибка загрузки оценок студента: ${response.status}`);
-  //   }
-    
-  //   const data: StudentMark[] = await response.json();
-  //   console.log('Student marks received:', data);
-  //   return data;
-  // },
-
   // Получение оценок студента с кэшированием
   async getStudentMarks(studentId: number): Promise<StudentMark[]> {
     const cacheKey = `marks_${studentId}`;
@@ -268,7 +244,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-
     console.log(`Fetching student marks for ID: ${studentId}`);
     const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
     
@@ -341,60 +316,91 @@ export const apiService = {
   async getAllDocuments(): Promise<Document[]> {
     const cacheKey = 'all_documents';
     
-    const cached = cacheService.get<Document[]>(cacheKey, { ttl: 15 * 60 * 1000 }); // 15 минут
+    const cached = cacheService.get<Document[]>(cacheKey, { 
+      ttl: CACHE_TTL.DOCUMENTS
+    });
+    
     if (cached) {
+      console.log('Documents loaded from cache');
       return cached;
     }
 
-    console.log('Fetching all documents');
+    console.log('Fetching documents from server');
     const response = await fetch(`${API_BASE_URL}/paths`);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       throw new Error(`Ошибка загрузки документов: ${response.status}`);
     }
     
     const data: Document[] = await response.json();
-    console.log('All documents received:', data);
+    console.log('Documents received from server:', data.length);
     
-    cacheService.set(cacheKey, data, { ttl: 15 * 60 * 1000 });
+    cacheService.set(cacheKey, data, { 
+      ttl: CACHE_TTL.DOCUMENTS
+    });
     
-    return data;
-  },
-  // Получение документов по типу
-  async getDocumentsByType(type: string): Promise<Document[]> {
-    console.log(`Fetching documents by type: ${type}`);
-    
-    // Кодируем тип для URL (заменяем пробелы на %20)
-    const encodedType = encodeURIComponent(type);
-    const response = await fetch(`${API_BASE_URL}/paths/type?type=${encodedType}`);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`Ошибка загрузки документов по типу: ${response.status}`);
-    }
-    
-    const data: Document[] = await response.json();
-    console.log(`Documents by type "${type}" received:`, data);
     return data;
   },
 
-  // Получение документов студента по типу
+  // Получение документов студента с кэшированием
+  async fetchDocumentsByStudent(studentId: number): Promise<Document[]> {
+    const cacheKey = `student_documents_${studentId}`;
+    
+    const cached = cacheService.get<Document[]>(cacheKey, { 
+      ttl: CACHE_TTL.DOCUMENTS
+    });
+    
+    if (cached) {
+      console.log(`Student ${studentId} documents loaded from cache:`, cached.length);
+      return cached;
+    }
+
+    console.log(`Fetching documents for student ${studentId} from server`);
+    const allDocuments = await this.getAllDocuments();
+    
+    // Фильтрование документов студента
+    const studentDocuments = allDocuments.filter(doc => 
+      doc.idStudent === studentId || doc.studentId === studentId
+    );
+    
+    console.log(`Filtered documents for student ${studentId}:`, studentDocuments.length);
+    
+    cacheService.set(cacheKey, studentDocuments, { 
+      ttl: CACHE_TTL.DOCUMENTS
+    });
+    
+    return studentDocuments;
+  },
+
+  // Получение документов студента по типу с кэшированием
   async getStudentDocumentsByType(studentId: number, type: string): Promise<Document[]> {
+    const cacheKey = `student_documents_${studentId}_${type.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    const cached = cacheService.get<Document[]>(cacheKey, { 
+      ttl: CACHE_TTL.DOCUMENTS
+    });
+    
+    if (cached) {
+      console.log(`Student ${studentId} documents by type "${type}" loaded from cache:`, cached.length);
+      return cached;
+    }
+
     console.log(`Fetching student ${studentId} documents by type: ${type}`);
     
     try {
-      // Получаем все документы студента
       const allStudentDocs = await this.fetchDocumentsByStudent(studentId);
       
-      // Фильтруем по типу (учитываем, что type может быть undefined)
       const filteredDocs = allStudentDocs.filter(doc => 
         doc.type?.toLowerCase() === type.toLowerCase()
       );
       
-      console.log(`Student ${studentId} documents by type "${type}":`, filteredDocs);
+      console.log(`Student ${studentId} documents by type "${type}":`, filteredDocs.length);
+      
+      cacheService.set(cacheKey, filteredDocs, { 
+        ttl: CACHE_TTL.DOCUMENTS
+      });
+      
       return filteredDocs;
       
     } catch (error) {
@@ -403,74 +409,13 @@ export const apiService = {
     }
   },
 
-  // Список документов по id студента
-  async fetchDocumentsByStudent(studentId: number): Promise<Document[]> {
-    console.log(`Fetching documents for student ID: ${studentId}`);
-    const response = await fetch(`${API_BASE_URL}/paths`);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      throw new Error(`Ошибка получения списка документов: ${response.status}`);
-    }
-    
-    const data: Document[] = await response.json();
-    console.log('All documents received from server:', data);
-    
-    // Исправленная фильтрация - проверяем оба возможных поля
-    const studentDocuments = data.filter(doc => 
-      doc.idStudent === studentId || doc.studentId === studentId
-    );
-    
-    console.log(`Filtered documents for student ${studentId}:`, studentDocuments);
-    return studentDocuments;
-  },
-
-  // Загрузка документа на сервер (PUT запрос)
-  async uploadDocument(file: File, studentId: number, documentType?: string): Promise<void> {
-    console.log('Uploading document:', { 
-        fileName: file.name, 
-        studentId, 
-        documentType 
-    });
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // Добавляем обязательный параметр student
-    formData.append('student', studentId.toString());
-    
-    // Если указан тип документа, добавляем его
-    if (documentType) {
-        formData.append('type', documentType);
-    }
-
-    const response = await fetch(`${API_BASE_URL}/paths/upload`, {
-        method: 'PUT',
-        body: formData,
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload failed:', response.status, errorText);
-        throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
-    }
-
-    console.log('Document uploaded successfully');
-  },
-
-  // Исправленная функция скачивания документа
+  // Функция скачивания документа
   async downloadDocument(id: number): Promise<void> {
-    console.log(`Downloading document with ID: ${id}`);
+    console.log(`📥 Downloading document with ID: ${id}`);
     
     try {
-      // 1. Получаем информацию о документе
-      const docsResponse = await fetch(`${API_BASE_URL}/paths`);
-      if (!docsResponse.ok) {
-        throw new Error('Не удалось получить список документов');
-      }
-      
-      const allDocuments = await docsResponse.json();
+      // Получаем информацию о документе
+      const allDocuments = await this.getAllDocuments();
       const documentInfo = allDocuments.find((doc: Document) => doc.id === id);
       
       if (!documentInfo) {
@@ -479,7 +424,7 @@ export const apiService = {
 
       console.log('Found document:', documentInfo);
 
-      // 2. Скачиваем файл - важно указать правильные заголовки
+      // Скачиваем файл
       const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
         method: 'GET',
         headers: {
@@ -491,10 +436,10 @@ export const apiService = {
         throw new Error(`HTTP error! status: ${fileResponse.status}`);
       }
 
-      // 3. Получаем blob с правильным типом
+      // Получаем blob
       const blob = await fileResponse.blob();
       
-      // 4. Определяем MIME тип и имя файла
+      // Определяем MIME тип и имя файла
       let filename = documentInfo.nameFile;
       let mimeType = 'application/octet-stream';
 
@@ -510,23 +455,29 @@ export const apiService = {
           'jpeg': 'image/jpeg',
           'txt': 'text/plain',
         };
-        mimeType = mimeTypes[extension] || 'application/octet-stream';
+        
+        // проверяем что extension не undefined
+        if (extension && mimeTypes[extension]) {
+          mimeType = mimeTypes[extension];
+        } else {
+          mimeType = 'application/octet-stream';
+        }
       }
 
-      // 5. Создаем blob с правильным типом
+      // Создаем blob с правильным типом
       const typedBlob = new Blob([blob], { type: mimeType });
 
-      // 6. Создаем ссылку для скачивания
+      // Создаем ссылку для скачивания
       const url = window.URL.createObjectURL(typedBlob);
       const link = document.createElement('a');
       link.href = url;
       link.download = filename || `document_${id}`;
       
-      // 7. Добавляем в DOM и кликаем
+      // Добавляем в DOM и кликаем
       document.body.appendChild(link);
       link.click();
       
-      // 8. Очистка
+      // Очистка
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -538,7 +489,39 @@ export const apiService = {
     }
   },
 
-  // Удаление документа
+  // Загрузка документа на сервер с инвалидацией кэша
+  async uploadDocument(file: File, studentId: number, documentType?: string): Promise<void> {
+    console.log('Uploading document:', { 
+      fileName: file.name, 
+      studentId, 
+      documentType 
+    });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('student', studentId.toString());
+    
+    if (documentType) {
+      formData.append('type', documentType);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/paths/upload`, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Document uploaded successfully');
+    
+    // Инвалидируем кэш после загрузки
+    this.invalidateDocumentCache(studentId, documentType);
+  },
+
+  // Удаление документа с инвалидацией кэша
   async deleteDocument(id: number): Promise<void> {
     console.log(`Deleting document with ID: ${id}`);
     const response = await fetch(`${API_BASE_URL}/paths/delete/${id}`, {
@@ -547,10 +530,54 @@ export const apiService = {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       throw new Error(`Ошибка удаления документа: ${response.status}`);
     }
 
     console.log('Document deleted successfully');
+    
+    // Инвалидируем весь кэш документов, так как не знаем studentId
+    this.invalidateAllDocumentCache();
   },
+
+  // Методы для инвалидации кэша
+  invalidateDocumentCache(studentId?: number, documentType?: string): void {
+    // Удаляем все связанные ключи кэша
+    const keysToRemove: string[] = [];
+    
+    if (studentId && documentType) {
+      keysToRemove.push(`student_documents_${studentId}_${documentType.toLowerCase().replace(/\s+/g, '_')}`);
+    }
+    
+    if (studentId) {
+      keysToRemove.push(`student_documents_${studentId}`);
+    }
+    
+    // Всегда инвалидируем общий кэш документов
+    keysToRemove.push('all_documents');
+    
+    keysToRemove.forEach(key => {
+      cacheService.remove(key);
+      console.log(`Invalidated cache: ${key}`);
+    });
+  },
+
+  invalidateAllDocumentCache(): void {
+    // Удаляем все ключи, связанные с документами
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.includes('cache_all_documents') ||
+        key.includes('cache_student_documents_')
+      )) {
+        keysToRemove.push(key.replace('cache_', ''));
+      }
+    }
+    
+    keysToRemove.forEach(key => {
+      cacheService.remove(key);
+      console.log(`Invalidated cache: ${key}`);
+    });
+  }
 }

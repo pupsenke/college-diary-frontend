@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { cacheService } from '../services/casheService';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { cacheService } from '../services/cacheService';
 
 interface UseCachedDataOptions {
   ttl?: number;
@@ -7,7 +7,7 @@ interface UseCachedDataOptions {
 }
 
 export function useCachedData<T>(
-  key: string,
+  key: string | undefined,
   fetchFn: () => Promise<T>,
   options: UseCachedDataOptions = {}
 ) {
@@ -17,37 +17,62 @@ export function useCachedData<T>(
   const [error, setError] = useState<string | null>(null);
   const [isCached, setIsCached] = useState(false);
 
-  const fetchData = useCallback(async (useCache = true) => {
-    if (!enabled) return;
+  const mountedRef = useRef(true);
 
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchData = useCallback(async (useCache = true) => {
+    if (!mountedRef.current) return;
+
+    // Если ключ undefined или enabled=false, не выполняем запрос
+    if (!enabled || !key) {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (mountedRef.current) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       // Пытаемся получить из кэша
       if (useCache) {
         const cached = cacheService.get<T>(key, { ttl });
         if (cached) {
-          setData(cached);
-          setIsCached(true);
-          setLoading(false);
+          if (mountedRef.current) {
+            setData(cached);
+            setIsCached(true);
+            setLoading(false);
+          }
           return;
         }
       }
 
       // Загружаем свежие данные
       const freshData = await fetchFn();
-      setData(freshData);
-      setIsCached(false);
-      
-      // Сохраняем в кэш
-      cacheService.set(key, freshData, { ttl });
+      if (mountedRef.current) {
+        setData(freshData);
+        setIsCached(false);
+        
+        // Сохраняем в кэш
+        cacheService.set(key, freshData, { ttl });
+        
+        setLoading(false);
+      }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      console.error(`Error fetching data for key ${key}:`, err);
-    } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setLoading(false);
+        console.error(`Error fetching data for key ${key}:`, err);
+      }
     }
   }, [key, fetchFn, ttl, enabled]);
 
@@ -56,14 +81,25 @@ export function useCachedData<T>(
   }, [fetchData]);
 
   const clearCache = useCallback(() => {
-    cacheService.remove(key);
-    setData(null);
-    setIsCached(false);
+    if (key) {
+      cacheService.remove(key);
+    }
+    if (mountedRef.current) {
+      setData(null);
+      setIsCached(false);
+    }
   }, [key]);
 
+  // Основной эффект для загрузки данных -  вызывается при каждом изменении зависимостей
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (enabled && key) {
+      fetchData();
+    } else {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [fetchData, enabled, key]);
 
   return {
     data,

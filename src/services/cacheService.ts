@@ -14,7 +14,7 @@ class CacheService {
   private readonly DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 часа
   private readonly VERSION = '1.0.0';
 
-  // Сохраняем данные в localStorage
+  // Сохранение данных в localStorage
   set<T>(key: string, data: T, config: CacheConfig = {}): void {
     try {
       const cachedData: CachedData<T> = {
@@ -31,7 +31,7 @@ class CacheService {
     }
   }
 
-  // Получаем данные из кэша
+  // Получение данных из кэша
   get<T>(key: string, config: CacheConfig = {}): T | null {
     try {
       const cached = localStorage.getItem(this.getKey(key));
@@ -40,13 +40,13 @@ class CacheService {
       const cachedData: CachedData<T> = JSON.parse(cached);
       const ttl = config.ttl || this.DEFAULT_TTL;
 
-      // Проверяем актуальность данных
+      // проверка на актуальность данных
       if (Date.now() - cachedData.timestamp > ttl) {
         this.remove(key);
         return null;
       }
 
-      // Проверяем версию
+      // проверка версию
       if (config.version && cachedData.version !== config.version) {
         this.remove(key);
         return null;
@@ -60,7 +60,7 @@ class CacheService {
     }
   }
 
-  // Удаляем данные из кэша
+  // Удажение данных из кэша
   remove(key: string): void {
     try {
       localStorage.removeItem(this.getKey(key));
@@ -88,12 +88,12 @@ class CacheService {
     }
   }
 
-  // Проверяем наличие данных в кэше
+  // Проверка на наличие данных в кэше
   has(key: string): boolean {
     return this.get(key) !== null;
   }
 
-  // Получаем информацию о кэше
+  // Получение информации о кэше
   getInfo(key: string): { timestamp: number; version: string; size: number } | null {
     try {
       const cached = localStorage.getItem(this.getKey(key));
