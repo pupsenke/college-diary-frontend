@@ -10,7 +10,7 @@ type ApiLesson = {
   room: number;
   idSt: number;
   idGroup: number;
-  subgroup: string | null;
+  subgroup: number;
   replacement: boolean;
   idSubject: number;
   nameSubject: string;
@@ -30,6 +30,7 @@ type Lesson = {
   teacher?: string;
   room?: string;
   numPair: number;
+  subgroup?: number;
   dayWeek: string;
   typeWeek: string;
 };
@@ -89,6 +90,7 @@ const transformApiData = (apiData: ApiLesson[]): DaySchedule[] => {
           subject: lesson.nameSubject || `Предмет ${lesson.idSubject}`,
           teacher: `${lesson.lastnameTeacher} ${lesson.nameTeacher[0]}.${lesson.patronymicTeacher[0]}.`,
           room: `ауд. ${lesson.room}`,
+          subgroup: lesson.subgroup > 0 ? lesson.subgroup : undefined, // Добавляем подгруппу только если > 0
           numPair: lesson.numPair,
           dayWeek: lesson.dayWeek,
           typeWeek: lesson.typeWeek
@@ -123,7 +125,6 @@ const transformApiData = (apiData: ApiLesson[]): DaySchedule[] => {
     };
   });
 };
-
 const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | 'lower' | 'common'): DaySchedule[] => {
   return schedule.map(day => ({
     ...day,
@@ -164,6 +165,7 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[], viewMode: 'grid' | '
                         <div className="separated-teacher-room">
                           {lesson.teacher && <div className="lesson-teacher-room">{lesson.teacher}</div>}
                           {lesson.room && <div className="lesson-room">{lesson.room}</div>}
+                          {lesson.subgroup && <div className="lesson-subgroup">п/г {lesson.subgroup}</div>}
                         </div>
                       </div>
                     ))}
@@ -183,6 +185,7 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[], viewMode: 'grid' | '
                       <div className="lesson-meta">
                         {grouped[0].teacher && <div className="lesson-teacher-room">{grouped[0].teacher}</div>}
                         {grouped[0].room && <div className="lesson-room">{grouped[0].room}</div>}
+                        {grouped[0].subgroup && <div className="lesson-subgroup">п/г {grouped[0].subgroup}</div>}
                       </div>
                     </div>
                   </div>
@@ -225,6 +228,7 @@ const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ schedule
                       <div className="separated-teacher-room">
                         {lesson.teacher && <div className="lesson-teacher-room">{lesson.teacher}</div>}
                         {lesson.room && <div className="lesson-room">{lesson.room}</div>}
+                        {lesson.subgroup && <div className="lesson-subgroup">п/г {lesson.subgroup}</div>}
                       </div>
                     </div>
                   ))}
@@ -244,6 +248,7 @@ const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ schedule
                     <div className="lesson-meta">
                       {grouped[0].teacher && <div className="lesson-teacher-room">{grouped[0].teacher}</div>}
                       {grouped[0].room && <div className="lesson-room">{grouped[0].room}</div>}
+                      {grouped[0].subgroup && <div className="lesson-subgroup">п/г {grouped[0].subgroup}</div>}
                     </div>
                   </div>
                 </div>
@@ -289,6 +294,12 @@ const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ schedule
                       <div className="next-lesson-detail">
                         <div className="detail-label">Аудитория</div>
                         <div className="detail-value">{nextLesson.room}</div>
+                      </div>
+                    )}
+                    {nextLesson.subgroup && (
+                      <div className="next-lesson-detail">
+                        <div className="detail-label">п/г</div>
+                        <div className="detail-value">{nextLesson.subgroup}</div>
                       </div>
                     )}
                   </div>

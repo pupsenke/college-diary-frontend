@@ -1,55 +1,258 @@
-/* ScheduleSection.css */
-
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
-* {
-  font-family: 'Montserrat', sans-serif !important;
+/* карточки пар*/
+.lesson-row {
+  background: rgba(0, 51, 160, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 51, 160, 0.1);
+  transition: all 0.3s ease;
 }
+
+.lesson-row:hover {
+  background: rgba(0, 51, 160, 0.08);
+  border-color: rgba(0, 51, 160, 0.2);
+}
+
+.lesson-time {
+  background: #0033a0;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
 /* стили для блока полное расписание */
-.lesson-subject-group-th {
+.lesson-content-th {
   display: flex;
   flex-direction: column;
   flex: 1;
-  text-align: center;
+  gap: 8px;
+}
+
+.lesson-subject-th {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1em;
+  line-height: 1.4;
+  text-align: left;
+  margin-bottom: 5px;
+}
+
+.lesson-details-th {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
 .lesson-group-th {
   font-weight: 600;
   color: #0033a0;
-  font-size: 15px;
+  font-size: 14px;
+  text-align: left;
 }
 
 .lesson-room-th {
-  flex: 0 0 auto;
   font-weight: 400;
   color: #0033a0;
   font-size: 14px;
-  margin-left: auto;
-  width: 100px;
   text-align: right;
 }
 
-/* стили для блока расписания на сегодня */
-.today-subject-group-th {
+/* расписание на сегодня */
+.today-lesson {
+  background: rgba(0, 51, 160, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 51, 160, 0.1);
+  transition: all 0.3s ease;
+}
+
+.today-lesson:hover {
+  background: rgba(0, 51, 160, 0.08);
+  border-color: rgba(0, 51, 160, 0.2);
+}
+
+.today-time {
+  background: #0033a0;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.today-content-th {
   display: flex;
   flex-direction: column;
   flex: 1;
-  text-align: center;
+  gap: 8px;
+}
+
+.today-subject-th {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1em;
+  line-height: 1.4;
+  text-align: left;
+  margin-bottom: 5px;
+}
+
+.today-details-th {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
 .today-group-th {
   font-weight: 600;
   color: #0033a0;
-  font-size: 15px;
+  font-size: 14px;
+  text-align: left;
 }
 
 .today-room-th {
-  flex: 0 0 auto;
   font-weight: 400;
   color: #0033a0;
   font-size: 14px;
-  width: 70px;
+  text-align: right;
 }
 
+/* "Следующая пара" */
+.next-lesson-card {
+  background: rgba(0, 51, 160, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 51, 160, 0.1);
+  border-left: 4px solid #0033a0;
+}
 
-/* остальные стили описаниы в st-components\ScheduleSection.css */
+.next-lesson-time {
+  font-weight: 600;
+  color: #0033a0;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+.next-lesson-subject {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+
+.next-lesson-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.next-lesson-group {
+  font-weight: 600;
+  color: #0033a0;
+  font-size: 14px;
+}
+
+.next-lesson-room {
+  font-weight: 400;
+  color: #0033a0;
+  font-size: 14px;
+}
+
+.no-next-lesson {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* нет пар */
+.no-classes {
+  background: rgba(0, 51, 160, 0.05);
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px solid rgba(0, 51, 160, 0.1);
+  color: #718096;
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.today-no-classes {
+  background: rgba(0, 51, 160, 0.05);
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px solid rgba(0, 51, 160, 0.1);
+  color: #718096;
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+/* стили для отображения группы и подгруппы */
+.lesson-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lesson-group-th {
+  font-weight: 600;
+  color: #0033a0;
+  font-size: 14px;
+  text-align: left;
+}
+
+.lesson-subgroup-th {
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
+  text-align: left;
+}
+
+.today-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.today-group-th {
+  font-weight: 600;
+  color: #0033a0;
+  font-size: 14px;
+  text-align: left;
+}
+
+.today-subgroup-th {
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
+  text-align: left;
+}
+
+.next-lesson-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.next-lesson-group {
+  font-weight: 600;
+  color: #0033a0;
+  font-size: 14px;
+}
+
+.next-lesson-subgroup {
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
+}

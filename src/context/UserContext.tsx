@@ -45,8 +45,9 @@ interface UserContextType {
   isStudent: boolean;
   isTeacher: boolean;
   isMetodist: boolean;
-  isLoading: boolean; // Добавляем состояние загрузки
-  logout: () => void; // Функция выхода
+  isLoading: boolean;
+  logout: () => void;
+  userId: number | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -61,11 +62,12 @@ const SESSION_DURATION = 60 * 60 * 1000; // 1 час в миллисекунда
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Начальное состояние загрузки
+  const [isLoading, setIsLoading] = useState(true);
 
   const isStudent = user?.userType === 'student';
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
+  const userId = user?.id || null;
 
   // Сохранение пользователя в сессию
   const saveUserToSession = (userData: User) => {
@@ -135,8 +137,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         const savedUser = restoreUserFromSession();
         
         if (savedUser) {
-          // Можно добавить проверку валидности токена на сервере здесь
-          // Пока просто восстанавливаем пользователя из localStorage
           setUser(savedUser);
           console.log('Пользователь автоматически авторизован');
         } else {
@@ -195,7 +195,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isTeacher,
     isMetodist,
     isLoading,
-    logout
+    logout,
+    userId
   };
 
   return (

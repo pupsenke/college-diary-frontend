@@ -7,6 +7,30 @@
   color: #1f2937;
 }
 
+/* стили для подгруппы */
+.lesson-subgroup {
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.separated-teacher-room .lesson-subgroup {
+  margin-top: 2px;
+}
+
+.next-lesson-detail .detail-label {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.next-lesson-detail .detail-value {
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+}
+
 /* загрузка и ошибки */
 .loading {
   display: flex;
@@ -53,7 +77,7 @@
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   padding: 0 40px;
 }
 
@@ -67,6 +91,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.95em;
+  width: 240px;
 }
 
 .filter-btn:hover {
@@ -83,11 +108,11 @@
 /* недели/вид */
 .view-controls {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 30px;
   padding: 0 40px;
-  gap: 20px;
+  gap: 10px;
 }
 
 .view-tabs {
