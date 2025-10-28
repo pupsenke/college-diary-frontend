@@ -23,7 +23,7 @@ export interface Staff {
   login: string;
   position: string;
   staffPosition?: any[];
-  userType: 'teacher' | 'metodist'; // добавь потом остальные роли!!!
+  userType: 'teacher' | 'metodist';
   email?: string;
   telephone?: string;
   birthDate?: string;
@@ -38,6 +38,7 @@ interface UserContextType {
   isStudent: boolean;
   isTeacher: boolean;
   isMetodist: boolean;
+  userId: number | null; 
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -52,9 +53,18 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const isStudent = user?.userType === 'student';
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
+  
+  const userId = user ? (user as any).id : null;
 
   return (
-    <UserContext.Provider value={{ user, setUser, isStudent, isTeacher, isMetodist }}>
+    <UserContext.Provider value={{ 
+      user, 
+      setUser, 
+      isStudent, 
+      isTeacher, 
+      isMetodist,
+      userId 
+    }}>
       {children}
     </UserContext.Provider>
   );
