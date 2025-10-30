@@ -37,7 +37,6 @@
   }
 }
 
-/* Добавьте в App.css или создайте новый файл */
 .loading-container {
   display: flex;
   flex-direction: column;

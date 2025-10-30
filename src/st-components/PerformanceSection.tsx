@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './PerformanceSectionStyle.css';
-import { apiService } from '../services/studentApiService'; // Добавьте этот импорт
+import { apiService } from '../services/studentApiService'; 
+import { useUser, Student } from '../context/UserContext';
+
 import {
   BarChart,
   Bar,
@@ -38,6 +40,12 @@ interface PerformanceSectionProps {
   studentId: number;
 }
 
+interface SemesterInfo {
+  number: number;
+  name: string;
+  value: 'first' | 'second';
+}
+
 export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ 
   studentId
 }) => {
@@ -47,23 +55,77 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   const [selectedGrade, setSelectedGrade] = useState<{subject: string, grade: number | null, number: number, topic: string, teacher: string} | null>(null);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [error, setError] = useState<string | null>(null);
+  const [isUsingCache, setIsUsingCache] = useState(false);
+  const [semesters, setSemesters] = useState<SemesterInfo[]>([]);
+  const [studentCourse, setStudentCourse] = useState<number>(1);
 
-  // Загрузка данных студента
-  useEffect(() => {
-    const fetchStudentData = async () => {
-      try {
+  const { user } = useUser();
+
+  // Функция загрузки данных с приоритетом API
+  const fetchStudentData = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else {
         setLoading(true);
-        const marksData = await apiService.getStudentMarks(studentId);
-        setStudentMarks(marksData ?? []);
-      } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+      setError(null);
+      setIsUsingCache(false);
 
+      // Сначала пытаемся загрузить с API
+      console.log('Загрузка данных с API...');
+      const marksData = await apiService.getStudentMarks(studentId);
+      setStudentMarks(marksData ?? []);
+      
+    } catch (error) {
+      console.error('Ошибка при загрузке данных с API:', error);
+      
+      // Если ошибка сети, пробуем загрузить из кэша
+      try {
+        console.log('Попытка загрузки из кэша...');
+        const cacheKey = `marks_${studentId}`;
+        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          // Проверяем актуальность кэша (10 минут)
+          if (Date.now() - cachedData.timestamp < 10 * 60 * 1000) {
+            setStudentMarks(cachedData.data ?? []);
+            setIsUsingCache(true);
+            setError('Используются кэшированные данные. Нет соединения с сервером.');
+            console.log('Данные загружены из кэша');
+          } else {
+            throw new Error('Кэш устарел');
+          }
+        } else {
+          throw new Error('Нет данных в кэше');
+        }
+      } catch (cacheError) {
+        console.error('Ошибка при загрузке из кэша:', cacheError);
+        setError('Не удалось загрузить данные. Проверьте подключение к интернету.');
+        setStudentMarks([]);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Функция принудительного обновления
+  const handleRefresh = async () => {
+    // Инвалидируем кэш перед обновлением
+    const cacheKey = `marks_${studentId}`;
+    localStorage.removeItem(`cache_${cacheKey}`);
+    await fetchStudentData(true);
+  };
+
+  // Загрузка данных при монтировании
+  useEffect(() => {
     fetchStudentData();
+    fetchStudentCourse();
   }, [studentId]);
 
   // Обработчик клика по предмету - переключает на вкладку предметов
@@ -73,63 +135,64 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   };
 
   // Преобразование данных из API
-  const transformStudentMarksToGrades = (semester: 'first' | 'second'): Grade[] => {
-    if (!studentMarks) return [];
+  const transformStudentMarksToGrades = (semesterType: 'first' | 'second'): Grade[] => {
+  if (!studentMarks) return [];
 
-    return studentMarks
-      .filter(studentMark => studentMark && studentMark.stNameSubjectDTO)
-      .map((studentMark) => {
-        const subjectId = studentMark.stNameSubjectDTO?.idSubject;
-        
-        if (!subjectId) return null;
+  return studentMarks
+    .filter(studentMark => studentMark && studentMark.stNameSubjectDTO)
+    .map((studentMark) => {
+      const subjectId = studentMark.stNameSubjectDTO?.idSubject;
+      
+      if (!subjectId) return null;
 
-        const gradeDetails: GradeDetail[] = [];
-        const validGrades: number[] = [];
-        
-        if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
-          studentMark.marksBySt.forEach((mark) => {
-            if (getSemesterByWorkNumber(mark.number) === semester) {
-              const lessonDate = getLessonDate(mark.number);
-              const lessonTopic = getLessonTopic(mark.number);
+      const gradeDetails: GradeDetail[] = [];
+      const validGrades: number[] = [];
+      
+      if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
+        studentMark.marksBySt.forEach((mark) => {
+          // Используем упрощенную функцию без параметра currentSemester
+          if (getSemesterByWorkNumber(mark.number) === semesterType) {
+            const lessonDate = getLessonDate(mark.number);
+            const lessonTopic = getLessonTopic(mark.number);
 
-              gradeDetails.push({
-                id: mark.number,
-                date: lessonDate,
-                topic: lessonTopic,
-                grade: mark.value || 0,
-                teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
-                type: 'Работа',
-                hasValue: mark.value !== null
-              });
+            gradeDetails.push({
+              id: mark.number,
+              date: lessonDate,
+              topic: lessonTopic,
+              grade: mark.value || 0,
+              teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+              type: 'Работа',
+              hasValue: mark.value !== null
+            });
 
-              if (mark.value !== null) {
-                validGrades.push(mark.value);
-              }
+            if (mark.value !== null) {
+              validGrades.push(mark.value);
             }
-          });
-        }
+          }
+        });
+      }
 
-        gradeDetails.sort((a, b) => a.id - b.id);
+      gradeDetails.sort((a, b) => a.id - b.id);
 
-        const average = validGrades.length > 0 
-          ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
-          : 0;
+      const average = validGrades.length > 0 
+        ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
+        : 0;
 
-        return {
-          id: subjectId,
-          subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
-          grades: validGrades,
-          average: parseFloat(average.toFixed(1)),
-          examGrade: studentMark.certification, // Используем certification из API
-          gradeDetails: gradeDetails,
-          teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
-        };
-      })
-      .filter(grade => grade !== null) as Grade[];
-  };
+      return {
+        id: subjectId,
+        subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
+        grades: validGrades,
+        average: parseFloat(average.toFixed(1)),
+        examGrade: studentMark.certification,
+        gradeDetails: gradeDetails,
+        teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
+      };
+    })
+    .filter(grade => grade !== null) as Grade[];
+};
 
   const getSemesterByWorkNumber = (workNumber: number): 'first' | 'second' => {
-    return workNumber <= 24 ? 'first' : 'second';
+  return workNumber <= 24 ? 'first' : 'second';
   };
 
   const getLessonTopic = (markNumber: number): string => {
@@ -174,7 +237,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         subjectsWithGrades++;
         subject.grades.forEach(grade => {
           totalGrades++;
-          if (grade >= 4) grade5++; // Зеленый для оценок 4 и 5
+          if (grade >= 4) grade5++;
           else if (grade >= 3.5) grade4++;
           else if (grade >= 2.5) grade3++;
           else grade2++;
@@ -200,15 +263,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   };
 
   const getGradeColor = (grade: number | null) => {
-    if (grade === null) return '#d1d5db'; // Более светлый серый
-    if (grade >= 4) return '#2cbb00'; // Зеленый для оценок 4 и 5
-    if (grade >= 3) return '#f59e0b'; // Оранжевый
-    if (grade >= 2) return '#ef4444'; // Красный
-    return '#d1d5db'; // Более светлый серый
+    if (grade === null) return '#d1d5db';
+    if (grade >= 4) return '#2cbb00';
+    if (grade >= 3) return '#f59e0b';
+    if (grade >= 2) return '#ef4444';
+    return '#d1d5db';
   };
 
   const getPerformanceColor = (average: number) => {
-    if (average >= 4) return '#2cbb00'; // Зеленый для среднего балла 4 и выше
+    if (average >= 4) return '#2cbb00';
     if (average >= 3) return '#f59e0b';
     return '#ef4444';
   };
@@ -233,24 +296,75 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     { week: 'Нед. 6', average: 4.9 }
   ];
 
+  // Функция для получения информации о курсе студента
+  const fetchStudentCourse = async () => {
+  // Приводим тип пользователя к Student для доступа к idGroup
+  const student = user as Student;
+  
+  if (student?.idGroup) {
+    try {
+      const groupData = await apiService.getGroupData(student.idGroup);
+      const course = groupData.course || 1;
+      setStudentCourse(course);
+      setSemesters(getSemestersByCourse(course));
+    } catch (error) {
+      console.error('Ошибка при загрузке данных группы:', error);
+      setStudentCourse(1);
+      setSemesters(getSemestersByCourse(1));
+    }
+  } else {
+    // Если нет idGroup, используем курс по умолчанию
+    setStudentCourse(1);
+    setSemesters(getSemestersByCourse(1));
+  }
+  };
+
+  // Функция для определения семестров по курсу
+  const getSemestersByCourse = (course: number): SemesterInfo[] => {
+    const semesterPairs = [
+      { course: 1, semesters: [1, 2] },
+      { course: 2, semesters: [3, 4] },
+      { course: 3, semesters: [5, 6] },
+      { course: 4, semesters: [7, 8] }
+    ];
+    
+    const pair = semesterPairs.find(p => p.course === course) || semesterPairs[0];
+    
+    return pair.semesters.map(semesterNumber => ({
+      number: semesterNumber,
+      name: `${semesterNumber} семестр`,
+      value: semesterNumber % 2 === 1 ? 'first' : 'second'
+    }));
+  };
+
   // Компоненты
+  const RefreshButton = () => (
+    <button 
+      className={`pf-refresh-btn ${refreshing ? 'pf-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pf-refresh-icon ${refreshing ? 'pf-refresh-spin' : ''}`}
+      />
+    </button>
+  );
+
   const SemesterSelector = () => (
-    <div className="pf-semester-selector">
-      <div className="pf-semester-buttons">
+  <div className="pf-semester-selector">
+    <div className="pf-semester-buttons">
+      {semesters.map((semester) => (
         <button
-          className={`pf-semester-btn ${selectedSemester === 'first' ? 'pf-active' : ''}`}
-          onClick={() => setSelectedSemester('first')}
+          key={semester.number}
+          className={`pf-semester-btn ${selectedSemester === semester.value ? 'pf-active' : ''}`}
+          onClick={() => setSelectedSemester(semester.value)}
         >
-          1 семестр
+          {semester.name}
         </button>
-        <button
-          className={`pf-semester-btn ${selectedSemester === 'second' ? 'pf-active' : ''}`}
-          onClick={() => setSelectedSemester('second')}
-        >
-          2 семестр
-        </button>
-      </div>
+      ))}
     </div>
+  </div>
   );
 
   const ViewToggle = () => (
@@ -294,7 +408,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 className={`pf-preview-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                 style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
                 onClick={(e) => {
-                  e.stopPropagation(); // Предотвращаем всплытие клика на карточку
+                  e.stopPropagation();
                   handleGradeClick(
                     subject.subject,
                     detail.hasValue ? detail.grade : null,
@@ -367,7 +481,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                       className={`pf-stack-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
                       style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
                       onClick={(e) => {
-                        e.stopPropagation(); // Предотвращаем всплытие клика на строку
+                        e.stopPropagation();
                         handleGradeClick(
                           subject.subject,
                           detail.hasValue ? detail.grade : null,
@@ -432,7 +546,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           </div>
         </div>
 
-        {/* ИЗМЕНЕНИЕ: Вместо "Всего предметов" теперь "Всего оценок" */}
         <div className="pf-stat-card">
           <div className="pf-stat-content">
             <div className="pf-stat-value">{statistics.totalGrades}</div>
@@ -517,7 +630,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       {/* Контролы */}
       <div className="pf-controls-section">
         <SemesterSelector />
-        <ViewToggle />
+        <div className="pf-controls-section-left"><ViewToggle /><RefreshButton /></div>
+
       </div>
 
       {/* Контент */}

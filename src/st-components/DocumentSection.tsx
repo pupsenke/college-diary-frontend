@@ -998,21 +998,26 @@ export const DocumentsSection: React.FC = () => {
     <div className="document-section">
       <div className="ds-header">
         <div className="ds-controls">
-          <div className="ds-filter-section">
-            <label htmlFor="document-type" className="ds-filter-label">Тип документа:</label>
-            <select 
-              id="document-type"
-              value={selectedDocumentType}
-              onChange={(e) => setSelectedDocumentType(e.target.value)}
-              className="ds-select"
-            >
-              {documentTypes.map((type, index) => (
-                <option key={index} value={type}>{type}</option>
-              ))}
-            </select>
+          <div className="ds-controls-left">
+            <div className="ds-filter-section">
+              <label htmlFor="document-type" className="ds-filter-label">Тип документа:</label>
+              <select 
+                id="document-type"
+                value={selectedDocumentType}
+                onChange={(e) => {
+                  console.log('Document type changed to:', e.target.value);
+                  setSelectedDocumentType(e.target.value);
+                }}
+                className="ds-select"
+              >
+                {documentTypes.map((type, index) => (
+                  <option key={index} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
-          <div className="ds-action-buttons">
+          <div className="ds-controls-right">
             <button 
               className="ds-create-main-btn"
               onClick={openModal}

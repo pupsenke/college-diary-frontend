@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser, Student } from '../context/UserContext';
 import { apiService } from '../services/studentApiService';
 import './PersonalCabinetStyle.css';
-import { useCachedData } from '../hooks/useCachedData';
-import { CACHE_TTL } from '../services/cacheConstants';
 
 // Выносим интерфейсы за пределы компонента
 interface UserFormData {
@@ -32,6 +30,15 @@ interface PasswordChangeData {
   confirmPassword: string;
 }
 
+interface GroupData {
+  group: string;
+  course: string;
+  admissionYear: string;
+  formEducation: string;
+  specialty: string;
+  profile: string;
+}
+
 // Основной компонент
 const PersonalCabinetComponent: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -47,7 +54,7 @@ const PersonalCabinetComponent: React.FC = () => {
     address: ''
   });
   const [originalData, setOriginalData] = useState<UserFormData | null>(null);
-  const [groupData, setGroupData] = useState({
+  const [groupData, setGroupData] = useState<GroupData>({
     group: '',
     course: '-',
     admissionYear: '-',
@@ -56,8 +63,10 @@ const PersonalCabinetComponent: React.FC = () => {
     profile: '-'
   });
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isUsingCache, setIsUsingCache] = useState(false);
   
   const [passwordData, setPasswordData] = useState<PasswordChangeData>({
     currentPassword: '',
@@ -69,35 +78,54 @@ const PersonalCabinetComponent: React.FC = () => {
   // Приводим тип пользователя к Student для доступа к idGroup
   const student = user as Student;
 
-  // Мемоизируем ключ для кэша
-  const groupCacheKey = useMemo(() => 
-    student?.idGroup ? `group_${student.idGroup}` : undefined, 
-    [student?.idGroup]
-  );
+  // Функция загрузки данных группы с приоритетом API
+  const fetchGroupData = async (forceRefresh = false) => {
+    if (!student?.idGroup) return;
 
-  // Стабилизируем функцию получения данных группы
-  const fetchGroupDataFn = useCallback(() => {
-    if (!student?.idGroup) {
-      throw new Error('No group ID available');
-    }
-    return apiService.getGroupData(student.idGroup);
-  }, [student?.idGroup]);
+    try {
+      if (forceRefresh) {
+        setRefreshing(true);
+      }
+      setError(null);
+      setIsUsingCache(false);
 
-  // Кэширование данных группы
-  const { 
-    data: cachedGroupData, 
-    loading: groupLoading, 
-    error: groupError,
-    isCached: isGroupCached,
-    refresh: refreshGroupData
-  } = useCachedData(
-    groupCacheKey,
-    fetchGroupDataFn,
-    { 
-      ttl: CACHE_TTL.GROUP_DATA,
-      enabled: !!student?.idGroup && isStudent
+      // Сначала пытаемся загрузить с API
+      console.log('Загрузка данных группы с API...');
+      const groupData = await apiService.getGroupData(student.idGroup);
+      
+      updateGroupState(groupData);
+      
+    } catch (error) {
+      console.error('Ошибка при загрузке данных группы с API:', error);
+      
+      // Если ошибка сети, пробуем загрузить из кэша
+      try {
+        console.log('Попытка загрузки группы из кэша...');
+        const cacheKey = `group_${student.idGroup}`;
+        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          // Проверяем актуальность кэша (30 минут)
+          if (Date.now() - cachedData.timestamp < 30 * 60 * 1000) {
+            updateGroupState(cachedData.data);
+            setIsUsingCache(true);
+            setError('Используются кэшированные данные. Нет соединения с сервером.');
+            console.log('Данные группы загружены из кэша');
+          } else {
+            throw new Error('Кэш группы устарел');
+          }
+        } else {
+          throw new Error('Нет данных группы в кэше');
+        }
+      } catch (cacheError) {
+        console.error('Ошибка при загрузке группы из кэша:', cacheError);
+        setError('Не удалось загрузить данные группы. Проверьте подключение к интернету.');
+      }
+    } finally {
+      setRefreshing(false);
     }
-  );
+  };
 
   // Функция для обновления состояния группы
   const updateGroupState = useCallback((groupData: any) => {
@@ -112,6 +140,16 @@ const PersonalCabinetComponent: React.FC = () => {
       profile: groupData.profile || '-'
     });
   }, []);
+
+  // Функция принудительного обновления данных
+  const handleRefresh = async () => {
+    // Инвалидируем кэш перед обновлением
+    if (student?.idGroup) {
+      const cacheKey = `group_${student.idGroup}`;
+      localStorage.removeItem(`cache_${cacheKey}`);
+    }
+    await fetchGroupData(true);
+  };
 
   // Инициализация данных пользователя
   useEffect(() => {
@@ -131,21 +169,12 @@ const PersonalCabinetComponent: React.FC = () => {
     }
   }, [user]);
 
-  // Обновление данных группы при изменении кэшированных данных
+  // Загрузка данных группы при монтировании
   useEffect(() => {
-    if (cachedGroupData && isStudent) {
-      updateGroupState(cachedGroupData);
+    if (isStudent && student?.idGroup) {
+      fetchGroupData();
     }
-  }, [cachedGroupData, isStudent, updateGroupState]);
-
-  // Обработка ошибок загрузки группы
-  useEffect(() => {
-    if (groupError && !cachedGroupData) {
-      setError('Не удалось загрузить данные группы');
-    } else if (groupError && cachedGroupData) {
-      setError('Используются кэшированные данные. Данные могут быть устаревшими.');
-    }
-  }, [groupError, cachedGroupData]);
+  }, [isStudent, student?.idGroup]);
 
   const handlePasswordChange = async () => {
     if (!user) return;
@@ -384,6 +413,20 @@ const PersonalCabinetComponent: React.FC = () => {
     }));
   }, []);
 
+  // Компонент кнопки обновления
+  const RefreshButton = () => (
+    <button 
+      className={`pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+      />
+    </button>
+  );
+
   if (!user) {
     return (
       <div className="personal-cabinet">
@@ -399,47 +442,48 @@ const PersonalCabinetComponent: React.FC = () => {
   return (
     <div className="personal-cabinet">
       <div className="pc-header">
-        {!isEditing ? (
-          <button 
-            className="pc-edit-btn"
-            onClick={handleEditStart}
-            disabled={!isStudent}
-          >
-            Редактировать
-          </button>
-        ) : (
-          <div className="pc-action-buttons">
+        <div className="pc-header-left">
+          {!isEditing ? (
             <button 
-              className="pc-save-btn"
-              onClick={handleSave}
-              disabled={loading}
+              className="pc-edit-btn"
+              onClick={handleEditStart}
+              disabled={!isStudent}
             >
-              {loading ? (
-                <>
-                  <span className="pc-loading-spinner"></span>
-                  Сохранение...
-                </>
-              ) : (
-                'Сохранить'
-              )}
+              Редактировать
             </button>
-            <button 
-              className="pc-cancel-btn"
-              onClick={handleCancel}
-              disabled={loading}
-            >
-              Отмена
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="pc-action-buttons">
+              <button 
+                className="pc-save-btn"
+                onClick={handleSave}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="pc-loading-spinner"></span>
+                    Сохранение...
+                  </>
+                ) : (
+                  'Сохранить'
+                )}
+              </button>
+              <button 
+                className="pc-cancel-btn"
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Отмена
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <div className="pc-header-right">
+          <RefreshButton />
+        </div>
       </div>
 
       <div className="pc-content">
-        {error && (
-          <div className="pc-error-message">
-            {error}
-          </div>
-        )}
 
         {successMessage && (
           <div className="pc-success-message">

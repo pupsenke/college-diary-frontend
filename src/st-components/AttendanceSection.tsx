@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AttendanceSectionStyle.css';
+import { apiService } from '../services/studentApiService'; 
 import {
   BarChart,
   Bar,
@@ -13,9 +14,7 @@ import {
   Pie,
   Cell,
   LineChart,
-  Line,
-  AreaChart,
-  Area
+  Line
 } from 'recharts';
 
 export interface Attendance {
@@ -52,86 +51,135 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   const [selectedAttendance, setSelectedAttendance] = useState<{subject: string, status: 'п' | 'у' | 'б' | 'н', number: number, topic: string, teacher: string, reason?: string, startDate?: string, endDate?: string} | null>(null);
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [error, setError] = useState<string | null>(null);
+  const [isUsingCache, setIsUsingCache] = useState(false);
 
-  // Загрузка данных посещаемости
-  useEffect(() => {
-    const fetchAttendanceData = async () => {
-      try {
+  // Функция загрузки данных с приоритетом API
+  const fetchAttendanceData = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else {
         setLoading(true);
-        // Временные данные вместо API
-        const data: Attendance[] = [
-          {
-            id: 1,
-            subject: 'Разработка программных модулей',
-            teacher: 'Цымбалюк Л.Н.',
-            statuses: ['п', 'п', 'у', 'п', 'п', 'н', 'п', 'п', 'б', 'п'],
-            quantity: 10,
-            percent: 80,
-            reasonStatus: [
-              { id: 1, date: '13.09.2024', topic: 'Введение', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 2, date: '20.09.2024', topic: 'Синтаксис', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 3, date: '27.09.2024', topic: 'Морфология', status: 'у', teacher: 'Иванова А.С.', reason: 'Семейные обстоятельства' },
-              { id: 4, date: '04.10.2024', topic: 'Фонетика', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 5, date: '11.10.2024', topic: 'Орфография', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 6, date: '18.10.2024', topic: 'Пунктуация', status: 'н', teacher: 'Иванова А.С.' },
-              { id: 7, date: '25.10.2024', topic: 'Стилистика', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 8, date: '01.11.2024', topic: 'Лексикология', status: 'п', teacher: 'Иванова А.С.' },
-              { id: 9, date: '08.11.2024', topic: 'Фразеология', status: 'б', teacher: 'Иванова А.С.', startDate: '08.11.2024', endDate: '15.11.2024' },
-              { id: 10, date: '15.11.2024', topic: 'Словообразование', status: 'п', teacher: 'Иванова А.С.' },
-            ]
-          },
-          {
-            id: 2,
-            subject: 'Внедрение и поддержка компьютерных систем',
-            teacher: 'Богданов М.М.',
-            statuses: ['п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п'],
-            quantity: 10,
-            percent: 100,
-            reasonStatus: [
-              { id: 1, date: '14.09.2024', topic: 'Алгебра', status: 'п', teacher: 'Сидоров В.П.' },
-              { id: 2, date: '21.09.2024', topic: 'Геометрия', status: 'п', teacher: 'Сидоров В.П.' },
-              { id: 3, date: '28.09.2024', topic: 'Тригонометрия', status: 'п', teacher: 'Сидоров В.П.' },
-            ]
-          },
-          {
-            id: 3,
-            subject: 'Поддержка и тестирование программных модулей',
-            teacher: 'Андреев А.И.',
-            statuses: ['п', 'п', 'п', 'у', 'п', 'п', 'п', 'п', 'п', 'п'],
-            quantity: 10,
-            percent: 90,
-            reasonStatus: [
-              { id: 1, date: '16.09.2024', topic: 'JavaScript', status: 'п', teacher: 'Козлов Д.А.' },
-              { id: 2, date: '23.09.2024', topic: 'React', status: 'п', teacher: 'Козлов Д.А.' },
-              { id: 3, date: '30.09.2024', topic: 'API', status: 'п', teacher: 'Козлов Д.А.' },
-              { id: 4, date: '07.10.2024', topic: 'TypeScript', status: 'у', teacher: 'Козлов Д.А.', reason: 'Выезд на соревнования' },
-            ]
-          },
-          {
-            id: 4,
-            subject: 'Системное программирование',
-            teacher: 'Иванов А.',
-            statuses: ['п', 'п', 'н', 'п', 'у', 'п', 'п', 'н', 'п', 'п'],
-            quantity: 10,
-            percent: 70,
-            reasonStatus: [
-              { id: 1, date: '17.09.2024', topic: 'SQL', status: 'п', teacher: 'Николаев С.В.' },
-              { id: 2, date: '24.09.2024', topic: 'Нормализация', status: 'п', teacher: 'Николаев С.В.' },
-              { id: 3, date: '01.10.2024', topic: 'Транзакции', status: 'н', teacher: 'Николаев С.В.' },
-              { id: 4, date: '08.10.2024', topic: 'Оптимизация', status: 'п', teacher: 'Николаев С.В.' },
-              { id: 5, date: '15.10.2024', topic: 'Индексы', status: 'у', teacher: 'Николаев С.В.', reason: 'Посещение врача' },
-            ]
-          }
-        ];
-        setAttendanceData(data);
-      } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+      setError(null);
+      setIsUsingCache(false);
 
+      // Сначала пытаемся загрузить с API
+      console.log('Загрузка данных посещаемости с API...');
+      // Временные данные вместо API
+      const data: Attendance[] = [
+        {
+          id: 1,
+          subject: 'Разработка программных модулей',
+          teacher: 'Цымбалюк Л.Н.',
+          statuses: ['п', 'п', 'у', 'п', 'п', 'н', 'п', 'п', 'б', 'п'],
+          quantity: 10,
+          percent: 80,
+          reasonStatus: [
+            { id: 1, date: '13.09.2024', topic: 'Введение', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 2, date: '20.09.2024', topic: 'Синтаксис', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 3, date: '27.09.2024', topic: 'Морфология', status: 'у', teacher: 'Иванова А.С.', reason: 'Семейные обстоятельства' },
+            { id: 4, date: '04.10.2024', topic: 'Фонетика', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 5, date: '11.10.2024', topic: 'Орфография', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 6, date: '18.10.2024', topic: 'Пунктуация', status: 'н', teacher: 'Иванова А.С.' },
+            { id: 7, date: '25.10.2024', topic: 'Стилистика', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 8, date: '01.11.2024', topic: 'Лексикология', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 9, date: '08.11.2024', topic: 'Фразеология', status: 'б', teacher: 'Иванова А.С.', startDate: '08.11.2024', endDate: '15.11.2024' },
+            { id: 10, date: '15.11.2024', topic: 'Словообразование', status: 'п', teacher: 'Иванова А.С.' },
+          ]
+        },
+        {
+          id: 2,
+          subject: 'Внедрение и поддержка компьютерных систем',
+          teacher: 'Богданов М.М.',
+          statuses: ['п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п'],
+          quantity: 10,
+          percent: 100,
+          reasonStatus: [
+            { id: 1, date: '14.09.2024', topic: 'Алгебра', status: 'п', teacher: 'Сидоров В.П.' },
+            { id: 2, date: '21.09.2024', topic: 'Геометрия', status: 'п', teacher: 'Сидоров В.П.' },
+            { id: 3, date: '28.09.2024', topic: 'Тригонометрия', status: 'п', teacher: 'Сидоров В.П.' },
+          ]
+        },
+        {
+          id: 3,
+          subject: 'Поддержка и тестирование программных модулей',
+          teacher: 'Андреев А.И.',
+          statuses: ['п', 'п', 'п', 'у', 'п', 'п', 'п', 'п', 'п', 'п'],
+          quantity: 10,
+          percent: 90,
+          reasonStatus: [
+            { id: 1, date: '16.09.2024', topic: 'JavaScript', status: 'п', teacher: 'Козлов Д.А.' },
+            { id: 2, date: '23.09.2024', topic: 'React', status: 'п', teacher: 'Козлов Д.А.' },
+            { id: 3, date: '30.09.2024', topic: 'API', status: 'п', teacher: 'Козлов Д.А.' },
+            { id: 4, date: '07.10.2024', topic: 'TypeScript', status: 'у', teacher: 'Козлов Д.А.', reason: 'Выезд на соревнования' },
+          ]
+        },
+        {
+          id: 4,
+          subject: 'Системное программирование',
+          teacher: 'Иванов А.',
+          statuses: ['п', 'п', 'н', 'п', 'у', 'п', 'п', 'н', 'п', 'п'],
+          quantity: 10,
+          percent: 70,
+          reasonStatus: [
+            { id: 1, date: '17.09.2024', topic: 'SQL', status: 'п', teacher: 'Николаев С.В.' },
+            { id: 2, date: '24.09.2024', topic: 'Нормализация', status: 'п', teacher: 'Николаев С.В.' },
+            { id: 3, date: '01.10.2024', topic: 'Транзакции', status: 'н', teacher: 'Николаев С.В.' },
+            { id: 4, date: '08.10.2024', topic: 'Оптимизация', status: 'п', teacher: 'Николаев С.В.' },
+            { id: 5, date: '15.10.2024', topic: 'Индексы', status: 'у', teacher: 'Николаев С.В.', reason: 'Посещение врача' },
+          ]
+        }
+      ];
+      setAttendanceData(data);
+      
+    } catch (error) {
+      console.error('Ошибка при загрузке данных с API:', error);
+      
+      // Если ошибка сети, пробуем загрузить из кэша
+      try {
+        console.log('Попытка загрузки из кэша...');
+        const cacheKey = `attendance_${studentId}`;
+        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          // Проверяем актуальность кэша (10 минут)
+          if (Date.now() - cachedData.timestamp < 10 * 60 * 1000) {
+            setAttendanceData(cachedData.data ?? []);
+            setIsUsingCache(true);
+            setError('Используются кэшированные данные. Нет соединения с сервером.');
+            console.log('Данные загружены из кэша');
+          } else {
+            throw new Error('Кэш устарел');
+          }
+        } else {
+          throw new Error('Нет данных в кэше');
+        }
+      } catch (cacheError) {
+        console.error('Ошибка при загрузке из кэша:', cacheError);
+        setError('Не удалось загрузить данные. Проверьте подключение к интернету.');
+        setAttendanceData([]);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Функция принудительного обновления
+  const handleRefresh = async () => {
+    // Инвалидируем кэш перед обновлением
+    const cacheKey = `attendance_${studentId}`;
+    localStorage.removeItem(`cache_${cacheKey}`);
+    await fetchAttendanceData(true);
+  };
+
+  // Загрузка данных при монтировании
+  useEffect(() => {
     fetchAttendanceData();
   }, [studentId]);
 
@@ -233,17 +281,30 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   ];
 
   // Компоненты
+  const RefreshButton = () => (
+    <button 
+      className={`at-refresh-btn ${refreshing ? 'at-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`at-refresh-icon ${refreshing ? 'at-refresh-spin' : ''}`}
+      />
+    </button>
+  );
+
   const SemesterSelector = () => (
     <div className="at-semester-selector">
       <div className="at-semester-buttons">
         <button
-          className={`at-semester-btn ${selectedSemester === 'first' ? 'active' : ''}`}
+          className={`at-semester-btn ${selectedSemester === 'first' ? 'at-active' : ''}`}
           onClick={() => setSelectedSemester('first')}
         >
           1 семестр
         </button>
         <button
-          className={`at-semester-btn ${selectedSemester === 'second' ? 'active' : ''}`}
+          className={`at-semester-btn ${selectedSemester === 'second' ? 'at-active' : ''}`}
           onClick={() => setSelectedSemester('second')}
         >
           2 семестр
@@ -255,13 +316,13 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   const ViewToggle = () => (
     <div className="at-view-toggle">
       <button
-        className={`at-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+        className={`at-toggle-btn ${viewMode === 'grid' ? 'at-active' : ''}`}
         onClick={() => setViewMode('grid')}
       >
         Сетка
       </button>
       <button
-        className={`at-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+        className={`at-toggle-btn ${viewMode === 'list' ? 'at-active' : ''}`}
         onClick={() => setViewMode('list')}
       >
         Список
@@ -426,7 +487,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   // Рендер аналитики
   const renderAnalytics = () => (
     <div className="at-analytics-container">
-
       <div className="at-stats-cards">
         <div className="at-stat-card">
           <div className="at-stat-content">
@@ -448,7 +508,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
             <div className="at-stat-label">Всего пропусков</div>
           </div>
         </div>
-
       </div>
 
       <div className="at-charts-grid">
@@ -502,22 +561,34 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
 
   return (
     <div className="at-attendance-section">
+      {/* Статусная информация */}
+      {(error || isUsingCache) && (
+        <div className="at-status-info">
+          {error && <div className="at-error-message">{error}</div>}
+          {isUsingCache && (
+            <div className="at-cache-warning">
+              Используются кэшированные данные. Некоторые данные могут быть устаревшими.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Навигация */}
       <div className="at-nav">
         <button
-          className={`at-nav-btn ${activeTab === 'semesters' ? 'active' : ''}`}
+          className={`at-nav-btn ${activeTab === 'semesters' ? 'at-active' : ''}`}
           onClick={() => setActiveTab('semesters')}
         >
           По семестрам
         </button>
         <button
-          className={`at-nav-btn ${activeTab === 'subjects' ? 'active' : ''}`}
+          className={`at-nav-btn ${activeTab === 'subjects' ? 'at-active' : ''}`}
           onClick={() => setActiveTab('subjects')}
         >
           По предметам
         </button>
         <button
-          className={`at-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          className={`at-nav-btn ${activeTab === 'analytics' ? 'at-active' : ''}`}
           onClick={() => setActiveTab('analytics')}
         >
           Аналитика
@@ -527,7 +598,10 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
       {/* Контролы */}
       <div className="at-controls-section">
         <SemesterSelector />
-        <ViewToggle />
+        <div className="at-controls-section-left">
+          <ViewToggle />
+          <RefreshButton />
+        </div>
       </div>
 
       {/* Контент */}
@@ -567,7 +641,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
                   <div className="at-attendance-timeline">
                     {selectedSubjectData.reasonStatus?.map((detail) => (
                       <div key={detail.id} className="at-timeline-item">
-                        <div className="at-timeline-marker"></div>
                         <div className="at-timeline-content">
                           <div className="at-attendance-header">
                             <span className="at-attendance-topic">{detail.topic}</span>

@@ -1,5 +1,3 @@
-/* AttendanceSectionStyle.css */
-
 /* Основные стили */
 .at-attendance-section {
   min-height: 100vh;
@@ -44,7 +42,6 @@
   justify-content: center;
   gap: 10px;
   margin-bottom: 30px;
-  width: 100%;
 }
 
 .at-nav-btn {
@@ -65,10 +62,55 @@
   transform: translateY(-2px);
 }
 
-.at-nav-btn.active {
+.at-nav-btn.at-active {
   background: #002FA7;
   color: white;
   box-shadow: 0 8px 25px rgba(0, 47, 167, 0.3);
+}
+
+/* Кнопка обновления */
+.at-refresh-btn {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.at-refresh-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  color: #002FA7;
+}
+
+.at-refresh-btn:disabled {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.at-refresh-icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.at-refresh-spin {
+  animation: at-spin 1s linear infinite;
 }
 
 /* Контролы */
@@ -76,8 +118,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 0 40px;
+  gap: 20px;
+  margin-bottom: 24px;
+  margin-left: 34px;
+  flex-wrap: wrap;
+}
+
+.at-controls-section-left {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-right: 34px;
+  flex-wrap: wrap;
 }
 
 /* Селектор семестра */
@@ -105,7 +158,7 @@
   transition: all 0.3s ease;
 }
 
-.at-semester-btn.active {
+.at-semester-btn.at-active {
   background: white;
   color: #002FA7;
   box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
@@ -121,9 +174,9 @@
 }
 
 .at-toggle-btn {
-  padding: 8px 16px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
   color: #6c757d;
   font-weight: 500;
@@ -131,15 +184,40 @@
   transition: all 0.3s ease;
 }
 
-.at-toggle-btn.active {
+.at-toggle-btn.at-active {
   background: white;
   color: #002FA7;
   box-shadow: 0 2px 8px rgba(0, 47, 167, 0.2);
 }
 
+/* Статусная информация */
+.at-status-info {
+  margin-bottom: 20px;
+}
+
+.at-error-message {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 500;
+  border-left: 4px solid #ef4444;
+}
+
+.at-cache-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 500;
+  border-left: 4px solid #f59e0b;
+}
+
 /* Основной контент */
 .at-content {
-  padding: 0 40px 40px;
+  padding: 0 25px 25px;
 }
 
 .at-tab-content {
@@ -187,6 +265,7 @@
   font-weight: 600;
   color: #2d3748;
   line-height: 1.3;
+  text-align: left;
 }
 
 .at-teacher-badge {
@@ -307,20 +386,13 @@
 }
 
 .at-subject-cell {
-  width: 20%;
+  width: 25%;
+  text-align: left;
 }
 
 .at-subject-cell .at-subject-name {
   font-weight: 600;
   color: #2d3748;
-}
-
-.at-teacher-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #4a5568;
-  font-size: 0.9em;
 }
 
 .at-attendance-cell {
@@ -330,74 +402,25 @@
 .at-attendance-stack {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  max-width: 100%;
+  gap: 6px;
 }
 
 .at-stack-status {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 0.8em;
+  font-size: 0.85em;
   cursor: pointer;
   transition: all 0.3s ease;
-  flex-shrink: 0;
 }
 
 .at-stack-status:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.at-percent-cell {
-  width: 15%;
-}
-
-.at-percent-badge {
- padding: 8px 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.9em;
-  text-align: center;
-  min-width: 60px;
-  display: inline-block;
-}
-
-.at-status-cell {
-  width: 15%;
-}
-
-.at-status-badge {
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.85em;
-  text-align: center;
-}
-
-.at-status-badge.excellent {
-  background: rgba(44, 187, 0, 0.1);
-  color: #2cbb00;
-}
-
-.at-status-badge.good {
-  background: rgba(165, 219, 40, 0.1);
-  color: #a5db28;
-}
-
-.at-status-badge.satisfactory {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-}
-
-.at-status-badge.poor {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
 }
 
 .at-absences-cell {
@@ -450,6 +473,20 @@
   color: #374151;
 }
 
+.at-percent-cell {
+  width: 15%;
+}
+
+.at-percent-badge {
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9em;
+  text-align: center;
+  min-width: 60px;
+  display: inline-block;
+}
+
 /* Аналитика */
 .at-analytics-container {
   background: white;
@@ -457,24 +494,6 @@
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 47, 167, 0.1);
-}
-
-.at-analytics-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.at-analytics-header h2 {
-  margin: 0 0 10px 0;
-  color: #2d3748;
-  font-size: 2em;
-  font-weight: 700;
-}
-
-.at-analytics-header p {
-  margin: 0;
-  color: #718096;
-  font-size: 1.1em;
 }
 
 /* Карточки статистики */
@@ -915,7 +934,7 @@
   }
   
   .at-popup-content {
-    padding: 24px 20px;
+    padding: 30px 20px;
   }
   
   .at-attendance-info-minimal {

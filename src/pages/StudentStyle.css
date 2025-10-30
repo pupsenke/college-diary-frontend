@@ -19,6 +19,7 @@
   width: 100%;
   max-width: 1400px;
   margin: auto;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
 }
 
 /* Основной контент */
