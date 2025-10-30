@@ -1,6 +1,7 @@
 import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
 const API_BASE_URL = 'http://localhost:8080/api/v1';
+
 export interface GroupData {
   id: number;
   numberGroup: number;
@@ -411,7 +412,7 @@ export const apiService = {
 
   // Функция скачивания документа
   async downloadDocument(id: number): Promise<void> {
-    console.log(`📥 Downloading document with ID: ${id}`);
+    console.log(`Downloading document with ID: ${id}`);
     
     try {
       // Получаем информацию о документе
