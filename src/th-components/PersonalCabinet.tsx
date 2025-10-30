@@ -2,13 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import './PersonalCabinet.css';
 
+// Интерфейс для данных из API
+interface StaffApiResponse {
+  id: number;
+  patronymic: string;
+  name: string;
+  lastName: string;
+  login: string;
+  password: string;
+  email: string | null;
+  staffPosition: Array<{
+    id: number;
+    name: string;
+  }>;
+}
+
 interface TeacherData {
   firstName: string;
   lastName: string;
   middleName: string;
   email: string;
-  // specialty: string;
-  // experience: string;
+  position: string;
   disciplines: string[];
 }
 
@@ -26,9 +40,8 @@ export const PersonalCabinet: React.FC<Props> = ({
     firstName: '',
     lastName: '',
     middleName: '',
-    email: 's123456@std.nosu.ru',
-    /* specialty: 'Математика и информатика',
-    experience: '27 лет', */
+    email: '',
+    position: '',
     disciplines: [
       'Разработка программных модулей',
       'Дипломное проектирование',
@@ -42,14 +55,14 @@ export const PersonalCabinet: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Функция для получения данных преподавателя
-  const fetchTeacherData = async (teacherId: number) => {
+  // Функция для получения данных преподавателя из API
+  const fetchTeacherData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Здесь будет реальный запрос к API
-      const response = await fetch(`http://localhost:8080/api/v1/teachers/${teacherId}`, {
+      // Запрашиваем всех сотрудников
+      const response = await fetch('http://localhost:8080/api/v1/staffs', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -57,74 +70,91 @@ export const PersonalCabinet: React.FC<Props> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка при получении данных преподавателя: ${response.status}`);
+        throw new Error(`Ошибка при получении данных: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data;
+      const staffData: StaffApiResponse[] = await response.json();
+      
+      // Находим текущего пользователя в списке сотрудников
+      const currentTeacher = staffData.find(staff => 
+        staff.name === user?.name && 
+        staff.lastName === user?.lastName &&
+        staff.patronymic === user?.patronymic
+      );
+
+      if (currentTeacher) {
+        // Преобразуем данные из API в наш формат
+        const transformedData: TeacherData = {
+          firstName: currentTeacher.name,
+          lastName: currentTeacher.lastName,
+          middleName: currentTeacher.patronymic,
+          email: currentTeacher.email || `${currentTeacher.login}@nosu.ru`,
+          position: currentTeacher.staffPosition[0]?.name || 'Преподаватель',
+          disciplines: [
+            'Разработка программных модулей',
+            'Дипломное проектирование',
+            'Операционные системы и среды',
+            'Основы разработки программного обеспечения',
+            'Технология разработки и защиты баз данных',
+            'Системное программирование',
+            'Компьютерные сети'
+          ]
+        };
+
+        setTeacherData(transformedData);
+      } else {
+        // Если преподаватель не найден в API, используем данные из контекста
+        const fallbackData: TeacherData = {
+          firstName: user?.name || '',
+          lastName: user?.lastName || '',
+          middleName: user?.patronymic || '',
+          email: user?.email || `${user?.login}@nosu.ru` || 's123456@std.nosu.ru',
+          position: 'Преподаватель',
+          disciplines: [
+            'Разработка программных модулей',
+            'Дипломное проектирование',
+            'Операционные системы и среды',
+            'Основы разработки программного обеспечения',
+            'Технология разработки и защиты баз данных',
+            'Системное программирование',
+            'Компьютерные сети'
+          ]
+        };
+        setTeacherData(fallbackData);
+      }
+
     } catch (err) {
       console.error('Ошибка при загрузке данных преподавателя:', err);
       setError('Не удалось загрузить данные преподавателя');
-      return null;
+      
+      // В случае ошибки используем данные из контекста
+      const fallbackData: TeacherData = {
+        firstName: user?.name || '',
+        lastName: user?.lastName || '',
+        middleName: user?.patronymic || '',
+        email: user?.email || `${user?.login}@nosu.ru` || 's123456@std.nosu.ru',
+        position: 'Преподаватель',
+        disciplines: [
+          'Разработка программных модулей',
+          'Дипломное проектирование',
+          'Операционные системы и среды',
+          'Основы разработки программного обеспечения',
+          'Технология разработки и защиты баз данных',
+          'Системное программирование',
+          'Компьютерные сети'
+        ]
+      };
+      setTeacherData(fallbackData);
     } finally {
       setLoading(false);
     }
   };
 
-  // Функция для получения дисциплин преподавателя
-  const fetchTeacherDisciplines = async (teacherId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/teachers/${teacherId}/disciplines`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Ошибка при получении дисциплин: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      console.error('Ошибка при загрузке дисциплин:', err);
-      return [];
-    }
-  };
-
-  // Заполняем данные из контекста пользователя и получаем данные преподавателя
+  // Загружаем данные при монтировании компонента
   useEffect(() => {
-    const initializeTeacherData = async () => {
-      if (user) {
-        const baseData = {
-          firstName: user.name || '',
-          lastName: user.lastName || '',
-          middleName: user.patronymic || '',
-          email: user.email || 's123456@std.nosu.ru'
-        };
-
-        setTeacherData(prev => ({ ...prev, ...baseData }));
-
-        /* // Получаем дополнительные данные преподавателя
-        if (user.id) {
-          const teacherData = await fetchTeacherData(user.id);
-          const disciplines = await fetchTeacherDisciplines(user.id);
-          
-          if (teacherData) {
-            setTeacherData(prev => ({
-              ...prev,
-              ...baseData,
-              // specialty: teacherData.specialty || 'Математика и информатика',
-              // experience: teacherData.experience || '27 лет',
-              disciplines: disciplines.length > 0 ? disciplines : prev.disciplines
-            })); 
-          }
-        }*/
-      }
-    };
-
-    initializeTeacherData();
+    if (user) {
+      fetchTeacherData();
+    }
   }, [user]);
 
   const handlePasswordChange = () => {
@@ -135,12 +165,6 @@ export const PersonalCabinet: React.FC<Props> = ({
   const handleDisciplineClick = (discipline: string) => {
     if (onNavigateToGroups) {
       onNavigateToGroups(discipline);
-    }
-  };
-
-  const handleViewAllDisciplines = () => {
-    if (onNavigateToDisciplines) {
-      onNavigateToDisciplines();
     }
   };
 
@@ -176,6 +200,10 @@ export const PersonalCabinet: React.FC<Props> = ({
               <span className="info-label">Эл. почта:</span>
               <span className="info-value">{teacherData.email}</span>
             </div>
+            <div className="info-item">
+              <span className="info-label">Должность:</span>
+              <span className="info-value">{teacherData.position}</span>
+            </div>
           </div>
         </div>
         
@@ -183,26 +211,12 @@ export const PersonalCabinet: React.FC<Props> = ({
           <button 
             className="change-password-btn"
             onClick={handlePasswordChange}
+            disabled={loading}
           >
-            Сменить пароль
+            {loading ? 'Загрузка...' : 'Сменить пароль'}
           </button>
         </div>
       </div>
-
-      {/* <div className="professional-info-main">
-        <div className="professional-info-section">
-          <div className="info-column">
-            <div className="info-item">
-              <span className="info-label">Специальность:</span>
-              <span className="info-value">{teacherData.specialty}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Общий стаж:</span>
-              <span className="info-value">{teacherData.experience}</span>
-            </div>
-          </div>
-        </div>
-      </div> */}
 
       <div className="disciplines-section">
         <div className="disciplines-header">
@@ -229,7 +243,14 @@ export const PersonalCabinet: React.FC<Props> = ({
       )}
       
       {error && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#e53e3e' }}>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '20px', 
+          color: '#e53e3e',
+          backgroundColor: '#fed7d7',
+          margin: '20px',
+          borderRadius: '8px'
+        }}>
           {error}
         </div>
       )}

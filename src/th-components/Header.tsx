@@ -30,16 +30,17 @@ export const Header: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
   const handleDisciplines = () => {
-    navigate('/teacher/disciplines');
+    navigate('/teacher?tab=disciplines');
     setIsDropdownOpen(false);
   };
-  
+
   const handleSchedule = () => {
-    navigate('/teacher/schedule');
+    navigate('/teacher?tab=schedule');
     setIsDropdownOpen(false);
   };
 

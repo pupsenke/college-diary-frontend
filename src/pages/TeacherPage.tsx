@@ -5,11 +5,10 @@ import { GroupsSection } from '../th-components/GroupsSection';
 import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
 import { TeacherDashboard } from '../th-components/TeacherDashboard';
-
 import { useUser } from '../context/UserContext';
 import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const TeacherPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -18,20 +17,44 @@ export const TeacherPage: React.FC = () => {
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const { user } = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Синхронизация активной вкладки с URL параметрами
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['personal', 'disciplines', 'groups', 'schedule'].includes(tab)) {
+      setActiveTab(tab);
+    } else {
+      setActiveTab('personal');
+      searchParams.set('tab', 'personal');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    searchParams.set('tab', tab);
+    setSearchParams(searchParams);
+    
+    // При переходе на вкладку "Группы" сбрасываем выбранную дисциплину
+    if (tab === 'groups') {
+      setSelectedDiscipline(undefined);
+    }
+  };
 
   // Добавляем/убираем класс на body при сворачивании меню
-useEffect(() => {
-  if (sidebarCollapsed) {
-    document.body.classList.add('menu-collapsed');
-  } else {
+  useEffect(() => {
+    if (sidebarCollapsed) {
+      document.body.classList.add('menu-collapsed');
+    } else {
       document.body.classList.remove('menu-collapsed');
-  }
+    }
     
     // Очистка при размонтировании
-  return () => {
-    document.body.classList.remove('menu-collapsed');
-  };
-}, [sidebarCollapsed]);
+    return () => {
+      document.body.classList.remove('menu-collapsed');
+    };
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!user) {
@@ -64,7 +87,7 @@ useEffect(() => {
     if (disciplineName) {
       setSelectedDiscipline(disciplineName);
     }
-    setActiveTab('disciplines');
+    handleTabChange('disciplines');
   };
 
   // Функция для перехода к группам с выбранной дисциплиной
@@ -72,7 +95,7 @@ useEffect(() => {
     if (disciplineName) {
       setSelectedDiscipline(disciplineName);
     }
-    setActiveTab('groups');
+    handleTabChange('groups');
   };
 
   const renderContent = () => {
@@ -203,13 +226,7 @@ useEffect(() => {
                 <button
                   key={tab}
                   className={`nav-item ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    // При переходе на вкладку "Группы" сбрасываем выбранную дисциплину
-                    if (tab === 'groups') {
-                      setSelectedDiscipline(undefined);
-                    }
-                  }}
+                  onClick={() => handleTabChange(tab)}
                   data-tooltip={sidebarCollapsed ? getTabTitle(tab) : ''}
                 >
                   <span className="nav-icon">{getTabIcon(tab)}</span>
