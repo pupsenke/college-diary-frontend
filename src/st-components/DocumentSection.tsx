@@ -1095,15 +1095,6 @@ export const DocumentsSection: React.FC = () => {
                 : `Нет документов типа "${selectedDocumentType}"`
               }
             </p>
-            {user && isStudent && (
-              <button 
-                className="ds-retry-btn"
-                onClick={refreshDocuments}
-                style={{ marginTop: '10px' }}
-              >
-                Попробовать снова
-              </button>
-            )}
           </div>
         )}
       </div>

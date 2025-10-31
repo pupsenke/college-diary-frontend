@@ -1,0 +1,331 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.dh-header-main {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  margin-bottom: 18px;
+  min-height: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.dh-image {
+  width: 50px;
+  height: 50px;
+}
+
+.dh-header-logo-area {
+  display: flex;
+  align-items: center;
+}
+
+.dh-logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dh-logo-title {
+  color: #002FA7;
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 0px;
+  margin-left: 8px;
+}
+
+.dh-logo-subtitle {
+  color: #002FA7;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 0px;
+  margin-left: 8px;
+}
+
+.dh-header-nav-area {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+}
+
+.dh-department-nav {
+  display: flex;
+  gap: 8px;
+  background: #f7fafc;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-nav-item {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dh-nav-item:hover {
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.dh-nav-item:active {
+  background: #e2e8f0;
+}
+
+.dh-header-profile-area {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.dh-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #d3dbff5d;
+  border-radius: 16px;
+  padding: 8px 18px;
+  border: 1.5px solid rgba(99, 153, 254, 0.3);
+  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-profile-card:hover {
+  background: #c5d0ff85;
+  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
+}
+
+.dh-profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 8px;
+}
+
+.dh-profile-name {
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.dh-profile-info .dh-profile-role {
+  font-size: 12px;
+  color: #002FA7;
+  font-weight: 300;
+}
+
+.dh-profile-arrow {
+  font-size: 12px;
+  color: #547ced;
+  transition: transform 0.3s ease;
+  margin-left: 5px;
+}
+
+.dh-profile-arrow.dh-rotated {
+  transform: rotate(180deg);
+}
+
+/* Выпадающее меню */
+.dh-profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  z-index: 4;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  animation: dh-fadeIn 0.2s ease-out;
+}
+
+@keyframes dh-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dh-dropdown-user-info {
+  padding: 16px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dh-dropdown-user-info .dh-user-gradient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  opacity: 1;
+  z-index: -1;
+}
+
+.dh-dropdown-fullname {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.dh-dropdown-position {
+  display: block;
+  font-size: 13px;
+  color: #d6e1ff;
+  font-weight: 400;
+}
+
+.dh-dropdown-menu {
+  padding: 8px 0;
+}
+
+.dh-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #4664b5;
+  text-align: left;
+  font-weight: 400;
+}
+
+.dh-dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+  padding-left: 22px;
+}
+
+.dh-dropdown-item.dh-logout {
+  color: #e53e3e;
+  margin-top: 8px;
+}
+
+.dh-dropdown-item.dh-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+.dh-dropdown-divider {
+  height: 1px;
+  background: rgba(102, 126, 234, 0.1);
+  margin: 8px 0;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 1024px) {
+  .dh-header-main {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .dh-header-nav-area {
+    order: 3;
+    flex: 0 0 100%;
+    margin-top: 12px;
+  }
+  
+  .dh-department-nav {
+    overflow-x: auto;
+    padding: 4px;
+  }
+  
+  .dh-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .dh-header-main {
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .dh-logo-title {
+    font-size: 16px;
+  }
+  
+  .dh-logo-subtitle {
+    font-size: 11px;
+  }
+  
+  .dh-profile-card {
+    padding: 6px 12px;
+  }
+  
+  .dh-profile-dropdown {
+    width: 240px;
+    right: -10px;
+  }
+  
+  .dh-profile-info {
+    align-items: flex-start;
+  }
+  
+  .dh-dropdown-item {
+    padding: 9px 18px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-logo-mark {
+    flex-direction: column;
+    text-align: center;
+    gap: 5px;
+  }
+  
+  .dh-logo-title,
+  .dh-logo-subtitle {
+    margin-left: 0;
+  }
+  
+  .dh-profile-name {
+    font-size: 12px;
+  }
+  
+  .dh-dropdown-user-info {
+    padding: 14px 16px 18px;
+  }
+  
+  .dh-dropdown-fullname {
+    font-size: 14px;
+  }
+  
+  .dh-dropdown-position {
+    font-size: 12px;
+  }
+}

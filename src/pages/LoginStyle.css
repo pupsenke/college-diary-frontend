@@ -375,3 +375,136 @@
     font-size: 20px;
   }
 }
+
+
+/* Стили для модального окна выбора роли */
+.lp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(50, 64, 124, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.lp-modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.lp-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.lp-modal-header h3 {
+  margin: 0 0 4px 0;
+  color: #002FA7;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.lp-modal-header p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.lp-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.lp-role-card {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8f9fa;
+}
+
+.lp-role-card:hover {
+  border-color: #002FA7;
+  background: #e3f2fd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(58, 98, 199, 0.2);
+}
+
+.lp-role-card:active {
+  transform: translateY(0);
+}
+
+.lp-role-header h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.lp-role-description {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.lp-modal-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.lp-cancel-button {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.lp-cancel-button:hover {
+  background: #7f8c8d;
+}
+
+
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .lp-modal-content {
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .lp-role-card {
+    padding: 12px;
+  }
+}

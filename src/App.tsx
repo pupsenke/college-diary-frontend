@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
 import { MetodistPage } from './pages/MetodistPage';
+import { DepartmentHeadPage } from './pages/departmentHeadPage';
 import { ProtectedRoute } from './st-components/ProtectedRoute';
 
 function App() {
@@ -37,6 +38,15 @@ function App() {
             element={
               <ProtectedRoute requiredUserType="metodist">
                 <MetodistPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/departmentHead/*" 
+            element={
+              <ProtectedRoute requiredUserType="departmentHead">
+                <DepartmentHeadPage />
               </ProtectedRoute>
             } 
           />

@@ -23,7 +23,7 @@ export interface Staff {
   login: string;
   position: string;
   staffPosition?: any[];
-  userType: 'teacher' | 'metodist';
+  userType: 'teacher' | 'metodist' | 'departmentHead';
   email?: string;
   telephone?: string;
   birthDate?: string;
@@ -45,6 +45,7 @@ interface UserContextType {
   isStudent: boolean;
   isTeacher: boolean;
   isMetodist: boolean;
+  isDepartmentHead: boolean;
   isLoading: boolean;
   logout: () => void;
   userId: number | null;
@@ -67,6 +68,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const isStudent = user?.userType === 'student';
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
+  const isDepartmentHead = user?.userType === 'departmentHead';
   const userId = user?.id || null;
 
   // Сохранение пользователя в сессию
@@ -119,12 +121,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // Обновленная функция setUser с сохранением в сессию
   const setUserWithSession = (userData: User | null) => {
+    console.log('setUserWithSession called with:', userData);
     if (userData) {
       setUser(userData);
       saveUserToSession(userData);
+      console.log('User set in context and session:', userData);
     } else {
       setUser(null);
       clearSession();
+      console.log('User cleared from context and session');
     }
   };
 
@@ -194,6 +199,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isStudent,
     isTeacher,
     isMetodist,
+    isDepartmentHead,
     isLoading,
     logout,
     userId

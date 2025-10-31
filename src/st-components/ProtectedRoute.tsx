@@ -4,14 +4,24 @@ import { useUser } from '../context/UserContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredUserType?: 'student' | 'teacher' | 'metodist';
+  requiredUserType?: 'student' | 'teacher' | 'metodist' | 'departmentHead';
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredUserType 
 }) => {
-  const { user, isLoading, isStudent, isTeacher, isMetodist } = useUser();
+  const { user, isLoading, isStudent, isTeacher, isMetodist, isDepartmentHead } = useUser();
+
+  console.log('ProtectedRoute debug:', {
+    user,
+    isLoading,
+    isStudent,
+    isTeacher,
+    isMetodist,
+    isDepartmentHead,
+    requiredUserType
+  });
 
   if (isLoading) {
     return (
@@ -23,6 +33,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
+    console.log('ProtectedRoute: No user, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
@@ -30,12 +41,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasAccess = 
       (requiredUserType === 'student' && isStudent) ||
       (requiredUserType === 'teacher' && isTeacher) ||
-      (requiredUserType === 'metodist' && isMetodist);
+      (requiredUserType === 'metodist' && isMetodist) ||
+      (requiredUserType === 'departmentHead' && isDepartmentHead);
+
+    console.log('ProtectedRoute access check:', {
+      requiredUserType,
+      hasAccess,
+      userType: user.userType
+    });
 
     if (!hasAccess) {
+      console.log('ProtectedRoute: Access denied, redirecting to unauthorized');
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
+  console.log('ProtectedRoute: Access granted');
   return <>{children}</>;
 };
