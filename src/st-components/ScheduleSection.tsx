@@ -53,7 +53,9 @@ const pairTimes: Record<number, { start: string; end: string }> = {
   3: { start: '12:45', end: '14:25' },
   4: { start: '14:35', end: '16:15' },
   5: { start: '16:25', end: '18:05' },
-  6: { start: '18:15', end: '19:55' }
+  6: { start: '18:15', end: '19:55' },
+  7: { start: '20:05', end: '21:45' },
+  8: { start: '21:55', end: '23:35' },
 };
 
 function timeToMinutes(time: string): number {
