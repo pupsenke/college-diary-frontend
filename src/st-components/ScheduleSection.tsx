@@ -7,17 +7,17 @@ type ApiLesson = {
   dayWeek: string;
   typeWeek: string;
   numPair: number;
-  room: number;
+  room: number | null;
   idSt: number;
   idGroup: number;
-  subgroup: number;
+  subgroup: number | null;
   replacement: boolean;
   idSubject: number;
   nameSubject: string;
-  idTeacher: number;
-  lastnameTeacher: string;
-  nameTeacher: string;
-  patronymicTeacher: string;
+  idTeacher: number | null;
+  lastnameTeacher: string | null;
+  nameTeacher: string | null;
+  patronymicTeacher: string | null;
   numberGroup: number;
 };
 
@@ -77,6 +77,20 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   );
 }
 
+// тип для преобразованного урока
+type TransformedLesson = {
+  id: number;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teacher?: string;
+  room?: string;
+  subgroup?: number;
+  numPair: number;
+  dayWeek: string;
+  typeWeek: string;
+};
+
 //функция преобразования данных 
 const transformApiData = (apiData: ApiLesson[]): DaySchedule[] => {
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -85,19 +99,45 @@ const transformApiData = (apiData: ApiLesson[]): DaySchedule[] => {
     const dayLessons = apiData
       .filter(lesson => lesson.dayWeek === weekday)
       .map(lesson => {
-        return {
+        const pairTime = pairTimes[lesson.numPair];
+        if (!pairTime) {
+          console.warn(`Неизвестный номер пары: ${lesson.numPair} для урока ${lesson.id}`);
+          return null;
+        }
+
+        // формирование фио препода с проверкой
+        let teacher: string | undefined = undefined;
+        if (lesson.lastnameTeacher && lesson.nameTeacher) {
+          const nameInitial = lesson.nameTeacher[0] || '';
+          const patronymicInitial = lesson.patronymicTeacher ? lesson.patronymicTeacher[0] : '';
+          teacher = `${lesson.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
+        }
+
+        // формирование ауд с проверкой
+        let room: string | undefined = undefined;
+        if (lesson.room !== null) {
+          room = `ауд. ${lesson.room}`;
+        }
+
+        // подгруппа только если > 0 и не null
+        const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
+
+        const transformedLesson: TransformedLesson = {
           id: lesson.id,
-          startTime: pairTimes[lesson.numPair].start,
-          endTime: pairTimes[lesson.numPair].end,
+          startTime: pairTime.start,
+          endTime: pairTime.end,
           subject: lesson.nameSubject || `Предмет ${lesson.idSubject}`,
-          teacher: `${lesson.lastnameTeacher} ${lesson.nameTeacher[0]}.${lesson.patronymicTeacher[0]}.`,
-          room: `ауд. ${lesson.room}`,
-          subgroup: lesson.subgroup > 0 ? lesson.subgroup : undefined, // Добавляем подгруппу только если > 0
+          teacher,
+          room,
+          subgroup,
           numPair: lesson.numPair,
           dayWeek: lesson.dayWeek,
           typeWeek: lesson.typeWeek
         };
-      });
+
+        return transformedLesson;
+      })
+      .filter((lesson): lesson is TransformedLesson => lesson !== null); 
 
     const groupedLessons: Lesson[] = [];
     const timeGroups: Record<string, Lesson[]> = {};
@@ -127,6 +167,7 @@ const transformApiData = (apiData: ApiLesson[]): DaySchedule[] => {
     };
   });
 };
+
 const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | 'lower' | 'common'): DaySchedule[] => {
   return schedule.map(day => ({
     ...day,
@@ -206,6 +247,17 @@ const ScheduleView: React.FC<{ scheduleData: DaySchedule[], viewMode: 'grid' | '
 };
 
 const TodayScheduleView: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
+  // проверка на пустой scheduleData
+  if (!scheduleData || scheduleData.length === 0) {
+    return (
+      <div className="today-schedule">
+        <div className="no-classes">
+          <div className="no-classes-text">Нет данных о расписании</div>
+        </div>
+      </div>
+    );
+  }
+
   const todaySchedule = scheduleData.find(day => day.lessons.length > 0) || scheduleData[0];
 
   return (
@@ -338,6 +390,10 @@ export const ScheduleSection: React.FC = () => {
       try {
         setLoading(true);
         
+        if (!userGroupId) {
+          throw new Error('ID группы не найден');
+        }
+
         //запрос к API
         const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`);
         
@@ -347,7 +403,6 @@ export const ScheduleSection: React.FC = () => {
 
         const apiData: ApiLesson[] = await scheduleResponse.json();
         
-        // Преобразуем данные - теперь все необходимое уже в API
         const transformedData = transformApiData(apiData);
         setScheduleData(transformedData);
       } catch (err) {
@@ -358,7 +413,12 @@ export const ScheduleSection: React.FC = () => {
       }
     };
 
-    fetchScheduleData();
+    if (userGroupId) {
+      fetchScheduleData();
+    } else {
+      setLoading(false);
+      setError('ID группы не найден');
+    }
   }, [userGroupId]);
 
   const getFilteredSchedule = (weekType: 'upper' | 'lower') => {
@@ -376,6 +436,17 @@ export const ScheduleSection: React.FC = () => {
 
   if (error) {
     return <div className="error">Ошибка: {error}</div>;
+  }
+
+  // проверка на пустые данные
+  if (!scheduleData || scheduleData.length === 0) {
+    return (
+      <div className="schedule-section">
+        <div className="no-classes">
+          <div className="no-classes-text">Расписание не найдено</div>
+        </div>
+      </div>
+    );
   }
 
   return (
