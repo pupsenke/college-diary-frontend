@@ -461,11 +461,11 @@ export const PersonalCabinet: React.FC<Props> = ({
   }, []);
 
   const handleDisciplineClick = (discipline: string) => {
-    if (onNavigateToGroups && 
+    if (onNavigateToDisciplines && 
         discipline !== 'Дисциплины не назначены' && 
         discipline !== 'Не удалось загрузить дисциплины' && 
         discipline !== 'Ошибка загрузки дисциплин') {
-      onNavigateToGroups(discipline);
+      onNavigateToDisciplines(discipline);
     }
   };
 

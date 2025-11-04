@@ -276,10 +276,6 @@
   font-weight: 500;
 }
 
-.ds-attendance-percent {
-  text-align: center;
-}
-
 .ds-percent-bubble {
   display: inline-flex;
   align-items: center;
@@ -338,6 +334,36 @@
 .ds-discipline-row.ds-selected {
   background-color: #f0f7ff;
   border-left: 3px solid #002FA7;
+}
+
+
+/* Стили для заголовка дисциплин */
+.ds-cabinet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.ds-cache-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.ds-error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid #c53030;
+  text-align: center;
 }
 
 /* Адаптивность для планшетов (768px - 1024px) */
