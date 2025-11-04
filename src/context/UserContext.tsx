@@ -13,6 +13,9 @@ export interface Student {
   birthDate?: string;
   address?: string;
   userType: 'student';
+  lastNameGenitive?: string | null;
+  nameGenitive?: string | null;
+  patronymicGenitive?: string | null;
 }
 
 export interface Staff {

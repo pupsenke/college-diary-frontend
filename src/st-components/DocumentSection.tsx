@@ -4,7 +4,6 @@ import { apiService, Document } from '../services/studentApiService';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
-
 import "./DocumentSectionStyle.css"
 
 interface UserData {
@@ -42,8 +41,18 @@ interface Teacher {
   patronymic: string;
 }
 
+interface StudentUpdateData {
+  name?: string;
+  lastName?: string;
+  patronymic?: string;
+  telephone?: string;
+  lastNameGenitive?: string | null;
+  nameGenitive?: string | null;
+  patronymicGenitive?: string | null;
+}
+
 export const DocumentsSection: React.FC = () => {
-  const { user, isStudent } = useUser();
+  const { user, isStudent, setUser } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState('Все документы');
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -52,7 +61,7 @@ export const DocumentsSection: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [isCached, setIsCached] = useState(false);
+  const [isUsingCache, setIsUsingCache] = useState(false);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   
   const [teacherSubjects, setTeacherSubjects] = useState<any[]>([]);
@@ -96,17 +105,169 @@ export const DocumentsSection: React.FC = () => {
            selectedDocumentType === 'Заявление на отчисление в связи с переводом';
   };
 
-  // Загрузка документов
-  const loadDocuments = useCallback(async () => {
+  // Функция сохранения данных студента в БД
+  const saveStudentData = async (updateData: StudentUpdateData) => {
+    if (!user || !isStudent) return;
+
+    try {
+      console.log('Saving student data:', updateData);
+      await apiService.updateStudentData(user.id, updateData);
+      
+      // Обновляем данные в контексте и localStorage
+      const updatedUser = {
+        ...user,
+        ...updateData
+      };
+      
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      console.log('Student data saved successfully');
+    } catch (error) {
+      console.error('Error saving student data:', error);
+      throw new Error('Не удалось сохранить данные в профиле');
+    }
+  };
+
+  // Функция загрузки данных пользователя с сохраненными значениями
+  const loadUserData = async () => {
+    if (!user || !isStudent) {
+      console.log('No user or not student, skipping user data load');
+      return;
+    }
+
+    const student = user as Student;
+
+    try {
+      console.log('Loading user data for student:', student.id);
+      const userPhone = student.telephone || '';
+      
+      // Собираем ФИО в родительном падеже из отдельных компонентов
+      const savedFullNameGenitive = buildGenitiveName(
+        student.lastNameGenitive,
+        student.nameGenitive, 
+        student.patronymicGenitive
+      );
+      
+      const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+      
+      let groupNumber = 'Неизвестно';
+      let course = 'Неизвестно';
+      
+      try {
+        const groupData = await apiService.getGroupData(student.idGroup);
+        groupNumber = groupData.numberGroup?.toString() || 'Неизвестно';
+        course = groupData.course?.toString() || 'Неизвестно';
+        console.log('Group data loaded:', { groupNumber, course });
+      } catch (groupError) {
+        console.error('Ошибка загрузки данных группы:', groupError);
+        groupNumber = student.numberGroup?.toString() || 'Неизвестно';
+        course = 'Неизвестно';
+      }
+
+      const userData: UserData = {
+        fullName: fullName,
+        fullNameGenitive: savedFullNameGenitive,
+        group: groupNumber,
+        course: course,
+        phone: userPhone,
+        departmentHead: 'Голубева Галина Анатольевна'
+      };
+
+      setUserData(userData);
+      
+      // Заполняем форму сохраненными значениями
+      setFormData(prev => ({
+        ...prev,
+        phone: userPhone,
+        fullNameGenitive: savedFullNameGenitive
+      }));
+
+      console.log('User data loaded successfully');
+
+    } catch (error) {
+      console.error('Ошибка загрузки данных пользователя:', error);
+      const student = user as Student;
+      const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+      
+      // Собираем ФИО в родительном падеже из отдельных компонентов
+      const savedFullNameGenitive = buildGenitiveName(
+        student.lastNameGenitive,
+        student.nameGenitive,
+        student.patronymicGenitive
+      );
+      
+      setUserData({
+        fullName: fullName,
+        fullNameGenitive: savedFullNameGenitive,
+        group: student.numberGroup?.toString() || 'Неизвестно',
+        course: 'Неизвестно', 
+        phone: student.telephone || '',
+        departmentHead: 'Голубева Галина Анатольевна'
+      });
+
+      // Заполняем форму сохраненными значениями
+      setFormData(prev => ({
+        ...prev,
+        phone: student.telephone || '',
+        fullNameGenitive: savedFullNameGenitive
+      }));
+    }
+  };
+
+  // Функция для разделения ФИО в родительном падеже на отдельные компоненты
+  const parseGenitiveName = (fullNameGenitive: string) => {
+    const parts = fullNameGenitive.split(' ');
+    return {
+      lastNameGenitive: parts[0] || null,
+      nameGenitive: parts[1] || null,
+      patronymicGenitive: parts[2] || null
+    };
+  };
+
+  // Функция для сборки ФИО в родительном падеже из отдельных компонентов
+  const buildGenitiveName = (
+    lastNameGenitive: string | null | undefined, 
+    nameGenitive: string | null | undefined, 
+    patronymicGenitive: string | null | undefined
+  ): string => {
+    return [lastNameGenitive, nameGenitive, patronymicGenitive]
+      .filter(part => part && part.trim() !== '')
+      .join(' ')
+      .trim();
+  };
+
+  // Упрощенная функция загрузки документов с кэшированием как в успеваемости
+  const loadDocuments = useCallback(async (forceRefresh = false) => {
     if (!user || !isStudent) return;
     
     const student = user as Student;
     setDocumentsLoading(true);
     setError(null);
+    setIsUsingCache(false);
 
     try {
+      // Сначала пытаемся загрузить из кэша (если не принудительное обновление)
+      if (!forceRefresh) {
+        const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          // Проверяем актуальность кэша (10 минут)
+          if (Date.now() - cachedData.timestamp < 10 * 60 * 1000) {
+            setDocuments(cachedData.data ?? []);
+            setIsUsingCache(true);
+            console.log('Документы загружены из кэша');
+            setDocumentsLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Загрузка с API
+      console.log('Загрузка документов с API...');
       let docs: Document[] = [];
-      let cached = false;
 
       if (selectedDocumentType === 'Все документы') {
         docs = await apiService.fetchDocumentsByStudent(student.id);
@@ -117,80 +278,64 @@ export const DocumentsSection: React.FC = () => {
       setDocuments(docs);
       console.log(`Loaded ${docs.length} documents for type: ${selectedDocumentType}`);
 
+      // Сохранение в кеш
+      const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+      const cacheData = {
+        data: docs,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
+
     } catch (err) {
       console.error('Error loading documents:', err);
-      setError('Не удалось загрузить документы');
-      setDocuments([]);
+      
+      // Если ошибка API, пробуем загрузить из кэша как fallback
+      try {
+        const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          setDocuments(cachedData.data ?? []);
+          setIsUsingCache(true);
+          setError('Используются кэшированные данные. Нет соединения с сервером.');
+          console.log('Документы загружены из кэша (fallback)');
+        } else {
+          setError('Не удалось загрузить документы. Проверьте подключение к интернету.');
+          setDocuments([]);
+        }
+      } catch (cacheError) {
+        setError('Не удалось загрузить документы');
+        setDocuments([]);
+      }
     } finally {
       setDocumentsLoading(false);
     }
   }, [user, isStudent, selectedDocumentType]);
 
-  // Загрузка данных пользователя
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (!user || !isStudent) {
-        console.log('No user or not student, skipping user data load');
-        return;
-      }
-
-      const student = user as Student;
-
-      try {
-        console.log('Loading user data for student:', student.id);
-        const userPhone = student.telephone || '';
-        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
-        
-        let groupNumber = 'Неизвестно';
-        let course = 'Неизвестно';
-        
-        try {
-          const groupData = await apiService.getGroupData(student.idGroup);
-          groupNumber = groupData.numberGroup?.toString() || 'Неизвестно';
-          course = groupData.course?.toString() || 'Неизвестно';
-          console.log('Group data loaded:', { groupNumber, course });
-        } catch (groupError) {
-          console.error('Ошибка загрузки данных группы:', groupError);
-          groupNumber = student.numberGroup?.toString() || 'Неизвестно';
-          course = 'Неизвестно';
-        }
-
-        const userData: UserData = {
-          fullName: fullName,
-          fullNameGenitive: formData.fullNameGenitive,
-          group: groupNumber,
-          course: course,
-          phone: userPhone,
-          departmentHead: 'Голубева Галина Анатольевна'
-        };
-
-        setUserData(userData);
-        
-        if (userPhone) {
-          setFormData(prev => ({
-            ...prev,
-            phone: userPhone
-          }));
-        }
-
-        console.log('User data loaded successfully');
-
-      } catch (error) {
-        console.error('Ошибка загрузки данных пользователя:', error);
+  // Функция принудительного обновления
+  const refreshDocuments = useCallback(async () => {
+    setIsRefreshing(true);
+    setError(null);
+    
+    try {
+      if (user && isStudent) {
         const student = user as Student;
-        const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
-        
-        setUserData({
-          fullName: fullName,
-          fullNameGenitive: formData.fullNameGenitive,
-          group: student.numberGroup?.toString() || 'Неизвестно',
-          course: 'Неизвестно', 
-          phone: student.telephone || '',
-          departmentHead: 'Голубева Галина Анатольевна'
-        });
+        const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+        localStorage.removeItem(`cache_${cacheKey}`);
       }
-    };
+      
+      await loadDocuments(true);
+    } catch (error) {
+      console.error('Error refreshing documents:', error);
+      setError('Не удалось обновить документы');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [user, isStudent, selectedDocumentType, loadDocuments]);
 
+  // Загрузка данных пользователя 
+  useEffect(() => {
     loadUserData();
   }, [user, isStudent]);
 
@@ -277,6 +422,19 @@ export const DocumentsSection: React.FC = () => {
     loadTeacherSubjects();
   }, [user, isStudent]);
 
+  // Обработчик изменения полей формы
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Обработка изменения предмета
+    if (field === 'subject') {
+      handleSubjectChange(value);
+    }
+  };
+
   // Обработчик изменения предмета - обновляет список доступных преподавателей
   const handleSubjectChange = (subjectId: string) => {
     setFormData(prev => ({
@@ -325,18 +483,6 @@ export const DocumentsSection: React.FC = () => {
       fullNameGenitive: userData?.fullNameGenitive || ''
     });
     setAvailableTeachers([]);
-  };
-
-  // Обработчик изменения полей формы
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    if (field === 'subject') {
-      handleSubjectChange(value);
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    }
   };
 
   // Функция для получения названия месяца по номеру
@@ -423,8 +569,12 @@ export const DocumentsSection: React.FC = () => {
       await apiService.uploadDocument(file, student.id, selectedDocumentType);
       console.log('Document uploaded, cache will be invalidated');
 
+      const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+      localStorage.removeItem(`cache_${cacheKey}`);
+      
+      // Перезагружаем документы
       setTimeout(() => {
-        loadDocuments();
+        loadDocuments(true);
       }, 1000);
 
     } catch (error) {
@@ -472,7 +622,7 @@ export const DocumentsSection: React.FC = () => {
   };
 
   // Обработчик создания документа
-  const handleCreateDocument = () => {
+  const handleCreateDocument = async () => {
     if (!userData) {
       setError('Данные пользователя не загружены');
       return;
@@ -485,6 +635,48 @@ export const DocumentsSection: React.FC = () => {
 
     if (isPhoneRequired() && !formData.phone.trim()) {
       setError('Пожалуйста, введите номер телефона');
+      return;
+    }
+
+    // Сохранение телефона и ФИО в родительном падеже в БД перед созданием документа
+    try {
+      const updateData: StudentUpdateData = {};
+      let hasChanges = false;
+
+      // Сохранение телефона, если он изменился или требуется для документа
+      if (formData.phone !== userData.phone) {
+        updateData.telephone = formData.phone;
+        hasChanges = true;
+      }
+
+      // Сохранение ФИО в родительном падеже, если оно изменилось
+      if (formData.fullNameGenitive !== userData.fullNameGenitive) {
+        // Парсинг ФИО в родительном падеже на отдельные компоненты
+        const genitiveParts = parseGenitiveName(formData.fullNameGenitive);
+        updateData.lastNameGenitive = genitiveParts.lastNameGenitive;
+        updateData.nameGenitive = genitiveParts.nameGenitive;
+        updateData.patronymicGenitive = genitiveParts.patronymicGenitive;
+        hasChanges = true;
+      }
+
+      // Сохранение данных в БД, если есть изменения
+      if (hasChanges) {
+        console.log('Saving student data before creating document:', updateData);
+        await saveStudentData(updateData);
+        
+        // Обновление локальных данных пользователя
+        setUserData(prev => prev ? {
+          ...prev,
+          phone: formData.phone,
+          fullNameGenitive: formData.fullNameGenitive
+        } : null);
+        
+        console.log('Student data saved successfully before document creation');
+      }
+
+    } catch (error) {
+      console.error('Error saving student data before document creation:', error);
+      setError('Не удалось сохранить данные в профиле. Документ не будет создан.');
       return;
     }
 
@@ -651,7 +843,14 @@ export const DocumentsSection: React.FC = () => {
         await apiService.deleteDocument(id);
         console.log('Document deleted, cache invalidated');
         
-        loadDocuments();
+        // Инвалидируем кэш после удаления
+        if (user && isStudent) {
+          const student = user as Student;
+          const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+          localStorage.removeItem(`cache_${cacheKey}`);
+        }
+        
+        loadDocuments(true);
         
       } catch (error) {
         console.error('Ошибка удаления документа:', error);
@@ -659,28 +858,6 @@ export const DocumentsSection: React.FC = () => {
       }
     }
   };
-
-  // Функция принудительного обновления документов
-  const refreshDocuments = useCallback(async () => {
-    setIsRefreshing(true);
-    setError(null);
-    
-    try {
-      if (user && isStudent) {
-        const student = user as Student;
-        apiService.invalidateDocumentCache(student.id, selectedDocumentType);
-        
-        setTimeout(() => {
-          loadDocuments();
-          setIsRefreshing(false);
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Error refreshing documents:', error);
-      setError('Не удалось обновить документы');
-      setIsRefreshing(false);
-    }
-  }, [user, isStudent, selectedDocumentType, loadDocuments]);
 
   // Рендер модального окна
   const renderModal = () => {
@@ -727,7 +904,7 @@ export const DocumentsSection: React.FC = () => {
                       value={formData.fullNameGenitive}
                       onChange={(e) => handleInputChange('fullNameGenitive', e.target.value)}
                       className="ds-input"
-                      placeholder="Введите ФИО в родительном падеже"
+                      placeholder="Введите ФИО в родительном падеже (например: Иванова Ивана Ивановича)"
                       required
                     />
                     <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>

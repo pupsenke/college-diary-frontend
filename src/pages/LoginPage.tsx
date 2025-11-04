@@ -57,11 +57,11 @@ export const LoginPage: React.FC = () => {
         case 'student':
           return 'Студент';
         case 'teacher':
-          return `Преподаватель${role.position ? ` (${role.position})` : ''}`;
+          return `Преподаватель`;
         case 'metodist':
-          return `Методист${role.position ? ` (${role.position})` : ''}`;
+          return `Методист`;
         case 'departmentHead':
-          return `Заведующий отделением${role.position ? ` (${role.position})` : ''}`;
+          return `Заведующий отделением`;
         default:
           return role.type;
       }
@@ -72,7 +72,7 @@ export const LoginPage: React.FC = () => {
         case 'student':
           return `Группа: ${role.numberGroup || role.idGroup}`;
         case 'teacher':
-          return 'Доступ к преподавательским функциям';
+          return 'Доступ к функциям преподавателя';
         case 'metodist':
           return 'Доступ к методическим функциям';
         case 'departmentHead':
