@@ -5,26 +5,28 @@
   gap: 24px;
 }
 
-.personal-info-main,
-.professional-info-main {
+.personal-info-main {
   display: flex;
-  gap: 32px;
-  align-items: flex-start;
+  gap: 24px;
+  align-items: stretch;
 }
 
-.personal-info-section,
-.professional-info-section {
+.personal-info-section {
   background: #f8f9ff;
   border-radius: 12px;
   padding: 24px;
   border: 1px solid #e0e7ff;
   flex: 1;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
 }
 
 .info-column {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
 }
 
 .info-item {
@@ -49,36 +51,43 @@
   flex: 1;
 }
 
-.change-password-section {
+.buttons-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  min-width: 240px;
-  margin-top: 192px;
+  gap: 24px;
 }
 
-.change-password-btn {
-  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
-  border: 2px solid rgba(66, 92, 177, 0.508);
-  color: white;
-  border: none;
+.section-button {
+  flex: 1;
+  background: white;
+  border: 1px solid #002FA7;
   border-radius: 8px;
-  padding: 12px 20px;
+  padding: 12px 16px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
   text-align: center;
-  white-space: nowrap;
+  color: #002FA7;
 }
 
-.change-password-btn:hover {
-  background: #5986f7;
+.section-button:hover:not(:disabled) {
+  background: #002FA7;
+  color: white;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.section-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.section-button:disabled {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .disciplines-section {
@@ -111,7 +120,6 @@
   color: #002fa7;
   font-weight: 500;
   transition: all 0.3s ease;
-  position: relative;
 }
 
 .discipline-item:hover {
@@ -121,19 +129,6 @@
   box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
 }
 
-.discipline-item::before {
-  margin-right: 0px;
-}
-
-/* Стили для кнопок навигации */
-.disciplines-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-/* Стили для кликабельных дисциплин */
 .discipline-item.clickable {
   cursor: pointer;
   transition: all 0.2s ease;
@@ -149,12 +144,6 @@
   transform: translateX(5px);
 }
 
-.discipline-text {
-  flex: 1;
-  color: #002fa7;
-  font-weight: 500;
-}
-
 .discipline-arrow {
   color: #002FA7;
   font-weight: bold;
@@ -167,11 +156,349 @@
   opacity: 1;
 }
 
-/* Адаптивность для личного кабинета */
+/* Контейнер заголовка */
+.cabinet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Общие стили для обеих кнопок */
+.header-btn {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  height: 48px;
+}
+
+.header-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  color: #002FA7;
+}
+
+.header-btn:disabled {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.info-icon-text {
+  font-weight: 700;
+  font-size: 16px;
+  color: #002FA7;
+}
+
+.pc-refresh-icon {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.3s ease;
+}
+
+.pc-refresh-spin {
+  animation: pc-spin 1s linear infinite;
+}
+
+@keyframes pc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+.info-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: left;
+}
+
+.info-icon-btn:hover .info-tooltip,
+.info-icon-btn:focus-within .info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0%) translateY(8px);
+}
+
+.info-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  transform: translateX(0%) translateY(10px);
+  background: white;
+  border: 2px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.info-tooltip-content {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* Стиль для синего заголовка */
+.info-tooltip-content strong {
+  color: #002FA7;
+  font-size: 15px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Стрелка тултипа */
+.info-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 4px;
+  transform: rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-left: 2px solid #e0e7ff;
+  border-top: 2px solid #e0e7ff;
+}
+
+@media (max-width: 480px) {
+  .info-tooltip {
+    width: 95vw;
+    padding: 12px;
+    left: 0;
+    transform: translateY(8px);
+    margin-left: 0;
+  }
+  
+  .info-tooltip::before {
+    left: 20px;
+  }
+  
+  .info-tooltip-content {
+    font-size: 13px;
+  }
+}
+
+@keyframes pc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cache-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #856404;
+  font-size: 14px;
+}
+
+/* Стили для модальных окон */
+.pc-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(50, 64, 124, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.pc-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  width: 90%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modal-appear 0.2s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.pc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  border-radius: 12px 12px 0 0;
+  color: white;
+}
+
+.pc-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.pc-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 4px 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.pc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.pc-modal-content {
+  padding: 24px;
+}
+
+.pc-form-group {
+  margin-bottom: 20px;
+}
+
+.pc-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.pc-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.pc-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pc-input::placeholder {
+  color: #9ca3af;
+}
+
+.pc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pc-confirm-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.pc-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.pc-confirm-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pc-confirm-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Сообщения об ошибках и успехе */
+.pc-error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid #c53030;
+}
+
+.pc-success-message {
+  background: #c6f6d5;
+  color: #276749;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid #276749;
+}
+
+/* Адаптивность */
 @media (max-width: 1024px) {
-  .personal-info-main,
-  .professional-info-main {
+  .personal-info-main {
+    flex-direction: column;
     gap: 24px;
+  }
+  
+  .buttons-row {
+    flex-direction: row;
   }
 }
 
@@ -180,21 +507,15 @@
     gap: 20px;
   }
   
-  .personal-info-main,
-  .professional-info-main {
+  .personal-info-main {
     flex-direction: column;
     gap: 20px;
   }
   
-  .change-password-section {
-    align-items: stretch;
-    min-width: auto;
-  }
-  
   .personal-info-section,
-  .professional-info-section,
   .disciplines-section {
     padding: 20px;
+    min-height: auto;
   }
   
   .info-item {
@@ -209,6 +530,24 @@
   .info-value {
     font-size: 15px;
   }
+  
+  .buttons-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pc-modal {
+    margin: 20px;
+    max-height: calc(100vh - 40px);
+  }
+  
+  .pc-modal-actions {
+    flex-direction: column;
+  }
+  
+  .pc-confirm-btn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -217,7 +556,6 @@
   }
   
   .personal-info-section,
-  .professional-info-section,
   .disciplines-section {
     padding: 16px;
   }
@@ -242,8 +580,8 @@
     font-size: 13px;
   }
   
-  .change-password-btn {
-    padding: 10px 16px;
+  .section-button {
+    padding: 10px 12px;
     font-size: 13px;
   }
 }
@@ -261,7 +599,6 @@
 }
 
 .personal-info-main,
-.professional-info-main,
 .disciplines-section {
   animation: fadeIn 0.5s ease-out;
 }
@@ -270,10 +607,6 @@
   animation-delay: 0.1s;
 }
 
-.professional-info-main {
-  animation-delay: 0.2s;
-}
-
 .disciplines-section {
-  animation-delay: 0.3s;
+  animation-delay: 0.2s;
 }
