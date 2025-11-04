@@ -12,7 +12,7 @@ export interface Discipline {
 }
 
 interface Props {
-  onDisciplineSelect?: (disciplineName: string) => void;
+  onDisciplineSelect?: (disciplineName: string | undefined) => void;
   selectedDiscipline?: string;
 }
 
@@ -58,8 +58,8 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
       }
 
       try {
-        // Получаем дисциплины преподавателя по курсу (например, курс 4)
-        const teacherDisciplines = await teacherApiService.getTeacherDisciplinesByCourse(teacher.id, 4);
+        // Получаем дисциплины преподавателя по его ID
+        const teacherDisciplines = await teacherApiService.getTeacherDisciplinesFull(teacher.id);
         
         setDisciplines(teacherDisciplines);
         console.log('Дисциплины преподавателя загружены:', teacherDisciplines);
@@ -219,6 +219,20 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
       {isUsingCache && (
         <div className="ds-cache-warning">
           Используются кэшированные данные. Для актуальной информации обновите данные.
+        </div>
+      )}
+
+      {selectedDiscipline && (
+        <div className="ds-discipline-filter">
+          <div className="ds-discipline-info">
+            <strong className="ds-discipline-name">Фильтр: {selectedDiscipline}</strong>
+          </div>
+          <button 
+            className="ds-clear-discipline" 
+            onClick={() => onDisciplineSelect && onDisciplineSelect(undefined)}
+          >
+            Сбросить фильтр
+          </button>
         </div>
       )}
 

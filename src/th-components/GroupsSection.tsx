@@ -7,10 +7,18 @@ import './GroupsSectionStyle.css';
 
 export interface Group {
   numberGroup: string;
-  speciality: string;
+  specialty: string;
   subjectName: string;
   countStudent: number;
-  attendancePercent?: number; // Будет рассчитываться из данных посещаемости
+  attendancePercent?: number;
+  course?: number;
+}
+
+interface Discipline {
+  idTeacher: number;
+  subjectName: string;
+  course: number;
+  countGroup: number;
 }
 
 interface Props {
@@ -21,6 +29,7 @@ interface Props {
 export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplineClear }) => {
   const { user } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]); // Все группы без фильтрации
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,110 +45,170 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [showPerformance, setShowPerformance] = useState<boolean>(false);
   const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
 
+  // Функция для создания уникального ключа группы
+  const getGroupKey = (group: Group) => `${group.numberGroup}-${group.subjectName}`;
+
   // Функция для получения групп с кэшированием
   const fetchGroups = async (forceRefresh = false) => {
+      try {
+        setLoading(true);
+        setError(null);
+        setIsUsingCache(false);
+
+        if (forceRefresh) {
+          setRefreshing(true);
+        }
+
+        console.log('Загрузка данных групп...');
+        
+        if (!user?.name || !user?.lastName || !user?.patronymic) {
+          throw new Error('Недостаточно данных пользователя для поиска');
+        }
+
+        const teacher = await teacherApiService.findTeacherByName(
+          user.name, 
+          user.lastName, 
+          user.patronymic
+        );
+
+        if (!teacher) {
+          throw new Error('Преподаватель не найден');
+        }
+
+        try {
+          // Получаем все группы преподавателя
+          const teacherGroups = await teacherApiService.getTeacherGroups(teacher.id);        
+
+          // Добавляем процент посещаемости и сохраняем все группы
+          const groupsWithAttendance = teacherGroups.map(group => ({
+            ...group,
+            attendancePercent: calculateGroupAttendance(group)
+          }));
+          
+          setAllGroups(groupsWithAttendance);
+          
+          // В зависимости от активной вкладки загружаем соответствующие данные
+          if (activeTab === 'course') {
+            await loadCourseData(teacher.id, groupsWithAttendance);
+          } else {
+            await loadSemesterData(teacher.id, groupsWithAttendance);
+          }
+          
+          console.log('Группы преподавателя загружены:', groupsWithAttendance);
+          
+        } catch (groupsError) {
+          console.error('Ошибка загрузки групп:', groupsError);
+          throw new Error('Не удалось загрузить группы');
+        }
+
+      } catch (err) {
+        console.error('Ошибка при загрузке групп:', err);
+        setError('Не удалось загрузить данные групп');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    };
+
+    // Загрузка данных для вкладки "По курсу"
+  const loadCourseData = async (teacherId: number, baseGroups: Group[]) => {
     try {
-      setLoading(true);
-      setError(null);
-      setIsUsingCache(false);
-
-      if (forceRefresh) {
-        setRefreshing(true);
-      }
-
-      console.log('Загрузка данных групп...');
+      const disciplines = await teacherApiService.getTeacherDisciplinesByCourse(teacherId);
       
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
-      }
-
-      // Ищем преподавателя по ФИО
-      const teacher = await teacherApiService.findTeacherByName(
-        user.name, 
-        user.lastName, 
-        user.patronymic
-      );
-
-      if (!teacher) {
-        throw new Error('Преподаватель не найден');
-      }
-
-      try {
-        // Получаем группы преподавателя (например, для курса 4)
-        const teacherGroups = await teacherApiService.getTeacherGroups(teacher.id, 4);
+      // Фильтруем группы по выбранному курсу
+      let filteredGroups = baseGroups;
+    
+      if (selectedCourse !== 'all') {
+        const courseNum = parseInt(selectedCourse);
+        // Создаем Set предметов для выбранного курса
+        const courseSubjects = new Set(
+          disciplines
+            .filter(d => d.course === courseNum)
+            .map(d => d.subjectName)
+        );
         
-        // Добавляем процент посещаемости (в реальном приложении это будет браться из API)
-        const groupsWithAttendance = teacherGroups.map(group => ({
-          ...group,
-          attendancePercent: calculateGroupAttendance(group) // Функция расчета посещаемости
-        }));
-        
-        setGroups(groupsWithAttendance);
-        console.log('Группы преподавателя загружены:', groupsWithAttendance);
-        
-      } catch (groupsError) {
-        console.error('Ошибка загрузки групп:', groupsError);
-        
-        // Используем данные из кэша, если есть
-        const cacheKey = `teacher_groups_${teacher.id}`;
-        const cachedGroups = localStorage.getItem(`cache_${cacheKey}`);
-        
-        if (cachedGroups) {
-          const cachedData = JSON.parse(cachedGroups);
-          if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) { // 5 минут
-            setGroups(cachedData.data);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные групп. Нет соединения с сервером.');
-            console.log('Данные групп загружены из кэша');
-            return;
-          }
-        }
-        
-        throw new Error('Не удалось загрузить группы');
-      }
-
-    } catch (err) {
-      console.error('Ошибка при загрузке групп:', err);
-      
-      // Пробуем загрузить из кэша при ошибке сети
-      try {
-        console.log('Попытка загрузки групп из кэша...');
-        const cacheKey = `teacher_groups_${user?.lastName}_${user?.name}_${user?.patronymic}`.toLowerCase();
-        const cached = localStorage.getItem(`cache_${cacheKey}`);
-        
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          // Проверяем актуальность кэша (1 час)
-          if (Date.now() - cachedData.timestamp < 60 * 60 * 1000) {
-            setGroups(cachedData.data);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные групп загружены из кэша');
-            return;
-          }
-        }
-      } catch (cacheError) {
-        console.error('Ошибка при загрузке из кэша:', cacheError);
+        filteredGroups = baseGroups.filter(group => 
+          courseSubjects.has(group.subjectName)
+        );
       }
       
-      setError('Не удалось загрузить данные групп');
-      
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setGroups(filteredGroups);
+    } catch (error) {
+      console.error('Ошибка загрузки данных по курсам:', error);
+      // В случае ошибки показываем все группы
+      setGroups(baseGroups);
     }
   };
 
-  // Функция расчета посещаемости группы (заглушка - в реальном приложении данные будут из API)
+  // Загрузка данных для вкладки "По семестрам"
+  const loadSemesterData = async (teacherId: number, baseGroups: Group[]) => {
+    try {
+      const semesterNum = selectedSemester === 'first' ? 1 : 2;
+      const disciplines = await teacherApiService.getTeacherDisciplinesBySemester(teacherId, semesterNum);
+      
+      // Фильтруем группы по семестру
+      // Пока все группы для первого семестра
+      let filteredGroups = baseGroups;
+      
+      if (selectedSemester === 'first') {
+        filteredGroups = baseGroups;
+      }
+      
+      setGroups(filteredGroups);
+    } catch (error) {
+      console.error('Ошибка загрузки данных по семестрам:', error);
+      // В случае ошибки показываем все группы
+      setGroups(baseGroups);
+    }
+  };
+
+  // Обработчик смены вкладки
+  const handleTabChange = (tab: 'semesters' | 'course') => {
+    setActiveTab(tab);
+    // При смене вкладки сбрасываем фильтры
+    setSelectedCourse('all');
+    setSelectedSemester('first');
+    setSelectedGroup('all');
+    setSelectedGroupRow(null);
+  };
+
+  // Обработчик смены курса
+  const handleCourseChange = (course: 'all' | '1' | '2' | '3' | '4') => {
+    setSelectedCourse(course);
+    setSelectedGroupRow(null);
+  };
+  // Обработчик смены семестра
+  const handleSemesterChange = (semester: 'first' | 'second') => {
+    setSelectedSemester(semester);
+    setSelectedGroupRow(null);
+  };
+
+  // Обновляем данные при изменении фильтров
+  useEffect(() => {
+    if (allGroups.length > 0 && user) {
+      teacherApiService.findTeacherByName(
+        user.name, 
+        user.lastName, 
+        user.patronymic
+      ).then(teacher => {
+        if (teacher) {
+          if (activeTab === 'course') {
+            loadCourseData(teacher.id, allGroups);
+          } else {
+            loadSemesterData(teacher.id, allGroups);
+          }
+        }
+      });
+    }
+  }, [selectedCourse, selectedSemester, activeTab, allGroups, user, selectedGroup]);
+
   const calculateGroupAttendance = (group: Group): number => {
-    // Временная логика расчета - в реальном приложении будет запрос к API посещаемости
-    const basePercent = Math.floor(Math.random() * 30) + 70; // 70-100%
+    const basePercent = Math.floor(Math.random() * 30) + 70;
     return basePercent;
   };
 
   // Функция принудительного обновления данных
   const handleRefresh = async () => {
-    // Инвалидируем кэш перед обновлением
     if (user?.name && user?.lastName && user?.patronymic) {
       const cacheKey = `teacher_groups_${user.lastName}_${user.name}_${user.patronymic}`.toLowerCase();
       localStorage.removeItem(`cache_${cacheKey}`);
@@ -153,6 +222,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       fetchGroups();
     }
   }, [user]);
+
 
   // Компонент информационной иконки
   const InfoIcon = () => (
@@ -187,14 +257,10 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     </button>
   );
 
-  // Получение уникальных групп для выпадающего списка
-  const uniqueGroups = Array.from(new Set(groups.map(group => group.numberGroup)));
-
   // Фильтрация данных с учетом выбранной дисциплины
   const filteredGroups = groups.filter(group => {
     const groupFilter = selectedGroup === 'all' || group.numberGroup === selectedGroup;
     const disciplineFilter = !selectedDiscipline || group.subjectName === selectedDiscipline;
-    
     return groupFilter && disciplineFilter;
   });
 
@@ -207,6 +273,15 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     }
   });
 
+  // Получение уникальных групп для выпадающего списка
+  const uniqueGroups = Array.from(new Set(allGroups.map(group => group.numberGroup)));
+
+  // Обработчики
+  const handleGroupChange = (group: string) => {
+    setSelectedGroup(group);
+    setSelectedGroupRow(null);
+  };
+
   const toggleSubjectSortOrder = () => {
     setSubjectSortOrder(subjectSortOrder === 'asc' ? 'desc' : 'asc');
   };
@@ -218,24 +293,29 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     return '#ef4444';
   };
 
-  const handleRowClick = (groupNumber: string) => {
-    setSelectedGroupRow(groupNumber === selectedGroupRow ? null : groupNumber);
+  const handleRowClick = (group: Group) => {
+    const groupKey = getGroupKey(group);
+    setSelectedGroupRow(groupKey === selectedGroupRow ? null : groupKey);
   };
 
   const handleSetAttendance = () => {
     if (!selectedGroupRow) return;
     
-    const groupData = groups.find(group => group.numberGroup === selectedGroupRow);
-    if (groupData) {
-      setSelectedGroupData(groupData);
-      setShowAttendance(true);
-    }
+  const groupData = groups.find(group => 
+    getGroupKey(group) === selectedGroupRow
+  );
+  if (groupData) {
+    setSelectedGroupData(groupData);
+    setShowAttendance(true);
+  }
   };
 
   const handleSetGrades = () => {
     if (!selectedGroupRow) return;
       
-    const groupData = groups.find(group => group.numberGroup === selectedGroupRow);
+    const groupData = groups.find(group => 
+      getGroupKey(group) === selectedGroupRow
+    );
     if (groupData) {
       setSelectedGroupData(groupData);
       setShowPerformance(true);
@@ -401,7 +481,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     <select
                       id="gs-group-select"
                       value={selectedGroup}
-                      onChange={(e) => setSelectedGroup(e.target.value)}
+                      onChange={(e) => handleGroupChange(e.target.value)}
                       className="gs-group-select"
                     >
                       <option value="all">Все группы</option>
@@ -448,27 +528,30 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     </thead>
                     <tbody>
                       {sortedGroups.length > 0 ? (
-                        sortedGroups.map((group, index) => (
-                          <tr 
-                            key={`${group.numberGroup}-${group.subjectName}`} 
-                            className={`gs-group-row ${selectedGroupRow === group.numberGroup ? 'gs-selected' : ''}`}
-                            onClick={() => handleRowClick(group.numberGroup)}
-                          >
-                            <td className="gs-number-cell">{index + 1}.</td>
-                            <td className="gs-group-name">{group.numberGroup}</td>
-                            <td className="gs-specialty-cell">{group.speciality}</td>
-                            <td className="gs-subject-cell">{group.subjectName}</td>
-                            <td className="gs-students-cell">{group.countStudent}</td>
-                            <td className="gs-attendance-percent">
-                              <span 
-                                className="gs-percent-bubble"
-                                style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
-                              >
-                                {(group.attendancePercent || 0).toFixed(0)}%
-                              </span>
-                            </td>
-                          </tr>
-                        ))
+                        sortedGroups.map((group, index) => {
+                          const groupKey = getGroupKey(group);
+                          return (
+                            <tr 
+                              key={groupKey} 
+                              className={`gs-group-row ${selectedGroupRow === groupKey ? 'gs-selected' : ''}`}
+                              onClick={() => handleRowClick(group)}
+                            >
+                              <td className="gs-number-cell">{index + 1}.</td>
+                              <td className="gs-group-name">{group.numberGroup}</td>
+                              <td className="gs-specialty-cell">{group.specialty}</td>
+                              <td className="gs-subject-cell">{group.subjectName}</td>
+                              <td className="gs-students-cell">{group.countStudent}</td>
+                              <td className="gs-attendance-percent">
+                                <span 
+                                  className="gs-percent-bubble"
+                                  style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
+                                >
+                                  {(group.attendancePercent || 0).toFixed(0)}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
@@ -522,7 +605,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     <select
                       id="gs-group-select"
                       value={selectedGroup}
-                      onChange={(e) => setSelectedGroup(e.target.value)}
+                      onChange={(e) => handleGroupChange(e.target.value)}
                       className="gs-group-select"
                     >
                       <option value="all">Все группы</option>
@@ -569,27 +652,30 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     </thead>
                     <tbody>
                       {sortedGroups.length > 0 ? (
-                        sortedGroups.map((group, index) => (
-                          <tr 
-                            key={`${group.numberGroup}-${group.subjectName}`} 
-                            className={`gs-group-row ${selectedGroupRow === group.numberGroup ? 'gs-selected' : ''}`}
-                            onClick={() => handleRowClick(group.numberGroup)}
-                          >
-                            <td className="gs-number-cell">{index + 1}.</td>
-                            <td className="gs-group-name">{group.numberGroup}</td>
-                            <td className="gs-specialty-cell">{group.speciality}</td>
-                            <td className="gs-subject-cell">{group.subjectName}</td>
-                            <td className="gs-students-cell">{group.countStudent}</td>
-                            <td className="gs-attendance-percent">
-                              <span 
-                                className="gs-percent-bubble"
-                                style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
-                              >
-                                {(group.attendancePercent || 0).toFixed(0)}%
-                              </span>
-                            </td>
-                          </tr>
-                        ))
+                        sortedGroups.map((group, index) => {
+                          const groupKey = getGroupKey(group);
+                          return (
+                            <tr 
+                              key={groupKey} 
+                              className={`gs-group-row ${selectedGroupRow === groupKey ? 'gs-selected' : ''}`}
+                              onClick={() => handleRowClick(group)}
+                            >
+                              <td className="gs-number-cell">{index + 1}.</td>
+                              <td className="gs-group-name">{group.numberGroup}</td>
+                              <td className="gs-specialty-cell">{group.specialty}</td>
+                              <td className="gs-subject-cell">{group.subjectName}</td>
+                              <td className="gs-students-cell">{group.countStudent}</td>
+                              <td className="gs-attendance-percent">
+                                <span 
+                                  className="gs-percent-bubble"
+                                  style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
+                                >
+                                  {(group.attendancePercent || 0).toFixed(0)}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>

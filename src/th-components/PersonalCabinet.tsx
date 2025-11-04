@@ -53,11 +53,13 @@ interface LoginChangeData {
 interface Props {
   onNavigateToDisciplines?: (disciplineName?: string) => void;
   onNavigateToGroups?: (disciplineName?: string) => void;
+  onDisciplineSelect?: (disciplineName: string) => void;
 }
 
 export const PersonalCabinet: React.FC<Props> = ({ 
   onNavigateToDisciplines, 
-  onNavigateToGroups 
+  onNavigateToGroups,
+  onDisciplineSelect
 }) => {
   const { user } = useUser();
   const [teacherData, setTeacherData] = useState<TeacherData>({
@@ -465,6 +467,12 @@ export const PersonalCabinet: React.FC<Props> = ({
         discipline !== 'Дисциплины не назначены' && 
         discipline !== 'Не удалось загрузить дисциплины' && 
         discipline !== 'Ошибка загрузки дисциплин') {
+      
+      // Сначала устанавливаем дисциплину
+      if (onDisciplineSelect) {
+        onDisciplineSelect(discipline);
+      }
+      // Затем переходим к дисциплинам
       onNavigateToDisciplines(discipline);
     }
   };
