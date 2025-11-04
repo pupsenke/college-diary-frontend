@@ -547,6 +547,36 @@
   background: #f0f4ff;
 }
 
+
+/* Стили для заголовка групп */
+.gs-cabinet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.gs-cache-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.gs-error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid #c53030;
+  text-align: center;
+}
+
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .attendance-page-header {

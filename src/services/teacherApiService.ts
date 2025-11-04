@@ -47,6 +47,21 @@ export interface LoginChangeData {
   confirmNewLogin: string;
 }
 
+interface Discipline {
+  idTeacher: number;
+  idSubject: number;
+  subjectName: string;
+  course: number;
+  countGroup: number;
+}
+
+export interface Group {
+  numberGroup: string;
+  speciality: string;
+  subjectName: string;
+  countStudent: number;
+}
+
 export const teacherApiService = {
   // Получение всех сотрудников с кэшированием
   async getAllStaff(): Promise<StaffApiResponse[]> {
@@ -324,5 +339,105 @@ export const teacherApiService = {
       teacherData,
       disciplines
     };
+  },
+
+    // Получение дисциплин преподавателя по курсу
+  async getTeacherDisciplinesByCourse(teacherId: number, course: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_course_${teacherId}_${course}`;
+    
+    try {
+      // Проверяем кэш
+      const cached = localStorage.getItem(`cache_${cacheKey}`);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        // Проверяем актуальность кэша (5 минут)
+        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
+          console.log('Дисциплины загружены из кэша');
+          return cachedData.data;
+        }
+      }
+
+      // Запрос к API
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${course}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Сохраняем в кэш
+      const cacheData = {
+        data: data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines by course:', error);
+      throw error;
+    }
+  },
+
+  // Инвалидация кэша дисциплин
+  invalidateDisciplinesCache(teacherId: number, course: number) {
+    const cacheKey = `teacher_disciplines_course_${teacherId}_${course}`;
+    localStorage.removeItem(`cache_${cacheKey}`);
+  },
+
+  // Получение групп преподавателя
+  async getTeacherGroups(teacherId: number, course: number): Promise<Group[]> {
+    const cacheKey = `teacher_groups_${teacherId}_${course}`;
+    
+    try {
+      // Проверяем кэш
+      const cached = localStorage.getItem(`cache_${cacheKey}`);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        // Проверяем актуальность кэша (5 минут)
+        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
+          console.log('Группы загружены из кэша');
+          return cachedData.data;
+        }
+      }
+
+      // Запрос к API
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${course}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Сохраняем в кэш
+      const cacheData = {
+        data: data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher groups:', error);
+      throw error;
+    }
+  },
+
+  // Инвалидация кэша групп
+  invalidateGroupsCache(teacherId: number, course: number) {
+    const cacheKey = `teacher_groups_${teacherId}_${course}`;
+    localStorage.removeItem(`cache_${cacheKey}`);
   }
 };
