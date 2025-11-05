@@ -29,101 +29,63 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
   const [selectedCourse, setSelectedCourse] = useState<'all' | '1' | '2' | '3' | '4'>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Функция для получения дисциплин с кэшированием
-  const fetchDisciplines = async (forceRefresh = false) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsUsingCache(false);
+// Функция для получения дисциплин с кэшированием
+const fetchDisciplines = async (forceRefresh = false) => {
+  try {
+    setLoading(true);
+    setError(null);
+    setIsUsingCache(false);
 
-      if (forceRefresh) {
-        setRefreshing(true);
-      }
+    if (forceRefresh) {
+      setRefreshing(true);
+    }
 
-      console.log('Загрузка дисциплин преподавателя...');
-      
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
-      }
+    console.log('Загрузка дисциплин преподавателя...');
+    
+    if (!user?.name || !user?.lastName || !user?.patronymic) {
+      throw new Error('Недостаточно данных пользователя для поиска');
+    }
 
-      // Ищем преподавателя по ФИО
+    // Инвалидируем кэш при принудительном обновлении
+    if (forceRefresh) {
       const teacher = await teacherApiService.findTeacherByName(
         user.name, 
         user.lastName, 
         user.patronymic
       );
-
-      if (!teacher) {
-        throw new Error('Преподаватель не найден');
+      if (teacher) {
+        teacherApiService.invalidateTeacherCache(teacher.id);
       }
-
-      try {
-        // Получаем дисциплины преподавателя по его ID
-        const teacherDisciplines = await teacherApiService.getTeacherDisciplinesFull(teacher.id);
-        
-        setDisciplines(teacherDisciplines);
-        console.log('Дисциплины преподавателя загружены:', teacherDisciplines);
-        
-      } catch (disciplinesError) {
-        console.error('Ошибка загрузки дисциплин:', disciplinesError);
-        
-        // Используем данные из кэша, если есть
-        const cacheKey = `teacher_disciplines_course_${teacher.id}`;
-        const cachedDisciplines = localStorage.getItem(`cache_${cacheKey}`);
-        
-        if (cachedDisciplines) {
-          const cachedData = JSON.parse(cachedDisciplines);
-          if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) { // 5 минут
-            setDisciplines(cachedData.data);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные дисциплин. Нет соединения с сервером.');
-            console.log('Данные дисциплин загружены из кэша');
-            return;
-          }
-        }
-        
-        throw new Error('Не удалось загрузить дисциплины');
-      }
-
-    } catch (err) {
-      console.error('Ошибка при загрузке дисциплин:', err);
-      
-      // Пробуем загрузить из кэша при ошибке сети
-      try {
-        console.log('Попытка загрузки дисциплин из кэша...');
-        const cacheKey = `teacher_disciplines_${user?.lastName}_${user?.name}_${user?.patronymic}`.toLowerCase();
-        const cached = localStorage.getItem(`cache_${cacheKey}`);
-        
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          // Проверяем актуальность кэша (1 час)
-          if (Date.now() - cachedData.timestamp < 60 * 60 * 1000) {
-            setDisciplines(cachedData.data);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные дисциплин загружены из кэша');
-            return;
-          }
-        }
-      } catch (cacheError) {
-        console.error('Ошибка при загрузке из кэша:', cacheError);
-      }
-      
-      setError('Не удалось загрузить данные дисциплин');
-      
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
-  };
+
+    const teacher = await teacherApiService.findTeacherByName(
+      user.name, 
+      user.lastName, 
+      user.patronymic
+    );
+
+    if (!teacher) {
+      throw new Error('Преподаватель не найден');
+    }
+
+    // Получаем дисциплины - cacheService автоматически обработает кэширование
+    const teacherDisciplines = await teacherApiService.getTeacherDisciplinesFull(teacher.id);
+    
+    setDisciplines(teacherDisciplines);
+    console.log('Дисциплины преподавателя загружены:', teacherDisciplines);
+    
+  } catch (err) {
+    console.error('Ошибка при загрузке дисциплин:', err);
+    setError('Не удалось загрузить данные дисциплин');
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
 
   // Функция принудительного обновления данных
   const handleRefresh = async () => {
-    // Инвалидируем кэш перед обновлением
-    if (user?.name && user?.lastName && user?.patronymic) {
-      const cacheKey = `teacher_disciplines_${user.lastName}_${user.name}_${user.patronymic}`.toLowerCase();
-      localStorage.removeItem(`cache_${cacheKey}`);
-    }
     await fetchDisciplines(true);
   };
 
@@ -163,7 +125,7 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>Обновить данные</span>
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
     </button>
   );
 
@@ -225,7 +187,7 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
       {selectedDiscipline && (
         <div className="ds-discipline-filter">
           <div className="ds-discipline-info">
-            <strong className="ds-discipline-name">Фильтр: {selectedDiscipline}</strong>
+            <strong className="ds-discipline-name">{selectedDiscipline}</strong>
           </div>
           <button 
             className="ds-clear-discipline" 

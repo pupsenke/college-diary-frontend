@@ -4,7 +4,6 @@ import { DisciplinesSection } from '../th-components/DisciplinesSection';
 import { GroupsSection } from '../th-components/GroupsSection';
 import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
-import { TeacherDashboard } from '../th-components/TeacherDashboard';
 import { useUser } from '../context/UserContext';
 import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
@@ -35,11 +34,6 @@ export const TeacherPage: React.FC = () => {
     setActiveTab(tab);
     searchParams.set('tab', tab);
     setSearchParams(searchParams);
-    
-    // При переходе на вкладку "Группы" сбрасываем выбранную дисциплину
-    if (tab === 'groups') {
-      setSelectedDiscipline(undefined);
-    }
   };
 
   // Добавляем/убираем класс на body при сворачивании меню
@@ -50,7 +44,6 @@ export const TeacherPage: React.FC = () => {
       document.body.classList.remove('menu-collapsed');
     }
     
-    // Очистка при размонтировании
     return () => {
       document.body.classList.remove('menu-collapsed');
     };
@@ -69,16 +62,12 @@ export const TeacherPage: React.FC = () => {
   useEffect(() => {
     const loadNextLesson = () => {
       const scheduleData = getScheduleData();
-      // Для простоты используем верхнюю неделю, можно добавить логику определения текущей недели
       const next = getNextLesson(scheduleData.upper);
       setNextLesson(next);
     };
 
     loadNextLesson();
-    
-    // Обновляем каждую минуту
     const interval = setInterval(loadNextLesson, 60000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -98,17 +87,33 @@ export const TeacherPage: React.FC = () => {
     handleTabChange('groups');
   };
 
+  // Обработчик выбора дисциплины (из любого компонента)
+  const handleDisciplineSelect = (disciplineName: string | undefined) => {
+    setSelectedDiscipline(disciplineName);
+    // Автоматически переходим к группам при выборе дисциплины
+    if (disciplineName) {
+      handleTabChange('groups');
+    }
+  };
+
+  const handleClearDiscipline = () => {
+    setSelectedDiscipline(undefined);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'disciplines':
         return (
-          <TeacherDashboard />
+          <DisciplinesSection 
+            onDisciplineSelect={handleDisciplineSelect}
+            selectedDiscipline={selectedDiscipline}
+          />
         );
       case 'groups':
         return (
           <GroupsSection 
             selectedDiscipline={selectedDiscipline}
-            onDisciplineClear={() => setSelectedDiscipline(undefined)}
+            onDisciplineClear={handleClearDiscipline}
           />
         );
       case 'personal':
@@ -116,13 +121,18 @@ export const TeacherPage: React.FC = () => {
           <PersonalCabinet 
             onNavigateToDisciplines={handleNavigateToDisciplines}
             onNavigateToGroups={handleNavigateToGroups}
+            onDisciplineSelect={handleDisciplineSelect}
           />
         );
       case 'schedule':
         return <ScheduleSection />;
       default:
         return (
-          <TeacherDashboard />
+          <PersonalCabinet 
+            onNavigateToDisciplines={handleNavigateToDisciplines}
+            onNavigateToGroups={handleNavigateToGroups}
+            onDisciplineSelect={handleDisciplineSelect}
+          />
         );
     }
   };
@@ -258,6 +268,7 @@ export const TeacherPage: React.FC = () => {
             <div className="content-header">
               <h1 className="content-title">
                 <span className="content-title-text">{getTabTitle(activeTab)}</span>
+                {selectedDiscipline && (activeTab === 'groups' || activeTab === 'disciplines') }
               </h1>
               <p className="content-subtitle">{getTabSubTitle(activeTab)}</p>
             </div>

@@ -73,7 +73,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
   width: 100%;
 }
@@ -575,6 +575,108 @@
   margin: 16px 0;
   border-left: 4px solid #c53030;
   text-align: center;
+}
+
+/* Стили для поиска по группе */
+.gs-group-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gs-group-search-input {
+  padding: 12px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 214px;
+  transition: all 0.3s ease;
+}
+
+.gs-group-search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.gs-group-search-input::placeholder {
+  color: #64748b;
+}
+
+.pc-refresh-btn.pc-refreshing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pc-refresh-spin {
+  animation: pc-spin 1s linear infinite;
+}
+
+@keyframes pc-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.cache-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+/* Адаптивность для поиска */
+@media (max-width: 1024px) {
+  .gs-group-search-input {
+    min-width: 180px;
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gs-group-search {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .gs-group-search-input {
+    min-width: 0;
+    width: 100%;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gs-group-search-input {
+    font-size: 11px;
+    padding: 5px 6px;
+  }
+}
+
+/* Обновленные медиа-запросы для строки контролов */
+@media (max-width: 768px) {
+  .gs-controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .gs-semester-controls,
+  .gs-course-controls,
+  .gs-group-search {
+    min-width: 100%;
+  }
+  
+  .gs-group-search {
+    order: 3; /* Перемещаем поиск в конец на мобильных */
+  }
 }
 
 /* Адаптивность для мобильных устройств */

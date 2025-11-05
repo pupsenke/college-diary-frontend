@@ -3,6 +3,39 @@ import { CACHE_TTL } from './cacheConstants';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    clearTimeout(id);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Превышено время ожидания ответа от сервера');
+      }
+    }
+    
+    throw error;
+  }
+};
+
 export interface StaffApiResponse {
   id: number;
   patronymic: string;
@@ -100,6 +133,31 @@ export const teacherApiService = {
     return data;
   },
 
+  async refreshAllTeacherData(teacherId: number) {
+    const keysToRemove = [
+      `teacher_${teacherId}`,
+      `teacher_disciplines_${teacherId}`,
+      `teacher_disciplines_full_${teacherId}`,
+      `teacher_groups_${teacherId}`
+    ];
+    
+    keysToRemove.forEach(key => {
+      cacheService.remove(key);
+    });
+
+    const [teacherData, disciplines, groups] = await Promise.all([
+      this.getTeacherById(teacherId),
+      this.getTeacherDisciplines(teacherId),
+      this.getTeacherGroups(teacherId)
+    ]);
+
+    return {
+      teacherData,
+      disciplines,
+      groups
+    };
+  },
+
   // Получение данных преподавателя по ID с кэшированием
   async getTeacherById(teacherId: number): Promise<StaffApiResponse> {
     const cacheKey = `teacher_${teacherId}`;
@@ -137,12 +195,12 @@ export const teacherApiService = {
     return data;
   },
 
-  // Получение дисциплин преподавателя с кэшированием - ВОЗВРАЩАЕМ УНИКАЛЬНЫЕ НАЗВАНИЯ ДЛЯ ОТОБРАЖЕНИЯ
+  // Получение дисциплин преподавателя с кэшированием
   async getTeacherDisciplines(teacherId: number): Promise<string[]> {
     const cacheKey = `teacher_disciplines_${teacherId}`;
     
     const cached = cacheService.get<string[]>(cacheKey, { 
-      ttl: CACHE_TTL.STUDENT_MARKS
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES
     });
     
     if (cached) {
@@ -166,23 +224,181 @@ export const teacherApiService = {
       const disciplinesData: TeacherSubject[] = await response.json();
       console.log('Преподавательских дисциплин получено:', disciplinesData);
 
-      // ПОЛУЧАЕМ ВСЕ НАЗВАНИЯ ДИСЦИПЛИН
       const allDisciplineNames = disciplinesData.map(item => item.subjectName);
-      
-      // УДАЛЯЕМ ДУБЛИКАТЫ ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ (данные в базе остаются нетронутыми)
       const uniqueDisciplineNames = Array.from(new Set(allDisciplineNames));
       
       console.log('Все названия дисциплин:', allDisciplineNames);
       console.log('Уникальные названия для отображения:', uniqueDisciplineNames);
       
       cacheService.set(cacheKey, uniqueDisciplineNames, { 
-        ttl: CACHE_TTL.STUDENT_MARKS 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
       });
       
       return uniqueDisciplineNames;
     } catch (err) {
       console.error('Ошибка при загрузке дисциплин преподавателя:', err);
       throw err;
+    }
+  },
+
+  // Получение полных данных дисциплин преподавателя
+  async getTeacherDisciplinesFull(teacherId: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_full_${teacherId}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Полные данные дисциплин загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching full teacher ${teacherId} disciplines from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines:', error);
+      throw error;
+    }
+  },
+
+  // Получение групп преподавателя
+  async getTeacherGroups(teacherId: number): Promise<Group[]> {
+    const cacheKey = `teacher_groups_${teacherId}`;
+    
+    const cached = cacheService.get<Group[]>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      console.log('Группы преподавателя загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} groups from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.GROUP_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher groups:', error);
+      throw error;
+    }
+  },
+
+  // Получение дисциплин по курсам
+  async getTeacherDisciplinesByCourse(teacherId: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_course_${teacherId}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Дисциплины по курсам загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} disciplines by course from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines by course:', error);
+      throw error;
+    }
+  },
+
+  // Получение дисциплин по семестрам
+  async getTeacherDisciplinesBySemester(teacherId: number, semester: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_semester_${teacherId}_${semester}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Дисциплины по семестрам загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} disciplines by semester ${semester} from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Фильтруем данные для семестра (временная логика)
+      const filteredData = data.filter((discipline: Discipline) => {
+        return semester === 1; // Пока возвращаем все данные для первого семестра
+      });
+      
+      cacheService.set(cacheKey, filteredData, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+      });
+      
+      return filteredData;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines by semester:', error);
+      throw error;
     }
   },
 
@@ -217,11 +433,8 @@ export const teacherApiService = {
     return teacher || null;
   },
 
-  // Обновление данных преподавателя
   async updateTeacherData(teacherId: number, data: Partial<StaffApiResponse>) {
-    console.log('Sending PATCH request for teacher:', teacherId, data);
-    
-    const response = await fetch(`${API_BASE_URL}/staffs/update`, {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -233,88 +446,48 @@ export const teacherApiService = {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('PATCH request failed:', response.status, errorText);
       throw new Error(`Ошибка обновления данных преподавателя: ${response.status}`);
     }
     
     const result = await response.json();
-    console.log('Teacher data updated successfully:', result);
     
-    // Инвалидируем кэш после обновления
     this.invalidateTeacherCache(teacherId);
     
     return result;
   },
 
-  // Смена пароля преподавателя
   async changePassword(teacherId: number, passwordData: PasswordChangeData) {
-    console.log('Changing password for teacher:', teacherId);
-    
-    // Здесь должен быть реальный вызов API для смены пароля
-    // const response = await fetch(`${API_BASE_URL}/staffs/change-password`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     teacherId,
-    //     ...passwordData
-    //   }),
-    // });
-    
-    // if (!response.ok) {
-    //   throw new Error('Ошибка смены пароля');
-    // }
-    
-    // Имитация успешной смены пароля
     await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('Password changed successfully');
     
     return { success: true };
   },
 
-  // Смена логина преподавателя
   async changeLogin(teacherId: number, loginData: LoginChangeData) {
-    console.log('Changing login for teacher:', teacherId);
-    
-    // Здесь должен быть реальный вызов API для смены логина
-    // const response = await fetch(`${API_BASE_URL}/staffs/change-login`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     teacherId,
-    //     ...loginData
-    //   }),
-    // });
-    
-    // if (!response.ok) {
-    //   throw new Error('Ошибка смены логина');
-    // }
-    
-    // Имитация успешной смены логина
     await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('Login changed successfully');
     
-    // Инвалидируем кэш после смены логина
     this.invalidateTeacherCache(teacherId);
     
     return { success: true };
   },
 
-  // Инвалидация кэша преподавателя
   invalidateTeacherCache(teacherId?: number): void {
     const keysToRemove: string[] = ['all_staff'];
     
     if (teacherId) {
       keysToRemove.push(
         `teacher_${teacherId}`,
-        `teacher_disciplines_${teacherId}`
+        `teacher_disciplines_${teacherId}`,
+        `teacher_disciplines_full_${teacherId}`,
+        `teacher_groups_${teacherId}`,
+        `teacher_disciplines_course_${teacherId}`
       );
       
-      // Удаляем ключи поиска по имени (можем не знать точные ключи, поэтому очищаем все связанные)
+      // Удаляем все связанные ключи поиска и семестров
+      for (let i = 1; i <= 2; i++) {
+        keysToRemove.push(`teacher_disciplines_semester_${teacherId}_${i}`);
+      }
+      
+      // Удаляем ключи поиска по имени
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes('cache_teacher_search_')) {
@@ -344,187 +517,5 @@ export const teacherApiService = {
       teacherData,
       disciplines
     };
-  },
-
-   // Получение дисциплин преподавателя по ID преподавателя
-  async getTeacherDisciplinesFull(teacherId: number): Promise<Discipline[]> {
-    const cacheKey = `teacher_disciplines_full_${teacherId}`;
-    
-    try {
-      // Проверяем кэш
-      const cached = localStorage.getItem(`cache_${cacheKey}`);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
-          console.log('олные данные дисциплин загружены из кэша');
-          return cachedData.data;
-        }
-      }
-
-      // Запрос к API - используем ID преподавателя вместо курса
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Сохраняем в кэш
-      const cacheData = {
-        data: data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching teacher disciplines:', error);
-      throw error;
-    }
-  },
-
-  // Инвалидация кэша дисциплин
-  invalidateDisciplinesCache(teacherId: number, course: number) {
-    const cacheKey = `teacher_disciplines_course_${teacherId}_${course}`;
-    localStorage.removeItem(`cache_${cacheKey}`);
-  },
-
-  // Получение групп преподавателя по его ID
-  async getTeacherGroups(teacherId: number): Promise<Group[]> {
-    const cacheKey = `teacher_groups_${teacherId}`;
-    
-    try {
-      // Проверяем кэш
-      const cached = localStorage.getItem(`cache_${cacheKey}`);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
-          console.log('Группы преподавателя загружены из кэша');
-          return cachedData.data;
-        }
-      }
-
-      // Запрос к API - используем ID преподавателя
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Сохраняем в кэш
-      const cacheData = {
-        data: data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching teacher groups:', error);
-      throw error;
-    }
-  },
-
-  // Получение дисциплин по курсам
-  async getTeacherDisciplinesByCourse(teacherId: number): Promise<Discipline[]> {
-    const cacheKey = `teacher_disciplines_course_${teacherId}`;
-    
-    try {
-      const cached = localStorage.getItem(`cache_${cacheKey}`);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
-          console.log('Дисциплины по курсам загружены из кэша');
-          return cachedData.data;
-        }
-      }
-
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      const cacheData = {
-        data: data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching teacher disciplines by course:', error);
-      throw error;
-    }
-  },
-
-  // Получение дисциплин по семестрам (пока только 1 семестр)
-  async getTeacherDisciplinesBySemester(teacherId: number, semester: number): Promise<Discipline[]> {
-    const cacheKey = `teacher_disciplines_semester_${teacherId}_${semester}`;
-    
-    try {
-      const cached = localStorage.getItem(`cache_${cacheKey}`);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
-          console.log('Дисциплины по семестрам загружены из кэша');
-          return cachedData.data;
-        }
-      }
-
-      // Пока используем тот же endpoint, но фильтруем по семестру
-      // В будущем добавить отдельный endpoint для семестров
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Фильтруем данные для первого семестра (пока заглушка)
-      // В реальном приложении здесь будет логика фильтрации по семестрам
-      const filteredData = data.filter((discipline: Discipline) => {
-        // Временная логика - для демонстрации
-        //  здесь будет проверка семестра
-        return semester === 1; // Пока возвращаем все данные для первого семестра
-      });
-      
-      const cacheData = {
-        data: filteredData,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
-      
-      return filteredData;
-    } catch (error) {
-      console.error('Error fetching teacher disciplines by semester:', error);
-      throw error;
-    }
   }
 };

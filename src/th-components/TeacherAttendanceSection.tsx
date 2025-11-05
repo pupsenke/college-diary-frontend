@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './TeacherAttendanceSection.css';
 
 // Типы данных
@@ -21,11 +21,15 @@ export interface AttendanceRecord {
 }
 
 export interface TeacherAttendanceSectionProps {
-  groupNumber: string;
-  subject: string;
-  students: Student[];
-  onBackToGroups?: () => void;
-  onSetGrades?: () => void;
+    groupNumber: string;
+    subject: string;
+    students: Student[];
+    onBackToGroups?: () => void;
+    onSetGrades?: () => void;
+    onAttendanceUpdate?: (attendanceData: {
+      records: AttendanceRecord[];
+      percentage: number;
+    }) => void;
 }
 
 export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> = ({
@@ -33,7 +37,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   subject,
   students,
   onBackToGroups,
-  onSetGrades
+  onSetGrades,
+  onAttendanceUpdate 
 }) => {
   const [selectedSubgroup, setSelectedSubgroup] = useState<string>('all');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
@@ -117,6 +122,24 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   
     return true;
   });
+
+  // Обработчик обновления данных посещаемости
+  const handleAttendanceUpdate = useCallback((attendanceData: {
+    records: AttendanceRecord[];
+    percentage: number;
+  }) => {
+    if (onAttendanceUpdate) {
+      onAttendanceUpdate(attendanceData);
+    }
+  }, [onAttendanceUpdate]);
+
+  // В useEffect при обновлении записей посещаемости
+  useEffect(() => {
+    handleAttendanceUpdate({
+      records: attendanceRecords,
+      percentage: calculateGroupAttendancePercentage()
+    });
+  }, [attendanceRecords, filteredStudents, filteredDates, handleAttendanceUpdate]);
 
   // Инициализация дат и подгрупп
   useEffect(() => {

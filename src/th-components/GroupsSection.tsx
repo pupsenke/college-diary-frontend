@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { teacherApiService } from '../services/teacherApiService';
-import { TeacherAttendanceSection } from './TeacherAttendanceSection';
+import { TeacherAttendanceSection, AttendanceRecord } from './TeacherAttendanceSection';
 import { TeacherPerformanceSection } from './TeacherPerformanceSection';
 import './GroupsSectionStyle.css';
 
@@ -12,6 +12,10 @@ export interface Group {
   countStudent: number;
   attendancePercent?: number;
   course?: number;
+  attendanceData?: {
+    records: AttendanceRecord[];
+    lastCalculated?: number;
+  };
 }
 
 interface Discipline {
@@ -29,7 +33,7 @@ interface Props {
 export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplineClear }) => {
   const { user } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
-  const [allGroups, setAllGroups] = useState<Group[]>([]); // Все группы без фильтрации
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +42,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [activeTab, setActiveTab] = useState<'semesters' | 'course'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedCourse, setSelectedCourse] = useState<'all' | '1' | '2' | '3' | '4'>('all');
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [groupSearch, setGroupSearch] = useState<string>('');
   const [subjectSortOrder, setSubjectSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGroupRow, setSelectedGroupRow] = useState<string | null>(null);
   const [showAttendance, setShowAttendance] = useState<boolean>(false);
@@ -48,127 +52,68 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   // Функция для создания уникального ключа группы
   const getGroupKey = (group: Group) => `${group.numberGroup}-${group.subjectName}`;
 
-  // Функция для получения групп с кэшированием
-  const fetchGroups = async (forceRefresh = false) => {
-      try {
-        setLoading(true);
-        setError(null);
-        setIsUsingCache(false);
+// Функция для получения групп с кэшированием
+const fetchGroups = async (forceRefresh = false) => {
+  try {
+    setLoading(true);
+    setError(null);
+    setIsUsingCache(false);
 
-        if (forceRefresh) {
-          setRefreshing(true);
-        }
+    if (forceRefresh) {
+      setRefreshing(true);
+    }
 
-        console.log('Загрузка данных групп...');
-        
-        if (!user?.name || !user?.lastName || !user?.patronymic) {
-          throw new Error('Недостаточно данных пользователя для поиска');
-        }
-
-        const teacher = await teacherApiService.findTeacherByName(
-          user.name, 
-          user.lastName, 
-          user.patronymic
-        );
-
-        if (!teacher) {
-          throw new Error('Преподаватель не найден');
-        }
-
-        try {
-          // Получаем все группы преподавателя
-          const teacherGroups = await teacherApiService.getTeacherGroups(teacher.id);        
-
-          // Добавляем процент посещаемости и сохраняем все группы
-          const groupsWithAttendance = teacherGroups.map(group => ({
-            ...group,
-            attendancePercent: calculateGroupAttendance(group)
-          }));
-          
-          setAllGroups(groupsWithAttendance);
-          
-          // В зависимости от активной вкладки загружаем соответствующие данные
-          if (activeTab === 'course') {
-            await loadCourseData(teacher.id, groupsWithAttendance);
-          } else {
-            await loadSemesterData(teacher.id, groupsWithAttendance);
-          }
-          
-          console.log('Группы преподавателя загружены:', groupsWithAttendance);
-          
-        } catch (groupsError) {
-          console.error('Ошибка загрузки групп:', groupsError);
-          throw new Error('Не удалось загрузить группы');
-        }
-
-      } catch (err) {
-        console.error('Ошибка при загрузке групп:', err);
-        setError('Не удалось загрузить данные групп');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    };
-
-    // Загрузка данных для вкладки "По курсу"
-  const loadCourseData = async (teacherId: number, baseGroups: Group[]) => {
-    try {
-      const disciplines = await teacherApiService.getTeacherDisciplinesByCourse(teacherId);
-      
-      // Фильтруем группы по выбранному курсу
-      let filteredGroups = baseGroups;
+    console.log('Загрузка данных групп...');
     
-      if (selectedCourse !== 'all') {
-        const courseNum = parseInt(selectedCourse);
-        // Создаем Set предметов для выбранного курса
-        const courseSubjects = new Set(
-          disciplines
-            .filter(d => d.course === courseNum)
-            .map(d => d.subjectName)
-        );
-        
-        filteredGroups = baseGroups.filter(group => 
-          courseSubjects.has(group.subjectName)
-        );
-      }
-      
-      setGroups(filteredGroups);
-    } catch (error) {
-      console.error('Ошибка загрузки данных по курсам:', error);
-      // В случае ошибки показываем все группы
-      setGroups(baseGroups);
+    if (!user?.name || !user?.lastName || !user?.patronymic) {
+      throw new Error('Недостаточно данных пользователя для поиска');
     }
-  };
 
-  // Загрузка данных для вкладки "По семестрам"
-  const loadSemesterData = async (teacherId: number, baseGroups: Group[]) => {
-    try {
-      const semesterNum = selectedSemester === 'first' ? 1 : 2;
-      const disciplines = await teacherApiService.getTeacherDisciplinesBySemester(teacherId, semesterNum);
-      
-      // Фильтруем группы по семестру
-      // Пока все группы для первого семестра
-      let filteredGroups = baseGroups;
-      
-      if (selectedSemester === 'first') {
-        filteredGroups = baseGroups;
+    // Инвалидируем кэш при принудительном обновлении
+    if (forceRefresh) {
+      const teacher = await teacherApiService.findTeacherByName(
+        user.name, 
+        user.lastName, 
+        user.patronymic
+      );
+      if (teacher) {
+        teacherApiService.invalidateTeacherCache(teacher.id);
       }
-      
-      setGroups(filteredGroups);
-    } catch (error) {
-      console.error('Ошибка загрузки данных по семестрам:', error);
-      // В случае ошибки показываем все группы
-      setGroups(baseGroups);
     }
-  };
+
+    const teacher = await teacherApiService.findTeacherByName(
+      user.name, 
+      user.lastName, 
+      user.patronymic
+    );
+
+    if (!teacher) {
+      throw new Error('Преподаватель не найден');
+    }
+
+    // Получаем группы - cacheService автоматически обработает кэширование
+    const teacherGroups = await teacherApiService.getTeacherGroups(teacher.id);
+    
+    setAllGroups(teacherGroups);
+    setGroups(teacherGroups);
+    
+    console.log('Группы преподавателя загружены:', teacherGroups);
+    
+  } catch (err) {
+    console.error('Ошибка при загрузке групп:', err);
+    setError('Не удалось загрузить данные групп');
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   // Обработчик смены вкладки
   const handleTabChange = (tab: 'semesters' | 'course') => {
     setActiveTab(tab);
-    // При смене вкладки сбрасываем фильтры
     setSelectedCourse('all');
     setSelectedSemester('first');
-    setSelectedGroup('all');
+    setGroupSearch('');
     setSelectedGroupRow(null);
   };
 
@@ -177,42 +122,53 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     setSelectedCourse(course);
     setSelectedGroupRow(null);
   };
+
   // Обработчик смены семестра
   const handleSemesterChange = (semester: 'first' | 'second') => {
     setSelectedSemester(semester);
     setSelectedGroupRow(null);
+    
+    if (semester === 'first') {
+      setGroups(allGroups);
+    } else {
+      setGroups([]);
+    }
   };
 
-  // Обновляем данные при изменении фильтров
-  useEffect(() => {
-    if (allGroups.length > 0 && user) {
-      teacherApiService.findTeacherByName(
-        user.name, 
-        user.lastName, 
-        user.patronymic
-      ).then(teacher => {
-        if (teacher) {
-          if (activeTab === 'course') {
-            loadCourseData(teacher.id, allGroups);
-          } else {
-            loadSemesterData(teacher.id, allGroups);
-          }
-        }
-      });
-    }
-  }, [selectedCourse, selectedSemester, activeTab, allGroups, user, selectedGroup]);
+  // Обработчик изменения поиска по группе
+  const handleGroupSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGroupSearch(e.target.value);
+    setSelectedGroupRow(null);
+  };
 
-  const calculateGroupAttendance = (group: Group): number => {
-    const basePercent = Math.floor(Math.random() * 30) + 70;
-    return basePercent;
+  const [attendanceData, setAttendanceData] = useState<Record<string, {
+    records: AttendanceRecord[];
+    percentage: number;
+  }>>({});
+
+  // Обработчик обновления данных посещаемости
+  const handleAttendanceUpdate = useCallback((groupKey: string, data: {
+    records: AttendanceRecord[];
+    percentage: number;
+  }) => {
+    setAttendanceData(prev => ({
+      ...prev,
+      [groupKey]: data
+    }));
+  }, []);
+
+  const getRealAttendancePercent = (group: Group): number => {
+    const groupKey = getGroupKey(group);
+    const data = attendanceData[groupKey];
+    
+    if (data && data.percentage > 0) {
+      return data.percentage;
+    }
+    return 0;
   };
 
   // Функция принудительного обновления данных
   const handleRefresh = async () => {
-    if (user?.name && user?.lastName && user?.patronymic) {
-      const cacheKey = `teacher_groups_${user.lastName}_${user.name}_${user.patronymic}`.toLowerCase();
-      localStorage.removeItem(`cache_${cacheKey}`);
-    }
     await fetchGroups(true);
   };
 
@@ -222,7 +178,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       fetchGroups();
     }
   }, [user]);
-
 
   // Компонент информационной иконки
   const InfoIcon = () => (
@@ -253,14 +208,20 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>Обновить данные</span>
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
     </button>
   );
 
-  // Фильтрация данных с учетом выбранной дисциплины
+  // ФИЛЬТРАЦИЯ ДАННЫХ - по поиску группы и дисциплине
   const filteredGroups = groups.filter(group => {
-    const groupFilter = selectedGroup === 'all' || group.numberGroup === selectedGroup;
-    const disciplineFilter = !selectedDiscipline || group.subjectName === selectedDiscipline;
+    const groupNumberStr = String(group.numberGroup);
+    
+    const groupFilter = !groupSearch || 
+      groupNumberStr.toLowerCase().includes(groupSearch.toLowerCase());
+    
+    const disciplineFilter = !selectedDiscipline || 
+      group.subjectName.toLowerCase().includes(selectedDiscipline.toLowerCase());
+    
     return groupFilter && disciplineFilter;
   });
 
@@ -272,15 +233,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       return b.subjectName.localeCompare(a.subjectName);
     }
   });
-
-  // Получение уникальных групп для выпадающего списка
-  const uniqueGroups = Array.from(new Set(allGroups.map(group => group.numberGroup)));
-
-  // Обработчики
-  const handleGroupChange = (group: string) => {
-    setSelectedGroup(group);
-    setSelectedGroupRow(null);
-  };
 
   const toggleSubjectSortOrder = () => {
     setSubjectSortOrder(subjectSortOrder === 'asc' ? 'desc' : 'asc');
@@ -301,13 +253,13 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const handleSetAttendance = () => {
     if (!selectedGroupRow) return;
     
-  const groupData = groups.find(group => 
-    getGroupKey(group) === selectedGroupRow
-  );
-  if (groupData) {
-    setSelectedGroupData(groupData);
-    setShowAttendance(true);
-  }
+    const groupData = groups.find(group => 
+      getGroupKey(group) === selectedGroupRow
+    );
+    if (groupData) {
+      setSelectedGroupData(groupData);
+      setShowAttendance(true);
+    }
   };
 
   const handleSetGrades = () => {
@@ -384,6 +336,11 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           students={mockStudents}
           onBackToGroups={handleBackToGroups}
           onSetGrades={handleSetGradesFromAttendance}
+          onAttendanceUpdate={(data) => {
+            if (selectedGroupData) {
+              handleAttendanceUpdate(getGroupKey(selectedGroupData), data);
+            }
+          }}
         />
       </div>
     );
@@ -437,13 +394,13 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
         <div className="gs-view-tabs">
           <button
             className={`gs-view-tab ${activeTab === 'semesters' ? 'gs-active' : ''}`}
-            onClick={() => setActiveTab('semesters')}
+            onClick={() => handleTabChange('semesters')}
           >
             По семестрам
           </button>
           <button
             className={`gs-view-tab ${activeTab === 'course' ? 'gs-active' : ''}`}
-            onClick={() => setActiveTab('course')}
+            onClick={() => handleTabChange('course')}
           >
             По курсу
           </button>
@@ -464,31 +421,27 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     <div className="gs-semester-tabs">
                       <button
                         className={`gs-semester-tab ${selectedSemester === 'first' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedSemester('first')}
+                        onClick={() => handleSemesterChange('first')}
                       >
                         1-ый семестр
                       </button>
                       <button
                         className={`gs-semester-tab ${selectedSemester === 'second' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedSemester('second')}
+                        onClick={() => handleSemesterChange('second')}
                       >
                         2-ой семестр
                       </button>
                     </div>
                   </div>
                   
-                  <div className="gs-group-selector">
-                    <select
-                      id="gs-group-select"
-                      value={selectedGroup}
-                      onChange={(e) => handleGroupChange(e.target.value)}
-                      className="gs-group-select"
-                    >
-                      <option value="all">Все группы</option>
-                      {uniqueGroups.map(group => (
-                        <option key={group} value={group}>{group}</option>
-                      ))}
-                    </select>
+                  <div className="gs-group-search">
+                    <input
+                      type="text"
+                      placeholder="Поиск по номеру группы"
+                      value={groupSearch}
+                      onChange={handleGroupSearchChange}
+                      className="gs-group-search-input"
+                    />
                   </div>
                 </div>
 
@@ -530,6 +483,8 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                       {sortedGroups.length > 0 ? (
                         sortedGroups.map((group, index) => {
                           const groupKey = getGroupKey(group);
+                          const attendancePercent = getRealAttendancePercent(group);
+                          
                           return (
                             <tr 
                               key={groupKey} 
@@ -544,9 +499,9 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                               <td className="gs-attendance-percent">
                                 <span 
                                   className="gs-percent-bubble"
-                                  style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
+                                  style={{ backgroundColor: getPercentColor(attendancePercent) }}
                                 >
-                                  {(group.attendancePercent || 0).toFixed(0)}%
+                                  {attendancePercent.toFixed(0)}%
                                 </span>
                               </td>
                             </tr>
@@ -555,7 +510,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                       ) : (
                         <tr>
                           <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                            Нет групп для отображения
+                            {groupSearch ? 'Группы не найдены' : 'Нет групп для отображения'}
                           </td>
                         </tr>
                       )}
@@ -570,49 +525,45 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                     <div className="gs-course-tabs">
                       <button
                         className={`gs-course-tab ${selectedCourse === 'all' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedCourse('all')}
+                        onClick={() => handleCourseChange('all')}
                       >
                         Все курсы
                       </button>
                       <button
                         className={`gs-course-tab ${selectedCourse === '1' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedCourse('1')}
+                        onClick={() => handleCourseChange('1')}
                       >
                         1 курс
                       </button>
                       <button
                         className={`gs-course-tab ${selectedCourse === '2' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedCourse('2')}
+                        onClick={() => handleCourseChange('2')}
                       >
                         2 курс
                       </button>
                       <button
                         className={`gs-course-tab ${selectedCourse === '3' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedCourse('3')}
+                        onClick={() => handleCourseChange('3')}
                       >
                         3 курс
                       </button>
                       <button
                         className={`gs-course-tab ${selectedCourse === '4' ? 'gs-active' : ''}`}
-                        onClick={() => setSelectedCourse('4')}
+                        onClick={() => handleCourseChange('4')}
                       >
                         4 курс
                       </button>
                     </div>
                   </div>
                   
-                  <div className="gs-group-selector">
-                    <select
-                      id="gs-group-select"
-                      value={selectedGroup}
-                      onChange={(e) => handleGroupChange(e.target.value)}
-                      className="gs-group-select"
-                    >
-                      <option value="all">Все группы</option>
-                      {uniqueGroups.map(group => (
-                        <option key={group} value={group}>{group}</option>
-                      ))}
-                    </select>
+                  <div className="gs-group-search">
+                    <input
+                      type="text"
+                      placeholder="Поиск по номеру группы..."
+                      value={groupSearch}
+                      onChange={handleGroupSearchChange}
+                      className="gs-group-search-input"
+                    />
                   </div>
                 </div>
 
@@ -654,6 +605,8 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                       {sortedGroups.length > 0 ? (
                         sortedGroups.map((group, index) => {
                           const groupKey = getGroupKey(group);
+                          const attendancePercent = getRealAttendancePercent(group);
+                          
                           return (
                             <tr 
                               key={groupKey} 
@@ -668,9 +621,9 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                               <td className="gs-attendance-percent">
                                 <span 
                                   className="gs-percent-bubble"
-                                  style={{ backgroundColor: getPercentColor(group.attendancePercent || 0) }}
+                                  style={{ backgroundColor: getPercentColor(attendancePercent) }}
                                 >
-                                  {(group.attendancePercent || 0).toFixed(0)}%
+                                  {attendancePercent.toFixed(0)}%
                                 </span>
                               </td>
                             </tr>
@@ -679,7 +632,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
                       ) : (
                         <tr>
                           <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                            Нет групп для отображения
+                            {groupSearch ? 'Группы не найдены' : 'Нет групп для отображения'}
                           </td>
                         </tr>
                       )}

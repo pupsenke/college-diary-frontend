@@ -53,7 +53,7 @@ interface LoginChangeData {
 interface Props {
   onNavigateToDisciplines?: (disciplineName?: string) => void;
   onNavigateToGroups?: (disciplineName?: string) => void;
-  onDisciplineSelect?: (disciplineName: string) => void;
+  onDisciplineSelect?: (disciplineName: string | undefined) => void;
 }
 
 export const PersonalCabinet: React.FC<Props> = ({ 
@@ -95,170 +95,83 @@ export const PersonalCabinet: React.FC<Props> = ({
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
-    // Функция для получения данных преподавателя с кэшированием
-  const fetchTeacherData = async (forceRefresh = false) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsUsingCache(false);
+// Функция для получения данных преподавателя с кэшированием
+const fetchTeacherData = async (forceRefresh = false) => {
+  try {
+    setLoading(true);
+    setError(null);
+    setIsUsingCache(false);
 
-      if (forceRefresh) {
-        setRefreshing(true);
-      }
+    if (forceRefresh) {
+      setRefreshing(true);
+    }
 
-      console.log('Загрузка данных преподавателя...');
-      
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
-      }
+    console.log('Загрузка данных преподавателя...');
+    
+    if (!user?.name || !user?.lastName || !user?.patronymic) {
+      throw new Error('Недостаточно данных пользователя для поиска');
+    }
 
-      // Ищем преподавателя по ФИО
-      const teacher = await teacherApiService.findTeacherByName(
-        user.name, 
-        user.lastName, 
-        user.patronymic
-      );
+    // Инвалидируем кэш при принудительном обновлении
+    if (forceRefresh && teacherData.teacherId) {
+      teacherApiService.invalidateTeacherCache(teacherData.teacherId);
+    }
 
-      if (teacher) {
-        try {
-          // Получаем дисциплины преподавателя
-          const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
-          
-          // Форматируем email для novsu.ru
-          const formattedEmail = teacher.email 
-            ? teacher.email.replace(/@.*$/, '@novsu.ru')
-            : `${teacher.login}@novsu.ru`;
-          
-          // Преобразуем данные из API в наш формат
-          const transformedData: TeacherData = {
-            firstName: teacher.name,
-            lastName: teacher.lastName,
-            middleName: teacher.patronymic,
-            email: formattedEmail,
-            position: teacher.staffPosition[0]?.name || 'Преподаватель',
-            disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
-            teacherId: teacher.id,
-            login: teacher.login
-          };
+    // Ищем преподавателя по ФИО
+    const teacher = await teacherApiService.findTeacherByName(
+      user.name, 
+      user.lastName, 
+      user.patronymic
+    );
 
-          setTeacherData(transformedData);
-          console.log('Набор данных преподавателя с дисциплинами:', transformedData);
-          
-        } catch (disciplinesError) {
-          console.error('Ошибка загрузки дисциплин с использованием резервных данных:', disciplinesError);
-          
-          // Используем данные из кэша, если есть
-          const cacheKey = `teacher_disciplines_${teacher.id}`;
-          const cachedDisciplines = localStorage.getItem(`cache_${cacheKey}`);
-          
-          if (cachedDisciplines) {
-            const cachedData = JSON.parse(cachedDisciplines);
-            if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) { // 5 минут
-              const disciplineNames = cachedData.data;
-              
-              const formattedEmail = teacher.email 
-                ? teacher.email.replace(/@.*$/, '@novsu.ru')
-                : `${teacher.login}@novsu.ru`;
-              
-              const transformedData: TeacherData = {
-                firstName: teacher.name,
-                lastName: teacher.lastName,
-                middleName: teacher.patronymic,
-                email: formattedEmail,
-                position: teacher.staffPosition[0]?.name || 'Преподаватель',
-                disciplines: disciplineNames.length > 0 ? disciplineNames : ['Дисциплины не назначены (кэш)'],
-                teacherId: teacher.id,
-                login: teacher.login
-              };
-              
-              setTeacherData(transformedData);
-              setIsUsingCache(true);
-              setError('Используются кэшированные данные дисциплин. Нет соединения с сервером.');
-              console.log('Данные дисциплин загружены из кэша');
-              return;
-            }
-          }
-          
-          // Если кэша нет или он устарел, используем базовые данные
-          const formattedEmail = teacher.email 
-            ? teacher.email.replace(/@.*$/, '@novsu.ru')
-            : `${teacher.login}@novsu.ru`;
-          
-          const transformedData: TeacherData = {
-            firstName: teacher.name,
-            lastName: teacher.lastName,
-            middleName: teacher.patronymic,
-            email: formattedEmail,
-            position: teacher.staffPosition[0]?.name || 'Преподаватель',
-            disciplines: ['Не удалось загрузить дисциплины'],
-            teacherId: teacher.id,
-            login: teacher.login
-          };
-          setTeacherData(transformedData);
-        }
-      } else {
-        console.log('Преподаватель не найден в данных о персонале, используются контекстные данные');
-        // Если преподаватель не найден в API, используем данные из контекста
-        const formattedEmail = user?.email 
-          ? user.email.replace(/@.*$/, '@novsu.ru')
-          : `${user?.login}@novsu.ru`;
-        
-        const fallbackData: TeacherData = {
-          firstName: user?.name || '',
-          lastName: user?.lastName || '',
-          middleName: user?.patronymic || '',
-          email: formattedEmail,
-          position: 'Преподаватель',
-          disciplines: ['Дисциплины не найдены'],
-          login: user?.login || ''
-        };
-        setTeacherData(fallbackData);
-      }
-
-    } catch (err) {
-      console.error('Ошибка при загрузке данных преподавателя:', err);
-      
-      // Пробуем загрузить из кэша при ошибке сети
+    if (teacher) {
       try {
-        console.log('Попытка загрузки из кэша...');
-        const cacheKey = `teacher_search_${user?.lastName}_${user?.name}_${user?.patronymic}`.toLowerCase();
-        const cached = localStorage.getItem(`cache_${cacheKey}`);
+        // Получаем дисциплины преподавателя
+        const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
         
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          // Проверяем актуальность кэша (1 час)
-          if (Date.now() - cachedData.timestamp < 60 * 60 * 1000) {
-            const teacher = cachedData.data;
-            
-            const formattedEmail = teacher.email 
-              ? teacher.email.replace(/@.*$/, '@novsu.ru')
-              : `${teacher.login}@novsu.ru`;
-            
-            const transformedData: TeacherData = {
-              firstName: teacher.name,
-              lastName: teacher.lastName,
-              middleName: teacher.patronymic,
-              email: formattedEmail,
-              position: teacher.staffPosition[0]?.name || 'Преподаватель',
-              disciplines: ['Данные из кэша - обновите для актуальности'],
-              teacherId: teacher.id,
-              login: teacher.login
-            };
-            
-            setTeacherData(transformedData);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные преподавателя загружены из кэша');
-            return;
-          }
-        }
-      } catch (cacheError) {
-        console.error('Ошибка при загрузке из кэша:', cacheError);
+        // Форматируем email для novsu.ru
+        const formattedEmail = teacher.email 
+          ? teacher.email.replace(/@.*$/, '@novsu.ru')
+          : `${teacher.login}@novsu.ru`;
+        
+        // Преобразуем данные из API в наш формат
+        const transformedData: TeacherData = {
+          firstName: teacher.name,
+          lastName: teacher.lastName,
+          middleName: teacher.patronymic,
+          email: formattedEmail,
+          position: teacher.staffPosition[0]?.name || 'Преподаватель',
+          disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
+          teacherId: teacher.id,
+          login: teacher.login
+        };
+
+        setTeacherData(transformedData);
+        console.log('Набор данных преподавателя с дисциплинами:', transformedData);
+        
+      } catch (disciplinesError) {
+        console.error('Ошибка загрузки дисциплин:', disciplinesError);
+        
+        // Используем базовые данные при ошибке
+        const formattedEmail = teacher.email 
+          ? teacher.email.replace(/@.*$/, '@novsu.ru')
+          : `${teacher.login}@novsu.ru`;
+        
+        const transformedData: TeacherData = {
+          firstName: teacher.name,
+          lastName: teacher.lastName,
+          middleName: teacher.patronymic,
+          email: formattedEmail,
+          position: teacher.staffPosition[0]?.name || 'Преподаватель',
+          disciplines: ['Не удалось загрузить дисциплины'],
+          teacherId: teacher.id,
+          login: teacher.login
+        };
+        setTeacherData(transformedData);
       }
-      
-      setError('Не удалось загрузить данные преподавателя');
-      
-      // В случае ошибки используем данные из контекста
+    } else {
+      console.log('Преподаватель не найден, используются контекстные данные');
+      // Если преподаватель не найден в API, используем данные из контекста
       const formattedEmail = user?.email 
         ? user.email.replace(/@.*$/, '@novsu.ru')
         : `${user?.login}@novsu.ru`;
@@ -269,24 +182,41 @@ export const PersonalCabinet: React.FC<Props> = ({
         middleName: user?.patronymic || '',
         email: formattedEmail,
         position: 'Преподаватель',
-        disciplines: ['Ошибка загрузки дисциплин'],
+        disciplines: ['Дисциплины не найдены'],
         login: user?.login || ''
       };
       setTeacherData(fallbackData);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
-  };
 
-  // Функция принудительного обновления данных
-  const handleRefresh = async () => {
-    if (teacherData.teacherId) {
-      // Инвалидируем кэш перед обновлением
-      teacherApiService.invalidateTeacherCache(teacherData.teacherId);
-    }
-    await fetchTeacherData(true);
-  };
+  } catch (err) {
+    console.error('Ошибка при загрузке данных преподавателя:', err);
+    setError('Не удалось загрузить данные преподавателя');
+    
+    // В случае ошибки используем данные из контекста
+    const formattedEmail = user?.email 
+      ? user.email.replace(/@.*$/, '@novsu.ru')
+      : `${user?.login}@novsu.ru`;
+    
+    const fallbackData: TeacherData = {
+      firstName: user?.name || '',
+      lastName: user?.lastName || '',
+      middleName: user?.patronymic || '',
+      email: formattedEmail,
+      position: 'Преподаватель',
+      disciplines: ['Ошибка загрузки дисциплин'],
+      login: user?.login || ''
+    };
+    setTeacherData(fallbackData);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+// Функция принудительного обновления данных
+const handleRefresh = async () => {
+  await fetchTeacherData(true);
+};
 
   // Загружаем данные при монтировании компонента
   useEffect(() => {
@@ -463,19 +393,26 @@ export const PersonalCabinet: React.FC<Props> = ({
   }, []);
 
   const handleDisciplineClick = (discipline: string) => {
-    if (onNavigateToDisciplines && 
-        discipline !== 'Дисциплины не назначены' && 
-        discipline !== 'Не удалось загрузить дисциплины' && 
-        discipline !== 'Ошибка загрузки дисциплин') {
-      
-      // Сначала устанавливаем дисциплину
-      if (onDisciplineSelect) {
-        onDisciplineSelect(discipline);
-      }
-      // Затем переходим к дисциплинам
+  const isValidDiscipline = 
+    discipline !== 'Дисциплины не назначены' && 
+    discipline !== 'Не удалось загрузить дисциплины' && 
+    discipline !== 'Ошибка загрузки дисциплин';
+
+  if (isValidDiscipline) {
+    // Сначала устанавливаем дисциплину
+    if (onDisciplineSelect) {
+      onDisciplineSelect(discipline);
+    }
+    
+    // Затем переходим к группам с фильтрацией по выбранной дисциплине
+    if (onNavigateToGroups) {
+      onNavigateToGroups(discipline);
+    } else if (onNavigateToDisciplines) {
+      // Если onNavigateToGroups не передан, используем старый способ
       onNavigateToDisciplines(discipline);
     }
-  };
+  }
+};
 
   // Если данные пользователя еще не загружены
   if (!user) {
