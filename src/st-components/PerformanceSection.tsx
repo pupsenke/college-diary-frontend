@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './PerformanceSectionStyle.css';
-import { apiService } from '../services/studentApiService'; 
+import { apiService, StudentMark, MarkInfo, Lesson, Supplement, MarkChange, Document } from '../services/studentApiService'; 
 import { useUser, Student } from '../context/UserContext';
 
 import {
@@ -19,23 +19,6 @@ import {
   Line
 } from 'recharts';
 
-export interface StudentMark {
-  stNameSubjectDTO: {
-    idSt: number;
-    idSubject: number;
-    nameSubject: string;
-    idTeacher: number;
-    lastnameTeacher: string;
-    nameTeacher: string;
-    patronymicTeacher: string;
-  };
-  marksBySt: Array<{
-    number: number;
-    value: number | null;
-  }> | null;
-  certification: number | null; 
-}
-
 interface PerformanceSectionProps {
   studentId: number;
 }
@@ -46,13 +29,41 @@ interface SemesterInfo {
   value: 'first' | 'second';
 }
 
+interface GradeDetail {
+  id: number;
+  date: string;
+  topic: string;
+  grade: number;
+  teacher: string;
+  type: string;
+  hasValue: boolean;
+  stId?: number;
+}
+
+interface Grade {
+  id: number;
+  subject: string;
+  grades: number[];
+  average: number;
+  examGrade: number | null;
+  gradeDetails?: GradeDetail[];
+  teacher: string;
+}
+
 export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ 
   studentId
 }) => {
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'analytics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedGrade, setSelectedGrade] = useState<{subject: string, grade: number | null, number: number, topic: string, teacher: string} | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<{
+    subject: string, 
+    grade: number | null, 
+    number: number, 
+    topic: string, 
+    teacher: string,
+    stId?: number
+  } | null>(null);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,6 +72,29 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   const [isUsingCache, setIsUsingCache] = useState(false);
   const [semesters, setSemesters] = useState<SemesterInfo[]>([]);
   const [studentCourse, setStudentCourse] = useState<number>(1);
+  const [markInfo, setMarkInfo] = useState<MarkInfo | null>(null);
+  const [markInfoLoading, setMarkInfoLoading] = useState(false);
+  const [activeMarkTab, setActiveMarkTab] = useState<'info' | 'history' | 'comments' | 'files'>('info');
+  const [supplements, setSupplements] = useState<{ [key: number]: Supplement }>({});
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [addCommentMode, setAddCommentMode] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [allFiles, setAllFiles] = useState<Document[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [markFiles, setMarkFiles] = useState<Array<{
+    id: number;
+    name: string;
+    date: string;
+    author: string;
+    type: string;
+    documentInfo?: Document;
+  }>>([]);
+  const [editingComment, setEditingComment] = useState<{
+    changeId: number;
+    supplementId: number | null;
+    currentComment: string;
+  } | null>(null);
 
   const { user } = useUser();
 
@@ -75,7 +109,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       setError(null);
       setIsUsingCache(false);
 
-      // Сначала пытаемся загрузить с API
       console.log('Загрузка данных с API...');
       const marksData = await apiService.getStudentMarks(studentId);
       setStudentMarks(marksData ?? []);
@@ -114,19 +147,333 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
   };
 
+  // Функция для получения иконки файла
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const icons: { [key: string]: string } = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'jpg': '🖼️',
+      'jpeg': '🖼️',
+      'png': '🖼️',
+      'zip': '📦',
+      'rar': '📦'
+    };
+    return icons[extension || ''] || '📎';
+  };
+
+  const API_BASE_URL = 'http://localhost:8080/api/v1';
+
+  // Функция для предпросмотра файла
+  const handlePreviewFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
+    try {
+      const fileInfo = documentInfo || await apiService.getFileInfo(fileId);
+      
+      const fileUrl = `${API_BASE_URL}/paths/id/${fileId}`;
+      
+      if (fileName.toLowerCase().endsWith('.pdf') || 
+          fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+        window.open(fileUrl, '_blank');
+      } else {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+    } catch (error) {
+      console.error('Ошибка предпросмотра файла:', error);
+      setError('Не удалось открыть файл');
+    }
+  };
+
+
+  // Функция для скачивания файла
+  const handleDownloadFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
+    try {
+      await apiService.downloadFileById(fileId, fileName);
+    } catch (error) {
+      console.error('Ошибка скачивания файла:', error);
+      setError('Не удалось скачать файл');
+    }
+  };
+
   // Функция принудительного обновления
   const handleRefresh = async () => {
-    // Инвалидируем кэш перед обновлением
     const cacheKey = `marks_${studentId}`;
     localStorage.removeItem(`cache_${cacheKey}`);
     await fetchStudentData(true);
+  };
+
+  // Функция для загрузки детальной информации об оценке
+  const loadMarkInfo = async (stId: number, markNumber: number) => {
+    if (!stId) return;
+    
+    setMarkInfoLoading(true);
+    try {
+      const info = await apiService.getMarkInfo(studentId, stId, markNumber);
+      setMarkInfo(info);
+      
+      // Загружаем supplements для изменений
+      const supplementPromises = info.changes
+        .filter(change => change.idSupplement)
+        .map(async (change) => {
+          try {
+            const supplement = await apiService.getSupplement(change.idSupplement!);
+            return { id: change.idSupplement!, data: supplement };
+          } catch (error) {
+            console.error(`Ошибка загрузки supplement ${change.idSupplement}:`, error);
+            return null;
+          }
+        });
+      
+      const supplementsResults = await Promise.all(supplementPromises);
+      const supplementsMap: { [key: number]: Supplement } = {};
+      
+      supplementsResults.forEach(result => {
+        if (result && result.data) {
+          supplementsMap[result.id] = result.data;
+        }
+      });
+      
+      setSupplements(supplementsMap);
+      
+    } catch (error) {
+      console.error('Ошибка загрузки информации об оценке:', error);
+      setMarkInfo(null);
+    } finally {
+      setMarkInfoLoading(false);
+    }
+  };
+
+  // Функция для загрузки списка уроков
+  const loadLessons = async () => {
+    try {
+      const lessonsData = await apiService.getLessons();
+      setLessons(lessonsData);
+    } catch (error) {
+      console.error('Ошибка загрузки уроков:', error);
+    }
+  };
+
+  // Функция для загрузки всех файлов
+  const loadAllFiles = async () => {
+    try {
+      const filesData = await apiService.getAllDocuments();
+      setAllFiles(filesData);
+    } catch (error) {
+      console.error('Ошибка загрузки файлов:', error);
+    }
   };
 
   // Загрузка данных при монтировании
   useEffect(() => {
     fetchStudentData();
     fetchStudentCourse();
+    loadAllFiles();
   }, [studentId]);
+
+
+
+  useEffect(() => {
+    if (selectedGrade && markInfo && activeMarkTab === 'comments') {
+      loadFilesForMark();
+    }
+  }, [selectedGrade, markInfo, activeMarkTab]);
+
+  const loadFilesForMark = async () => {
+    const files = await getFilesForMark();
+    setMarkFiles(files);
+  };
+
+  // Обновленный обработчик клика по оценке
+  const handleGradeClick = async (
+    subject: string, 
+    grade: number | null, 
+    gradeNumber: number, 
+    topic: string, 
+    teacher: string,
+    stId?: number
+  ) => {
+    setSelectedGrade({ subject, grade, number: gradeNumber, topic, teacher, stId });
+    setActiveMarkTab('info');
+    setAddCommentMode(false);
+    setNewComment('');
+    setUploadingFiles([]);
+    
+    if (stId) {
+      await loadMarkInfo(stId, gradeNumber);
+    }
+    
+    // Загружаем уроки при открытии попапа
+    await loadLessons();
+  };
+
+  // Функция для добавления комментария
+  const handleAddSupplement = async () => {
+    if (!selectedGrade || !newComment.trim()) return;
+    
+    try {
+      if (selectedGrade.stId) {
+        await apiService.addMarkChange(
+          studentId, 
+          selectedGrade.stId, 
+          selectedGrade.number, 
+          newComment
+        );
+        
+        await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+        
+        if (markInfo) {
+          const newChange = markInfo.changes.find(change => 
+            change.comment === newComment && 
+            change.teacherOrStudent === false
+          );
+          
+          if (newChange && newChange.idSupplement) {
+            try {
+              await apiService.updateSupplementComment(newChange.idSupplement, newComment);
+            } catch (supplementError) {
+              console.warn('Не удалось обновить supplement, но комментарий уже добавлен:', supplementError);
+            }
+          }
+        }
+        
+        setAddCommentMode(false);
+        setNewComment('');
+        setUploadingFiles([]);
+        
+        console.log('Комментарий успешно добавлен');
+      }
+    } catch (error) {
+      console.error('Ошибка добавления комментария:', error);
+      setError('Не удалось добавить комментарий');
+    }
+  };
+
+  const handleUpdateComment = async () => {
+    if (!editingComment || !newComment.trim()) return;
+    
+    try {
+      if (editingComment.supplementId) {
+        await apiService.updateSupplementComment(editingComment.supplementId, newComment);
+      } else {
+        if (selectedGrade?.stId) {
+          await apiService.addMarkChange(
+            studentId, 
+            selectedGrade.stId, 
+            selectedGrade.number, 
+            newComment
+          );
+        }
+      }
+      
+      if (selectedGrade?.stId) {
+        await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      }
+      
+      setEditingComment(null);
+      setAddCommentMode(false);
+      setNewComment('');
+      setUploadingFiles([]);
+      
+      console.log('Комментарий успешно обновлен');
+    } catch (error) {
+      console.error('Ошибка обновления комментария:', error);
+      setError('Не удалось обновить комментарий');
+    }
+  };
+
+  // Функция для начала редактирования комментария
+  const handleEditComment = (changeId: number, supplementId: number | null, currentComment: string) => {
+    setEditingComment({ 
+      changeId, 
+      supplementId, 
+      currentComment 
+    });
+    setNewComment(currentComment);
+    setUploadingFiles([]); 
+    setAddCommentMode(true);
+  };
+
+  // Функция для скачивания файла по ID
+  const handleDownloadFileById = async (fileId: number, fileName: string) => {
+    try {
+      await apiService.downloadFileById(fileId, fileName);
+    } catch (error) {
+      console.error('Ошибка скачивания файла:', error);
+      setError('Не удалось скачать файл');
+    }
+  };
+
+  // Функция для скачивания документа
+  const handleDownloadDocument = async (documentId: number) => {
+    try {
+      await apiService.downloadDocument(documentId);
+    } catch (error) {
+      console.error('Ошибка скачивания документа:', error);
+      setError('Не удалось скачать документ');
+    }
+  };
+
+  // Функция для обработки выбора файлов
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const filesArray = Array.from(event.target.files);
+      setUploadingFiles(prev => [...prev, ...filesArray]);
+    }
+  };
+
+  // Функция для удаления файла из списка загрузки
+  const handleRemoveFile = (index: number) => {
+    setUploadingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Функция для форматирования даты
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Функция для получения типа недели на русском
+  const getWeekType = (typeWeek: string) => {
+    const weekTypes: { [key: string]: string } = {
+      'Верхняя': 'Верхняя',
+      'Нижняя': 'Нижняя'
+    };
+    return weekTypes[typeWeek] || typeWeek;
+  };
+
+  // Функция для получения типа действия на русском
+  const getActionType = (action: string) => {
+    if (!action || typeof action !== 'string') return '';
+    
+    const trimmedAction = action.trim();
+    if (trimmedAction.length === 0) return '';
+    
+    return trimmedAction.charAt(0).toUpperCase() + trimmedAction.slice(1);
+  };
+
+  const closeGradePopup = () => {
+    setSelectedGrade(null);
+    setMarkInfo(null);
+    setSupplements({});
+    setAddCommentMode(false);
+    setNewComment('');
+    setUploadingFiles([]);
+  };
 
   // Обработчик клика по предмету - переключает на вкладку предметов
   const handleSubjectClick = (subjectName: string) => {
@@ -136,70 +483,84 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Преобразование данных из API
   const transformStudentMarksToGrades = (semesterType: 'first' | 'second'): Grade[] => {
-  if (!studentMarks) return [];
+    if (!studentMarks) return [];
 
-  return studentMarks
-    .filter(studentMark => studentMark && studentMark.stNameSubjectDTO)
-    .map((studentMark) => {
-      const subjectId = studentMark.stNameSubjectDTO?.idSubject;
-      
-      if (!subjectId) return null;
+    return studentMarks
+      .filter(studentMark => studentMark && studentMark.stNameSubjectDTO)
+      .map((studentMark) => {
+        const subjectId = studentMark.stNameSubjectDTO?.idSubject;
+        
+        if (!subjectId) return null;
 
-      const gradeDetails: GradeDetail[] = [];
-      const validGrades: number[] = [];
-      
-      if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
-        studentMark.marksBySt.forEach((mark) => {
-          // Используем упрощенную функцию без параметра currentSemester
-          if (getSemesterByWorkNumber(mark.number) === semesterType) {
-            const lessonDate = getLessonDate(mark.number);
-            const lessonTopic = getLessonTopic(mark.number);
+        const gradeDetails: GradeDetail[] = [];
+        const validGrades: number[] = [];
+        
+        if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
+          studentMark.marksBySt.forEach((mark) => {
+            if (mark && mark.number !== null && mark.number !== undefined) {
+              if (getSemesterByWorkNumber(mark.number) === semesterType) {
+                const lessonDate = getLessonDate(mark.number);
+                const lessonTopic = getLessonTopic(mark.number);
 
-            gradeDetails.push({
-              id: mark.number,
-              date: lessonDate,
-              topic: lessonTopic,
-              grade: mark.value || 0,
-              teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
-              type: 'Работа',
-              hasValue: mark.value !== null
-            });
+                gradeDetails.push({
+                  id: mark.number,
+                  date: lessonDate,
+                  topic: lessonTopic,
+                  grade: mark.value || 0,
+                  teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+                  type: 'Работа',
+                  hasValue: mark.value !== null && mark.value !== undefined,
+                  stId: studentMark.stNameSubjectDTO.idSt
+                });
 
-            if (mark.value !== null) {
-              validGrades.push(mark.value);
+                if (mark.value !== null && mark.value !== undefined) {
+                  validGrades.push(mark.value);
+                }
+              }
             }
-          }
-        });
-      }
+          });
+        }
 
-      gradeDetails.sort((a, b) => a.id - b.id);
+        gradeDetails.sort((a, b) => a.id - b.id);
 
-      const average = validGrades.length > 0 
-        ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
-        : 0;
+        const average = validGrades.length > 0 
+          ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
+          : 0;
 
-      return {
-        id: subjectId,
-        subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
-        grades: validGrades,
-        average: parseFloat(average.toFixed(1)),
-        examGrade: studentMark.certification,
-        gradeDetails: gradeDetails,
-        teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
-      };
-    })
-    .filter(grade => grade !== null) as Grade[];
-};
+        return {
+          id: subjectId,
+          subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
+          grades: validGrades,
+          average: parseFloat(average.toFixed(1)),
+          examGrade: studentMark.certification,
+          gradeDetails: gradeDetails,
+          teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
+        };
+      })
+      .filter(grade => grade !== null) as Grade[];
+  };
 
   const getSemesterByWorkNumber = (workNumber: number): 'first' | 'second' => {
-  return workNumber <= 24 ? 'first' : 'second';
+    if (workNumber === null || workNumber === undefined || isNaN(workNumber)) {
+      return 'first';
+    }
+    return workNumber <= 24 ? 'first' : 'second';
   };
 
   const getLessonTopic = (markNumber: number): string => {
+    // Проверяем корректность markNumber
+    if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
+      return 'Тема не определена';
+    }
     return `Работа ${markNumber}`;
   };
 
   const getLessonDate = (markNumber: number): string => {
+    // Проверяем корректность markNumber
+    if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
+      return 'Дата не определена';
+    }
+    
     const currentDate = new Date();
     const semesterStart = selectedSemester === 'first' 
       ? new Date(currentDate.getFullYear(), 8, 1)
@@ -209,14 +570,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     gradeDate.setDate(semesterStart.getDate() + (markNumber - 1) * 7);
     
     return gradeDate.toLocaleDateString('ru-RU');
-  };
-
-  const handleGradeClick = (subject: string, grade: number | null, gradeNumber: number, topic: string, teacher: string) => {
-    setSelectedGrade({ subject, grade, number: gradeNumber, topic, teacher });
-  };
-
-  const closeGradePopup = () => {
-    setSelectedGrade(null);
   };
 
   const gradesData = transformStudentMarksToGrades(selectedSemester);
@@ -337,6 +690,489 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }));
   };
 
+  // Функция для получения всех файлов связанных с оценкой
+  const getFilesForMark = async (): Promise<Array<{
+    id: number;
+    name: string;
+    date: string;
+    author: string;
+    type: string;
+    documentInfo?: Document;
+    changeId?: number;
+  }>> => {
+    if (!markInfo) return [];
+
+    try {
+      // Получаем все документы для получения pathToFile
+      const allDocuments = await apiService.getAllDocuments();
+      const files: Array<{
+        id: number;
+        name: string;
+        date: string;
+        author: string;
+        type: string;
+        documentInfo?: Document;
+        changeId?: number;
+      }> = [];
+      
+      // Файлы из основной информации об оценке (уроке)
+      if (markInfo.files) {
+        markInfo.files.forEach(file => {
+          const documentInfo = allDocuments.find(doc => doc.id === file.id);
+          files.push({
+            id: file.id,
+            name: file.name,
+            date: markInfo.dateLesson,
+            author: `${markInfo.lastNameTeacher} ${markInfo.nameTeacher} ${markInfo.patronymicTeacher}`,
+            type: 'lesson',
+            documentInfo,
+            changeId: undefined
+          });
+        });
+      }
+      
+      // Файлы из истории изменений
+      markInfo.changes.forEach(change => {
+        // Файлы напрямую из changes
+        if (change.files && Array.isArray(change.files)) {
+          change.files.forEach((file: { id: number; name: string }) => {
+            const documentInfo = allDocuments.find(doc => doc.id === file.id);
+            files.push({
+              id: file.id,
+              name: file.name,
+              date: change.dateTime,
+              author: change.teacherOrStudent ? 'Преподаватель' : 'Студент',
+              type: 'change',
+              documentInfo,
+              changeId: change.id
+            });
+          });
+        }
+        
+        // Файлы из supplement (если есть)
+        if (change.idSupplement && supplements[change.idSupplement]) {
+          const supplement = supplements[change.idSupplement];
+          if (supplement.files) {
+            supplement.files.forEach(file => {
+              const documentInfo = allDocuments.find(doc => doc.id === file.id);
+              files.push({
+                id: file.id,
+                name: file.name,
+                date: change.dateTime,
+                author: change.teacherOrStudent ? 'Преподаватель' : 'Студент',
+                type: 'supplement',
+                documentInfo,
+                changeId: change.id
+              });
+            });
+          }
+        }
+      });
+
+      return files;
+    } catch (error) {
+      console.error('Ошибка загрузки файлов:', error);
+      return [];
+    }
+  };
+
+  // Рендер попапа с детальной информацией об оценке
+  const renderGradePopup = () => {
+    if (!selectedGrade) return null;
+
+
+    return (
+      <div className="pf-popup-overlay" onClick={closeGradePopup}>
+        <div className="pf-popup pf-popup-large" onClick={(e) => e.stopPropagation()}>
+          <div className="pf-popup-header">
+            <h3>Детальная информация об оценке</h3>
+            <button className="pf-popup-close" onClick={closeGradePopup}>
+              <span>×</span>
+            </button>
+          </div>
+          
+          <div className="pf-popup-content">
+            {/* Основная информация */}
+            <div className="pf-grade-info-detailed">
+              <div className="pf-grade-main-info">
+                <div 
+                  className="pf-grade-circle-large"
+                  style={{ 
+                    backgroundColor: getGradeColor(selectedGrade.grade),
+                    borderColor: getGradeColor(selectedGrade.grade)
+                  }}
+                >
+                  <span className="pf-grade-number-large">
+                    {selectedGrade.grade || '-'}
+                  </span>
+                </div>
+                <div className="pf-grade-basic-details">
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Предмет</span>
+                    <span className="pf-detail-value">{selectedGrade.subject}</span>
+                  </div>
+                  <div className="pf-detail-item">
+                    <span className="pf-detail-label">Преподаватель</span>
+                    <span className="pf-detail-value pf-teacher">{selectedGrade.teacher}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Навигация по вкладкам */}
+              <div className="pf-mark-tabs">
+                <button 
+                  className={`pf-mark-tab ${activeMarkTab === 'info' ? 'pf-active' : ''}`}
+                  onClick={() => setActiveMarkTab('info')}
+                >
+                  Информация
+                </button>
+                <button 
+                  className={`pf-mark-tab ${activeMarkTab === 'comments' ? 'pf-active' : ''}`}
+                  onClick={() => setActiveMarkTab('comments')}
+                >
+                  Комментарии и изменения
+                </button>
+              </div>
+
+              {/* Контент вкладок */}
+              <div className="pf-mark-tab-content">
+                {markInfoLoading ? (
+                  <div className="pf-loading-small">
+                    <div className="pf-loading-spinner"></div>
+                    <p>Загрузка информации...</p>
+                  </div>
+                ) : markInfo ? (
+                  <>
+                    {/* Вкладка информации */}
+                    {activeMarkTab === 'info' && (
+                      <div className="pf-mark-info">
+                        <div className="pf-info-grid">
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">Дата занятия:</span>
+                            <span className="pf-info-value">
+                              {new Date(markInfo.dateLesson).toLocaleDateString('ru-RU')}
+                            </span>
+                          </div>
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">Преподаватель:</span>
+                            <span className="pf-info-value">
+                              {markInfo.lastNameTeacher} {markInfo.nameTeacher} {markInfo.patronymicTeacher}
+                            </span>
+                          </div>
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">Неделя:</span>
+                            <span className="pf-info-value">{markInfo.numberWeek} ({getWeekType(markInfo.typeWeek)})</span>
+                          </div>
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">День недели:</span>
+                            <span className="pf-info-value">{markInfo.dayWeek}</span>
+                          </div>
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">Пара:</span>
+                            <span className="pf-info-value">{markInfo.numPair}</span>
+                          </div>
+                          <div className="pf-info-item">
+                            <span className="pf-info-label">Замена:</span>
+                            <span className="pf-info-value">
+                              {markInfo.replacement ? 'Да' : 'Нет'}
+                            </span>
+                          </div>
+                          
+                          {/* Комментарий к уроку */}
+                          {markInfo.comment && (
+                            <div className="pf-info-item pf-info-fullwidth">
+                              <span className="pf-info-label">Комментарий к уроку:</span>
+                              <span className="pf-info-value pf-info-comment">{markInfo.comment}</span>
+                            </div>
+                          )}
+                          
+                          {/* Файлы урока */}
+                          {markInfo.files && markInfo.files.length > 0 && (
+                            <div className="pf-info-item pf-info-fullwidth">
+                              <span className="pf-info-label">Файлы урока:</span>
+                              <div className="pf-lesson-files">
+                                {markInfo.files.map((file) => (
+                                  <div key={file.id} className="pf-lesson-file-item">
+                                    <div className="pf-lesson-file-info">
+                                      <span className="pf-lesson-file-icon">
+                                        {getFileIcon(file.name)}
+                                      </span>
+                                      <span className="pf-lesson-file-name">{file.name}</span>
+                                    </div>
+                                    <div className="pf-lesson-file-actions">
+                                      <button 
+                                        className="pf-preview-file-btn"
+                                        onClick={() => handlePreviewFile(file.id, file.name)}
+                                        title="Просмотреть"
+                                      >
+                                        Посмотреть
+                                      </button>
+                                      <button 
+                                        className="pf-download-file-btn"
+                                        onClick={() => handleDownloadFile(file.id, file.name)}
+                                        title="Скачать"
+                                      >
+                                        Скачать
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {activeMarkTab === 'comments' && (
+                      <div className="pf-mark-comments">
+                        {/* Секция комментариев с файлами из истории изменений */}
+                        <div className="pf-comments-section">
+                          <div className="pf-comments-list">
+                            {markInfo.changes
+                              .map((change) => {
+                                const supplement = change.idSupplement ? supplements[change.idSupplement] : null;
+                                const hasComment = change.comment || (supplement && supplement.comment);
+                                const hasFiles = (change.files && change.files.length > 0) || (supplement && supplement.files && supplement.files.length > 0);
+                                const hasNewValue = change.newValue !== null;
+                                const hasMeaningfulAction = change.action && 
+                                  !change.action.includes('null') && 
+                                  change.action !== 'добавление оценки' && 
+                                  change.action !== 'изменение оценки';
+                                
+                                const shouldShow = hasComment || hasFiles || hasNewValue || hasMeaningfulAction;
+                                
+                                if (!shouldShow) return null;
+                                
+                                return (
+                                  <div key={change.id} className="pf-comment-item">
+                                    <div className="pf-comment-header">
+                                      <span className="pf-comment-author">
+                                        {change.teacherOrStudent ? 'Преподаватель' : 'Студент'}
+                                      </span>
+                                      <span className="pf-comment-date">
+                                        {formatDateTime(change.dateTime)}
+                                      </span>
+                                    </div>
+                                    <span className="pf-comment-action">
+                                        {getActionType(change.action)}
+                                      </span>
+                                    
+                                    {/* Комментарий (только если есть комментарий) */}
+                                    {hasComment && (
+                                      <div className="pf-comment-section">
+                                        <div className="pf-comment-header">
+                                          <div className="pf-comment-label">Комментарий:</div>
+                                          {/* Показывать кнопку редактирования только для комментариев студента */}
+                                          {change.teacherOrStudent === false && (
+                                            <button 
+                                              className="pf-edit-comment-btn"
+                                              onClick={() => handleEditComment(change.id, change.idSupplement, change.comment || '')}
+                                              title="Редактировать комментарий"
+                                            >
+                                              ✏️ Изменить
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className="pf-comment-content">
+                                          {change.comment || (supplement && supplement.comment)}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Файлы прикрепленные к изменению */}
+                                    {hasFiles && (
+                                      <div className="pf-comment-files">
+                                        <div className="pf-comment-files-title">Прикрепленные файлы:</div>
+                                        <div className="pf-comment-files-list">
+                                          {/* Файлы напрямую из changes */}
+                                          {change.files && change.files.map((file: { id: number; name: string }) => (
+                                            <div key={file.id} className="pf-comment-file-item">
+                                              <div className="pf-comment-file-info">
+                                                <span className="pf-comment-file-icon">
+                                                  {getFileIcon(file.name)}
+                                                </span>
+                                                <span className="pf-comment-file-name">{file.name}</span>
+                                              </div>
+                                              <div className="pf-comment-file-actions">
+                                                <button 
+                                                  className="pf-preview-file-btn"
+                                                  onClick={() => handlePreviewFile(file.id, file.name)}
+                                                  title="Просмотреть"
+                                                >
+                                                  Посмотреть
+                                                </button>
+                                                <button 
+                                                  className="pf-download-file-btn"
+                                                  onClick={() => handleDownloadFile(file.id, file.name)}
+                                                  title="Скачать"
+                                                >
+                                                  Скачать
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                          
+                                          {/* Файлы из supplement */}
+                                          {supplement && supplement.files && supplement.files.map((file) => (
+                                            <div key={file.id} className="pf-comment-file-item">
+                                              <div className="pf-comment-file-info">
+                                                <span className="pf-comment-file-icon">
+                                                  {getFileIcon(file.name)}
+                                                </span>
+                                                <span className="pf-comment-file-name">{file.name}</span>
+                                              </div>
+                                              <div className="pf-comment-file-actions">
+                                                <button 
+                                                  className="pf-preview-file-btn"
+                                                  onClick={() => handlePreviewFile(file.id, file.name)}
+                                                  title="Просмотреть"
+                                                >
+                                                  Посмотреть
+                                                </button>
+                                                <button 
+                                                  className="pf-download-file-btn"
+                                                  onClick={() => handleDownloadFile(file.id, file.name)}
+                                                  title="Скачать"
+                                                >
+                                                  Скачать
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Информация об изменении оценки */}
+                                    {hasNewValue && (
+                                      <div className="pf-comment-grade-change">
+                                        <span className="pf-grade-change-label">Оценка изменена на:</span>
+                                        <span 
+                                          className="pf-grade-change-value"
+                                          style={{ backgroundColor: getGradeColor(change.newValue) }}
+                                        >
+                                          {change.newValue}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                          
+                          {markInfo.changes.filter(change => {
+                            const supplement = change.idSupplement ? supplements[change.idSupplement] : null;
+                            const hasComment = change.comment || (supplement && supplement.comment);
+                            const hasFiles = (change.files && change.files.length > 0) || (supplement && supplement.files && supplement.files.length > 0);
+                            const hasNewValue = change.newValue !== null;
+                            const hasMeaningfulAction = change.action && 
+                              !change.action.includes('null') && 
+                              change.action !== 'добавление оценки' && 
+                              change.action !== 'изменение оценки';
+                            
+                            return hasComment || hasFiles || hasNewValue || hasMeaningfulAction;
+                          }).length === 0 && (
+                            <div className="pf-no-comments">
+                              <div className="pf-empty-title">Нет истории изменений</div>
+                              <div className="pf-empty-description">
+                                Здесь будет отображаться история изменений оценки с комментариями и файлами
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Кнопка добавления комментария */}
+                        {!addCommentMode ? (
+                          <button 
+                            className="pf-add-comment-btn"
+                            onClick={() => setAddCommentMode(true)}
+                          >
+                            Добавить комментарий
+                          </button>
+                        ) : (
+                          <div className="pf-add-comment-form">
+                            <h4>
+                              {editingComment ? 'Редактировать комментарий' : 'Добавить комментарий и файлы'}
+                            </h4>
+                            <textarea
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="Введите ваш комментарий..."
+                              className="pf-comment-textarea"
+                              rows={4}
+                            />
+                            
+                            <div className="pf-file-upload-section">
+                              <button 
+                                className="pf-upload-file-btn"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                Прикрепить файлы
+                              </button>
+                              <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                multiple
+                                style={{ display: 'none' }}
+                              />
+                              
+                              {uploadingFiles.length > 0 && (
+                                <div className="pf-uploaded-files">
+                                  <h5>Файлы для загрузки:</h5>
+                                  {uploadingFiles.map((file, index) => (
+                                    <div key={index} className="pf-uploaded-file">
+                                      <span>{file.name}</span>
+                                      <button 
+                                        onClick={() => handleRemoveFile(index)}
+                                        className="pf-remove-file-btn"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="pf-comment-actions">
+                              <button 
+                                className="pf-cancel-comment-btn"
+                                onClick={() => {
+                                  setAddCommentMode(false);
+                                  setEditingComment(null);
+                                  setNewComment('');
+                                  setUploadingFiles([]);
+                                }}
+                              >
+                                Отмена
+                              </button>
+                              <button 
+                                className="pf-submit-comment-btn"
+                                onClick={editingComment ? handleUpdateComment : handleAddSupplement}
+                                disabled={!newComment.trim()}
+                              >
+                                {editingComment ? 'Обновить' : 'Отправить'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="pf-no-mark-info">
+                    <p>Информация об оценке недоступна</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Компоненты
   const RefreshButton = () => (
     <button 
@@ -414,7 +1250,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     detail.hasValue ? detail.grade : null,
                     detail.id,
                     detail.topic,
-                    subject.teacher
+                    subject.teacher,
+                    detail.stId
                   );
                 }}
               >
@@ -487,7 +1324,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                           detail.hasValue ? detail.grade : null,
                           detail.id,
                           detail.topic,
-                          subject.teacher
+                          subject.teacher,
+                          detail.stId
                         );
                       }}
                     >
@@ -631,7 +1469,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       <div className="pf-controls-section">
         <SemesterSelector />
         <div className="pf-controls-section-left"><ViewToggle /><RefreshButton /></div>
-
       </div>
 
       {/* Контент */}
@@ -687,7 +1524,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                 detail.hasValue ? detail.grade : null,
                                 detail.id,
                                 detail.topic,
-                                selectedSubjectData.teacher
+                                selectedSubjectData.teacher,
+                                detail.stId
                               )}
                             >
                               {detail.hasValue ? detail.grade : '-'}
@@ -713,73 +1551,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         {activeTab === 'analytics' && renderAnalytics()}
       </div>
 
-      {/* Попап с информацией об оценке */}
-      {selectedGrade && (
-        <div className="pf-popup-overlay" onClick={closeGradePopup}>
-          <div className="pf-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="pf-popup-header">
-              <h3>Информация об оценке</h3>
-              <button className="pf-popup-close" onClick={closeGradePopup}>
-                <span>×</span>
-              </button>
-            </div>
-            <div className="pf-popup-content">
-              <div className="pf-grade-info-minimal">
-                <div 
-                  className="pf-grade-circle-minimal"
-                  style={{ 
-                    backgroundColor: getGradeColor(selectedGrade.grade),
-                    borderColor: getGradeColor(selectedGrade.grade)
-                  }}
-                >
-                  <span className="pf-grade-number-minimal">
-                    {selectedGrade.grade || '-'}
-                  </span>
-                </div>
-                <div className="pf-grade-details-minimal">
-                  <div className="pf-detail-item">
-                    <span className="pf-detail-label">Предмет</span>
-                    <span className="pf-detail-value">{selectedGrade.subject}</span>
-                  </div>
-                  <div className="pf-detail-item">
-                    <span className="pf-detail-label">Тема работы</span>
-                    <span className="pf-detail-value">{selectedGrade.topic}</span>
-                  </div>
-                  <div className="pf-detail-item">
-                    <span className="pf-detail-label">Номер работы</span>
-                    <span className="pf-detail-value">{selectedGrade.number}</span>
-                  </div>
-                  <div className="pf-detail-item">
-                    <span className="pf-detail-label">Преподаватель</span>
-                    <span className="pf-detail-value pf-teacher">{selectedGrade.teacher}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Попап с детальной информацией об оценке */}
+      {renderGradePopup()}
     </div>
   );
 };
-
-// Интерфейсы
-export interface Grade {
-  id: number;
-  subject: string;
-  grades: number[];
-  average: number;
-  examGrade: number | null;
-  gradeDetails?: GradeDetail[];
-  teacher: string;
-}
-
-export interface GradeDetail {
-  id: number;
-  date: string;
-  topic: string;
-  grade: number;
-  teacher: string;
-  type: string;
-  hasValue: boolean;
-}

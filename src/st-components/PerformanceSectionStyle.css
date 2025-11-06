@@ -616,7 +616,6 @@
 }
 
 .pf-grades-timeline::before {
-  content: '';
   position: absolute;
   left: 15px;
   top: 0;
@@ -731,144 +730,1059 @@
   font-size: 1.1em;
 }
 
-/* Попап с информацией об оценке */
+/* Основной контейнер попапа */
 .pf-popup-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(50, 64, 124, 0.3);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
-  animation: pf-fadeIn 0.2s ease;
+  padding: 20px;
+  animation: pf-fadeIn 0.3s ease;
 }
 
-.pf-popup {
+.pf-popup-large {
   background: white;
-  border-radius: 16px;
-  padding: 0;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  max-width: 420px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
   width: 90%;
-  animation: pf-slideUpMinimal 0.3s ease;
-  border: 1px solid #e2e8f0;
-}
-
-@keyframes pf-slideUpMinimal {
-  from { 
-    opacity: 0; 
-    transform: translateY(20px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: pf-scaleIn 0.3s ease;
 }
 
 .pf-popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 30px 40px 20px;
+  border-bottom: 1px solid rgba(0, 47, 167, 0.1);
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+  border-radius: 20px 20px 0 0;
 }
 
 .pf-popup-header h3 {
   margin: 0;
-  font-size: 1.3em;
+  color: #002FA7;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #1e293b;
 }
 
 .pf-popup-close {
-  background: none;
+  background: rgba(0, 47, 167, 0.1);
   border: none;
-  font-size: 1.5em;
-  color: #64748b;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  width: 32px;
-  height: 32px;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #002FA7;
+  font-size: 28px;
+  font-weight: 300;
 }
 
 .pf-popup-close:hover {
-  background: #f4f4f5;
-  color: #374151;
+  background: rgba(0, 47, 167, 0.2);
+  transform: rotate(90deg);
 }
 
 .pf-popup-content {
-   padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
 }
 
-.pf-grade-info-minimal {
+/* Основная информация об оценке */
+.pf-grade-info-detailed {
+  padding: 30px 40px;
+}
+
+.pf-grade-main-info {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 30px;
+  margin-bottom: 40px;
+  padding: 30px;
+  background: linear-gradient(135deg, rgba(0, 47, 167, 0.03) 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 47, 167, 0.1);
 }
 
-.pf-grade-circle-minimal {
-  width: 80px;
-  height: 80px;
+.pf-grade-circle-large {
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid;
+  border: 4px solid;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
 }
 
-.pf-grade-number-minimal {
-  font-size: 1.8em;
-  font-weight: 700;
-  color: white;
+.pf-grade-circle-large:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
 }
 
-.pf-grade-details-minimal {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.pf-grade-number-large {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pf-grade-basic-details {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
 
 .pf-detail-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f8fafc;
-}
-
-.pf-detail-item:last-child {
-  border-bottom: none;
+  gap: 8px;
 }
 
 .pf-detail-label {
-  color: #64748b;
-  font-size: 0.85em;
-  font-weight: 500;
+  font-size: 0.9rem;
+  color: #718096;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .pf-detail-value {
-  color: #1e293b;
-  font-weight: 500;
-  font-size: 1em;
+  font-size: 1.1rem;
+  color: #011f6d;
+  font-weight: 600;
 }
+
 
 .pf-detail-value.pf-teacher {
   color: #002FA7;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* Вкладки информации об оценке */
+.pf-mark-tabs {
+  display: flex;
+  background: rgba(0, 47, 167, 0.05);
+  border-radius: 15px;
+  padding: 6px;
+  margin-bottom: 30px;
+  gap: 4px;
+  border: 1px solid rgba(0, 47, 167, 0.1);
+}
+
+.pf-mark-tab {
+  padding: 15px 25px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #718096;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf-mark-tab:hover {
+  color: #002FA7;
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
+
+.pf-mark-tab.pf-active {
+  background: white;
+  color: #002FA7;
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.2);
   font-weight: 600;
+}
+
+.pf-mark-tab-content {
+  min-height: 400px;
+  animation: pf-fadeIn 0.3s ease;
+}
+
+/* Стили для вкладки информации */
+.pf-mark-info {
+  padding: 10px 0;
+}
+
+.pf-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.pf-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 25px;
+  background: rgba(0, 47, 167, 0.03);
+  border-radius: 15px;
+  border: 1px solid rgba(0, 47, 167, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf-info-item::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pf-info-item:hover {
+  border-color: rgba(0, 47, 167, 0.3);
+  background: rgba(0, 47, 167, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.1);
+}
+
+.pf-info-item:hover::before {
+  opacity: 1;
+}
+
+.pf-info-label {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pf-info-value {
+  font-size: 1.1rem;
+  color: #011f6d;
+  font-weight: 600;
+}
+
+.pf-info-fullwidth {
+  grid-column: 1 / -1;
+}
+
+.pf-info-comment {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  display: block;
+  margin-top: 12px;
+  border: 1px solid #e2e8f0;
+  line-height: 1.6;
+  font-weight: 500;
+  color: #4a5568;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pf-lesson-files {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pf-lesson-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pf-lesson-file-item:hover {
+  border-color: rgba(0, 47, 167, 0.3);
+  background: #fafbff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.1);
+}
+
+.pf-lesson-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.pf-lesson-file-icon {
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 47, 167, 0.1);
+  border-radius: 10px;
+}
+
+.pf-lesson-file-name {
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.pf-lesson-file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Стили для вкладки комментариев */
+.pf-mark-comments {
+  padding: 10px 0;
+}
+
+.pf-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.pf-comment-item {
+  padding: 30px;
+  background: rgba(0, 47, 167, 0.03);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 47, 167, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf-comment-item::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pf-comment-item:hover {
+  border-color: rgba(0, 47, 167, 0.3);
+  background: rgba(0, 47, 167, 0.05);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 47, 167, 0.1);
+}
+
+.pf-comment-item:hover::before {
+  opacity: 1;
+}
+
+.pf-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pf-comment-author {
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 1rem;
+  background: rgba(0, 47, 167, 0.05);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-comment-date {
+  font-size: 0.9rem;
+  color: #718096;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.pf-comment-action {
+  font-weight: 400;
+  color: #002FA7;
+  font-size: 1rem;
+  background: rgba(0, 47, 167, 0.05);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pf-comment-content {
+  padding: 20px;
+  background: white;
+  border-radius: 15px;
+  border: 1px solid #e2e8f0;
+  color: #2d3748;
+  line-height: 1.6;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.pf-comment-content::before {
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: white;
+  padding: 0 8px;
+  font-size: 0.9rem;
+}
+
+.pf-comment-label{
+  font-weight: 500;
+  color: #002FA7;
+  font-size: 0.8rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pf-comment-files {
+  margin-top: 20px;
+}
+
+.pf-comment-files-title {
+  font-size: 1rem;
+  color: #4a5568;
+  font-weight: 700;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-comment-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pf-comment-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pf-comment-file-item:hover {
+  border-color: rgba(0, 47, 167, 0.3);
+  background: #fafbff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.1);
+}
+
+.pf-comment-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.pf-comment-file-icon {
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 47, 167, 0.1);
+  border-radius: 8px;
+}
+
+.pf-comment-file-name {
+  font-size: 0.95rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.pf-comment-file-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Кнопки действий с файлами */
+.pf-preview-file-btn,
+.pf-download-file-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.pf-preview-file-btn {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.pf-preview-file-btn:hover {
+  background: #16a34a;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.pf-download-file-btn {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+  border: 1px solid rgba(0, 47, 167, 0.2);
+}
+
+.pf-download-file-btn:hover {
+  background: #002FA7;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.pf-comment-grade-change {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(0, 47, 167, 0.1);
+}
+
+.pf-grade-change-label {
+  font-size: 0.95rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.pf-grade-change-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.pf-grade-change-value:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Кнопка добавления комментария */
+.pf-add-comment-btn {
+  background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  padding: 18px 32px;
+  border-radius: 15px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 47, 167, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 40px auto 0;
+  width: fit-content;
+  min-width: 250px;
+}
+
+.pf-add-comment-btn:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #002FA7 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 47, 167, 0.4);
+}
+
+.pf-add-comment-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
+}
+
+.pf-add-comment-btn::before {
+  font-size: 1.2rem;
+}
+
+/* Форма добавления комментария */
+.pf-add-comment-form {
+  background: rgba(0, 47, 167, 0.03);
+  border-radius: 20px;
+  border: 2px dashed rgba(0, 47, 167, 0.2);
+  padding: 30px;
+  margin-top: 30px;
+  animation: pf-slideIn 0.4s ease;
+}
+
+.pf-add-comment-form h4 {
+  margin: 0 0 25px 0;
+  color: #002FA7;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pf-comment-textarea {
+  width: 100%;
+  padding: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 15px;
+  resize: vertical;
+  min-height: 140px;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.pf-comment-textarea:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 4px rgba(0, 47, 167, 0.1);
+  background: #fafbff;
+}
+
+.pf-file-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pf-upload-file-btn {
+  padding: 18px 25px;
+  background: rgba(0, 47, 167, 0.08);
+  border: 2px solid rgba(0, 47, 167, 0.3);
+  border-radius: 15px;
+  color: #002FA7;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1rem;
+}
+
+.pf-upload-file-btn:hover {
+  background: rgba(0, 47, 167, 0.15);
+  border-color: rgba(0, 47, 167, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.1);
+}
+
+.pf-uploaded-files {
+  background: white;
+  border-radius: 15px;
+  border: 1px solid #e2e8f0;
+  padding: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.pf-uploaded-files h5 {
+  margin: 0 0 20px 0;
+  color: #002FA7;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-uploaded-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.pf-uploaded-file:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  transform: translateX(5px);
+}
+
+.pf-uploaded-file:last-child {
+  margin-bottom: 0;
+}
+
+.pf-remove-file-btn {
+  background: none;
+  border: none;
+  color: #e53e3e;
+  cursor: pointer;
+  font-size: 1.4rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf-remove-file-btn:hover {
+  background: #fed7d7;
+  transform: scale(1.1);
+}
+
+.pf-comment-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.pf-cancel-comment-btn {
+  padding: 16px 32px;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  color: #718096;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.pf-cancel-comment-btn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  color: #4a5568;
+  transform: translateY(-2px);
+}
+
+.pf-submit-comment-btn {
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
+  font-size: 1rem;
+}
+
+.pf-submit-comment-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1e40af 0%, #002FA7 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.4);
+}
+
+.pf-submit-comment-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Состояния загрузки и пустые состояния */
+.pf-loading-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px;
+  color: #718096;
+  text-align: center;
+  background: rgba(0, 47, 167, 0.02);
+  border-radius: 20px;
+  border: 2px dashed rgba(0, 47, 167, 0.1);
+}
+
+.pf-loading-small .pf-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(0, 47, 167, 0.2);
+  border-left: 4px solid #002FA7;
+  border-radius: 50%;
+  animation: pf-spin 1s linear infinite;
+  margin-bottom: 25px;
+}
+
+.pf-loading-small p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin: 0;
+}
+
+.pf-no-mark-info,
+.pf-no-comments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px;
+  color: #718096;
+  text-align: center;
+  background: rgba(0, 47, 167, 0.02);
+  border-radius: 20px;
+  border: 2px dashed rgba(0, 47, 167, 0.1);
+}
+
+.pf-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 25px;
+  opacity: 0.6;
+}
+
+.pf-empty-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #4a5568;
+}
+
+.pf-empty-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 400px;
+  color: #718096;
+}
+
+/* Анимации */
+@keyframes pf-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pf-fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pf-scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pf-slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.pf-fade-in {
+  animation: pf-fadeIn 0.5s ease;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .pf-popup-large {
+    width: 95%;
+    max-height: 95vh;
+    border-radius: 15px;
+  }
+  
+  .pf-popup-header {
+    padding: 20px 25px 15px;
+  }
+  
+  .pf-popup-header h3 {
+    font-size: 1.3rem;
+  }
+  
+  .pf-grade-info-detailed {
+    padding: 20px 25px;
+  }
+  
+  .pf-grade-main-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 25px;
+    padding: 25px;
+  }
+  
+  .pf-grade-circle-large {
+    width: 80px;
+    height: 80px;
+    align-self: center;
+  }
+  
+  .pf-grade-number-large {
+    font-size: 2rem;
+  }
+  
+  .pf-grade-basic-details {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .pf-mark-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .pf-mark-tab {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .pf-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pf-comment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .pf-comment-file-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .pf-comment-file-actions {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  
+  .pf-preview-file-btn,
+  .pf-download-file-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .pf-comment-actions {
+    flex-direction: column;
+  }
+  
+  .pf-add-comment-form {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pf-popup-overlay {
+    padding: 10px;
+  }
+  
+  .pf-popup-large {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .pf-grade-circle-large {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .pf-grade-number-large {
+    font-size: 1.8rem;
+  }
+  
+  .pf-mark-tab {
+    flex: 1 1 100%;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .pf-popup-header {
+    padding: 15px 20px;
+  }
+  
+  .pf-popup-close {
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+  }
+  
+  .pf-add-comment-btn {
+    min-width: 200px;
+    padding: 16px 24px;
+    font-size: 0.95rem;
+  }
+}
+
+.pf-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pf-edit-comment-btn {
+  background: rgba(0, 47, 167, 0.1);
+  border: 1px solid rgba(0, 47, 167, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.pf-edit-comment-btn:hover {
+  background: rgba(0, 47, 167, 0.2);
+  transform: scale(1.05);
 }
 
 /* Адаптивность */
@@ -1031,7 +1945,6 @@
 }
 
 .pf-loading-state::after {
-  content: '';
   position: absolute;
   top: 50%;
   left: 50%;

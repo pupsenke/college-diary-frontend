@@ -113,14 +113,31 @@ export const DocumentsSection: React.FC = () => {
       console.log('Saving student data:', updateData);
       await apiService.updateStudentData(user.id, updateData);
       
+      // Приводим user к типу Student, так как мы уже проверили isStudent
+      const studentUser = user as Student;
+      
       // Обновляем данные в контексте и localStorage
-      const updatedUser = {
-        ...user,
-        ...updateData
+      const updatedUser: Student = {
+        ...studentUser,
+        ...updateData,
+        numberGroup: studentUser.numberGroup // Гарантируем, что numberGroup всегда есть
       };
       
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Обновляем локальные данные
+      const savedFullNameGenitive = buildGenitiveName(
+        updatedUser.lastNameGenitive,
+        updatedUser.nameGenitive,
+        updatedUser.patronymicGenitive
+      );
+      
+      setUserData(prev => prev ? {
+        ...prev,
+        phone: updatedUser.telephone || '',
+        fullNameGenitive: savedFullNameGenitive
+      } : null);
       
       console.log('Student data saved successfully');
     } catch (error) {
@@ -136,32 +153,41 @@ export const DocumentsSection: React.FC = () => {
       return;
     }
 
+    // Приводим user к типу Student, так как мы уже проверили isStudent
     const student = user as Student;
 
     try {
       console.log('Loading user data for student:', student.id);
-      const userPhone = student.telephone || '';
       
-      // Собираем ФИО в родительном падеже из отдельных компонентов
+      // Загружаем актуальные данные студента с сервера
+      const studentData = await apiService.getStudentData(student.id);
+      console.log('Student data from server:', studentData);
+      
+      const userPhone = studentData.telephone || '';
+      
+      // Ключевое исправление: ВСЕГДА используем данные из БД для ФИО в родительном падеже
       const savedFullNameGenitive = buildGenitiveName(
-        student.lastNameGenitive,
-        student.nameGenitive, 
-        student.patronymicGenitive
+        studentData.lastNameGenitive,
+        studentData.nameGenitive, 
+        studentData.patronymicGenitive
       );
       
-      const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+      console.log('Built genitive name from DB:', savedFullNameGenitive);
+      
+      const fullName = `${studentData.lastName} ${studentData.name} ${studentData.patronymic}`;
       
       let groupNumber = 'Неизвестно';
       let course = 'Неизвестно';
       
       try {
-        const groupData = await apiService.getGroupData(student.idGroup);
+        const groupData = await apiService.getGroupData(studentData.idGroup);
         groupNumber = groupData.numberGroup?.toString() || 'Неизвестно';
         course = groupData.course?.toString() || 'Неизвестно';
         console.log('Group data loaded:', { groupNumber, course });
       } catch (groupError) {
         console.error('Ошибка загрузки данных группы:', groupError);
-        groupNumber = student.numberGroup?.toString() || 'Неизвестно';
+        // Используем numberGroup из studentData
+        groupNumber = studentData.numberGroup?.toString() || 'Неизвестно';
         course = 'Неизвестно';
       }
 
@@ -176,40 +202,57 @@ export const DocumentsSection: React.FC = () => {
 
       setUserData(userData);
       
-      // Заполняем форму сохраненными значениями
+      // ВСЕГДА заполняем форму данными из БД - как для телефона, так и для ФИО в родительном падеже
       setFormData(prev => ({
         ...prev,
         phone: userPhone,
-        fullNameGenitive: savedFullNameGenitive
+        fullNameGenitive: savedFullNameGenitive // Это ключевое изменение!
       }));
 
-      console.log('User data loaded successfully');
+      console.log('User data loaded successfully with genitive name from DB:', userData);
+
+      // Обновляем контекст пользователя актуальными данными из БД
+      const updatedUser: Student = {
+        ...student,
+        telephone: studentData.telephone,
+        lastNameGenitive: studentData.lastNameGenitive,
+        nameGenitive: studentData.nameGenitive,
+        patronymicGenitive: studentData.patronymicGenitive
+      };
+      
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
 
     } catch (error) {
       console.error('Ошибка загрузки данных пользователя:', error);
-      const student = user as Student;
-      const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
       
-      // Собираем ФИО в родительном падеже из отдельных компонентов
+      // Fallback на данные из контекста
+      const student = user as Student;
+      const userPhone = student.telephone || '';
+      
+      // Используем данные из контекста как запасной вариант
       const savedFullNameGenitive = buildGenitiveName(
         student.lastNameGenitive,
         student.nameGenitive,
         student.patronymicGenitive
       );
       
-      setUserData({
+      const fullName = `${student.lastName} ${student.name} ${student.patronymic}`;
+      
+      const fallbackUserData = {
         fullName: fullName,
         fullNameGenitive: savedFullNameGenitive,
-        group: student.numberGroup?.toString() || 'Неизвестно',
+        group: student.numberGroup.toString() || 'Неизвестно',
         course: 'Неизвестно', 
-        phone: student.telephone || '',
+        phone: userPhone,
         departmentHead: 'Голубева Галина Анатольевна'
-      });
+      };
 
-      // Заполняем форму сохраненными значениями
+      setUserData(fallbackUserData);
+
       setFormData(prev => ({
         ...prev,
-        phone: student.telephone || '',
+        phone: userPhone,
         fullNameGenitive: savedFullNameGenitive
       }));
     }
@@ -466,7 +509,18 @@ export const DocumentsSection: React.FC = () => {
   };
 
   // Функции для работы с модальным окном
-  const openModal = () => setIsModalOpen(true);
+  const openModal = () => {
+    // ВСЕГДА заполняем форму актуальными данными при открытии модального окна
+    if (userData) {
+      setFormData(prev => ({
+        ...prev,
+        phone: userData.phone,
+        fullNameGenitive: userData.fullNameGenitive
+      }));
+    }
+    setIsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setFormData({
@@ -643,15 +697,15 @@ export const DocumentsSection: React.FC = () => {
       const updateData: StudentUpdateData = {};
       let hasChanges = false;
 
-      // Сохранение телефона, если он изменился или требуется для документа
+      // Сохранение телефона, если он изменился
       if (formData.phone !== userData.phone) {
         updateData.telephone = formData.phone;
         hasChanges = true;
       }
 
-      // Сохранение ФИО в родительном падеже, если оно изменилось
-      if (formData.fullNameGenitive !== userData.fullNameGenitive) {
-        // Парсинг ФИО в родительном падеже на отдельные компоненты
+      // Сохранение ФИО в родительном падеже, если оно изменилось или отсутствует в профиле
+      if (formData.fullNameGenitive !== userData.fullNameGenitive || !userData.fullNameGenitive) {
+        // Парсинг ФИО в родительном падеже на отдельные компоненты для сохранения в БД
         const genitiveParts = parseGenitiveName(formData.fullNameGenitive);
         updateData.lastNameGenitive = genitiveParts.lastNameGenitive;
         updateData.nameGenitive = genitiveParts.nameGenitive;
@@ -663,14 +717,6 @@ export const DocumentsSection: React.FC = () => {
       if (hasChanges) {
         console.log('Saving student data before creating document:', updateData);
         await saveStudentData(updateData);
-        
-        // Обновление локальных данных пользователя
-        setUserData(prev => prev ? {
-          ...prev,
-          phone: formData.phone,
-          fullNameGenitive: formData.fullNameGenitive
-        } : null);
-        
         console.log('Student data saved successfully before document creation');
       }
 
@@ -898,7 +944,9 @@ export const DocumentsSection: React.FC = () => {
                     <input type="text" value={userData.fullName} disabled className="ds-input disabled" />
                   </div>
                   <div className="ds-form-field">
-                    <label>ФИО студента (родительный падеж) *</label>
+                    <label>ФИО студента (родительный падеж) * 
+                      {!userData.fullNameGenitive}
+                    </label>
                     <input 
                       type="text" 
                       value={formData.fullNameGenitive}
@@ -910,14 +958,6 @@ export const DocumentsSection: React.FC = () => {
                     <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
                       Пример: Иванова Ивана Ивановича
                     </div>
-                  </div>
-                  <div className="ds-form-field">
-                    <label>Группа</label>
-                    <input type="text" value={userData.group} disabled className="ds-input disabled" />
-                  </div>
-                  <div className="ds-form-field">
-                    <label>Курс</label>
-                    <input type="text" value={userData.course} disabled className="ds-input disabled" />
                   </div>
                 </div>
               </div>
