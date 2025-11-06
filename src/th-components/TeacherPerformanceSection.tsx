@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { teacherApiService } from '../services/teacherApiService';
 import './TeacherPerformanceSection.css';
 
 // Типы данных
@@ -34,7 +35,6 @@ export interface ExamRecord {
 export interface TeacherPerformanceSectionProps {
   groupNumber: string;
   subject: string;
-  students: Student[];
   onBackToGroups?: () => void;
   onSetAttendance?: () => void;
 }
@@ -42,10 +42,14 @@ export interface TeacherPerformanceSectionProps {
 export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps> = ({
   groupNumber,
   subject,
-  students,
   onBackToGroups,
   onSetAttendance
 }) => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [idSt, setIdSt] = useState<number>(2);
+
   const [selectedSubgroup, setSelectedSubgroup] = useState<string>('all');
   const [selectedLessonType, setSelectedLessonType] = useState<string>('all');
   const [gradeRecords, setGradeRecords] = useState<GradeRecord[]>([]);
@@ -59,6 +63,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const [editValue, setEditValue] = useState('');
   const [showCommentModal, setShowCommentModal] = useState<{studentId: number; date: string} | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<boolean>(false);
   const [showTopicModal, setShowTopicModal] = useState<string | null>(null);
   const [topicText, setTopicText] = useState('');
   const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II' | undefined>>({});
@@ -66,6 +72,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     'I': 'Иванов И.И.',
     'II': 'Петров П.П.'
   });
+
   const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
   const [teacherEditValue, setTeacherEditValue] = useState('');
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({
@@ -79,6 +86,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const inputRef = useRef<HTMLInputElement>(null);
   const teacherInputRef = useRef<HTMLInputElement>(null);
   const examInputRef = useRef<HTMLSelectElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Допустимые оценки
   const validGrades = [
@@ -133,6 +142,60 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     if (numericGrade >= 2.5) return '#f59e0b';
     return '#ef4444';
   };
+
+  // Функция для загрузки студентов из API
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Преобразуем номер группы в idGroup
+      const groupId = getGroupIdFromNumber(groupNumber);
+      
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const apiStudents = await teacherApiService.getGroupStudents(groupId, idSt);
+      
+      // Преобразуем данные из API в формат компонента
+      const transformedStudents: Student[] = apiStudents.map((student: any) => ({
+        id: student.idStudent,
+        lastName: student.lastName,
+        firstName: student.name,
+        middleName: student.patronymic,
+        subgroup: undefined
+      }));
+
+      // Сортируем студентов по фамилии от А до Я
+      const sortedStudents = transformedStudents.sort((a, b) => 
+        a.lastName.localeCompare(b.lastName)
+      );
+
+      setStudents(sortedStudents);
+      
+    } catch (err) {
+      console.error('Ошибка при загрузке студентов:', err);
+      setError('Не удалось загрузить список студентов');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Функция для преобразования номера группы в ID
+  const getGroupIdFromNumber = (groupNumber: string): number | null => {
+    const groupMap: Record<string, number> = {
+      '2991': 2,
+      '2992': 3,
+    };
+    
+    return groupMap[groupNumber] || null;
+  };
+
+  // Загружаем студентов при монтировании компонента
+  useEffect(() => {
+    fetchStudents();
+  }, [groupNumber, idSt]);
 
   // Функция для определения размера ячейки
   const getGradeSize = (grade: string): 'small' | 'medium' | 'large' => {
@@ -199,7 +262,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
   // Инициализация данных
   useEffect(() => {
-    // Примерные даты занятий (в реальном приложении будут из базы)
+    if (students.length === 0) return;
+
+    // Примерные даты занятий
     const initialDates = [
       '04.09', '11.09', '18.09', '25.09', '02.10'
     ];
@@ -502,16 +567,111 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Сохранение комментария
-  const handleSaveComment = () => {
-    if (showCommentModal) {
+  // Обработка вставки файлов через Ctrl+V в текстовое поле
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const newFiles: File[] = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        // Фильтруем только изображения
+        if (file && file.type.startsWith('image/')) {
+          newFiles.push(file);
+        }
+      }
+    }
+
+    if (newFiles.length > 0) {
+      e.preventDefault();
+      setAttachedFiles(prev => [...prev, ...newFiles]);
+      
+      // Показываем уведомление о успешном добавлении
+      console.log(`Добавлено изображений: ${newFiles.length}`);
+    }
+  };
+
+  // Функция для загрузки файлов на сервер
+  const uploadFiles = async (files: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    setUploadingFiles(true);
+    
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Замените на ваш реальный endpoint для загрузки файлов
+        const response = await fetch('http://localhost:8080/api/v1/upload/file', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          uploadedUrls.push(result.fileUrl);
+        } else {
+          console.error('Ошибка загрузки файла:', file.name);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке файлов:', error);
+    } finally {
+      setUploadingFiles(false);
+    }
+    
+    return uploadedUrls;
+  };
+
+  // Удаление прикрепленного файла
+  const removeFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Обработчик выбора файлов через input
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      setAttachedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+    // Сбрасываем значение input, чтобы можно было выбрать те же файлы снова
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Сохранение комментария с прикрепленными файлами
+  const handleSaveComment = async () => {
+    if (!showCommentModal) return;
+
+    try {
+      let uploadedFileUrls: string[] = [];
+
+      // Загружаем файлы, если они есть
+      if (attachedFiles.length > 0) {
+        uploadedFileUrls = await uploadFiles(attachedFiles);
+      }
+
+      // Обновляем запись с комментарием и ссылками на файлы
       updateGradeRecord(
         showCommentModal.studentId, 
         showCommentModal.date, 
-        { comment: commentText }
+        { 
+          comment: commentText,
+          attachments: uploadedFileUrls
+        }
       );
+
+      // Закрываем модальное окно и сбрасываем состояние
       setShowCommentModal(null);
       setCommentText('');
+      setAttachedFiles([]);
+      
+    } catch (error) {
+      console.error('Ошибка при сохранении комментария:', error);
     }
   };
 
@@ -826,6 +986,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                             onClick={() => {
                               setShowCommentModal({ studentId: student.id, date });
                               setCommentText(record.comment || '');
+                              setAttachedFiles([]);
                             }}
                             title={record.comment ? 'Редактировать комментарий' : 'Добавить комментарий'}
                           >
@@ -913,33 +1074,139 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна комментария
+  // Рендер модального окна комментария с прикреплением файлов
   const renderCommentModal = () => {
     if (!showCommentModal) return null;
 
     const record = getGradeRecord(showCommentModal.studentId, showCommentModal.date);
     const student = students.find(s => s.id === showCommentModal.studentId);
 
+    // Функция для получения типа файла
+    const getFileType = (file: File): string => {
+      if (file.type.startsWith('image/')) {
+        const type = file.type.split('/')[1]?.toUpperCase();
+        return type || 'IMAGE';
+      }
+      return file.name.split('.').pop()?.toUpperCase() || 'FILE';
+    };
+
+    // Функция для создания превью изображения
+    const createImagePreview = (file: File): string => {
+      return URL.createObjectURL(file);
+    };
+
+    // Обработчик загрузки изображения для очистки URL
+    const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const target = e.target as HTMLImageElement;
+      URL.revokeObjectURL(target.src);
+    };
+
     return (
       <div className="modal-overlay">
-        <div className="modal-content">
-          <h3>
-            Комментарий к оценке
+        <div className="modal-content comment-modal">
+          <h3 style={{ marginBottom: '16px', color: '#002FA7' }}>
+            Комментарий к оценке {student ? `${student.lastName} ${student.firstName[0]}.${student.middleName[0]}.` : ''}
           </h3>
           
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Введите комментарий..."
-            rows={4}
-          />
+          <div className="comment-textarea-container">
+            <textarea
+              ref={textareaRef}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onPaste={handlePaste}
+              placeholder="Введите комментарий..."
+              rows={4}
+              className="comment-textarea"
+            />
+          </div>
+          
+          {/* Блок прикрепленных файлов */}
+          <div className="attached-files-section">
+            <div className="files-header">
+              <span>Прикрепленные изображения ({attachedFiles.length})</span>
+            </div>
+            
+            <div className="files-instruction">
+              Используйте Ctrl+V в поле комментария для прикрепления изображений
+            </div>
+            
+            {attachedFiles.length > 0 ? (
+              <div className="files-list">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="file-item">
+                    <div className="image-preview-container">
+                      {file.type.startsWith('image/') ? (
+                        <>
+                          <img 
+                            src={createImagePreview(file)} 
+                            alt="Превью" 
+                            className="file-preview"
+                            onLoad={handleImageLoad}
+                          />
+                          <div className="file-info">
+                            <span className="file-name" title={file.name}>
+                              {file.name}
+                            </span>
+                            <span className="file-type-badge">
+                              {getFileType(file)}
+                            </span>
+                            <span className="file-size">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="file-info">
+                          <span className="file-name" title={file.name}>
+                            {file.name}
+                          </span>
+                          <span className="file-type-badge">
+                            {getFileType(file)}
+                          </span>
+                          <span className="file-size">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="remove-file-btn"
+                      title="Удалить файл"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-files-placeholder">
+                Изображения не прикреплены<br />
+              </div>
+            )}
+          </div>
           
           <div className="modal-actions">
-            <button className="gradient-btn" onClick={handleSaveComment}>
-              Сохранить
-            </button>
-            <button className="cancel-btn" onClick={() => setShowCommentModal(null)}>
+            <button 
+              className="cancel-btn" 
+              onClick={() => {
+                setShowCommentModal(null);
+                setCommentText('');
+                setAttachedFiles([]);
+              }}
+              disabled={uploadingFiles}
+              type="button"
+            >
               Отмена
+            </button>
+            <button 
+              className="gradient-btn" 
+              onClick={handleSaveComment}
+              disabled={uploadingFiles}
+              type="button"
+            >
+              {uploadingFiles ? 'Загрузка...' : 'Сохранить'}
             </button>
           </div>
         </div>
@@ -977,6 +1244,57 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       </div>
     );
   };
+
+  // Обработка состояния загрузки
+  if (loading) {
+    return (
+      <div className="teacher-performance-section">
+        <div className="performance-header">
+          <div className="performance-title-container">
+            <div className="performance-title">
+              <div className="group-title">
+                Успеваемость {groupNumber}
+              </div>
+              <div className="subject-full-title">
+                {subject}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+          Загрузка списка студентов...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="teacher-performance-section">
+        <div className="performance-header">
+          <div className="performance-title-container">
+            <div className="performance-title">
+              <div className="group-title">
+                Успеваемость {groupNumber}
+              </div>
+              <div className="subject-full-title">
+                {subject}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#ef4444' }}>
+          {error}
+          <button 
+            onClick={fetchStudents}
+            style={{ marginTop: '10px', padding: '8px 16px' }}
+          >
+            Повторить попытку
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="teacher-performance-section">

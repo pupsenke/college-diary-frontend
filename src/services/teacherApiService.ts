@@ -95,6 +95,21 @@ export interface Group {
   countStudent: number;
 }
 
+export interface Student {
+  idStudent: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  marks?: Array<{
+    number: number;
+    value: number | null;
+  } | null>;
+}
+
+export interface StudentsResponse {
+  students: Student[];
+}
+
 export const teacherApiService = {
   // Получение всех сотрудников с кэшированием
   async getAllStaff(): Promise<StaffApiResponse[]> {
@@ -517,5 +532,59 @@ export const teacherApiService = {
       teacherData,
       disciplines
     };
+  },
+
+  // Метод для получения студентов группы с кэшированием
+  async getGroupStudents(groupId: number, idSt: number): Promise<Student[]> {
+    const cacheKey = `group_students_${groupId}_${idSt}`;
+    
+    const cached = cacheService.get<Student[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      console.log(`Group ${groupId} students loaded from cache`);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching group ${groupId} students from server`);
+      const response = await fetch(`${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const students = await response.json();
+      
+      // Сортируем студентов по фамилии от А до Я
+      const sortedStudents = students.sort((a: Student, b: Student) => 
+        a.lastName.localeCompare(b.lastName)
+      );
+      
+      cacheService.set(cacheKey, sortedStudents, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return sortedStudents;
+    } catch (error) {
+      console.error('Error fetching group students:', error);
+      throw error;
+    }
+  },
+
+  // Функция для инвалидации кэша студентов
+  invalidateStudentCache(groupId?: number, idSt?: number): void {
+    if (groupId && idSt) {
+      cacheService.remove(`group_students_${groupId}_${idSt}`);
+    } else {
+      // Удаляем все кэши студентов
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_group_students_')) {
+          cacheService.remove(key.replace('cache_', ''));
+        }
+      }
+    }
   }
 };
