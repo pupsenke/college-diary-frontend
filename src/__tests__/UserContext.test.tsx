@@ -1,3 +1,5 @@
+// Unit тест для проверки определения роли пользователя «студент» в контексте
+
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { UserProvider, useUser } from "../context/UserContext";
@@ -18,3 +20,5 @@ test("проверка роли студента", () => {
   );
   expect(screen.getByText("student")).toBeInTheDocument();
 });
+
+

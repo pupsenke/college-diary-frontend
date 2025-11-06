@@ -1,3 +1,5 @@
+// Unit тест для проверки получения данных о студенте через API
+
 import { apiService } from "../services/studentApiService";
 
 global.fetch = jest.fn();

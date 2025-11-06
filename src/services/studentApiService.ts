@@ -144,6 +144,7 @@ export interface MarkChange {
   }> | null;
   teacherOrStudent: boolean;
   newValue: number | null;
+  isPending?: boolean; // для отображения ожидающих комментариев
 }
 
 
@@ -368,6 +369,62 @@ export const apiService = {
     
     console.log('Found supplement:', supplement);
     return supplement;
+  },
+
+  // Добавление изменения и получение ID supplement
+  async addMarkChangeAndGetSupplementId(
+    studentId: number, 
+    stId: number, 
+    markNumber: number
+  ): Promise<number> {
+    console.log(`Adding change and getting supplement ID: student ${studentId}, st ${stId}, mark ${markNumber}`);
+    
+    // Шаг 1: Создаем изменение с пустым комментарием
+    const url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ошибка добавления изменения: ${response.status} - ${errorText}`);
+    }
+
+    // Шаг 2: Получаем информацию об оценке чтобы найти ID нового supplement
+    const markInfoResponse = await fetch(`${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
+    if (!markInfoResponse.ok) {
+      throw new Error('Ошибка получения информации об оценке');
+    }
+    
+    const markInfo: MarkInfo = await markInfoResponse.json();
+    
+    // Находим последнее изменение (новое) и возвращаем ID supplement
+    if (markInfo.changes && markInfo.changes.length > 0) {
+      const latestChange = markInfo.changes[markInfo.changes.length - 1];
+      if (latestChange.idSupplement) {
+        console.log('Supplement created with ID:', latestChange.idSupplement);
+        return latestChange.idSupplement;
+      }
+    }
+    
+    throw new Error('Supplement ID не получен после создания изменения');
+  },
+
+  // Удаление supplement
+  async deleteSupplement(supplementId: number): Promise<void> {
+    console.log(`Deleting supplement with ID: ${supplementId}`);
+    
+    const response = await fetch(`${API_BASE_URL}/supplements/delete/id/${supplementId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ошибка удаления supplement: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Supplement deleted successfully');
   },
 
   // Скачивание файла supplement

@@ -95,6 +95,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     supplementId: number | null;
     currentComment: string;
   } | null>(null);
+  const [newSupplementId, setNewSupplementId] = useState<number | null>(null);
 
   const { user } = useUser();
 
@@ -315,68 +316,104 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     await loadLessons();
   };
 
-  // Функция для добавления комментария
   const handleAddSupplement = async () => {
-    if (!selectedGrade || !newComment.trim()) return;
+    if (!selectedGrade || !selectedGrade.stId) return;
     
     try {
-      if (selectedGrade.stId) {
-        await apiService.addMarkChange(
-          studentId, 
-          selectedGrade.stId, 
-          selectedGrade.number, 
-          newComment
-        );
-        
-        await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
-        
-        if (markInfo) {
-          const newChange = markInfo.changes.find(change => 
-            change.comment === newComment && 
-            change.teacherOrStudent === false
-          );
-          
-          if (newChange && newChange.idSupplement) {
-            try {
-              await apiService.updateSupplementComment(newChange.idSupplement, newComment);
-            } catch (supplementError) {
-              console.warn('Не удалось обновить supplement, но комментарий уже добавлен:', supplementError);
-            }
-          }
-        }
-        
-        setAddCommentMode(false);
-        setNewComment('');
-        setUploadingFiles([]);
-        
-        console.log('Комментарий успешно добавлен');
-      }
+      // Шаг 1: Создаем изменение с пустым комментарием и получаем ID supplement
+      console.log('Создание изменения...');
+      const supplementId = await apiService.addMarkChangeAndGetSupplementId(
+        studentId, 
+        selectedGrade.stId, 
+        selectedGrade.number
+      );
+      
+      setNewSupplementId(supplementId);
+      setAddCommentMode(true);
+      
+      console.log('Supplement создан с ID:', supplementId);
+      
     } catch (error) {
-      console.error('Ошибка добавления комментария:', error);
-      setError('Не удалось добавить комментарий');
+      console.error('Ошибка создания supplement:', error);
+      setError('Не удалось начать добавление комментария');
+    }
+  };
+
+  const handleSaveComment = async () => {
+    if (!newSupplementId || !selectedGrade?.stId) return;
+    
+    try {
+      // Шаг 2: Обновляем комментарий в supplement
+      if (newComment.trim()) {
+        console.log('Обновление комментария в supplement...');
+        await apiService.updateSupplementComment(newSupplementId, newComment);
+      }
+      
+      // Шаг 3: Загружаем файлы если они есть
+      if (uploadingFiles.length > 0) {
+        console.log('Загрузка файлов в supplement...');
+        await apiService.uploadSupplementFiles(newSupplementId, uploadingFiles);
+      }
+      
+      // Перезагружаем информацию для отображения обновленных данных
+      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      
+      // Сбрасываем состояние
+      setNewSupplementId(null);
+      setAddCommentMode(false);
+      setNewComment('');
+      setUploadingFiles([]);
+      
+      console.log('Комментарий успешно сохранен');
+      
+    } catch (error) {
+      console.error('Ошибка сохранения комментария:', error);
+      setError('Не удалось сохранить комментарий');
+    }
+  };
+
+  const handleCancelComment = async () => {
+    if (!newSupplementId) {
+      // Если supplement еще не создан, просто закрываем режим добавления
+      setAddCommentMode(false);
+      setNewComment('');
+      setUploadingFiles([]);
+      return;
+    }
+    
+    try {
+      // Удаляем созданный supplement
+      console.log('Удаление supplement с ID:', newSupplementId);
+      await apiService.deleteSupplement(newSupplementId);
+      
+      // Сбрасываем состояние
+      setNewSupplementId(null);
+      setAddCommentMode(false);
+      setNewComment('');
+      setUploadingFiles([]);
+      
+      console.log('Supplement успешно удален');
+      
+    } catch (error) {
+      console.error('Ошибка удаления supplement:', error);
+      setError('Не удалось отменить добавление комментария');
     }
   };
 
   const handleUpdateComment = async () => {
-    if (!editingComment || !newComment.trim()) return;
+    if (!editingComment || !editingComment.supplementId || !selectedGrade?.stId) return;
     
     try {
-      if (editingComment.supplementId) {
-        await apiService.updateSupplementComment(editingComment.supplementId, newComment);
-      } else {
-        if (selectedGrade?.stId) {
-          await apiService.addMarkChange(
-            studentId, 
-            selectedGrade.stId, 
-            selectedGrade.number, 
-            newComment
-          );
-        }
+      // Обновляем комментарий
+      await apiService.updateSupplementComment(editingComment.supplementId, newComment);
+      
+      // Загружаем файлы если они есть
+      if (uploadingFiles.length > 0) {
+        await apiService.uploadSupplementFiles(editingComment.supplementId, uploadingFiles);
       }
       
-      if (selectedGrade?.stId) {
-        await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
-      }
+      // Перезагружаем информацию
+      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
       
       setEditingComment(null);
       setAddCommentMode(false);
@@ -954,8 +991,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                       </span>
                                     </div>
                                     <span className="pf-comment-action">
-                                        {getActionType(change.action)}
-                                      </span>
+                                      {getActionType(change.action)}
+                                    </span>
                                     
                                     {/* Комментарий (только если есть комментарий) */}
                                     {hasComment && (
@@ -966,7 +1003,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                           {change.teacherOrStudent === false && (
                                             <button 
                                               className="pf-edit-comment-btn"
-                                              onClick={() => handleEditComment(change.id, change.idSupplement, change.comment || '')}
+                                              onClick={() => handleEditComment(change.id, change.idSupplement, change.comment || (supplement?.comment || ''))}
                                               title="Редактировать комментарий"
                                             >
                                               ✏️ Изменить
@@ -1081,11 +1118,39 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                           )}
                         </div>
 
-                        {/* Кнопка добавления комментария */}
+                        {/* Ожидающий комментарий (показывается после создания supplement) */}
+                        {addCommentMode && !editingComment && (
+                          <div className="pf-comment-item pf-pending-comment">
+                            <div className="pf-comment-header">
+                              <span className="pf-comment-author">Студент</span>
+                              <span className="pf-comment-date">Сейчас</span>
+                              <span className="pf-comment-pending">Ожидает комментария...</span>
+                            </div>
+                            {uploadingFiles.length > 0 && (
+                              <div className="pf-comment-files">
+                                <div className="pf-comment-files-title">Файлы для загрузки:</div>
+                                <div className="pf-comment-files-list">
+                                  {uploadingFiles.map((file, index) => (
+                                    <div key={index} className="pf-comment-file-item">
+                                      <div className="pf-comment-file-info">
+                                        <span className="pf-comment-file-icon">
+                                          {getFileIcon(file.name)}
+                                        </span>
+                                        <span className="pf-comment-file-name">{file.name}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Кнопка добавления комментария или форма */}
                         {!addCommentMode ? (
                           <button 
                             className="pf-add-comment-btn"
-                            onClick={() => setAddCommentMode(true)}
+                            onClick={handleAddSupplement}
                           >
                             Добавить комментарий
                           </button>
@@ -1093,7 +1158,11 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                           <div className="pf-add-comment-form">
                             <h4>
                               {editingComment ? 'Редактировать комментарий' : 'Добавить комментарий и файлы'}
+                              {newSupplementId && (
+                                <span className="pf-supplement-id">(Supplement ID: {newSupplementId})</span>
+                              )}
                             </h4>
+                            
                             <textarea
                               value={newComment}
                               onChange={(e) => setNewComment(e.target.value)}
@@ -1138,21 +1207,24 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                             <div className="pf-comment-actions">
                               <button 
                                 className="pf-cancel-comment-btn"
-                                onClick={() => {
-                                  setAddCommentMode(false);
-                                  setEditingComment(null);
-                                  setNewComment('');
-                                  setUploadingFiles([]);
-                                }}
+                                onClick={editingComment ? 
+                                  () => {
+                                    setEditingComment(null);
+                                    setAddCommentMode(false);
+                                    setNewComment('');
+                                    setUploadingFiles([]);
+                                  } 
+                                  : handleCancelComment
+                                }
                               >
-                                Отмена
+                                {editingComment ? 'Отмена' : 'Удалить'}
                               </button>
                               <button 
                                 className="pf-submit-comment-btn"
-                                onClick={editingComment ? handleUpdateComment : handleAddSupplement}
-                                disabled={!newComment.trim()}
+                                onClick={editingComment ? handleUpdateComment : handleSaveComment}
+                                disabled={!newComment.trim() && uploadingFiles.length === 0}
                               >
-                                {editingComment ? 'Обновить' : 'Отправить'}
+                                {editingComment ? 'Обновить' : 'Сохранить'}
                               </button>
                             </div>
                           </div>
