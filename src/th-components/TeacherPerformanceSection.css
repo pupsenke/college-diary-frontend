@@ -1568,3 +1568,143 @@ body.menu-collapsed .column-date {
   flex: 1;
   min-width: 0;
 }
+
+/* Стили для состояния ошибки */
+.error-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #ef4444;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 20px 0;
+}
+
+.error-message {
+  font-size: 16px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.error-message strong {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Стили для кнопки "Повторить попытку" */
+.retry-button {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+}
+
+.retry-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+.retry-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+}
+
+/* Анимация для кнопки при наведении */
+.retry-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.retry-button:hover::before {
+  left: 100%;
+}
+
+/* Иконка обновления */
+.retry-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.retry-button:hover .retry-icon {
+  transform: rotate(180deg);
+}
+
+/* Альтернативный вариант кнопки (более спокойный) */
+.retry-button-alt {
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(15, 83, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.retry-button-alt:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 83, 255, 0.3);
+  background: linear-gradient(135deg, #010f6e 0%, #0a47d9 100%);
+}
+
+/* Стили для иконки ошибки */
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #ef4444;
+  opacity: 0.8;
+}
+
+/* Адаптивность для состояния ошибки */
+@media (max-width: 768px) {
+  .error-state {
+    padding: 40px 20px;
+    margin: 16px 0;
+  }
+  
+  .error-message {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .retry-button,
+  .retry-button-alt {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 140px;
+  }
+}

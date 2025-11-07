@@ -3,8 +3,7 @@ import { useUser } from '../context/UserContext';
 import { teacherApiService } from '../services/teacherApiService';
 import './PersonalCabinet.css';
 
-
-// Интерфейс для данных из API
+// Интерфейсы остаются без изменений
 interface StaffApiResponse {
   id: number;
   patronymic: string;
@@ -19,7 +18,6 @@ interface StaffApiResponse {
   }>;
 }
 
-// Интерфейс для дисциплин преподавателя из API
 interface TeacherSubject {
   idTeacher: number;
   idSubject: number;
@@ -45,7 +43,7 @@ interface PasswordChangeData {
 }
 
 interface LoginChangeData {
-  currentPassword: string;
+  currentPassword?: string;
   newLogin: string;
   confirmNewLogin: string;
 }
@@ -95,83 +93,113 @@ export const PersonalCabinet: React.FC<Props> = ({
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
-// Функция для получения данных преподавателя с кэшированием
-const fetchTeacherData = async (forceRefresh = false) => {
-  try {
-    setLoading(true);
-    setError(null);
-    setIsUsingCache(false);
+  // Функция для показа успешного сообщения
+  const showSuccess = useCallback((message: string) => {
+    setSuccessMessage(message);
+    // Автоматически скрываем сообщение через 5 секунд
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 5000);
+  }, []);
 
-    if (forceRefresh) {
-      setRefreshing(true);
-    }
+  // Функция для получения данных преподавателя с кэшированием
+  const fetchTeacherData = async (forceRefresh = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsUsingCache(false);
 
-    console.log('Загрузка данных преподавателя...');
-    
-    if (!user?.name || !user?.lastName || !user?.patronymic) {
-      throw new Error('Недостаточно данных пользователя для поиска');
-    }
-
-    // Инвалидируем кэш при принудительном обновлении
-    if (forceRefresh && teacherData.teacherId) {
-      teacherApiService.invalidateTeacherCache(teacherData.teacherId);
-    }
-
-    // Ищем преподавателя по ФИО
-    const teacher = await teacherApiService.findTeacherByName(
-      user.name, 
-      user.lastName, 
-      user.patronymic
-    );
-
-    if (teacher) {
-      try {
-        // Получаем дисциплины преподавателя
-        const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
-        
-        // Форматируем email для novsu.ru
-        const formattedEmail = teacher.email 
-          ? teacher.email.replace(/@.*$/, '@novsu.ru')
-          : `${teacher.login}@novsu.ru`;
-        
-        // Преобразуем данные из API в наш формат
-        const transformedData: TeacherData = {
-          firstName: teacher.name,
-          lastName: teacher.lastName,
-          middleName: teacher.patronymic,
-          email: formattedEmail,
-          position: teacher.staffPosition[0]?.name || 'Преподаватель',
-          disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
-          teacherId: teacher.id,
-          login: teacher.login
-        };
-
-        setTeacherData(transformedData);
-        console.log('Набор данных преподавателя с дисциплинами:', transformedData);
-        
-      } catch (disciplinesError) {
-        console.error('Ошибка загрузки дисциплин:', disciplinesError);
-        
-        // Используем базовые данные при ошибке
-        const formattedEmail = teacher.email 
-          ? teacher.email.replace(/@.*$/, '@novsu.ru')
-          : `${teacher.login}@novsu.ru`;
-        
-        const transformedData: TeacherData = {
-          firstName: teacher.name,
-          lastName: teacher.lastName,
-          middleName: teacher.patronymic,
-          email: formattedEmail,
-          position: teacher.staffPosition[0]?.name || 'Преподаватель',
-          disciplines: ['Не удалось загрузить дисциплины'],
-          teacherId: teacher.id,
-          login: teacher.login
-        };
-        setTeacherData(transformedData);
+      if (forceRefresh) {
+        setRefreshing(true);
       }
-    } else {
-      console.log('Преподаватель не найден, используются контекстные данные');
-      // Если преподаватель не найден в API, используем данные из контекста
+
+      console.log('Загрузка данных преподавателя...');
+      
+      if (!user?.name || !user?.lastName || !user?.patronymic) {
+        throw new Error('Недостаточно данных пользователя для поиска');
+      }
+
+      // Инвалидируем кэш при принудительном обновлении
+      if (forceRefresh && teacherData.teacherId) {
+        teacherApiService.invalidateTeacherCache(teacherData.teacherId);
+      }
+
+      // Ищем преподавателя по ФИО
+      const teacher = await teacherApiService.findTeacherByName(
+        user.name, 
+        user.lastName, 
+        user.patronymic
+      );
+
+      if (teacher) {
+        try {
+          // Получаем дисциплины преподавателя
+          const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
+          
+          // Форматируем email для novsu.ru
+          const formattedEmail = teacher.email 
+            ? teacher.email.replace(/@.*$/, '@novsu.ru')
+            : `${teacher.login}@novsu.ru`;
+          
+          // Преобразуем данные из API в наш формат
+          const transformedData: TeacherData = {
+            firstName: teacher.name,
+            lastName: teacher.lastName,
+            middleName: teacher.patronymic,
+            email: formattedEmail,
+            position: teacher.staffPosition[0]?.name || 'Преподаватель',
+            disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
+            teacherId: teacher.id,
+            login: teacher.login
+          };
+
+          setTeacherData(transformedData);
+          console.log('Набор данных преподавателя с дисциплинами:', transformedData);
+          
+        } catch (disciplinesError) {
+          console.error('Ошибка загрузки дисциплин:', disciplinesError);
+          
+          // Используем базовые данные при ошибке
+          const formattedEmail = teacher.email 
+            ? teacher.email.replace(/@.*$/, '@novsu.ru')
+            : `${teacher.login}@novsu.ru`;
+          
+          const transformedData: TeacherData = {
+            firstName: teacher.name,
+            lastName: teacher.lastName,
+            middleName: teacher.patronymic,
+            email: formattedEmail,
+            position: teacher.staffPosition[0]?.name || 'Преподаватель',
+            disciplines: ['Не удалось загрузить дисциплины'],
+            teacherId: teacher.id,
+            login: teacher.login
+          };
+          setTeacherData(transformedData);
+        }
+      } else {
+        console.log('Преподаватель не найден, используются контекстные данные');
+        // Если преподаватель не найден в API, используем данные из контекста
+        const formattedEmail = user?.email 
+          ? user.email.replace(/@.*$/, '@novsu.ru')
+          : `${user?.login}@novsu.ru`;
+        
+        const fallbackData: TeacherData = {
+          firstName: user?.name || '',
+          lastName: user?.lastName || '',
+          middleName: user?.patronymic || '',
+          email: formattedEmail,
+          position: 'Преподаватель',
+          disciplines: ['Дисциплины не найдены'],
+          login: user?.login || ''
+        };
+        setTeacherData(fallbackData);
+      }
+
+    } catch (err) {
+      console.error('Ошибка при загрузке данных преподавателя:', err);
+      setError('Не удалось загрузить данные преподавателя');
+      
+      // В случае ошибки используем данные из контекста
       const formattedEmail = user?.email 
         ? user.email.replace(/@.*$/, '@novsu.ru')
         : `${user?.login}@novsu.ru`;
@@ -182,41 +210,20 @@ const fetchTeacherData = async (forceRefresh = false) => {
         middleName: user?.patronymic || '',
         email: formattedEmail,
         position: 'Преподаватель',
-        disciplines: ['Дисциплины не найдены'],
+        disciplines: ['Ошибка загрузки дисциплин'],
         login: user?.login || ''
       };
       setTeacherData(fallbackData);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  };
 
-  } catch (err) {
-    console.error('Ошибка при загрузке данных преподавателя:', err);
-    setError('Не удалось загрузить данные преподавателя');
-    
-    // В случае ошибки используем данные из контекста
-    const formattedEmail = user?.email 
-      ? user.email.replace(/@.*$/, '@novsu.ru')
-      : `${user?.login}@novsu.ru`;
-    
-    const fallbackData: TeacherData = {
-      firstName: user?.name || '',
-      lastName: user?.lastName || '',
-      middleName: user?.patronymic || '',
-      email: formattedEmail,
-      position: 'Преподаватель',
-      disciplines: ['Ошибка загрузки дисциплин'],
-      login: user?.login || ''
-    };
-    setTeacherData(fallbackData);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
-
-// Функция принудительного обновления данных
-const handleRefresh = async () => {
-  await fetchTeacherData(true);
-};
+  // Функция принудительного обновления данных
+  const handleRefresh = async () => {
+    await fetchTeacherData(true);
+  };
 
   // Загружаем данные при монтировании компонента
   useEffect(() => {
@@ -253,13 +260,9 @@ const handleRefresh = async () => {
     try {
       setPasswordLoading(true);
       setError(null);
+      setSuccessMessage(null);
 
-      // Валидация
-      if (!passwordData.currentPassword) {
-        setError('Введите текущий пароль');
-        return;
-      }
-
+      // Валидация (без проверки текущего пароля)
       if (!passwordData.newPassword) {
         setError('Введите новый пароль');
         return;
@@ -283,11 +286,19 @@ const handleRefresh = async () => {
       // Используем API сервис для смены пароля
       await teacherApiService.changePassword(teacherData.teacherId, passwordData);
 
-      setSuccessMessage('Пароль успешно изменен');
+      showSuccess('Пароль успешно изменен!');
       setShowPasswordModal(false);
       
+      // Очищаем форму
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
     } catch (err) {
-      setError('Не удалось изменить пароль. Проверьте текущий пароль.');
+      console.error('Password change error:', err);
+      setError(err instanceof Error ? err.message : 'Не удалось изменить пароль');
     } finally {
       setPasswordLoading(false);
     }
@@ -297,13 +308,9 @@ const handleRefresh = async () => {
     try {
       setLoginLoading(true);
       setError(null);
+      setSuccessMessage(null);
 
       // Валидация
-      if (!loginData.currentPassword) {
-        setError('Введите текущий пароль');
-        return;
-      }
-
       if (!loginData.newLogin) {
         setError('Введите новый логин');
         return;
@@ -314,8 +321,19 @@ const handleRefresh = async () => {
         return;
       }
 
+      const loginRegex = /^[a-zA-Z0-9]+$/;
+      if (!loginRegex.test(loginData.newLogin)) {
+        setError('Логин может содержать только латинские буквы и цифры');
+        return;
+      }
+
       if (loginData.newLogin !== loginData.confirmNewLogin) {
         setError('Новые логины не совпадают');
+        return;
+      }
+
+      if (loginData.newLogin === teacherData.login) {
+        setError('Новый логин не должен совпадать с текущим');
         return;
       }
 
@@ -324,10 +342,25 @@ const handleRefresh = async () => {
         return;
       }
 
+      console.log('Starting login change process...');
+      
+      // Проверяем доступность логина
+      try {
+        const availability = await teacherApiService.isLoginAvailable(loginData.newLogin);
+        if (!availability.available) {
+          setError(availability.message || 'Этот логин уже занят');
+          return;
+        }
+      } catch (availabilityError) {
+        console.log('Login availability check failed, proceeding...');
+      }
+      
       // Используем API сервис для смены логина
-      await teacherApiService.changeLogin(teacherData.teacherId, loginData);
+      const result = await teacherApiService.changeLogin(teacherData.teacherId, loginData);
+      
+      console.log('Login change result:', result);
 
-      setSuccessMessage('Логин успешно изменен');
+      showSuccess('Логин успешно изменен!');
       setShowLoginModal(false);
       
       // Обновляем данные пользователя
@@ -337,8 +370,31 @@ const handleRefresh = async () => {
         email: `${loginData.newLogin}@novsu.ru`
       }));
       
+      // Очищаем форму
+      setLoginData({
+        currentPassword: '',
+        newLogin: '',
+        confirmNewLogin: ''
+      });
+      
     } catch (err) {
-      setError('Не удалось изменить логин. Проверьте текущий пароль.');
+      console.error('Login change error:', err);
+      
+      if (err instanceof Error) {
+        if (err.message.includes('уже занят') || err.message.includes('409')) {
+          setError('Этот логин уже занят. Выберите другой логин.');
+        } else if (err.message.includes('400')) {
+          setError('Неверный формат логина');
+        } else if (err.message.includes('500')) {
+          setError('Внутренняя ошибка сервера. Попробуйте другой логин.');
+        } else if (err.message.includes('Ошибка соединения')) {
+          setError('Проблемы с соединением. Проверьте интернет и попробуйте снова.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Не удалось изменить логин. Попробуйте позже.');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -361,7 +417,6 @@ const handleRefresh = async () => {
     </div>
   );
 
-
   // Компонент кнопки обновления
   const RefreshButton = () => (
     <button 
@@ -378,6 +433,47 @@ const handleRefresh = async () => {
     </button>
   );
 
+  // Компонент успешного уведомления
+  const SuccessNotification = () => {
+    if (!successMessage) return null;
+
+    return (
+      <div className="pc-success-notification">
+        <div className="pc-success-content">
+          <div className="pc-success-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path 
+                d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div className="pc-success-text">
+            <div className="pc-success-title">Успешно!</div>
+            <div className="pc-success-message">{successMessage}</div>
+          </div>
+          <button 
+            className="pc-success-close"
+            onClick={() => setSuccessMessage(null)}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path 
+                d="M12 4L4 12M4 4L12 12" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const handlePasswordDataChange = useCallback((field: keyof PasswordChangeData, value: string) => {
     setPasswordData(prev => ({
       ...prev,
@@ -393,26 +489,23 @@ const handleRefresh = async () => {
   }, []);
 
   const handleDisciplineClick = (discipline: string) => {
-  const isValidDiscipline = 
-    discipline !== 'Дисциплины не назначены' && 
-    discipline !== 'Не удалось загрузить дисциплины' && 
-    discipline !== 'Ошибка загрузки дисциплин';
+    const isValidDiscipline = 
+      discipline !== 'Дисциплины не назначены' && 
+      discipline !== 'Не удалось загрузить дисциплины' && 
+      discipline !== 'Ошибка загрузки дисциплин';
 
-  if (isValidDiscipline) {
-    // Сначала устанавливаем дисциплину
-    if (onDisciplineSelect) {
-      onDisciplineSelect(discipline);
+    if (isValidDiscipline) {
+      if (onDisciplineSelect) {
+        onDisciplineSelect(discipline);
+      }
+      
+      if (onNavigateToGroups) {
+        onNavigateToGroups(discipline);
+      } else if (onNavigateToDisciplines) {
+        onNavigateToDisciplines(discipline);
+      }
     }
-    
-    // Затем переходим к группам с фильтрацией по выбранной дисциплине
-    if (onNavigateToGroups) {
-      onNavigateToGroups(discipline);
-    } else if (onNavigateToDisciplines) {
-      // Если onNavigateToGroups не передан, используем старый способ
-      onNavigateToDisciplines(discipline);
-    }
-  }
-};
+  };
 
   // Если данные пользователя еще не загружены
   if (!user) {
@@ -427,6 +520,9 @@ const handleRefresh = async () => {
 
   return (
     <div className="personal-cabinet">
+      {/* Уведомление об успехе */}
+      <SuccessNotification />
+
       {/* Добавляем заголовок с кнопкой обновления */}
       <div className="cabinet-header">
         <InfoIcon />
@@ -539,12 +635,6 @@ const handleRefresh = async () => {
         </div>
       )}
 
-      {successMessage && (
-        <div className="pc-success-message">
-          {successMessage}
-        </div>
-      )}
-
       {/* Модальное окно смены пароля */}
       {showPasswordModal && (
         <div className="pc-modal-overlay" onClick={() => setShowPasswordModal(false)}>
@@ -560,16 +650,6 @@ const handleRefresh = async () => {
             </div>
 
             <div className="pc-modal-content">
-              <div className="pc-form-group">
-                <label>Текущий пароль</label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => handlePasswordDataChange('currentPassword', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите текущий пароль"
-                />
-              </div>
               <div className="pc-form-group">
                 <label>Новый пароль</label>
                 <input
@@ -594,7 +674,7 @@ const handleRefresh = async () => {
                 <button
                   className="pc-confirm-btn"
                   onClick={handlePasswordChange}
-                  disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                  disabled={passwordLoading || !passwordData.newPassword || !passwordData.confirmPassword}
                 >
                   {passwordLoading ? 'Смена пароля...' : 'Сменить пароль'}
                 </button>
@@ -620,16 +700,6 @@ const handleRefresh = async () => {
 
             <div className="pc-modal-content">
               <div className="pc-form-group">
-                <label>Текущий пароль</label>
-                <input
-                  type="password"
-                  value={loginData.currentPassword}
-                  onChange={(e) => handleLoginDataChange('currentPassword', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите текущий пароль"
-                />
-              </div>
-              <div className="pc-form-group">
                 <label>Новый логин</label>
                 <input
                   type="text"
@@ -653,7 +723,7 @@ const handleRefresh = async () => {
                 <button
                   className="pc-confirm-btn"
                   onClick={handleLoginChange}
-                  disabled={loginLoading || !loginData.currentPassword || !loginData.newLogin || !loginData.confirmNewLogin}
+                  disabled={loginLoading || !loginData.newLogin || !loginData.confirmNewLogin}
                 >
                   {loginLoading ? 'Смена логина...' : 'Сменить логин'}
                 </button>
