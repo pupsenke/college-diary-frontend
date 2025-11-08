@@ -1,13 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../context/UserContext';
-import '../st-components/ScheduleSection.css';
+import { useUser, Student } from '../context/UserContext';
+import './ScheduleSection.css';
 
-export interface ScheduleItem {
+type ApiLesson = {
   id: number;
   dayWeek: string;
   typeWeek: string;
   numPair: number;
-  room: string;
+  room: number | null;
+  idSt: number;
+  idGroup: number;
+  subgroup: number | null;
+  replacement: boolean;
+  idSubject: number;
+  nameSubject: string;
+  idTeacher: number | null;
+  lastnameTeacher: string | null;
+  nameTeacher: string | null;
+  patronymicTeacher: string | null;
+  numberGroup: number;
+};
+
+// Типы для оценок
+type Mark = {
+  number: number;
+  value: number | null;
+};
+
+type StNameSubjectDTO = {
   idSt: number;
   idSubject: number;
   nameSubject: string;
@@ -15,24 +35,29 @@ export interface ScheduleItem {
   lastnameTeacher: string;
   nameTeacher: string;
   patronymicTeacher: string;
-  idGroup: number;
-  numberGroup: number;
-  subgroup: number; 
-  replacement: boolean;
-}
+};
 
+type StudentMarks = {
+  stNameSubjectDTO: StNameSubjectDTO;
+  marksBySt: (Mark | null)[];
+  certification: any;
+};
+
+//для отображения
 type Lesson = {
   id: number;
   startTime: string;
   endTime: string;
   subject: string;
-  group: number;
-  subgroup?: number;
+  teacher?: string;
   room?: string;
+  numPair: number;
+  subgroup?: number;
+  dayWeek: string;
   typeWeek: string;
 };
 
-type DaySchedule = {
+export type DaySchedule = {
   date: { weekday: string; date: string };
   lessons: Lesson[];
   noClassesText?: string;
@@ -45,7 +70,8 @@ type GroupedSlot = {
 };
 
 const CACHE_KEYS = {
-  TEACHER_SCHEDULE: 'teacher_schedule_cache',
+  SCHEDULE: 'schedule_cache',
+  MARKS: 'marks_cache',
   TIMESTAMP: 'cache_timestamp'
 };
 
@@ -110,10 +136,11 @@ const loadFromCache = <T,>(key: string, userId: number, maxAge: number = 24 * 60
   }
 };
 
-const clearTeacherCache = (userId: number): void => {
+const clearUserCache = (userId: number): void => {
   try {
-    localStorage.removeItem(`${CACHE_KEYS.TEACHER_SCHEDULE}_${userId}`);
-    console.log('Кэш преподавателя очищен');
+    localStorage.removeItem(`${CACHE_KEYS.SCHEDULE}_${userId}`);
+    localStorage.removeItem(`${CACHE_KEYS.MARKS}_${userId}`);
+    console.log('Кэш пользователя очищен');
   } catch (error) {
     console.warn('Ошибка при очистке кэша:', error);
   }
@@ -130,8 +157,8 @@ const pairTimes: Record<number, { start: string; end: string }> = {
   8: { start: '21:55', end: '23:35' },
 };
 
-// функция для определения верхней/нижней недели
-const getCurrentWeekType = (): 'upper' | 'lower' => {
+// определение верхней/нижней недели
+export const getCurrentWeekType = (): 'upper' | 'lower' => {
   const today = new Date();
   const startOfYear = new Date(today.getFullYear(), 0, 1);
   const days = Math.floor((today.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
@@ -141,7 +168,7 @@ const getCurrentWeekType = (): 'upper' | 'lower' => {
   return weekNumber % 2 === 1 ? 'upper' : 'lower';
 };
 
-// функция для получения дат недели с определением типа недели
+// получение дат недели с определением типа недели
 const getWeekDates = (weekType?: 'upper' | 'lower'): { 
   weekday: string; 
   date: string; 
@@ -150,13 +177,17 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
 }[] => {
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const today = new Date();
-  const currentWeekType = getCurrentWeekType();  
+  const currentWeekType = getCurrentWeekType();
+  
+  // если тип недели не указан, используем текущий
   const targetWeekType = weekType || currentWeekType;
+  
+  // понедельник текущей недели
   const monday = new Date(today);
   const dayOfWeek = monday.getDay();
   const diff = monday.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   monday.setDate(diff);
-
+  
   // если нужна противоположная неделя, сдвигаем на 7 дней
   if (targetWeekType !== currentWeekType) {
     monday.setDate(monday.getDate() + (targetWeekType === 'upper' ? -7 : 7));
@@ -180,12 +211,12 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
   });
 };
 
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 }
 
-function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
+export function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   const groups: Record<string, GroupedSlot> = {};
   for (const lesson of lessons) {
     const key = `${lesson.startTime}-${lesson.endTime}`;
@@ -199,38 +230,57 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   );
 }
 
-const transformApiData = (apiData: ScheduleItem[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
+// тип для преобразованного урока
+type TransformedLesson = {
+  id: number;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teacher?: string;
+  room?: string;
+  subgroup?: number;
+  numPair: number;
+  dayWeek: string;
+  typeWeek: string;
+};
+
+export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
   return weekDates.map(({ weekday, date, isCurrentWeek }) => {
     const dayLessons = apiData
       .filter(lesson => lesson.dayWeek === weekday)
       .map(lesson => {
         const pairTime = pairTimes[lesson.numPair];
-        if (!pairTime) {
-          console.warn(`Неизвестный номер пары: ${lesson.numPair} для урока ${lesson.id}`);
-          return null;
+
+        let teacher: string | undefined = undefined;
+        if (lesson.lastnameTeacher && lesson.nameTeacher) {
+          const nameInitial = lesson.nameTeacher[0] || '';
+          const patronymicInitial = lesson.patronymicTeacher ? lesson.patronymicTeacher[0] : '';
+          teacher = `${lesson.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
         }
 
         let room: string | undefined = undefined;
-        if (lesson.room) {
+        if (lesson.room !== null) {
           room = `ауд. ${lesson.room}`;
         }
 
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
 
-        const transformedLesson: Lesson = {
+        const transformedLesson: TransformedLesson = {
           id: lesson.id,
           startTime: pairTime.start,
           endTime: pairTime.end,
           subject: lesson.nameSubject || `Предмет ${lesson.idSubject}`,
-          group: lesson.numberGroup,
-          subgroup,
+          teacher,
           room,
+          subgroup,
+          numPair: lesson.numPair,
+          dayWeek: lesson.dayWeek,
           typeWeek: lesson.typeWeek
         };
 
         return transformedLesson;
       })
-      .filter((lesson): lesson is Lesson => lesson !== null);
+      .filter((lesson): lesson is TransformedLesson => lesson !== null);
 
     const groupedLessons: Lesson[] = [];
     const timeGroups: Record<string, Lesson[]> = {};
@@ -272,7 +322,6 @@ const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | '
   }));
 };
 
-// функция для определения следующей пары
 const getNextLesson = (lessons: Lesson[]): Lesson | null => {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -282,6 +331,60 @@ const getNextLesson = (lessons: Lesson[]): Lesson | null => {
   return allLessons.find(lesson => 
     timeToMinutes(lesson.startTime) > currentTime
   ) || null;
+};
+
+export const MarksModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  subjectName: string;
+  marks: StudentMarks[];
+}> = ({ isOpen, onClose, subjectName, marks }) => {
+  if (!isOpen) return null;
+
+  const subjectMarks = marks
+    .filter(mark => mark.stNameSubjectDTO.nameSubject === subjectName)
+    .flatMap(mark => 
+      mark.marksBySt
+        .filter((m): m is Mark => m !== null && m.value !== null)
+        .map(m => ({ ...m, teacher: mark.stNameSubjectDTO }))
+    )
+    .sort((a, b) => b.number - a.number)
+    .slice(0, 5);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{subjectName}</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {subjectMarks.length > 0 ? (
+            <div className="marks-list">
+              <div className="marks-header">
+                <span>Оценка</span>
+                <span>Преподаватель</span>
+              </div>
+              {subjectMarks.map((mark, index) => (
+                <div key={index} className="mark-item">
+                  <span className={`mark-value ${mark.value && mark.value >= 4 ? 'good' : mark.value && mark.value >= 3 ? 'average' : 'poor'}`}>
+                    {mark.value}
+                  </span>
+                  <span className="mark-teacher">
+                    {mark.teacher.lastnameTeacher} {mark.teacher.nameTeacher[0]}.{mark.teacher.patronymicTeacher ? mark.teacher.patronymicTeacher[0] + '.' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-marks">
+              <p>Нет оценок по этому предмету</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const DayTabs: React.FC<{
@@ -314,7 +417,8 @@ const DayTabs: React.FC<{
 const DayScheduleView: React.FC<{ 
   scheduleData: DaySchedule[];
   activeDay: string;
-}> = ({ scheduleData, activeDay }) => {
+  onLessonClick: (subjectName: string) => void;
+}> = ({ scheduleData, activeDay, onLessonClick }) => {
   const daySchedule = scheduleData.find(day => day.date.weekday === activeDay);
 
   if (!daySchedule) {
@@ -330,27 +434,26 @@ const DayScheduleView: React.FC<{
   return (
     <div className="day-schedule-content">
       {daySchedule.lessons.length > 0 ? (
-        groupLessonsByTime(daySchedule.lessons).map(({ startTime, endTime, lessons: grouped }: GroupedSlot) => (
-          grouped.length > 1 ? (
-            <div key={`${startTime}-${endTime}`} className="separated-lesson-row">
+        groupLessonsByTime(daySchedule.lessons).map((slot) => (
+          slot.lessons.length > 1 ? (
+            <div key={`${slot.startTime}-${slot.endTime}`} className="separated-lesson-row">
               <div className="separated-time">
-                {startTime} - {endTime}
+                {slot.startTime} - {slot.endTime}
               </div>
               <div className="separated-lesson-content">
-                {grouped.map((lesson: Lesson, index: number) => (
+                {slot.lessons.map((lesson: Lesson, index: number) => (
                   <div 
                     key={lesson.id} 
-                    className="separated-lesson-item"
+                    className="separated-lesson-item clickable-lesson"
+                    onClick={() => onLessonClick(lesson.subject)}
                   >
                     <div className="separated-subject">
                       {lesson.subject}
                     </div>
                     <div className="separated-lesson-meta">
-                      <div className="lesson-group-info">
-                        <div className="lesson-group">Группа: {lesson.group}</div>
-                        {lesson.subgroup && <div className="lesson-subgroup">п/г {lesson.subgroup}</div>}
-                      </div>
+                      {lesson.teacher && <div className="separated-teacher-room">{lesson.teacher}</div>}
                       {lesson.room && <div className="separated-room">{lesson.room}</div>}
+                      {lesson.subgroup && <div className="separated-subgroup">п/г {lesson.subgroup}</div>}
                     </div>
                   </div>
                 ))}
@@ -358,21 +461,20 @@ const DayScheduleView: React.FC<{
             </div>
           ) : (
             <div 
-              key={`${startTime}-${endTime}`} 
-              className="lesson-row"
+              key={`${slot.startTime}-${slot.endTime}`} 
+              className="lesson-row clickable-lesson"
+              onClick={() => onLessonClick(slot.lessons[0].subject)}
             >
-              <div className="lesson-time">{startTime} - {endTime}</div>
+              <div className="lesson-time">{slot.startTime} - {slot.endTime}</div>
               <div className="lesson-content">
                 <div className="lesson-info">
                   <div className="lesson-subject">
-                    {grouped[0].subject}
+                    {slot.lessons[0].subject}
                   </div>
                   <div className="lesson-meta">
-                    <div className="lesson-group-info">
-                      <div className="lesson-group">Группа: {grouped[0].group}</div>
-                      {grouped[0].subgroup && <div className="lesson-subgroup">п/г {grouped[0].subgroup}</div>}
-                    </div>
-                    {grouped[0].room && <div className="lesson-room">{grouped[0].room}</div>}
+                    {slot.lessons[0].teacher && <div className="lesson-teacher-room">{slot.lessons[0].teacher}</div>}
+                    {slot.lessons[0].room && <div className="lesson-room">{slot.lessons[0].room}</div>}
+                    {slot.lessons[0].subgroup && <div className="lesson-subgroup">п/г {slot.lessons[0].subgroup}</div>}
                   </div>
                 </div>
               </div>
@@ -388,7 +490,10 @@ const DayScheduleView: React.FC<{
   );
 };
 
-const NextLessonCard: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleData }) => {
+const NextLessonCard: React.FC<{ 
+  scheduleData: DaySchedule[];
+  onLessonClick: (subjectName: string) => void;
+}> = ({ scheduleData, onLessonClick }) => {
   const today = new Date();
   const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
   const todaySchedule = scheduleData.find(day => day.date.date === currentDateStr);
@@ -413,31 +518,38 @@ const NextLessonCard: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleDat
   }
 
   return (
-    <div className="next-lesson">
+    <div 
+      className="next-lesson clickable-lesson"
+      onClick={() => onLessonClick(nextLesson.subject)}
+    >
       <div className="next-lesson-title">
         <h3>Следующая пара</h3>
       </div>
       <div className="next-lesson-card">
-        <div className="next-lesson-subject">{nextLesson.subject}</div>
+        <div className="next-lesson-subject">
+          {nextLesson.subject}
+        </div>
         <div className="next-lesson-details">
           <div className="next-lesson-detail">
             <div className="detail-label">Время</div>
             <div className="detail-value">{nextLesson.startTime} - {nextLesson.endTime}</div>
           </div>
-          <div className="next-lesson-detail">
-            <div className="detail-label">Группа</div>
-            <div className="detail-value">{nextLesson.group}</div>
-          </div>
-          {nextLesson.subgroup && (
+          {nextLesson.teacher && (
             <div className="next-lesson-detail">
-              <div className="detail-label">п/г</div>
-              <div className="detail-value">{nextLesson.subgroup}</div>
+              <div className="detail-label">Преподаватель</div>
+              <div className="detail-value">{nextLesson.teacher}</div>
             </div>
           )}
           {nextLesson.room && (
             <div className="next-lesson-detail">
               <div className="detail-label">Аудитория</div>
               <div className="detail-value">{nextLesson.room}</div>
+            </div>
+          )}
+          {nextLesson.subgroup && (
+            <div className="next-lesson-detail">
+              <div className="detail-label">п/г</div>
+              <div className="detail-value">{nextLesson.subgroup}</div>
             </div>
           )}
         </div>
@@ -451,24 +563,27 @@ export const ScheduleSection: React.FC = () => {
   const [activeDay, setActiveDay] = useState<string>('');
   const [scheduleData, setScheduleData] = useState<DaySchedule[]>([]);
   const [weekDates, setWeekDates] = useState<{ weekday: string; date: string; isCurrentWeek: boolean }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [marks, setMarks] = useState<StudentMarks[]>([]);
+  const [isMarksModalOpen, setIsMarksModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
-  const { isTeacher, userId } = useUser();
+  const { user, isStudent } = useUser();
+  const userGroupId = isStudent ? (user as Student).idGroup : null;
+  const userId = user?.id;
 
   useEffect(() => {
     const dates = getWeekDates(activeTab);
     setWeekDates(dates);
     
-    // установка активного день (первый день недели или текущий день если это текущая неделя)
     const today = new Date();
     const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
     
     let defaultActiveDay = dates[0].weekday;
     
-    // если это текущая неделя, выбираем текущий день
     if (dates.some(day => day.isCurrentWeek)) {
       const currentDay = dates.find(day => day.date === currentDateStr)?.weekday;
       if (currentDay) {
@@ -479,33 +594,121 @@ export const ScheduleSection: React.FC = () => {
     setActiveDay(defaultActiveDay);
   }, [activeTab]);
 
+  useEffect(() => {
+    const fetchScheduleData = async () => {
+      try {
+        setLoading(true);
+        
+        if (!userGroupId || !userId) {
+          throw new Error('ID группы или пользователя не найден');
+        }
+
+        const cachedData = loadFromCache<ApiLesson[]>(CACHE_KEYS.SCHEDULE, userId);
+        
+        if (cachedData) {
+          setUsingCachedData(true);
+          const transformedData = transformApiData(cachedData, weekDates);
+          setScheduleData(transformedData);
+          setLastUpdated(new Date());
+        }
+
+        const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`);
+        
+        if (!scheduleResponse.ok) {
+          throw new Error('Ошибка загрузки расписания');
+        }
+
+        const apiData: ApiLesson[] = await scheduleResponse.json();
+        
+        saveToCache(CACHE_KEYS.SCHEDULE, apiData, userId);
+        
+        if (!cachedData || generateHash(cachedData) !== generateHash(apiData)) {
+          console.log('🔄 Обновляем расписание из API');
+          setUsingCachedData(false);
+          const transformedData = transformApiData(apiData, weekDates);
+          setScheduleData(transformedData);
+          setLastUpdated(new Date());
+        }
+
+      } catch (err) {
+        console.error('Ошибка загрузки данных:', err);
+        // Если ошибка и нет кэшированных данных, показываем ошибку
+        if (!scheduleData.length) {
+          setError(err instanceof Error ? err.message : 'Произошла ошибка');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userGroupId && userId && weekDates.length > 0) {
+      fetchScheduleData();
+    }
+  }, [userGroupId, userId, weekDates]);
+
+  useEffect(() => {
+    const fetchMarks = async () => {
+      if (!isStudent || !user || !userId) return;
+
+      try {
+        const cachedMarks = loadFromCache<StudentMarks[]>(CACHE_KEYS.MARKS, userId, 2 * 60 * 60 * 1000);
+        if (cachedMarks) {
+          setMarks(cachedMarks);
+        }
+        const marksResponse = await fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`);        
+        if (!marksResponse.ok) {
+          throw new Error('Ошибка загрузки оценок');
+        }
+        const marksData: StudentMarks[] = await marksResponse.json();
+        
+        saveToCache(CACHE_KEYS.MARKS, marksData, userId);        
+        if (!cachedMarks || generateHash(cachedMarks) !== generateHash(marksData)) {
+          setMarks(marksData);
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки оценок:', err);
+      }
+    };
+
+    fetchMarks();
+  }, [isStudent, user, userId]);
+
   // функция для принудительного обновления данных
   const refreshData = async () => {
-    if (!isTeacher || !userId) return;
+    if (!userGroupId || !userId) return;
     
     setLoading(true);
     setUsingCachedData(false);
     setError(null);
     
     try {
-      clearTeacherCache(userId);
-      
-      console.log('Принудительное обновление данных преподавателя');
-      const response = await fetch(`http://localhost:8080/api/v1/schedule/teacher/${userId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка загрузки: ${response.status}`);
+      clearUserCache(userId);
+            const [scheduleResponse, marksResponse] = await Promise.all([
+        fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`),
+        isStudent && user ? fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`) : null
+      ]);
+
+      if (!scheduleResponse.ok) {
+        throw new Error('Ошибка загрузки расписания');
       }
+
+      const apiData: ApiLesson[] = await scheduleResponse.json();
       
-      const apiData: ScheduleItem[] = await response.json();
-      
-      saveToCache(CACHE_KEYS.TEACHER_SCHEDULE, apiData, userId);
+      // сохраняем в кэш
+      saveToCache(CACHE_KEYS.SCHEDULE, apiData, userId);
       
       const transformedData = transformApiData(apiData, weekDates);
       setScheduleData(transformedData);
       setLastUpdated(new Date());
 
-      console.log('Данные преподавателя обновлены');
+      // Обновляем оценки если пользователь студент
+      if (isStudent && marksResponse && marksResponse.ok) {
+        const marksData: StudentMarks[] = await marksResponse.json();
+        saveToCache(CACHE_KEYS.MARKS, marksData, userId);
+        setMarks(marksData);
+      }
+
+      console.log('✅ Данные успешно обновлены');
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка';
@@ -516,74 +719,33 @@ export const ScheduleSection: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchSchedule = async () => {
-      if (!isTeacher || !userId) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const cachedData = loadFromCache<ScheduleItem[]>(CACHE_KEYS.TEACHER_SCHEDULE, userId);
-        
-        if (cachedData) {
-          setUsingCachedData(true);
-          const transformedData = transformApiData(cachedData, weekDates);
-          setScheduleData(transformedData);
-          setLastUpdated(new Date());
-        }
-
-        console.log('Загрузка расписания преподавателя с сервера');
-        const response = await fetch(`http://localhost:8080/api/v1/schedule/teacher/${userId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Ошибка загрузки: ${response.status}`);
-        }
-        
-        const apiData: ScheduleItem[] = await response.json();
-        
-        saveToCache(CACHE_KEYS.TEACHER_SCHEDULE, apiData, userId);
-        if (!cachedData || generateHash(cachedData) !== generateHash(apiData)) {
-          console.log('Обновление расписания преподавателя из API');
-          setUsingCachedData(false);
-          const transformedData = transformApiData(apiData, weekDates);
-          setScheduleData(transformedData);
-          setLastUpdated(new Date());
-        }
-        
-      } catch (err) {
-        console.error('Ошибка загрузки расписания:', err);
-        if (!scheduleData.length) {
-          setError(err instanceof Error ? err.message : 'Ошибка загрузки расписания');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userId && weekDates.length > 0) {
-      fetchSchedule();
-    }
-  }, [isTeacher, userId, weekDates]);
-
   const getFilteredSchedule = (weekType: 'upper' | 'lower') => {
     return filterScheduleByWeekType(scheduleData, weekType);
   };
 
-  // получение текущего день недели для подсветки
   const getCurrentDay = (): string => {
     const today = new Date();
     const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
     return weekDates.find(day => day.date === currentDateStr)?.weekday || '';
   };
 
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return '';
-    return `Обновлено: ${date.toLocaleTimeString()}`;
+  const handleLessonClick = (subjectName: string) => {
+    setSelectedSubject(subjectName);
+    setIsMarksModalOpen(true);
+  };
+
+  const closeMarksModal = () => {
+    setIsMarksModalOpen(false);
+    setSelectedSubject('');
   };
 
   const currentDay = getCurrentDay();
   const isCurrentWeek = weekDates.some(day => day.isCurrentWeek);
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return '';
+    return `Обновлено: ${date.toLocaleTimeString()}`;
+  };
 
   if (loading && !scheduleData.length) {
     return (
@@ -603,10 +765,6 @@ export const ScheduleSection: React.FC = () => {
         </button>
       </div>
     );
-  }
-
-  if (!isTeacher) {
-    return <div className="error">Доступно только для преподавателей</div>;
   }
 
   if (!scheduleData || scheduleData.length === 0) {
@@ -659,14 +817,24 @@ export const ScheduleSection: React.FC = () => {
           <DayScheduleView 
             scheduleData={getFilteredSchedule(activeTab)} 
             activeDay={activeDay}
+            onLessonClick={handleLessonClick}
           />
           
-          {/* блок "Следующая пара" показывается только для текущего дня текущей недели */}
           {activeDay === currentDay && isCurrentWeek && (
-            <NextLessonCard scheduleData={getFilteredSchedule(activeTab)} />
+            <NextLessonCard 
+              scheduleData={getFilteredSchedule(activeTab)} 
+              onLessonClick={handleLessonClick}
+            />
           )}
         </div>
       </div>
+
+      <MarksModal
+        isOpen={isMarksModalOpen}
+        onClose={closeMarksModal}
+        subjectName={selectedSubject}
+        marks={marks}
+      />
     </div>
-  );
+);
 };

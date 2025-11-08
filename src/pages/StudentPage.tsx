@@ -7,7 +7,7 @@ import { PersonalCabinet } from '../st-components/PersonalCabinet';
 import { DocumentsSection } from '../st-components/DocumentSection';
 import { useUser, Student } from '../context/UserContext';
 import './StudentStyle.css';
-import { ScheduleSection } from '../st-components/ScheduleSection';
+import { ScheduleSection } from '../st-components/ScheduleSectionST';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService, GroupData, TeacherData, StudentMark } from '../services/studentApiService';
 
