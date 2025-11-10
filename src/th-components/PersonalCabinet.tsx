@@ -3,7 +3,6 @@ import { useUser } from '../context/UserContext';
 import { teacherApiService } from '../services/teacherApiService';
 import './PersonalCabinet.css';
 
-// Интерфейсы остаются без изменений
 interface StaffApiResponse {
   id: number;
   patronymic: string;
@@ -132,6 +131,10 @@ export const PersonalCabinet: React.FC<Props> = ({
       );
 
       if (teacher) {
+        console.log('Найден преподаватель с ID:', teacher.id);
+        localStorage.setItem('teacher_id', teacher.id.toString());
+        console.log('Teacher ID сохранен в localStorage:', teacher.id);
+
         try {
           // Получаем дисциплины преподавателя
           const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
@@ -193,6 +196,9 @@ export const PersonalCabinet: React.FC<Props> = ({
           login: user?.login || ''
         };
         setTeacherData(fallbackData);
+        
+        // Очищаем teacher_id если преподаватель не найден
+        localStorage.removeItem('teacher_id');
       }
 
     } catch (err) {
@@ -214,6 +220,9 @@ export const PersonalCabinet: React.FC<Props> = ({
         login: user?.login || ''
       };
       setTeacherData(fallbackData);
+      
+      // Очищаем teacher_id при ошибке
+      localStorage.removeItem('teacher_id');
     } finally {
       setLoading(false);
       setRefreshing(false);

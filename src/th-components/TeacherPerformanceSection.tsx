@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { teacherApiService } from '../services/teacherApiService';
+import { teacherApiService, type LessonDate, type LessonInfo, type SubjectTeacherData, type AddDateColumnRequest, type DeleteDateColumnRequest } from '../services/teacherApiService';
 import './TeacherPerformanceSection.css';
 
 // Типы данных
@@ -9,10 +9,20 @@ export interface Student {
   firstName: string;
   middleName: string;
   subgroup?: 'I' | 'II';
+  marks?: Array<{
+    number: number;
+    value: number | null;
+  }>;
 }
 
 // Тип для lessonType
 export type LessonType = 'Л' | 'ПР' | 'СР' | 'КР' | 'Т' | 'ДЗ' | '';
+
+interface LessonTypeInfo {
+  type: LessonType;
+  topic: string;
+  comment: string;
+}
 
 export interface GradeRecord {
   id: number;
@@ -35,8 +45,43 @@ export interface ExamRecord {
 export interface TeacherPerformanceSectionProps {
   groupNumber: string;
   subject: string;
+  idTeacher?: number;
   onBackToGroups?: () => void;
   onSetAttendance?: () => void;
+}
+
+export interface LessonDateModalData {
+  date: string;
+  lessonNumber: number;
+  typeMark: string;
+  comment: string;
+  numberWeek: number;
+  dayWeek: string;
+  typeWeek: string;
+  numPair: number;
+  number: number;
+}
+
+interface SubgroupTeachersState {
+  'I': string;
+  'II': string;
+}
+
+interface SubgroupStudents {
+  'I': Student[];
+  'II': Student[];
+}
+
+interface AddDateModalData {
+  isOpen: boolean;
+  availableLessons: any[];
+  selectedLesson: any | null;
+}
+
+interface DeleteDateModalData {
+  isOpen: boolean;
+  dateToDelete: string;
+  lessonNumber: number;
 }
 
 export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps> = ({
@@ -45,13 +90,24 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   onBackToGroups,
   onSetAttendance
 }) => {
+  const [idTeacher, setIdTeacher] = useState<number | null>(null);
+  const [idSt, setIdSt] = useState<number | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [idSt, setIdSt] = useState<number>(2);
+  const [lessonDates, setLessonDates] = useState<LessonDate[]>([]);
+  const [showDateModal, setShowDateModal] = useState<LessonDateModalData | null>(null);
+  const [dateModalData, setDateModalData] = useState<{
+    typeMark: string;
+    comment: string;
+  }>({
+    typeMark: '',
+    comment: ''
+  });
+  const [subjectTeachersData, setSubjectTeachersData] = useState<SubjectTeacherData[]>([]);
+  const [hasMultipleTeachers, setHasMultipleTeachers] = useState<boolean>(true);
 
   const [selectedSubgroup, setSelectedSubgroup] = useState<string>('all');
-  const [selectedLessonType, setSelectedLessonType] = useState<string>('all');
   const [gradeRecords, setGradeRecords] = useState<GradeRecord[]>([]);
   const [examRecords, setExamRecords] = useState<ExamRecord[]>([]);
   const [allDates, setAllDates] = useState<string[]>([]);
@@ -67,11 +123,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const [uploadingFiles, setUploadingFiles] = useState<boolean>(false);
   const [showTopicModal, setShowTopicModal] = useState<string | null>(null);
   const [topicText, setTopicText] = useState('');
-  const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II' | undefined>>({});
-  const [subgroupTeachers, setSubgroupTeachers] = useState<Record<string, string>>({
-    'I': 'Иванов И.И.',
-    'II': 'Петров П.П.'
+  const [subgroupTeachers, setSubgroupTeachers] = useState<SubgroupTeachersState>({
+    'I': 'Загрузка...',
+    'II': 'Загрузка...'
   });
+  const [subgroupStudents, setSubgroupStudents] = useState<SubgroupStudents>({
+  'I': [],
+  'II': []
+});
+  const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II'>>({});
+  const [savingSubgroups, setSavingSubgroups] = useState<boolean>(false);
+  const [showSubgroupModal, setShowSubgroupModal] = useState<boolean>(false);
 
   const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
   const [teacherEditValue, setTeacherEditValue] = useState('');
@@ -79,9 +141,28 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     start: '',
     end: ''
   });
-  const [globalLessonTypes, setGlobalLessonTypes] = useState<Record<string, LessonType>>({});
-  const [globalLessonTopics, setGlobalLessonTopics] = useState<Record<string, string>>({});
+  const [lessonTypesData, setLessonTypesData] = useState<Record<string, LessonTypeInfo>>({});
   const [globalExamType, setGlobalExamType] = useState<string>('');
+
+  const [loadingLessonTypes, setLoadingLessonTypes] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isUsingCache, setIsUsingCache] = useState(false);
+
+  // Новые состояния для управления датами
+  const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
+    isOpen: false,
+    availableLessons: [],
+    selectedLesson: null
+  });
+  
+  const [deleteDateModal, setDeleteDateModal] = useState<DeleteDateModalData>({
+    isOpen: false,
+    dateToDelete: '',
+    lessonNumber: 0
+  });
+  
+  const [loadingLessons, setLoadingLessons] = useState(false);
+  const [managingDate, setManagingDate] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const teacherInputRef = useRef<HTMLInputElement>(null);
@@ -93,16 +174,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const validGrades = [
     '5', '4.75', '4.5', '4.25', '4', '3.75', '3.5', '3.25', '3', 
     '2.75', '2.5', '2.25', '2', '1', '0', ''
-  ];
-
-  // Типы занятий для выпадающего списка под датой
-  const lessonTypeOptions = [
-    { value: 'Л', label: 'Л' },
-    { value: 'ПР', label: 'ПР' },
-    { value: 'СР', label: 'СР' },
-    { value: 'КР', label: 'КР' },
-    { value: 'Т', label: 'Т' },
-    { value: 'ДЗ', label: 'ДЗ' }
   ];
 
   // Типы занятий для фильтра
@@ -143,69 +214,780 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return '#ef4444';
   };
 
-  // Функция для загрузки студентов из API
-  const fetchStudents = async () => {
+  // Функция для сопоставления полного названия типа занятия с сокращением
+  const getLessonTypeFromFullName = (fullName: string): LessonType => {
+    const typeMap: Record<string, LessonType> = {
+      'Лекция': 'Л',
+      'Практика': 'ПР',
+      'Практическая работа': 'ПР',
+      'Самостоятельная работа': 'СР',
+      'Контрольная работа': 'КР',
+      'Домашнее задание': 'ДЗ',
+      'Тест': 'Т'
+    };
+    
+    return typeMap[fullName] || '';
+  };
+
+  // Функция для получения номера занятия по дате
+  const getLessonNumber = (date: string): number => {
+    const match = date.match(/\((\d+)\)$/);
+    if (match) {
+      return parseInt(match[1]);
+    }
+    console.warn(`Could not extract lesson number from date: ${date}`);
+    return 0;
+  };
+
+  // Вспомогательная функция для парсинга дат
+  const parseDate = (dateStr: string): number => {
+    if (!dateStr) return 0;
+    
+    if (dateStr.includes('.')) {
+      const [day, month] = dateStr.split('.');
+      return new Date(new Date().getFullYear(), parseInt(month) - 1, parseInt(day)).getTime();
+    } else {
+      return new Date(dateStr).getTime();
+    }
+  };
+
+  // Компонент информационной иконки
+  const InfoIcon = () => (
+    <div className="info-icon-btn" tabIndex={0}>
+      <button className="header-btn" type="button">
+        <span className="info-icon-text">i</span>
+        <span>Информация</span>
+      </button>
+      <div className="info-tooltip">
+        <div className="info-tooltip-content">
+          <p><strong>Управление успеваемостью</strong></p>
+          <p>В этом разделе вы можете выставлять оценки студентам, управлять подгруппами и отслеживать успеваемость.</p>
+          <p><strong>Основные возможности:</strong></p>
+          <ul>
+            <li>Выставление оценок по датам занятий</li>
+            <li>Фильтрация по подгруппам и типам занятий</li>
+            <li>Добавление комментариев и прикрепление файлов</li>
+            <li>Управление распределением по подгруппам</li>
+            <li>Выставление экзаменационных оценок</li>
+            <li>Добавление и удаление столбцов с датами</li>
+          </ul>
+          <p>Для редактирования оценки нажмите на ячейку с оценкой.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Компонент кнопки обновления
+  const RefreshButton = () => (
+    <button 
+      className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+        alt="Обновить"
+      />
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+    </button>
+  );
+
+  // Обновленная функция загрузки всех данных
+  const loadAllData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Преобразуем номер группы в idGroup
-      const groupId = getGroupIdFromNumber(groupNumber);
-      
+
+      console.log('Starting to load all data...');
+
+      // 1. Загружаем ID преподавателя
+      const teacherId = localStorage.getItem('teacher_id');
+      if (!teacherId) {
+        throw new Error('ID преподавателя не найден в системе');
+      }
+      const teacherIdNum = parseInt(teacherId);
+      setIdTeacher(teacherIdNum);
+
+      // 2. Загружаем idSt
+      console.log('Fetching stId...');
+      const stId = await teacherApiService.getStId(teacherIdNum, subject, groupNumber);
+      if (!stId) {
+        throw new Error('Не удалось найти распределение для преподавателя, предмета и группы');
+      }
+      setIdSt(stId);
+
+      // 3. Загружаем данные о преподавателях подгрупп
+      console.log('Loading subgroup teachers data...');
+      await fetchSubjectTeachersData(teacherIdNum);
+
+      // 4. Загружаем студентов из обеих подгрупп
+      console.log('Loading students from both subgroups...');
+      await loadStudentsFromAllSubgroups(teacherIdNum, stId);
+
+      // 5. Загружаем даты занятий
+      console.log('Fetching lesson dates...');
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
       if (!groupId) {
-        throw new Error('Не удалось определить ID группы');
+        throw new Error(`Не удалось определить ID группы для номера: ${groupNumber}`);
       }
 
-      const apiStudents = await teacherApiService.getGroupStudents(groupId, idSt);
-      
-      // Преобразуем данные из API в формат компонента
-      const transformedStudents: Student[] = apiStudents.map((student: any) => ({
-        id: student.idStudent,
-        lastName: student.lastName,
-        firstName: student.name,
-        middleName: student.patronymic,
-        subgroup: undefined
-      }));
+      const dates = await teacherApiService.getLessonDates(groupId, stId);
+      const formattedDates: string[] = dates.map(lesson => {
+        const dateObj = new Date(lesson.date);
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        return `${day}.${month} (${lesson.number})`;
+      });
 
-      // Сортируем студентов по фамилии от А до Я
-      const sortedStudents = transformedStudents.sort((a, b) => 
-        a.lastName.localeCompare(b.lastName)
-      );
+      setLessonDates(dates);
+      setAllDates(formattedDates);
 
-      setStudents(sortedStudents);
-      
-    } catch (err) {
-      console.error('Ошибка при загрузке студентов:', err);
-      setError('Не удалось загрузить список студентов');
+      // 6. Загружаем типы занятий
+      console.log('Loading lesson types...');
+      await refreshLessonTypes();
+
+      console.log('All data loaded successfully');
+
+    } catch (err: any) {
+      console.error('Ошибка при загрузке данных:', err);
+      setError(`Не удалось загрузить данные: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Функция для преобразования номера группы в ID
-  const getGroupIdFromNumber = (groupNumber: string): number | null => {
-    const groupMap: Record<string, number> = {
-      '2991': 2,
-      '2992': 3,
-    };
-    
-    return groupMap[groupNumber] || null;
+  // Новая функция для загрузки студентов из всех подгрупп
+  const loadStudentsFromAllSubgroups = async (currentTeacherId: number, stId: number) => {
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      // Получаем данные о преподавателях предмета
+      const subjectTeachersData = await teacherApiService.getSubjectTeachersData();
+      const currentSubjectId = await teacherApiService.getSubjectIdByName(subject);
+      
+      const subjectData = subjectTeachersData.find(item => 
+        item.groups.includes(groupId) && item.idSubject === currentSubjectId
+      );
+
+      if (!subjectData || subjectData.teachers.length === 0) {
+        throw new Error('Не найдены преподаватели для предмета');
+      }
+
+      const subgroupStudentsData: SubgroupStudents = {
+        'I': [],
+        'II': []
+      };
+
+      // Инвалидируем кэш студентов перед загрузкой новых данных
+      teacherApiService.invalidateStudentCache();
+
+      // Создаем Set для отслеживания уже загруженных студентов
+      const loadedStudentIds = new Set<number>();
+
+      console.log('Преподаватели для предмета:', subjectData.teachers);
+      
+      // Загружаем студентов для каждого преподавателя в правильном порядке
+      for (let i = 0; i < subjectData.teachers.length; i++) {
+        const teacherId = subjectData.teachers[i];
+        const subgroup = i === 0 ? 'I' : 'II';
+        
+        console.log(`Loading students for ${subgroup} subgroup, teacher ${teacherId}`);
+        
+        try {
+          // Загружаем студентов без использования кэша
+          const apiStudents = await teacherApiService.getGroupStudentsWithoutCache(groupId, stId, teacherId);
+          
+          if (apiStudents && apiStudents.length > 0) {
+            // Фильтруем студентов, исключая уже загруженных
+            const uniqueStudents = apiStudents.filter((student: any) => {
+              if (loadedStudentIds.has(student.idStudent)) {
+                console.log(`Студент ${student.idStudent} ${student.lastName} уже загружен, пропускаем`);
+                return false;
+              }
+              loadedStudentIds.add(student.idStudent);
+              return true;
+            });
+
+            const transformedStudents: Student[] = uniqueStudents.map((student: any) => ({
+              id: student.idStudent,
+              lastName: student.lastName,
+              firstName: student.name,
+              middleName: student.patronymic,
+              subgroup: subgroup, // Назначаем подгруппу на основе порядка преподавателя
+              marks: student.marks || []
+            }));
+
+            // Сортируем студентов по фамилии
+            const sortedStudents = transformedStudents.sort((a, b) => 
+              a.lastName.localeCompare(b.lastName)
+            );
+
+            subgroupStudentsData[subgroup] = sortedStudents;
+            
+            console.log(`Loaded ${sortedStudents.length} unique students for ${subgroup} subgroup`);
+            console.log(`Students in ${subgroup}:`, sortedStudents.map(s => `${s.lastName} ${s.id}`));
+          }
+        } catch (error) {
+          console.error(`Error loading students for ${subgroup} subgroup:`, error);
+        }
+      }
+
+      setSubgroupStudents(subgroupStudentsData);
+
+      // Объединяем всех студентов для отображения (уже без дубликатов)
+      const allStudents = [
+        ...subgroupStudentsData['I'],
+        ...subgroupStudentsData['II']
+      ].sort((a, b) => a.lastName.localeCompare(b.lastName));
+
+      setStudents(allStudents);
+      
+      // Обновляем распределение по подгруппам
+      const updatedStudentSubgroups: Record<number, 'I' | 'II'> = {};
+      allStudents.forEach(student => {
+        if (student.subgroup) {
+          updatedStudentSubgroups[student.id] = student.subgroup;
+        }
+      });
+      setStudentSubgroups(updatedStudentSubgroups);
+
+      console.log('Total unique students loaded:', allStudents.length);
+      console.log('Subgroup distribution:', updatedStudentSubgroups);
+      console.log('Students in I subgroup:', subgroupStudentsData['I'].length);
+      console.log('Students in II subgroup:', subgroupStudentsData['II'].length);
+
+    } catch (error) {
+      console.error('Error loading students from subgroups:', error);
+      throw error;
+    }
   };
 
-  // Загружаем студентов при монтировании компонента
-  useEffect(() => {
-    fetchStudents();
-  }, [groupNumber, idSt]);
+  // Функция для загрузки типов занятий из API
+  const loadLessonTypesFromAPI = async (): Promise<Record<string, LessonTypeInfo>> => {
+    if (!students.length || !lessonDates.length || !idSt) {
+      console.log('Недостаточно данных для загрузки типов занятий');
+      return {};
+    }
 
-  // Функция для определения размера ячейки
-  const getGradeSize = (grade: string): 'small' | 'medium' | 'large' => {
-    const simpleGrades = ['5', '4', '3', '2', '1', '0', '', 'з', 'нз'];
-    if (simpleGrades.includes(grade)) {
-      return 'small';
-    } else if (grade && grade.length <= 4) {
-      return 'medium';
-    } else {
-      return 'large';
+    const newLessonTypes: Record<string, LessonTypeInfo> = {};
+    const firstStudent = students[0];
+
+    try {
+      for (const lesson of lessonDates) {
+        try {
+          console.log(`Загрузка типа занятия для урока ${lesson.number}...`);
+          const lessonInfo = await teacherApiService.getLessonInfo(firstStudent.id, idSt, lesson.number);
+          
+          if (lessonInfo) {
+            const dateObj = new Date(lesson.date);
+            const day = dateObj.getDate().toString().padStart(2, '0');
+            const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            const numPair = lesson.lessonInfo?.numPair || lesson.number;
+            const displayDate = `${day}.${month} (${numPair})`;
+            
+            const lessonType = getLessonTypeFromFullName(lessonInfo.typeMark);
+            
+            newLessonTypes[displayDate] = {
+              type: lessonType || '',
+              topic: lessonInfo.comment || '',
+              comment: lessonInfo.comment || ''
+            };
+            
+            console.log(`Загружен тип для ${displayDate}: ${lessonType}`);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (error) {
+          console.error(`Ошибка загрузки типа для занятия ${lesson.number}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке типов занятий:', error);
+    }
+
+    return newLessonTypes;
+  };
+
+  // Функция для принудительного обновления типов занятий
+  const refreshLessonTypes = async () => {
+    try {
+      setLoadingLessonTypes(true);
+      console.log('Обновление типов занятий...');
+      
+      const apiLessonTypes = await loadLessonTypesFromAPI();
+      
+      // ОБНОВЛЯЕМ ВСЕ ДАННЫЕ ИЗ API
+      setLessonTypesData(apiLessonTypes);
+      
+      // ОБНОВЛЯЕМ ЗАПИСИ ОЦЕНОК С НОВЫМИ ТИПАМИ
+      setGradeRecords(prev => 
+        prev.map(record => {
+          const newTypeData = apiLessonTypes[record.date];
+          return newTypeData ? { ...record, lessonType: newTypeData.type } : record;
+        })
+      );
+      
+      console.log('Типы занятий успешно обновлены:', apiLessonTypes);
+    } catch (error) {
+      console.error('Ошибка при обновлении типов занятий:', error);
+    } finally {
+      setLoadingLessonTypes(false);
+    }
+  };
+
+  // Функция для получения информации о занятии
+  const fetchLessonInfo = async (studentId: number, lessonNumber: number): Promise<LessonInfo | null> => {
+    try {
+      if (!idSt) {
+        console.log('Semester not available, skipping lesson info fetch');
+        return null;
+      }
+      const lessonInfo = await teacherApiService.getLessonInfo(studentId, idSt, lessonNumber);
+      return lessonInfo;
+    } catch (err) {
+      console.error('Ошибка при загрузке информации о занятии:', err);
+      return null;
+    }
+  };
+
+  // Функция для сохранения информации о занятии
+  const saveLessonInfo = async (lessonData: {
+    studentId: number;
+    lessonNumber: number;
+    typeMark: string;
+    comment: string;
+  }): Promise<boolean> => {
+    try {
+      if (!idSt) {
+        console.log('Semester not available, skipping save');
+        return false;
+      }
+      
+      const result = await teacherApiService.saveLessonInfo({
+        ...lessonData,
+        idSt: idSt
+      });
+      
+      if (result.success) {
+        const lessonType = getLessonTypeFromFullName(lessonData.typeMark);
+        
+        // НАХОДИМ ДАТУ ДЛЯ ЭТОГО НОМЕРА ЗАНЯТИЯ
+        const lesson = lessonDates.find(l => l.number === lessonData.lessonNumber);
+        if (lesson) {
+          const dateObj = new Date(lesson.date);
+          const day = dateObj.getDate().toString().padStart(2, '0');
+          const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+          const numPair = lesson.lessonInfo?.numPair || lesson.number;
+          const displayDate = `${day}.${month} (${numPair})`;
+          
+          // ОБНОВЛЯЕМ ДАННЫЕ ТИПА ЗАНЯТИЯ
+          setLessonTypesData(prev => ({
+            ...prev,
+            [displayDate]: {
+              type: lessonType || '',
+              topic: lessonData.comment || '',
+              comment: lessonData.comment || ''
+            }
+          }));
+          
+          // ОБНОВЛЯЕМ ЗАПИСИ ОЦЕНОК
+          setGradeRecords(prev => 
+            prev.map(record => 
+              record.date === displayDate 
+                ? { ...record, lessonType: lessonType || '' }
+                : record
+            )
+          );
+        }
+      }
+      
+      return result.success;
+    } catch (err) {
+      console.error('Ошибка при сохранении информации о занятии:', err);
+      return false;
+    }
+  };
+
+  // функция для распределения подгрупп
+  const fetchSubjectTeachersData = async (teacherId: number) => {
+    try {
+      const data = await teacherApiService.getTeacherSubjects(teacherId);
+      setSubjectTeachersData(data);
+      
+      // Загружаем преподавателей подгрупп
+      await fetchSubgroupTeachers(teacherId);
+      
+    } catch (error) {
+      console.error('Error loading teacher subjects data:', error);
+      setHasMultipleTeachers(false);
+    }
+  };
+
+  // Функция для загрузки преподавателей подгрупп
+  const fetchSubgroupTeachers = async (teacherId: number) => {
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) return;
+
+      const subjectId = await teacherApiService.getSubjectIdByName(subject);
+      if (!subjectId || subjectId === 0) return;
+
+      const subjectTeachersData = await teacherApiService.getSubjectTeachersData();
+      const allStaff = await teacherApiService.getAllStaff();
+      
+      const subjectData = subjectTeachersData.find(item => 
+        item.groups.includes(groupId) && item.idSubject === subjectId
+      );
+      
+      if (!subjectData) return;
+
+      const teachers: SubgroupTeachersState = {
+        'I': 'Преподаватель не назначен',
+        'II': 'Преподаватель не назначен'
+      };
+      
+      // Заполняем преподавателей для подгрупп на основе порядка в массиве
+      subjectData.teachers.forEach((teacherId, index) => {
+        const teacher = allStaff.find(staff => staff.id === teacherId);
+        if (teacher) {
+          const teacherFullName = `${teacher.lastName} ${teacher.name.charAt(0)}.${teacher.patronymic.charAt(0)}.`;
+          
+          if (index === 0) {
+            teachers['I'] = teacherFullName;
+          } else if (index === 1) {
+            teachers['II'] = teacherFullName;
+          }
+          // Если преподавателей больше 2, игнорируем остальных
+        }
+      });
+      
+      setSubgroupTeachers(teachers);
+      
+      // Определяем, показывать ли подгруппы (показываем если есть хотя бы 2 преподавателя)
+      const hasMultipleTeachers = subjectData.teachers.length > 1;
+      setHasMultipleTeachers(hasMultipleTeachers);
+      
+    } catch (error) {
+      console.error('Error loading subgroup teachers:', error);
+    }
+  };
+
+  // Загрузка данных о подгруппах
+  const fetchSubgroupsData = async (teacherId: number, students: Student[]) => {
+    try {
+      const subgroups = await teacherApiService.getSubgroupsForTeacher(teacherId);
+      const updatedStudentSubgroups: Record<number, 'I' | 'II'> = {};
+
+      if (subgroups.length > 0) {
+        const studentToSubgroup: Record<number, 'I' | 'II'> = {};
+        
+        subgroups.forEach((subgroup, index) => {
+          const subgroupLabel = index === 0 ? 'I' : 'II';
+          subgroup.students.forEach(studentId => {
+            studentToSubgroup[studentId] = subgroupLabel;
+          });
+        });
+
+        students.forEach(student => {
+          updatedStudentSubgroups[student.id] = studentToSubgroup[student.id] || 'I';
+        });
+      } else {
+        students.forEach(student => {
+          updatedStudentSubgroups[student.id] = 'I';
+        });
+      }
+
+      setStudentSubgroups(updatedStudentSubgroups);
+    } catch (error) {
+      console.error('Ошибка загрузки данных подгрупп:', error);
+      const defaultSubgroups: Record<number, 'I' | 'II'> = {};
+      students.forEach(student => {
+        defaultSubgroups[student.id] = 'I';
+      });
+      setStudentSubgroups(defaultSubgroups);
+    }
+  };
+
+  // Инициализация данных при монтировании
+  useEffect(() => {
+    loadAllData();
+  }, [groupNumber, subject]);
+
+  // Инициализация записей оценок когда студенты и даты загружены
+  useEffect(() => {
+    if (students.length === 0 || allDates.length === 0) return;
+    
+    console.log('Initializing grade records...');
+    
+    const initialGradeRecords: GradeRecord[] = [];
+    const initialExamRecords: ExamRecord[] = [];
+    
+    students.forEach(student => {
+      allDates.forEach(date => { 
+        const lessonNumber = getLessonNumber(date);
+        const existingMark = student.marks?.find(mark => mark.number === lessonNumber);
+        
+        const initialGrade = existingMark && existingMark.value !== null 
+          ? existingMark.value.toString() 
+          : '';
+        
+        initialGradeRecords.push({
+          id: Date.now() + Math.random(),
+          studentId: student.id,
+          date: date,
+          lessonType: '',
+          topic: '',
+          grade: initialGrade
+        });
+      });
+
+      initialExamRecords.push({
+        id: Date.now() + Math.random(),
+        studentId: student.id,
+        examType: '',
+        grade: ''
+      });
+    });
+    
+    setGradeRecords(initialGradeRecords);
+    setExamRecords(initialExamRecords);
+
+    // Инициализация подгрупп студентов
+    setStudentSubgroups(prev => {
+      const hasExistingSubgroups = Object.keys(prev).length > 0;
+      if (hasExistingSubgroups) {
+        return prev;
+      }
+      
+      const initialSubgroups: Record<number, 'I' | 'II'> = {};
+      students.forEach(student => {
+        initialSubgroups[student.id] = 'I';
+      });
+      return initialSubgroups;
+    });
+  }, [students, allDates]);
+
+  // Функция для принудительного обновления данных
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Инвалидируем все кэши перед обновлением
+      teacherApiService.invalidateStudentCache();
+      teacherApiService.invalidateLessonDatesCache();
+      teacherApiService.invalidateLessonInfoCache();
+      teacherApiService.invalidateSubgroupsCache();
+      
+      await loadAllData();
+      console.log('Данные успешно обновлены');
+    } catch (error) {
+      console.error('Ошибка при обновлении данных:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Функция для открытия модального окна добавления даты
+  const handleOpenAddDateModal = async () => {
+    if (!idSt || !idTeacher) {
+      alert('Недостаточно данных для добавления даты');
+      return;
+    }
+
+    setLoadingLessons(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      console.log('Fetching available lessons for date addition...');
+      const availableLessons = await teacherApiService.getLessonsForDateAddition(idSt, groupId, idTeacher);
+      
+      console.log('Available lessons:', availableLessons);
+      
+      setAddDateModal({
+        isOpen: true,
+        availableLessons: availableLessons || [],
+        selectedLesson: null
+      });
+    } catch (error) {
+      console.error('Error fetching available lessons:', error);
+      alert('Не удалось загрузить доступные занятия для добавления');
+    } finally {
+      setLoadingLessons(false);
+    }
+  };
+
+  // Функция для добавления столбца с датой
+  const handleAddDateColumn = async () => {
+    if (!addDateModal.selectedLesson || !idSt || !idTeacher) {
+      alert('Выберите занятие для добавления');
+      return;
+    }
+
+    setManagingDate(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const addRequest: AddDateColumnRequest = {
+        idGroup: groupId,
+        idSt: idSt,
+        idLesson: addDateModal.selectedLesson.id,
+        idTeacher: idTeacher
+      };
+
+      console.log('Adding date column with request:', addRequest);
+      
+      const result = await teacherApiService.addDateColumn(addRequest);
+      
+      if (result.success) {
+        alert('Столбец с датой успешно добавлен');
+        setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null });
+        
+        // Инвалидируем кэш перед перезагрузкой данных
+        teacherApiService.invalidateStudentCache();
+        teacherApiService.invalidateLessonDatesCache();
+        
+        // Перезагружаем данные
+        await loadAllData();
+      }
+    } catch (error: any) {
+      console.error('Error adding date column:', error);
+      alert(`Ошибка при добавлении столбца: ${error.message}`);
+    } finally {
+      setManagingDate(false);
+    }
+  };
+
+  // Функция для открытия модального окна удаления даты
+  const handleOpenDeleteDateModal = (date: string, lessonNumber: number) => {
+    setDeleteDateModal({
+      isOpen: true,
+      dateToDelete: date,
+      lessonNumber: lessonNumber
+    });
+  };
+
+  // Функция для удаления столбца с датой
+  const handleDeleteDateColumn = async () => {
+    if (!idSt || !idTeacher) {
+      alert('Недостаточно данных для удаления даты');
+      return;
+    }
+
+    setManagingDate(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const deleteRequest: DeleteDateColumnRequest = {
+        idGroup: groupId,
+        idSt: idSt,
+        idTeacher: idTeacher,
+        number: deleteDateModal.lessonNumber
+      };
+
+      console.log('Deleting date column with request:', deleteRequest);
+      
+      const result = await teacherApiService.deleteDateColumn(deleteRequest);
+      
+      if (result.success) {
+        alert('Столбец с датой успешно удален');
+        setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 });
+        
+        // Инвалидируем кэш перед перезагрузкой данных
+        teacherApiService.invalidateStudentCache();
+        teacherApiService.invalidateLessonDatesCache();
+        
+        // Перезагружаем данные
+        await loadAllData();
+      }
+    } catch (error: any) {
+      console.error('Error deleting date column:', error);
+      alert(`Ошибка при удалении столбца: ${error.message}`);
+    } finally {
+      setManagingDate(false);
+    }
+  };
+
+  const handleDateButtonClick = async (date: string) => {
+    const lessonNumber = getLessonNumber(date);
+    if (lessonNumber === 0) return;
+
+    const firstStudent = filteredStudents[0];
+    if (!firstStudent) return;
+
+    try {
+      const lessonInfo = await fetchLessonInfo(firstStudent.id, lessonNumber);
+      
+      const lessonFromDates = lessonDates.find(l => {
+        const dateObj = new Date(l.date);
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const formattedDate = `${day}.${month}`;
+        return date.startsWith(formattedDate) && l.number === lessonNumber;
+      });
+
+      const correctNumPair = lessonFromDates?.lessonInfo?.numPair || lessonInfo?.numPair || lessonNumber;
+
+      const modalData: LessonDateModalData = {
+        date,
+        lessonNumber,
+        typeMark: lessonInfo?.typeMark || '',
+        comment: lessonInfo?.comment || '',
+        numberWeek: lessonInfo?.numberWeek || 0,
+        dayWeek: lessonInfo?.dayWeek || '',
+        typeWeek: lessonInfo?.typeWeek || '',
+        numPair: correctNumPair,
+        number: lessonNumber
+      };
+
+      setShowDateModal(modalData);
+      setDateModalData({
+        typeMark: lessonInfo?.typeMark || '',
+        comment: lessonInfo?.comment || ''
+      });
+
+    } catch (error) {
+      console.error('Ошибка при открытии модального окна:', error);
+    }
+  };
+
+  const handleSaveDateInfo = async () => {
+    if (!showDateModal) return;
+
+    try {
+      const firstStudent = filteredStudents[0];
+      if (!firstStudent) return;
+
+      const success = await saveLessonInfo({
+        studentId: firstStudent.id,
+        lessonNumber: showDateModal.lessonNumber,
+        typeMark: dateModalData.typeMark,
+        comment: dateModalData.comment
+      });
+
+      if (success) {
+        // Инвалидируем кэш информации о занятиях
+        teacherApiService.invalidateLessonInfoCache();
+        
+        setShowDateModal(null);
+        setDateModalData({ typeMark: '', comment: '' });
+        console.log('Данные успешно сохранены');
+      } else {
+        console.error('Не удалось сохранить данные');
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении:', error);
     }
   };
 
@@ -215,23 +997,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return studentSubgroups[student.id] === selectedSubgroup;
   });
 
-  // Вспомогательная функция для парсинга дат
-  const parseDate = (dateStr: string): number => {
-    if (!dateStr) return 0;
-    
-    if (dateStr.includes('.')) {
-      // Формат DD.MM
-      const [day, month] = dateStr.split('.');
-      return new Date(new Date().getFullYear(), parseInt(month) - 1, parseInt(day)).getTime();
-    } else {
-      // Формат YYYY-MM-DD
-      return new Date(dateStr).getTime();
-    }
-  };
-
-  // Фильтрация дат по выбранному диапазону и типу занятия
+  // Фильтрация дат по выбранному диапазону
   const filteredDates = allDates.filter(date => {
-    // Фильтр по дате
     if (dateRange.start || dateRange.end) {
       const currentDate = parseDate(date);
       const startDate = parseDate(dateRange.start);
@@ -248,64 +1015,110 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       }
     }
     
-    // Фильтр по типу занятия
-    if (selectedLessonType !== 'all') {
-      const hasLessonType = gradeRecords.some(record => 
-        record.date === date && 
-        record.lessonType === selectedLessonType
-      );
-      return hasLessonType;
-    }
-    
     return true;
   });
 
-  // Инициализация данных
-  useEffect(() => {
-    if (students.length === 0) return;
-
-    // Примерные даты занятий
-    const initialDates = [
-      '04.09', '11.09', '18.09', '25.09', '02.10'
-    ];
+  // Функция для автоматического распределения студентов по подгруппам
+  const autoDistributeSubgroups = () => {
+    const newDistribution: Record<number, 'I' | 'II'> = {};
     
-    setAllDates(initialDates);
-
-    // Инициализация записей оценок
-    const initialGradeRecords: GradeRecord[] = [];
-    const initialExamRecords: ExamRecord[] = [];
+    // Сортируем студентов по фамилии для равномерного распределения
+    const sortedStudents = [...students].sort((a, b) => 
+      a.lastName.localeCompare(b.lastName)
+    );
     
-    students.forEach(student => {
-      initialDates.forEach(date => {
-        initialGradeRecords.push({
-          id: Date.now() + Math.random(),
-          studentId: student.id,
-          date: date,
-          lessonType: '',
-          topic: '',
-          grade: ''
-        });
-      });
-
-      // Инициализация экзаменационных записей
-      initialExamRecords.push({
-        id: Date.now() + Math.random(),
-        studentId: student.id,
-        examType: '',
-        grade: ''
-      });
+    sortedStudents.forEach((student, index) => {
+      // Распределяем поочередно - четные в I, нечетные в II
+      newDistribution[student.id] = index % 2 === 0 ? 'I' : 'II';
     });
     
-    setGradeRecords(initialGradeRecords);
-    setExamRecords(initialExamRecords);
+    setStudentSubgroups(newDistribution);
+    console.log('Автораспределение выполнено');
+  };
 
-    // Инициализация подгрупп студентов
-    const initialSubgroups: Record<number, 'I' | 'II' | undefined> = {};
-    students.forEach(student => {
-      initialSubgroups[student.id] = student.subgroup;
-    });
-    setStudentSubgroups(initialSubgroups);
-  }, [students]);
+  // Функция для сохранения распределения по подгруппам
+  const saveSubgroupsDistribution = async () => {
+    if (!idTeacher || !idSt) {
+      alert('ID преподавателя не найден');
+      return;
+    }
+
+    setSavingSubgroups(true);
+    try {
+      console.log('=== СОХРАНЕНИЕ ПОДГРУПП ===');
+
+      // Сохраняем подгруппы
+      const result = await teacherApiService.saveSubgroupsDistribution(
+        idSt, 
+        idTeacher, 
+        studentSubgroups, 
+        groupNumber, 
+        subject
+      );
+      
+      if (result.success) {
+        alert('Распределение по подгруппам успешно сохранено');
+        setShowSubgroupModal(false);
+        
+        // === НЕМЕДЛЕННОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ===
+        console.log('Немедленное обновление интерфейса...');
+        
+        // 1. Очищаем кэш
+        teacherApiService.invalidateStudentCache();
+        teacherApiService.invalidateSubgroupsCache();
+        teacherApiService.invalidateSubjectTeachersCache();
+        
+        // 2. НЕМЕДЛЕННО перезагружаем студентов с сервера
+        console.log('Немедленная перезагрузка студентов...');
+        await loadStudentsFromAllSubgroups(idTeacher, idSt);
+        
+        // 3. Обновляем состояние интерфейса
+        console.log('Обновление состояния интерфейса...');
+        
+        // Принудительно обновляем отображение подгрупп
+        setSelectedSubgroup('all'); // Сбрасываем фильтр чтобы показать всех студентов
+        
+        // Обновляем данные о преподавателях подгрупп
+        await fetchSubjectTeachersData(idTeacher);
+        
+        console.log('Интерфейс успешно обновлен после сохранения подгрупп');
+        
+      } else {
+        throw new Error('Сервер вернул ошибку');
+      }
+      
+    } catch (error: any) {
+      console.error('Ошибка при сохранении подгрупп:', error);
+      
+      let errorMessage = 'Неизвестная ошибка';
+      
+      if (error.message.includes('500')) {
+        errorMessage = `Внутренняя ошибка сервера: ${error.message}`;
+      } else if (error.message.includes('404')) {
+        errorMessage = `Ресурс не найден: ${error.message}`;
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('Network Error')) {
+        errorMessage = 'Ошибка соединения с сервером. Проверьте подключение к интернету.';
+      } else {
+        errorMessage = error.message || 'Неизвестная ошибка';
+      }
+      
+      alert(`Ошибка при сохранении распределения по подгруппам:\n\n${errorMessage}`);
+    } finally {
+      setSavingSubgroups(false);
+    }
+  };
+
+  // Функция для определения размера ячейки
+  const getGradeSize = (grade: string): 'small' | 'medium' | 'large' => {
+    const simpleGrades = ['5', '4', '3', '2', '1', '0', '', 'з', 'нз'];
+    if (simpleGrades.includes(grade)) {
+      return 'small';
+    } else if (grade && grade.length <= 4) {
+      return 'medium';
+    } else {
+      return 'large';
+    }
+  };
 
   // Навигация по таблице с клавишами
   useEffect(() => {
@@ -407,23 +1220,44 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
   // Получение записи оценки для студента и даты
   const getGradeRecord = (studentId: number, date: string): GradeRecord => {
-    const record = gradeRecords.find(record => 
-      record.studentId === studentId && record.date === date
+    const lessonNumber = getLessonNumber(date);
+    const student = students.find(s => s.id === studentId);
+    
+    // Сначала ищем в локальных записях
+    const existingRecord = gradeRecords.find(record => 
+      record.studentId === studentId && record.date === date // используем полную дату с номером
     );
     
-    if (record) {
-      return record;
+    if (existingRecord) {
+      return existingRecord;
     }
     
-    // Если записи нет, создаем новую с глобальным типом занятия
-    const globalLessonType = globalLessonTypes[date] || '';
-    const globalTopic = globalLessonTopics[date] || '';
+    // Если записи нет в локальных данных, проверяем API данные
+    if (student && student.marks) {
+      // Ищем оценку по номеру занятия ИЗ API
+      const apiMark = student.marks.find(mark => mark.number === lessonNumber);
+      if (apiMark && apiMark.value !== null) {
+        console.log(`Found API grade for student ${studentId}, date ${date}, lesson ${lessonNumber}: ${apiMark.value}`);
+        
+        // Создаем запись на основе данных из API
+        return {
+          id: Date.now() + Math.random(),
+          studentId,
+          date, // сохраняем полную дату с номером
+          lessonType: '',
+          topic: '',
+          grade: apiMark.value.toString()
+        };
+      }
+    }
+    
+    // Если записи нет нигде, создаем новую с пустыми значениями
     return {
       id: Date.now() + Math.random(),
       studentId,
-      date,
-      lessonType: globalLessonType as LessonType,
-      topic: globalTopic,
+      date, // сохраняем полную дату с номером
+      lessonType: '',
+      topic: '',
       grade: ''
     };
   };
@@ -459,14 +1293,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         } as GradeRecord;
         return newRecords;
       } else {
-        const globalLessonType = globalLessonTypes[date] || '';
-        const globalTopic = globalLessonTopics[date] || '';
+        // Создаем новую запись с ПУСТЫМИ значениями по умолчанию
         const newRecord: GradeRecord = {
           id: Date.now() + Math.random(),
           studentId,
           date,
-          lessonType: globalLessonType as LessonType,
-          topic: globalTopic,
+          lessonType: '',
+          topic: '',
           grade: '',
           ...updates
         };
@@ -497,7 +1330,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обновление подгруппы студента
-  const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II' | undefined) => {
+  const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II') => {
     setStudentSubgroups(prev => ({
       ...prev,
       [studentId]: subgroup
@@ -515,10 +1348,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   // Начало редактирования ячейки
   const handleCellClick = (
     studentId: number, 
-    date: string, 
+    date: string, // Должен быть в формате "06.11 (1)"
     field: 'grade' | 'lessonType' | 'topic' | 'exam', 
     currentValue: string
   ) => {
+    const record = getGradeRecord(studentId, date);
+    console.log(`Редактирование: студент ${studentId}, дата ${date}, поле ${field}, значение ${currentValue}`);
+    
     setEditingCell({ studentId, date, field });
     setEditValue(currentValue);
   };
@@ -665,6 +1501,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       );
 
+      // Инвалидируем кэш информации о занятиях
+      teacherApiService.invalidateLessonInfoCache();
+
       // Закрываем модальное окно и сбрасываем состояние
       setShowCommentModal(null);
       setCommentText('');
@@ -675,34 +1514,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Обработка двойного клика по теме
-  const handleTopicDoubleClick = (date: string) => {
-    setShowTopicModal(date);
-    setTopicText(globalLessonTopics[date] || '');
-  };
-
-  // Сохранение темы занятия
-  const handleSaveTopic = () => {
-    if (showTopicModal) {
-      setGlobalLessonTopics(prev => ({
-        ...prev,
-        [showTopicModal]: topicText
-      }));
-      
-      // Обновляем тему у всех студентов для этой даты
-      filteredStudents.forEach(student => {
-        updateGradeRecord(student.id, showTopicModal, { topic: topicText });
-      });
-      
-      setShowTopicModal(null);
-      setTopicText('');
-    }
-  };
-
   // Начало редактирования преподавателя
   const handleTeacherEditStart = (subgroup: string) => {
     setEditingTeacher(subgroup);
-    setTeacherEditValue(subgroupTeachers[subgroup]);
+    setTeacherEditValue(subgroupTeachers[selectedSubgroup as 'I' | 'II']);
   };
 
   // Сохранение преподавателя
@@ -718,22 +1533,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const handleTeacherCancel = () => {
     setEditingTeacher(null);
     setTeacherEditValue('');
-  };
-
-  // Обработка изменения глобального типа занятия для даты
-  const handleGlobalLessonTypeChange = (date: string, lessonType: string) => {
-    const lessonTypeValue = lessonType as LessonType;
-    setGlobalLessonTypes(prev => ({
-      ...prev,
-      [date]: lessonTypeValue
-    }));
-    
-    // Автоматически применяем ко всем студентам для этой даты
-    if (lessonTypeValue) {
-      filteredStudents.forEach(student => {
-        updateGradeRecord(student.id, date, { lessonType: lessonTypeValue });
-      });
-    }
   };
 
   // Обработка изменения глобального типа экзамена
@@ -833,6 +1632,76 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
+  // Рендер заголовка даты с кнопками управления
+  const renderDateHeader = (date: string, index: number) => {
+    const lessonNumber = getLessonNumber(date);
+    const lesson = lessonDates.find(l => {
+      const dateObj = new Date(l.date);
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const formattedDate = `${day}.${month}`;
+      return date.startsWith(formattedDate) && l.number === lessonNumber;
+    });
+    
+    // Извлекаем только дату для отображения (без номера)
+    const displayDate = date.split(' (')[0];
+    const typeData = lessonTypesData[date];
+    const lessonType = typeData?.type;
+    
+    return (
+      <th key={index} className="column-date" rowSpan={2}>
+        <div className="date-header-actions">
+          {/* Кнопка с "..." для информации */}
+          <button 
+            className="date-infos-btn"
+            onClick={() => handleDateButtonClick(date)}
+            title="Информация о занятии"
+          >
+            ⋯
+          </button>
+          
+          {/* Кнопка удаления даты */}
+          <button 
+            className="date-delete-btn"
+            onClick={() => handleOpenDeleteDateModal(date, lessonNumber)}
+            title="Удалить столбец с датой"
+          >
+            ×
+          </button>
+        </div>
+          
+          {/* ТОЛЬКО ДАТА БЕЗ НОМЕРА */}
+        <div className="date-content">
+          <div className="date-title-new">
+            {displayDate}
+          </div>
+          
+          {/* Индикатор типа занятия */}
+          {lessonType && (
+            <div className="lesson-type-indicator">
+              {lessonType}
+            </div>
+          )}
+        </div>
+      </th>
+    );
+  };
+
+  // Рендер пустого столбца с "+" для добавления даты
+  const renderAddDateColumn = () => {
+    return (
+      <th className="column-add-date" rowSpan={2}>
+        <div 
+          className="add-date-column"
+          onClick={handleOpenAddDateModal}
+          title="Добавить столбец с датой"
+        >
+          <div className="add-date-plus">+</div>
+        </div>
+      </th>
+    );
+  };
+
   // Рендер таблицы
   const renderTable = () => {
     return (
@@ -843,45 +1712,15 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               {/* Фиксированные колонки слева с rowspan */}
               <th className="column-number sticky-col table-header-rowspan" rowSpan={2}>№</th>
               <th className="column-name sticky-col table-header-rowspan" rowSpan={2}>ФИО</th>
-              <th className="column-subgroup sticky-col table-header-rowspan" rowSpan={2}>Подгруппа</th>
+              {hasMultipleTeachers && (
+                <th className="column-subgroup sticky-col table-header-rowspan" rowSpan={2}>Подгруппа</th>
+              )}
               
               {/* Динамические колонки с датами */}
-              {filteredDates.map((date, index) => (
-                <th key={index} className="column-date" rowSpan={2}>
-                  <div className="date-header">
-                    {/* Тема занятия - редактируется по двойному клику через модальное окно */}
-                    <div 
-                      className={`topic-display ${globalLessonTopics[date] ? 'has-topic scrollable' : ''}`}
-                      onDoubleClick={() => handleTopicDoubleClick(date)}
-                      title={globalLessonTopics[date] 
-                        ? `Тема: ${globalLessonTopics[date]}\nДвойное нажатие для редактирования` 
-                        : 'Двойное нажатие для добавления темы'
-                      }
-                    >
-                      <span className="topic-text">
-                        {globalLessonTopics[date]}
-                      </span>
-                    </div>
-                    
-                    <div className="date-title">{date}</div>
-                    
-                    <div className="lesson-type-select-under-date-container">
-                      <select 
-                        value={globalLessonTypes[date] || ''}
-                        onChange={(e) => handleGlobalLessonTypeChange(date, e.target.value)}
-                        className="lesson-type-select-under-date"
-                      >
-                        <option value=""></option>
-                        {lessonTypeOptions.map(type => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </th>
-              ))}
+              {filteredDates.map((date, index) => renderDateHeader(date, index))}
+
+              {/* Пустой столбец для добавления даты - ВСЕГДА ПОСЛЕДНИЙ */}
+              {renderAddDateColumn()}
               
               {/* Фиксированные колонки справа с rowspan */}
               <th className="column-average sticky-col-right highlight-col table-header-rowspan" rowSpan={2}>Средний балл</th>
@@ -921,19 +1760,22 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                       {student.lastName} {student.firstName} {student.middleName}
                     </div>
                   </td>
-                  <td className="column-subgroup sticky-col">
-                    <div className="cell-subgroup">
-                      <select 
-                        value={studentSubgroups[student.id] || ''}
-                        onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II' | undefined)}
-                        className="subgroup-select"
-                      >
-                        <option value="">-</option>
-                        <option value="I">I</option>
-                        <option value="II">II</option>
-                      </select>
-                    </div>
-                  </td>
+
+                  {hasMultipleTeachers && (
+                    <td className="column-subgroup sticky-col">
+                      <div className="cell-subgroup">
+                        <select 
+                          value={studentSubgroups[student.id] || ''}
+                          onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II')}
+                          className="subgroup-select"
+                        >
+                          <option value="">-</option>
+                          <option value="I">I</option>
+                          <option value="II">II</option>
+                        </select>
+                      </div>
+                    </td>
+                  )}
                   
                   {/* Ячейки с оценками по датам */}
                   {filteredDates.map((date, dateIndex) => {
@@ -970,7 +1812,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                                   border: 'none',
                                   textAlign: 'center',
                                   fontSize: getGradeSize(editValue) === 'small' ? '14px' : 
-                                           getGradeSize(editValue) === 'medium' ? '13px' : '12px'
+                                          getGradeSize(editValue) === 'medium' ? '13px' : '12px'
                                 }}
                               />
                             ) : (
@@ -996,6 +1838,15 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                       </td>
                     );
                   })}
+
+                  {/* Пустая ячейка для добавления даты */}
+                  <td className="column-add-date">
+                    <div 
+
+                    >
+                      <div className="add-date-cell-plus"></div>
+                    </div>
+                  </td>
                   
                   {/* Средний балл */}
                   <td className="column-average sticky-col-right highlight-col">
@@ -1041,8 +1892,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                             {getAvailableExamGrades(examRecord.examType).map(grade => (
                               <option key={grade} value={grade}>
                                 {grade === 'з' ? 'з' : 
-                                 grade === 'нз' ? 'нз' : 
-                                 grade || '-'}
+                                grade === 'нз' ? 'нз' : 
+                                grade || '-'}
                               </option>
                             ))}
                           </select>
@@ -1070,6 +1921,108 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             <option key={grade} value={grade} />
           ))}
         </datalist>
+      </div>
+    );
+  };
+
+  // Рендер модального окна добавления даты
+  const renderAddDateModal = () => {
+    if (!addDateModal.isOpen) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content add-date-modal">
+          <h3>Добавить столбец с датой</h3>
+          
+          <div className="available-lessons-list">
+            <h4>Доступные занятия:</h4>
+            
+            {addDateModal.availableLessons.length === 0 ? (
+              <div className="no-lessons-message">
+                Нет доступных занятий для добавления
+              </div>
+            ) : (
+              <div className="lessons-grid">
+                {addDateModal.availableLessons.map((lesson) => (
+                  <div 
+                    key={lesson.id}
+                    className={`lesson-item ${addDateModal.selectedLesson?.id === lesson.id ? 'selected' : ''}`}
+                    onClick={() => setAddDateModal(prev => ({
+                      ...prev,
+                      selectedLesson: lesson
+                    }))}
+                  >
+                    <div className="lesson-date">
+                      {new Date(lesson.date).toLocaleDateString('ru-RU')}
+                    </div>
+                    <div className="lesson-details">
+                      <div className="lesson-day">{lesson.dayWeek}</div>
+                      <div className="lesson-type">{lesson.typeWeek}</div>
+                      <div className="lesson-pair">Пара: {lesson.numPair}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null })}
+              disabled={managingDate}
+            >
+              Отмена
+            </button>
+            <button 
+              className="gradient-btn" 
+              onClick={handleAddDateColumn}
+              disabled={!addDateModal.selectedLesson || managingDate || addDateModal.availableLessons.length === 0}
+            >
+              {managingDate ? 'Добавление...' : 'Добавить столбец'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер модального окна удаления даты
+  const renderDeleteDateModal = () => {
+    if (!deleteDateModal.isOpen) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content delete-date-modal">
+          <h3>Удалить столбец с датой</h3>
+          
+          <div className="delete-confirmation">
+            <p>Вы уверены, что хотите удалить столбец с датой?</p>
+            <div className="date-to-delete">
+              <strong>{deleteDateModal.dateToDelete}</strong>
+            </div>
+            <p className="warning-text">
+              Внимание: Это действие нельзя отменить. Все оценки для этой даты будут удалены.
+            </p>
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 })}
+              disabled={managingDate}
+            >
+              Отмена
+            </button>
+            <button 
+              className="delete-confirm-btn" 
+              onClick={handleDeleteDateColumn}
+              disabled={managingDate}
+            >
+              {managingDate ? 'Удаление...' : 'Удалить'}
+            </button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1233,7 +2186,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           />
           
           <div className="modal-actions">
-            <button className="gradient-btn" onClick={handleSaveTopic}>
+            <button className="gradient-btn" onClick={() => setShowTopicModal(null)}>
               Сохранить
             </button>
             <button className="cancel-btn" onClick={() => setShowTopicModal(null)}>
@@ -1245,8 +2198,313 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
+  // Рендер модального окна информации о занятии
+  const renderDateModal = () => {
+    if (!showDateModal) return null;
+
+    const handleSaveDateInfo = async () => {
+      if (!showDateModal) return;
+
+      try {
+        const firstStudent = filteredStudents[0];
+        if (!firstStudent) return;
+
+        const success = await saveLessonInfo({
+          studentId: firstStudent.id,
+          lessonNumber: showDateModal.lessonNumber,
+          typeMark: dateModalData.typeMark,
+          comment: dateModalData.comment
+        });
+
+        if (success) {
+          setShowDateModal(null);
+          setDateModalData({ typeMark: '', comment: '' });
+          console.log('Данные успешно сохранены');
+        } else {
+          console.error('Не удалось сохранить данные');
+        }
+        } catch (error) {
+        console.error('Ошибка при сохранении:', error);
+      }
+    };
+
+    const handleCloseModal = () => {
+      setShowDateModal(null);
+      setDateModalData({ typeMark: '', comment: '' });
+    };
+
+    return (
+      <div className="pc-modal-overlay" onClick={handleCloseModal}>
+        <div className="pc-modal expanded" onClick={(e) => e.stopPropagation()}>
+          <div className="pc-modal-header">
+            <h3>Информация о занятии</h3>
+            <button 
+              className="pc-modal-close"
+              onClick={handleCloseModal}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="pc-modal-content">
+            <div className="pc-form-grid">
+              {/* Автоматически заполняемые поля (только для чтения) */}
+              <div className="pc-form-group">
+                <label>Номер недели</label>
+                <input
+                  type="text"
+                  value={showDateModal.numberWeek}
+                  className="pc-input"
+                  readOnly
+                />
+              </div>
+
+              <div className="pc-form-group">
+                <label>День недели</label>
+                <input
+                  type="text"
+                  value={showDateModal.dayWeek}
+                  className="pc-input"
+                  readOnly
+                />
+              </div>
+
+              <div className="pc-form-group">
+                <label>Тип недели</label>
+                <input
+                  type="text"
+                  value={showDateModal.typeWeek}
+                  className="pc-input"
+                  readOnly
+                />
+              </div>
+
+              <div className="pc-form-group">
+                <label>Номер пары</label>
+                <input
+                  type="text"
+                  value={showDateModal.numPair}
+                  className="pc-input"
+                  readOnly
+                />
+              </div>
+
+              {/* Поле для редактирования преподавателем - с градиентным подчеркиванием */}
+              <div className="pc-form-group editable-field required">
+                <label>Тип занятия</label>
+                <select 
+                  value={dateModalData.typeMark}
+                  onChange={(e) => setDateModalData(prev => ({...prev, typeMark: e.target.value}))}
+                  className="pc-input"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="">Выберите тип</option>
+                  <option value="Лекция">Лекция</option>
+                  <option value="Практика">Практическая работа</option>
+                  <option value="Самостоятельная работа">Самостоятельная работа</option>
+                  <option value="Контрольная работа">Контрольная работа</option>
+                  <option value="Домашнее задание">Домашнее задание</option>
+                  <option value="Тест">Тест</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Тема занятия*/}
+            <div className="pc-form-group full-width editable-field required">
+              <label>Тема занятия</label>
+              <textarea
+                value={dateModalData.comment}
+                onChange={(e) => setDateModalData(prev => ({...prev, comment: e.target.value}))}
+                className="pc-input"
+                placeholder="Введите тему занятия..."
+                rows={4}
+              />
+            </div>
+
+            <div className="pc-modal-actions">
+              <button
+                className="pc-confirm-btn"
+                onClick={handleSaveDateInfo}
+                disabled={!dateModalData.typeMark || !dateModalData.comment}
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер модального окна подгрупп
+  const renderSubgroupModal = () => {
+    if (!showSubgroupModal) return null;
+
+    const studentsInSubgroupI = students.filter(student => studentSubgroups[student.id] === 'I');
+    const studentsInSubgroupII = students.filter(student => studentSubgroups[student.id] === 'II');
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content subgroup-modal expanded">
+          <h3>Управление подгруппами</h3>
+          
+          <div className="subgroup-modal-content">
+            <div className="subgroup-stats-centered">
+              <div className="subgroup-stat-centered">
+                <div className="stat-value-centered">{studentsInSubgroupI.length}</div>
+                <div className="stat-label-centered">I подгруппа</div>
+              </div>
+              <div className="subgroup-stat-centered">
+                <div className="stat-value-centered">{studentsInSubgroupII.length}</div>
+                <div className="stat-label-centered">II подгруппа</div>
+              </div>
+              <div className="subgroup-stat-centered">
+                <div className="stat-value-centered">{students.length}</div>
+                <div className="stat-label-centered">Всего студентов</div>
+              </div>
+            </div>
+
+            <div className="subgroup-actions">
+              <button 
+                className="gradient-btn auto-distribute-btn"
+                onClick={autoDistributeSubgroups}
+                disabled={savingSubgroups}
+              >
+                Автораспределение
+              </button>
+            </div>
+
+            <div className="students-list">
+              <div className="students-grid">
+                {students.map((student) => (
+                  <div key={student.id} className="student-subgroup-item">
+                    <span className="student-name">
+                      {student.lastName} {student.firstName} {student.middleName}
+                    </span>
+                    <select 
+                      value={studentSubgroups[student.id] || 'I'}
+                      onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II')}
+                      className="subgroup-select-modal"
+                    >
+                      <option value="I">I подгруппа</option>
+                      <option value="II">II подгруппа</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => setShowSubgroupModal(false)}
+              disabled={savingSubgroups}
+            >
+              Отмена
+            </button>
+            <button 
+              className="gradient-btn" 
+              onClick={saveSubgroupsDistribution}
+              disabled={savingSubgroups}
+            >
+              {savingSubgroups ? 'Сохранение...' : 'Сохранить распределение'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер фильтров с кнопкой добавления даты
+  const renderFilters = () => {
+    return (
+      <div className="performance-filters">
+        <div className="date-range-filter">
+          <div className="date-range-group">
+            <span className="date-range-label">Период с</span>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({...prev, start: e.target.value}))}
+              className="date-range-input"
+            />
+          </div>
+          <div className="date-range-group">
+            <span className="date-range-label">по</span>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({...prev, end: e.target.value}))}
+              className="date-range-input"
+            />
+          </div>
+        </div>
+
+        <div className="type-filters">
+          {/* Отображение преподавателя только при выборе конкретной подгруппы */}
+          {hasMultipleTeachers && (
+            <>
+              {selectedSubgroup !== 'all' && (
+                <div className="filter-group teacher-display">
+                  {editingTeacher === selectedSubgroup ? (
+                    <div className="teacher-edit-container">
+                      <input
+                        ref={teacherInputRef}
+                        type="text"
+                        value={teacherEditValue}
+                        onChange={(e) => setTeacherEditValue(e.target.value)}
+                        onBlur={handleTeacherSave}
+                        onKeyPress={(e) => e.key === 'Enter' && handleTeacherSave()}
+                        className="teacher-edit-input"
+                      />
+                      <button 
+                        className="teacher-save-btn"
+                        onClick={handleTeacherSave}
+                        title="Сохранить"
+                      >
+                        ✓
+                      </button>
+                      <button 
+                        className="teacher-cancel-btn"
+                        onClick={handleTeacherCancel}
+                        title="Отмена"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="teacher-value"
+                      onClick={() => handleTeacherEditStart(selectedSubgroup)}
+                      title="Нажмите для редактирования"
+                    >
+                      {subgroupTeachers[selectedSubgroup as 'I' | 'II']}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="filter-group">
+                <select 
+                  value={selectedSubgroup} 
+                  onChange={(e) => setSelectedSubgroup(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">Все подгруппы</option>
+                  <option value="I">I подгруппа</option>
+                  <option value="II">II подгруппа</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Обработка состояния загрузки
-  if (loading) {
+  if (loading && !idTeacher) {
     return (
       <div className="teacher-performance-section">
         <div className="performance-header">
@@ -1292,7 +2550,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           </div>
           <button 
             className="retry-button"
-            onClick={fetchStudents}
+            onClick={loadAllData}
+            disabled={!idTeacher}
           >
             <svg className="retry-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1305,8 +2564,28 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   }
 
   return (
-    <div className="teacher-performance-section">
-      {/* Заголовок */}
+    <div className={`teacher-performance-section ${hasMultipleTeachers ? 'has-subgroups' : 'no-subgroups'}`}>
+      {/* Заголовок с кнопками информации и обновления */}
+      <div className="performance-cabinet-header">
+        <div className="header-left-actions">
+          {onBackToGroups && (
+            <button className="back-button" onClick={onBackToGroups}>
+              <img src="/th-icons/arrow_icon.svg" alt="Назад" />
+            </button>
+          )}
+          <InfoIcon />
+        </div>
+        <RefreshButton />
+      </div>
+
+      {/* Индикация использования кэша */}
+      {isUsingCache && (
+        <div className="performance-cache-warning">
+          Используются кэшированные данные. Для актуальной информации обновите данные.
+        </div>
+      )}
+
+      {/* Основной заголовок */}
       <div className="performance-header">
         <div className="performance-title-container">
           <div className="performance-title">
@@ -1318,9 +2597,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             </div>
           </div>
           <div className="performance-actions">
-            {onBackToGroups && (
-              <button className="back-button" onClick={onBackToGroups}>
-                <img src="/th-icons/arrow_icon.svg" alt="Назад" />
+            {hasMultipleTeachers && (
+              <button 
+                className="gradient-btn subgroup-management-btn"
+                onClick={() => setShowSubgroupModal(true)}
+                title="Управление подгруппами"
+              >
+                Управление подгруппами
               </button>
             )}
             <button className="gradient-btn set-attendance-btn" onClick={handleSetAttendance}>
@@ -1330,99 +2613,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         </div>
       </div>
 
-      {/* Фильтры */}
-      <div className="performance-filters">
-        <div className="date-range-filter">
-          <div className="date-range-group">
-            <span className="date-range-label">Период с</span>
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({...prev, start: e.target.value}))}
-              className="date-range-input"
-            />
-          </div>
-          <div className="date-range-group">
-            <span className="date-range-label">по</span>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({...prev, end: e.target.value}))}
-              className="date-range-input"
-            />
-          </div>
-        </div>
-
-        <div className="type-filters">
-          {/* Отображение преподавателя только при выборе конкретной подгруппы */}
-          {selectedSubgroup !== 'all' && (
-            <div className="filter-group teacher-display">
-              {editingTeacher === selectedSubgroup ? (
-                <div className="teacher-edit-container">
-                  <input
-                    ref={teacherInputRef}
-                    type="text"
-                    value={teacherEditValue}
-                    onChange={(e) => setTeacherEditValue(e.target.value)}
-                    onBlur={handleTeacherSave}
-                    onKeyPress={(e) => e.key === 'Enter' && handleTeacherSave()}
-                    className="teacher-edit-input"
-                  />
-                  <button 
-                    className="teacher-save-btn"
-                    onClick={handleTeacherSave}
-                    title="Сохранить"
-                  >
-                    ✓
-                  </button>
-                  <button 
-                    className="teacher-cancel-btn"
-                    onClick={handleTeacherCancel}
-                    title="Отмена"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  className="teacher-value"
-                  onClick={() => handleTeacherEditStart(selectedSubgroup)}
-                  title="Нажмите для редактирования"
-                >
-                  {subgroupTeachers[selectedSubgroup]}
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="filter-group">
-            <select 
-              value={selectedSubgroup} 
-              onChange={(e) => setSelectedSubgroup(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Все подгруппы</option>
-              <option value="I">I подгруппа</option>
-              <option value="II">II подгруппа</option>
-            </select>
-          </div>
-          
-          <div className="filter-group">
-            <select 
-              value={selectedLessonType} 
-              onChange={(e) => setSelectedLessonType(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Все типы занятий</option>
-              {lessonTypeFilters.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      {/* Фильтры с кнопкой добавления даты */}
+      {renderFilters()}
 
       {/* Таблица успеваемости */}
       <div className="performance-table-container">
@@ -1450,6 +2642,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       {/* Модальные окна */}
       {renderCommentModal()}
       {renderTopicModal()}
+      {renderDateModal()}
+      {renderSubgroupModal()}
+      {renderAddDateModal()}
+      {renderDeleteDateModal()}
     </div>
   );
 };
