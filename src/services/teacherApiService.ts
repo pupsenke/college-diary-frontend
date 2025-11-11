@@ -163,6 +163,31 @@ export interface Subject {
   subjectName: string;
 }
 
+// Для типа занятия
+
+export interface UpdateMarkRequest {
+  idTeacher: number;
+  idGroup: number;
+  idStudent: number;
+  idSt: number;
+  number: number;
+  idTypeMark: number;
+}
+
+export interface ApiLessonType {
+  id: number;
+  idSt: number;
+  name: string;
+  weight: number;
+}
+
+export interface StData {
+  id: number;
+  teachers: number[];
+  idSubject: number;
+  groups: number[];
+}
+
 /* Для столбцов с датами */
 
 export interface AddDateColumnRequest {
@@ -178,6 +203,36 @@ export interface DeleteDateColumnRequest {
   idTeacher: number;
   number: number;
 }
+
+export interface CreateSupplementRequest {
+  idTypeMark: number;
+  comment: string;
+  idStudent: number;
+  idSt: number;
+  number: number;
+  idTeacher: number;
+}
+
+// Оценки
+
+export interface UpdateMarkGradeRequest {
+  idStudent: number;
+  idSt: number;
+  mark: number;
+  number: number;
+}
+
+export interface ChangeHistory {
+  id: number;
+  dateTime: string;
+  action: string;
+  idSupplement: number | null;
+  comment: string | null;
+  files: string[] | null;
+  teacherOrStudent: boolean; // true - преподаватель, false - студент
+  newValue: string | null;
+}
+
 
 /* Для подгрупп */
 
@@ -210,6 +265,37 @@ export interface SubgroupDeleteStudentsRequest {
   idTeacher: number;
   idSt: number;
   students: number[];
+}
+
+/* Для посещаемости */
+
+export interface AttendanceRecord {
+  idStudent: number;
+  lastName: string;
+  name: string;        // это соответствует firstName
+  patronymic: string;  // это соответствует middleName
+  subgroup?: 'I' | 'II'; // добавляем опциональное поле подгруппы
+  attendances: Array<{
+    idLesson: number;
+    date: string;
+    status: string | null;
+    comment: string | null;
+  }>;
+}
+
+export interface AttendanceStatus {
+  idLesson: number;
+  idTeacher: number;
+  status: string;
+  comment: string | null;
+}
+
+export interface UpdateAttendanceRequest {
+  idLesson: number;
+  idTeacher: number;
+  status: string;
+  comment: string;
+  idStudent: number;
 }
 
   export const teacherApiService = {
@@ -1089,6 +1175,249 @@ export interface SubgroupDeleteStudentsRequest {
     }
   },
 
+    /**
+   * Получение информации о занятиях для конкретного ST, группы и преподавателя
+   */
+  async getLessonsInfo(idSt: number, groupId: number, teacherId: number): Promise<any[]> {
+    const cacheKey = `lessons_info_${idSt}_${groupId}_${teacherId}`;
+    
+    const cached = cacheService.get<any[]>(cacheKey, { 
+      ttl: CACHE_TTL.LESSON_DATES 
+    });
+    
+    if (cached) {
+      console.log(`Lessons info loaded from cache`);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching lessons info from server`);
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Lessons info received:', data);
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.LESSON_DATES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching lessons info:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Создание новой записи supplement
+   */
+  async createSupplement(
+    idTypeMark: number, 
+    comment: string,
+    studentId: number,
+    idSt: number,
+    lessonNumber: number
+  ): Promise<{ success: boolean; idSupplement?: number }> {
+    try {
+      console.log('Creating new supplement:', { 
+        idTypeMark, 
+        comment, 
+        studentId, 
+        idSt, 
+        lessonNumber 
+      });
+
+      // Получаем teacherId из localStorage
+      const teacherId = localStorage.getItem('teacher_id');
+      if (!teacherId) {
+        throw new Error('Teacher ID not found in localStorage');
+      }
+
+      // Формируем запрос на создание supplement
+      const createRequest = {
+        idTypeMark: idTypeMark,
+        comment: comment,
+        idStudent: studentId,
+        idSt: idSt,
+        number: lessonNumber,
+        idTeacher: parseInt(teacherId)
+      };
+
+      console.log('Create supplement request:', createRequest);
+
+      const response = await fetchWithTimeout(`${API_BASE_URL}/changes/add/supplement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(createRequest),
+      });
+
+      console.log('Create supplement response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Create supplement error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка создания записи занятия: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Create supplement response:', responseData);
+
+      // Предполагаем, что API возвращает ID созданной записи
+      const idSupplement = responseData.id || responseData.idSupplement;
+      
+      // Инвалидируем кэш
+      this.invalidateLessonInfoCache();
+      
+      console.log('Supplement created successfully, ID:', idSupplement);
+      return { 
+        success: true, 
+        idSupplement: idSupplement
+      };
+    } catch (error) {
+      console.error('Error creating supplement:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Обновление типа занятия в supplement
+   */
+  async updateSupplementType(idSupplement: number, idTypeMark: number): Promise<{ success: boolean }> {
+    try {
+      console.log('Updating supplement type:', { idSupplement, idTypeMark });
+      
+      // Обновляем supplement с новым типом занятия
+      const updateData = {
+        id: idSupplement,
+        idTypeMark: idTypeMark
+      };
+
+      console.log('Update supplement request data:', updateData);
+
+      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      console.log('Update supplement response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update supplement error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка обновления типа занятия: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Update supplement response:', responseText);
+      
+      // Инвалидируем кэш информации о занятиях
+      this.invalidateLessonInfoCache();
+      
+      console.log('Supplement type updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating supplement type:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Обновление комментария/темы занятия
+   */
+  async updateLessonComment(idSupplement: number, comment: string): Promise<{ success: boolean }> {
+    try {
+      console.log('Updating lesson comment:', { idSupplement, comment });
+      
+      // ПРАВИЛЬНЫЙ endpoint для обновления комментария
+      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Update lesson comment response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update lesson comment error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка обновления комментария: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Update lesson comment response:', responseText);
+      
+      // Инвалидируем кэш информации о занятиях
+      this.invalidateLessonInfoCache();
+      
+      console.log('Lesson comment updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating lesson comment:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Получение ID занятия по номеру и другим параметрам
+   */
+  async getLessonId(idSt: number, groupId: number, teacherId: number, lessonNumber: number): Promise<number | null> {
+    try {
+      console.log(`Getting lesson ID for number ${lessonNumber}`);
+      
+      const lessonsInfo = await this.getLessonsInfo(idSt, groupId, teacherId);
+      
+      // Ищем занятие с нужным номером
+      const lesson = lessonsInfo.find((lesson: any) => lesson.number === lessonNumber);
+      
+      if (lesson) {
+        console.log(`Found lesson ID: ${lesson.id} for number ${lessonNumber}`);
+        return lesson.id;
+      }
+      
+      console.warn(`Lesson not found for number ${lessonNumber}`);
+      return null;
+    } catch (error) {
+      console.error('Error getting lesson ID:', error);
+      return null;
+    }
+  },
+
    // Получение данных о предметах и преподавателях
   async getSubjectTeachersData(): Promise<SubjectTeacherData[]> {
     const cacheKey = 'subject_teachers_data';
@@ -1546,6 +1875,451 @@ export interface SubgroupDeleteStudentsRequest {
     }
   },
 
+  /* Тип занятия */
+
+    /**
+   * Получение данных о занятии (ST)
+   */
+  async getStData(idSt: number): Promise<StData | null> {
+    const cacheKey = `st_data_${idSt}`;
+    
+    const cached = cacheService.get<StData>(cacheKey, { 
+      ttl: CACHE_TTL.SUBJECT_TEACHERS 
+    });
+    
+    if (cached) {
+      console.log(`ST data for ${idSt} loaded from cache`);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching ST data for ${idSt} from server`);
+      const response = await fetchWithTimeout(`${API_BASE_URL}/st`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const allStData: StData[] = await response.json();
+      const stData = allStData.find(item => item.id === idSt);
+      
+      if (stData) {
+        cacheService.set(cacheKey, stData, { 
+          ttl: CACHE_TTL.SUBJECT_TEACHERS 
+        });
+      }
+      
+      return stData || null;
+    } catch (error) {
+      console.error('Error fetching ST data:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Получение типов занятий для конкретного ST
+   */
+  async getLessonTypes(stId: number): Promise<ApiLessonType[]> {
+    const cacheKey = `lesson_types_${stId}`;
+    
+    const cached = cacheService.get<ApiLessonType[]>(cacheKey, { 
+      ttl: CACHE_TTL.LESSON_TYPES 
+    });
+    
+    if (cached) {
+      console.log(`Lesson types for ST ${stId} loaded from cache:`, cached.length);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching lesson types for ST ${stId} from server`);
+      const response = await fetchWithTimeout(`${API_BASE_URL}/typeMarks/st/${stId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const lessonTypes: ApiLessonType[] = await response.json();
+      console.log(`Received ${lessonTypes.length} lesson types for ST ${stId}:`, lessonTypes);
+      
+      cacheService.set(cacheKey, lessonTypes, { 
+        ttl: CACHE_TTL.LESSON_TYPES 
+      });
+      
+      return lessonTypes;
+    } catch (error) {
+      console.error('Error fetching lesson types:', error);
+      // Возвращаем пустой массив вместо выброса ошибки
+      return [];
+    }
+  },
+
+  /**
+   * Обновление типа занятия для оценки
+   */
+  async updateLessonType(updateRequest: UpdateMarkRequest): Promise<{ success: boolean }> {
+    try {
+      console.log('Updating lesson type with request:', updateRequest);
+      
+      // ДОБАВИМ ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
+      console.log('=== ДЕТАЛИ ЗАПРОСА НА ОБНОВЛЕНИЕ ТИПА ===');
+      console.log('URL:', `${API_BASE_URL}/marks/updateOneMark`);
+      console.log('Request body:', JSON.stringify(updateRequest, null, 2));
+      
+      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateRequest),
+      });
+
+      console.log('Update lesson type response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update lesson type error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.error('Update lesson type error JSON:', errorData);
+        } catch (e) {
+          errorData = { message: errorText };
+        }
+        
+        throw new Error(`Ошибка обновления типа занятия: ${response.status} - ${errorData.message || errorText}`);
+      }
+
+      // Читаем ответ как текст сначала
+      const responseText = await response.text();
+      console.log('Update lesson type raw response:', responseText);
+      
+      let result;
+      try {
+        // Пытаемся распарсить JSON, если ответ не пустой
+        result = responseText ? JSON.parse(responseText) : { success: true };
+        console.log('Update lesson type parsed result:', result);
+      } catch (e) {
+        // Если не JSON, считаем успешным
+        console.log('Response is not JSON, treating as success');
+        result = { success: true };
+      }
+      
+      // Инвалидируем кэш оценок и информации о занятиях
+      this.invalidateStudentCache(updateRequest.idGroup, updateRequest.idSt, updateRequest.idTeacher);
+      this.invalidateLessonInfoCache();
+      this.invalidateLessonDatesCache(updateRequest.idGroup, updateRequest.idSt, updateRequest.idTeacher);
+      
+      console.log('Lesson type updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating lesson type:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Получение ID типа занятия по названию
+   */
+  getLessonTypeIdByName(lessonTypes: ApiLessonType[], typeName: string): number | null {
+    if (!lessonTypes || lessonTypes.length === 0) {
+      console.error('Lesson types array is empty');
+      return null;
+    }
+
+    console.log('=== ПОИСК ID ТИПА ЗАНЯТИЯ ===');
+    console.log('Искомый тип:', typeName);
+    console.log('Доступные типы:', lessonTypes.map(lt => ({ id: lt.id, name: lt.name })));
+
+    // Карта для корректного сопоставления названий (учитывая опечатки в API)
+    const typeMap: Record<string, string> = {
+      'Лекция': 'Лекция',
+      'Практическая работа': 'Практическая работа', 
+      'Самостоятельная работа': 'Самостоятелья работа', // опечатка в API
+      'Контрольная работа': 'Контрольная работа',
+      'Домашняя работа': 'Домашняя работа',
+      'Тест': 'Тест',
+      'Л': 'Лекция',
+      'ПР': 'Практическая работа',
+      'СР': 'Самостоятелья работа',
+      'КР': 'Контрольная работа',
+      'ДЗ': 'Домашняя работа',
+      'Т': 'Тест'
+    };
+
+    // Нормализуем название типа
+    const normalizedTypeName = typeMap[typeName] || typeName;
+    
+    console.log(`Нормализованное название: "${normalizedTypeName}"`);
+
+    // Ищем точное совпадение
+    let lessonType = lessonTypes.find(lt => 
+      lt.name.toLowerCase() === normalizedTypeName.toLowerCase()
+    );
+    
+    // Если не нашли, ищем частичное совпадение
+    if (!lessonType) {
+      console.log('Точное совпадение не найдено, ищем частичное...');
+      lessonType = lessonTypes.find(lt => 
+        lt.name.toLowerCase().includes(normalizedTypeName.toLowerCase()) || 
+        normalizedTypeName.toLowerCase().includes(lt.name.toLowerCase())
+      );
+    }
+    
+    if (lessonType) {
+      console.log(`Найден ID типа: ${lessonType.id} для названия: "${typeName}" (сопоставлено: "${lessonType.name}")`);
+      return lessonType.id;
+    }
+    
+    console.error(`Тип занятия не найден: "${typeName}". Доступные типы:`, lessonTypes.map(lt => lt.name));
+    return null;
+  },
+
+  // инвалидация кэша для типов занятий
+    invalidateLessonTypesCache(stId?: number): void {
+    if (stId) {
+      cacheService.remove(`lesson_types_${stId}`);
+      cacheService.remove(`st_data_${stId}`);
+    } else {
+      // Удаляем все кэши типов занятий
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('cache_lesson_types_') || key.includes('cache_st_data_'))) {
+          cacheService.remove(key.replace('cache_', ''));
+        }
+      }
+    }
+  },
+
+  // Оценки - обновление
+
+  async updateMark(updateRequest: UpdateMarkGradeRequest): Promise<{ success: boolean }> {
+    try {
+      console.log('Updating mark:', updateRequest);
+      
+      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateRequest),
+      });
+
+      console.log('Update mark response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update mark error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка обновления оценки: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Update mark response:', responseText);
+      
+      // Инвалидируем кэш студентов
+      this.invalidateStudentCache();
+      
+      console.log('Mark updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating mark:', error);
+      throw error;
+    }
+  },
+
+    /**
+   * Получение истории изменений для студента
+   */
+  async getStudentChangeHistory(studentId: number, idSt: number, lessonNumber: number): Promise<ChangeHistory[]> {
+    try {
+      console.log(`Fetching change history for student ${studentId}, st ${idSt}, lesson ${lessonNumber}`);
+      
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/changes/mark/st/${idSt}/student/${studentId}/number/${lessonNumber}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('Change history not found, returning empty array');
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const history: ChangeHistory[] = await response.json();
+      console.log('Change history received:', history.length, 'items');
+      
+      return history;
+    } catch (error) {
+      console.error('Error fetching change history:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Добавление комментария преподавателя к оценке
+   */
+  async addTeacherComment(request: {
+    idTeacher: number;
+    idGroup: number;
+    idStudent: number;
+    idSt: number;
+    number: number;
+    comment: string;
+  }): Promise<{ success: boolean; idSupplement?: number }> {
+    try {
+      console.log('Adding teacher comment:', request);
+
+      // Сначала создаем запись изменения
+      const addResponse = await fetchWithTimeout(
+        `${API_BASE_URL}/changes/add/teacher/st/${request.idSt}/student/${request.idStudent}/number/${request.number}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idTeacher: request.idTeacher,
+            idGroup: request.idGroup,
+            idStudent: request.idStudent,
+            idSt: request.idSt,
+            number: request.number
+          }),
+        }
+      );
+
+      console.log('Add teacher comment response status:', addResponse.status);
+      
+      if (!addResponse.ok) {
+        let errorText = '';
+        try {
+          errorText = await addResponse.text();
+          console.error('Add teacher comment error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка при создании записи: ${addResponse.status} - ${errorText}`);
+      }
+
+      const addResult = await addResponse.json();
+      const idSupplement = addResult.idSupplement || addResult.id;
+
+      console.log('Teacher comment created, supplement ID:', idSupplement);
+
+      // Если есть комментарий и idSupplement, обновляем его
+      if (idSupplement && request.comment) {
+        console.log('Updating comment for supplement:', idSupplement);
+        await this.updateLessonComment(idSupplement, request.comment);
+      }
+
+      return { success: true, idSupplement };
+    } catch (error) {
+      console.error('Error adding teacher comment:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Добавление файлов к комментарию преподавателя
+   */
+  async addTeacherCommentFiles(idSupplement: number, files: File[]): Promise<{ success: boolean; fileUrls?: string[] }> {
+    try {
+      console.log('Adding teacher comment files:', { idSupplement, fileCount: files.length });
+      
+      const uploadedUrls: string[] = [];
+      
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
+        
+        // Используем fetch напрямую без обертки, чтобы не устанавливать Content-Type
+        const response = await fetch(
+          `${API_BASE_URL}/supplements/add/files/id/${idSupplement}`,
+          {
+            method: 'POST',
+            body: formData,
+            // НЕ устанавливаем Content-Type - браузер сделает это автоматически с boundary
+          }
+        );
+
+        console.log('File upload response status:', response.status);
+        
+        if (!response.ok) {
+          let errorText = '';
+          try {
+            errorText = await response.text();
+            console.error('File upload error text:', errorText);
+          } catch (e) {
+            errorText = 'Не удалось прочитать текст ошибки';
+          }
+          
+          throw new Error(`Ошибка загрузки файла ${file.name}: ${response.status} - ${errorText}`);
+        }
+
+        // Пытаемся получить ответ как текст или JSON
+        let result;
+        try {
+          const responseText = await response.text();
+          console.log('File upload raw response:', responseText);
+          
+          if (responseText) {
+            result = JSON.parse(responseText);
+          } else {
+            result = { success: true };
+          }
+        } catch (parseError) {
+          console.log('Response is not JSON, treating as success');
+          result = { success: true };
+        }
+        
+        if (result.fileUrl) {
+          uploadedUrls.push(result.fileUrl);
+        } else {
+          // Если API не возвращает URL, считаем успешным
+          console.log('File uploaded successfully, but no URL returned');
+          uploadedUrls.push(`uploaded://${file.name}`);
+        }
+      }
+      
+      console.log('All files uploaded successfully, URLs:', uploadedUrls);
+      return { success: true, fileUrls: uploadedUrls };
+    } catch (error) {
+      console.error('Error adding teacher comment files:', error);
+      throw error;
+    }
+  },
+
   /* Подгруппы */
 
   // Получение подгрупп для конкретного преподавателя
@@ -1962,6 +2736,256 @@ export interface SubgroupDeleteStudentsRequest {
     } catch (error) {
       console.error('Ошибка проверки подгрупп:', error);
       throw error;
+    }
+  },
+
+    /* Посещаемость */
+
+  /**
+   * Получение всех занятий (lessons)
+   */
+  async getAllLessons(): Promise<any[]> {
+    const cacheKey = 'all_lessons';
+    
+    const cached = cacheService.get<any[]>(cacheKey, { 
+      ttl: CACHE_TTL.LESSON_DATES 
+    });
+    
+    if (cached) {
+      console.log('All lessons loaded from cache');
+      return cached;
+    }
+
+    try {
+      console.log('Fetching all lessons from server');
+      const response = await fetchWithTimeout(`${API_BASE_URL}/lessons`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('All lessons received:', data.length);
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.LESSON_DATES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching all lessons:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Получение списка студентов с посещаемостью для группы через новый endpoint
+   */
+
+  async getGroupAttendance(groupNumber: string, idSt: number, teacherId: number): Promise<any[]> {
+    const cacheKey = `group_attendance_${groupNumber}_${idSt}_${teacherId}`;
+    
+    const cached = cacheService.get<any[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      
+      // ПРЕОБРАЗУЕМ НОМЕР ГРУППЫ В ID
+      const groupId = this.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        return [];
+      }
+      
+      
+      // ИСПОЛЬЗУЕМ ID ГРУППЫ В ЗАПРОСЕ
+      const url = `${API_BASE_URL}/attendances/group/${groupId}/st/${idSt}/teacher/${teacherId}`;
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!Array.isArray(data)) {
+        return [];
+      }
+            
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+
+      return [];
+    }
+  },
+
+  /**
+   * Преобразование данных посещаемости в формат студентов
+   */
+  transformAttendanceToStudents(attendanceData: AttendanceRecord[]): Student[] {
+    return attendanceData.map(studentData => ({
+      id: studentData.idStudent,
+      lastName: studentData.lastName,
+      firstName: studentData.name, // name -> firstName
+      middleName: studentData.patronymic,
+      subgroup: studentData.subgroup
+    }));
+  },
+
+  /**
+   * Получение статуса посещаемости для конкретного студента и занятия
+   */
+  async getStudentAttendance(lessonId: number, studentId: number): Promise<AttendanceStatus> {
+    const cacheKey = `student_attendance_${lessonId}_${studentId}`;
+    
+    const cached = cacheService.get<AttendanceStatus>(cacheKey, { 
+      ttl: CACHE_TTL.ATTENDANCE_DATA 
+    });
+    
+    if (cached) {
+      console.log(`Student ${studentId} attendance for lesson ${lessonId} loaded from cache`);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching student ${studentId} attendance for lesson ${lessonId} from server`);
+      
+      const url = `${API_BASE_URL}/attendances/lesson/${lessonId}/student/${studentId}`;
+      console.log('Request URL:', url);
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Если запись не найдена, возвращаем пустой статус
+          return {
+            idLesson: lessonId,
+            idTeacher: 0,
+            status: '',
+            comment: null
+          };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: AttendanceStatus = await response.json();
+      console.log('Student attendance data received:', data);
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.ATTENDANCE_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching student attendance:', error);
+      // В случае ошибки возвращаем пустой статус
+      return {
+        idLesson: lessonId,
+        idTeacher: 0,
+        status: '',
+        comment: null
+      };
+    }
+  },
+
+  /**
+   * Обновление статуса посещаемости с комментарием
+   */
+  async updateAttendance(updateRequest: UpdateAttendanceRequest): Promise<{ success: boolean }> {
+    try {
+      console.log('Updating attendance:', updateRequest);
+      
+      // ПРАВИЛЬНЫЙ endpoint с учетом studentId
+      const url = `${API_BASE_URL}/attendances/student/${updateRequest.idStudent}`;
+      console.log('Update attendance URL:', url);
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idLesson: updateRequest.idLesson,
+          idTeacher: updateRequest.idTeacher,
+          status: updateRequest.status,
+          comment: updateRequest.comment
+        }),
+      });
+
+      console.log('Update attendance response status:', response.status);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update attendance error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        // Детальная диагностика ошибки
+        let errorMessage = `Ошибка обновления посещаемости: ${response.status}`;
+        if (errorText) {
+          errorMessage += ` - ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Обработка успешного ответа
+      const responseText = await response.text();
+      console.log('Update attendance response:', responseText);
+      
+      // Инвалидируем кэш посещаемости
+      this.invalidateAttendanceCache();
+      
+      console.log('Attendance updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Инвалидация кэша посещаемости
+   */
+  invalidateAttendanceCache(): void {
+    // Удаляем все кэши связанные с посещаемостью
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('cache_group_attendance_') || key.includes('cache_student_attendance_'))) {
+        cacheService.remove(key.replace('cache_', ''));
+      }
     }
   },
 };

@@ -69,9 +69,8 @@ body.menu-collapsed .teacher-performance-section {
 .performance-actions .gradient-btn {
   padding: 10px 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   min-width: 180px;
-  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,9 +81,9 @@ body.menu-collapsed .teacher-performance-section {
 .subgroup-management-btn {
   padding: 10px 20px !important;
   font-size: 14px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   min-width: 180px !important;
-  height: 44px !important;
+  height: 40px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -94,9 +93,9 @@ body.menu-collapsed .teacher-performance-section {
 .set-attendance-btn {
   padding: 10px 20px !important;
   font-size: 14px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   min-width: 180px !important;
-  height: 44px !important;
+  height: 40px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -134,7 +133,7 @@ body.menu-collapsed .teacher-performance-section {
   padding: 10px 20px !important;
   border-radius: 8px !important;
   cursor: pointer !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   font-size: 14px !important;
   transition: all 0.2s ease !important;
   white-space: nowrap !important;
@@ -207,7 +206,7 @@ body.menu-collapsed .teacher-performance-section {
   padding: 10px 20px !important;
   border-radius: 8px !important;
   cursor: pointer !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   font-size: 14px !important;
   transition: all 0.2s ease !important;
   min-width: 180px !important;
@@ -215,6 +214,7 @@ body.menu-collapsed .teacher-performance-section {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  margin-top: 16px;
 }
 
 .modal-actions .gradient-btn:hover:not(:disabled) {
@@ -268,6 +268,7 @@ body.menu-collapsed .teacher-performance-section {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  margin-top: 16px;
 }
 
 .modal-actions .cancel-btn:hover {
@@ -393,124 +394,166 @@ body.menu-collapsed .teacher-performance-section {
   font-weight: 500;
 }
 
-/* Стили для модальных окон */
-.pc-modal-overlay {
+/* Стили для модального окна информации о занятии (успеваемость) */
+.lesson-info-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(50, 64, 124, 0.3);
+  background: rgba(50, 64, 124, 0.3);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
 }
 
-.pc-modal {
+.lesson-info-modal {
   background: white;
   border-radius: 12px;
   padding: 0;
   width: 95%;
-  max-width: 800px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modal-appear 0.2s ease-out;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes modal-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.pc-modal-header {
+.lesson-info-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 24px 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
   border-radius: 12px 12px 0 0;
-  color: white;
 }
 
-.pc-modal-header h3 {
+.lesson-info-modal-header h3 {
   margin: 0;
+  color: #002FA7;
   font-size: 20px;
   font-weight: 600;
-  color: white;
 }
 
-.pc-modal-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  font-size: 24px;
+.lesson-info-modal-close {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 20px;
   cursor: pointer;
-  color: white;
-  padding: 4px 8px;
-  width: 32px;
-  height: 32px;
+  color: #64748b;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
-.pc-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+.lesson-info-modal-close:hover {
+  background: #e2e8f0;
+  color: #374151;
 }
 
-.pc-modal-content {
-  padding: 24px;
+.lesson-info-modal-content {
+  padding: 0;
+  background: white;
 }
 
-/* Новые стили для двухколоночного расположения */
-.pc-form-grid {
+/* Детальная информация о занятии */
+.lesson-details-info {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.info-section-header {
+  background: #f8fafc;
+  color: #002FA7;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-section-content {
+  padding: 20px;
+}
+
+/* Сетка 4 колонки для информации о занятии */
+.info-grid-4 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.info-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  min-height: 70px;
+  justify-content: center;
+}
+
+.info-grid-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.info-grid-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+/* Секция управления занятием */
+.attendance-stats-section {
+  background: white;
+  overflow: hidden;
+}
+
+.attendance-stats-header {
+  background: #f8fafc;
+  color: #002FA7;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.attendance-stats-content {
+  padding: 20px;
+}
+
+/* Стили для форм */
+.form-group-full-width {
   margin-bottom: 20px;
 }
 
-.pc-form-group {
-  margin-bottom: 20px;
-}
-
-.pc-form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-/* Базовые стили для всех labels */
-.pc-form-group label {
+.form-label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
   font-size: 14px;
 }
 
-/* Стили только для редактируемых полей (тип занятия и тема) */
-.pc-form-group.editable-field label {
-  font-weight: 600;
-  font-size: 14px;
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Упрощенные стили для инпутов */
-.pc-input {
+.form-input {
   width: 100%;
   padding: 12px 16px;
   border: 2px solid #e5e7eb;
@@ -519,62 +562,142 @@ body.menu-collapsed .teacher-performance-section {
   transition: all 0.2s ease;
   background-color: white;
   box-sizing: border-box;
-}
-
-.pc-modal * {
-  cursor: auto;
-}
-
-.pc-modal .pc-input {
   cursor: pointer;
 }
 
-/* Read-only инпуты */
-.pc-modal .pc-input:read-only,
-.pc-modal .pc-input[readonly] {
-  cursor: not-allowed !important;
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Текстовые поля */
-.pc-modal .pc-input[type="text"]:not(:read-only),
-.pc-modal .pc-input:not([readonly]) {
+.form-input:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
   cursor: text;
 }
 
-/* Select */
-.pc-modal select.pc-input,
-.pc-modal .pc-input select {
-  cursor: pointer !important;
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Textarea */
-.pc-modal textarea.pc-input,
-.pc-modal .pc-input textarea {
-  cursor: text !important;
-  resize: vertical;
+.form-textarea:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.pc-modal .pc-form-group:not(:has(.pc-input:read-only)) .pc-input,
-.pc-modal .pc-form-group:not(:has(.pc-input[readonly])) .pc-input {
-  cursor: pointer;
+.form-help-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
-.pc-modal .pc-form-group:not(:has(.pc-input:read-only)) .pc-input:hover,
-.pc-modal .pc-form-group:not(:has(.pc-input[readonly])) .pc-input:hover {
-  cursor: pointer;
+/* Кнопки действий */
+.lesson-info-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
 }
 
-/* Специфично для полей типа занятия и темы */
-.pc-modal .pc-form-group.editable-field .pc-input {
-  cursor: pointer !important;
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .lesson-info-modal {
+    width: 95%;
+    margin: 20px;
+    max-height: 95vh;
+  }
+  
+  .lesson-info-modal-header {
+    padding: 20px;
+  }
+  
+  .lesson-info-modal-header h3 {
+    font-size: 18px;
+  }
+  
+  .info-section-content,
+  .attendance-stats-content {
+    padding: 16px;
+  }
+  
+  .info-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .info-grid-item {
+    padding: 14px 8px;
+    min-height: 65px;
+  }
+  
+  .info-grid-value {
+    font-size: 13px;
+  }
+  
+  .form-input,
+  .form-textarea {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
 }
 
-.pc-modal .pc-form-group.editable-field select.pc-input {
-  cursor: pointer !important;
-}
-
-.pc-modal .pc-form-group.editable-field textarea.pc-input {
-  cursor: text !important;
+@media (max-width: 480px) {
+  .lesson-info-modal-header {
+    padding: 16px;
+  }
+  
+  .info-section-content,
+  .attendance-stats-content {
+    padding: 12px;
+  }
+  
+  .info-grid-4 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .info-grid-item {
+    padding: 12px 8px;
+    min-height: 60px;
+  }
+  
+  .info-grid-label {
+    font-size: 10px;
+  }
+  
+  .info-grid-value {
+    font-size: 12px;
+  }
+  
+  .lesson-info-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .gradient-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Стили для управления датами */
@@ -786,7 +909,6 @@ body.menu-collapsed .teacher-performance-section {
 
 .date-header-new.empty-date .date-title-new {
   color: #94a3b8;
-  font-style: italic;
 }
 
 /* Эффект при клике */
@@ -862,7 +984,6 @@ body.menu-collapsed .teacher-performance-section {
   text-align: center;
   padding: 40px;
   color: #666;
-  font-style: italic;
 }
 
 .delete-confirmation {
@@ -1799,11 +1920,12 @@ body.menu-collapsed .column-date {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(50, 64, 124, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -1926,6 +2048,648 @@ body.menu-collapsed .column-date {
   color: white;
   border-color: #8f949b;
   transform: scale(1.05);
+}
+
+/* Стили для модального окна изображения */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.image-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.image-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.image-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.image-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  margin-left: 16px;
+  transition: color 0.2s ease;
+}
+
+.image-modal-close:hover {
+  color: #ef4444;
+}
+
+.image-modal-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8fafc;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.modal-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.image-modal-actions {
+  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+  display: flex;
+  justify-content: center;
+}
+
+.download-image-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.download-image-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
+}
+
+.image-error-message {
+  color: #ef4444;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Стили для вкладок комментариев */
+
+/* Новые стили для вкладок на весь экран */
+.comment-tabs-fullwidth {
+  display: flex;
+  width: 100%;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 20px;
+  background: #f8fafc;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.comment-tab-fullwidth {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.comment-tab-fullwidth:hover {
+  background: #f1f5f9;
+  color: #002FA7;
+}
+
+.comment-tab-fullwidth.active {
+  background: white;
+  color: #002FA7;
+  border-bottom-color: #002FA7;
+  box-shadow: 0 -2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.tab-title {
+  white-space: nowrap;
+}
+
+.tab-badge-fullwidth {
+  background: #002FA7;
+  color: white;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.comment-tab-fullwidth.active .tab-badge-fullwidth {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.tab-content-fullwidth {
+  animation: fadeIn 0.3s ease;
+  min-height: 400px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Стили для предпросмотра изображений */
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.file-item-preview {
+  position: relative;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.file-item-preview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.file-preview-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.image-preview-wrapper:hover .image-overlay {
+  opacity: 1;
+}
+
+.view-image-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #002FA7;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-image-btn:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+.remove-file-btn-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.remove-file-btn-preview:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.file-info-preview {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  gap: 8px;
+  position: relative;
+}
+
+.file-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.file-name-preview {
+  flex: 1;
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.file-type-badge {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.file-size {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* Модальное окно предпросмотра изображения */
+.image-preview-modal {
+  position: relative;
+  margin: 8px 0;
+}
+
+.comment-image-preview {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.comment-image-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: #002FA7;
+}
+
+.image-preview-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.view-full-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-full-btn:hover {
+  background: #001f7a;
+  transform: translateY(-1px);
+}
+
+/* Адаптивность для модального окна изображения */
+@media (max-width: 768px) {
+  .image-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+    margin: 10px;
+  }
+  
+  .image-modal-header {
+    padding: 12px 16px;
+  }
+  
+  .image-modal-body {
+    padding: 10px;
+    max-height: 60vh;
+  }
+  
+  .image-modal-header h3 {
+    font-size: 14px;
+  }
+}
+
+/* Стили для существующих файлов */
+.existing-files-section {
+  margin-top: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.view-file-btn {
+  padding: 4px 8px;
+  background: #002FA7;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.view-file-btn:hover {
+  background: #001f7a;
+  transform: translateY(-1px);
+}
+
+/* Расширенное модальное окно комментариев */
+.comment-modal.expanded {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .comment-tabs {
+    flex-direction: column;
+  }
+  
+  .comment-tab {
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    border-left: 2px solid transparent;
+  }
+  
+  .comment-tab.active {
+    border-bottom-color: #e2e8f0;
+    border-left-color: #002FA7;
+  }
+}
+
+/* Стили для вкладок комментариев */
+.comment-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.comment-tab {
+  position: relative;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-tab:hover {
+  color: #002FA7;
+  background: #f8fafc;
+}
+
+.comment-tab.active {
+  color: #002FA7;
+  border-bottom-color: #002FA7;
+  background: #f0f4ff;
+}
+
+.tab-badge {
+  background: #002FA7;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Стили для истории комментариев */
+.comment-history-section {
+  margin-top: 16px;
+}
+
+.comment-history-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.comment-history-item {
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.comment-history-item:last-child {
+  border-bottom: none;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.comment-date {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.comment-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  flex: 1;
+  text-align: right;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 3px solid #002FA7;
+}
+
+.comment-files {
+  margin-top: 12px;
+}
+
+.comment-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 8px 0;
+}
+
+/* Стили для состояний загрузки и пустых состояний */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  color: #64748b;
+  gap: 12px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #002FA7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-comments-section {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+}
+
+/* Стили для секции ввода комментария преподавателя */
+.comment-input-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Расширенное модальное окно комментариев */
+.comment-modal.expanded {
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .comment-tabs {
+    flex-direction: column;
+  }
+  
+  .comment-tab {
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    border-left: 2px solid transparent;
+    justify-content: center;
+  }
+  
+  .comment-tab.active {
+    border-bottom-color: #e2e8f0;
+    border-left-color: #002FA7;
+  }
+  
+  .comment-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .comment-action {
+    text-align: left;
+  }
+}
+
+/* ПОМЕНЯТЬ */
+
+/* Стили для индикаторов комментариев */
+.comment-btn.has-teacher-comment {
+  color: #002FA7;
+  background: #d9daf8;
+  border-color: #002FA7;
+}
+
+.comment-btn.has-student-comment {
+  color: #002FA7;
+  background: #d9daf8;
+  border-color: #002FA7;
+}
+
+.comment-btn.has-both-comments {
+  color: #002fa752;
+  background: #d9daf8;
+  border-color: #002fa752;
 }
 
 /* Для комментария к оценке */

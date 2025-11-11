@@ -47,12 +47,79 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [showAttendance, setShowAttendance] = useState<boolean>(false);
   const [showPerformance, setShowPerformance] = useState<boolean>(false);
   const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
+  const [currentStId, setCurrentStId] = useState<number | null>(null);
+
+  const [attendanceData, setAttendanceData] = useState<Record<string, {
+    records: AttendanceRecord[];
+    percentage: number;
+  }>>({});
 
   // Функция для создания уникального ключа группы
   const getGroupKey = (group: Group) => `${group.numberGroup}_${group.subjectName}`;
 
+  // Функция для загрузки данных посещаемости для конкретной группы
+  const loadGroupAttendanceData = async (group: Group): Promise<number> => {
+    try {
+      const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
+      const stId = await teacherApiService.getStId(
+        teacherId, 
+        group.subjectName,
+        group.numberGroup
+      );
+      
+      if (stId) {
+        const attendanceData = await teacherApiService.getGroupAttendance(
+          group.numberGroup, 
+          stId, 
+          teacherId
+        );
+        
+        if (attendanceData && Array.isArray(attendanceData)) {
+          // Рассчитываем процент посещаемости
+          let totalRecords = 0;
+          let presentCount = 0;
+          
+          attendanceData.forEach((studentData: any) => {
+            if (studentData.attendances && Array.isArray(studentData.attendances)) {
+              studentData.attendances.forEach((attendance: any) => {
+                totalRecords++;
+                if (attendance.status === 'п') {
+                  presentCount++;
+                }
+              });
+            }
+          });
+          
+          const percentage = totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0;
+          
+          // Сохраняем данные
+          const groupKey = getGroupKey(group);
+          setAttendanceData(prev => ({
+            ...prev,
+            [groupKey]: {
+              records: [], // Можно сохранить реальные записи если нужно
+              percentage: percentage
+            }
+          }));
+          
+          return percentage;
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading attendance data for group ${group.numberGroup}:`, error);
+    }
+    
+    return 0;
+  };
+
+  // Функция для загрузки данных посещаемости для всех групп
+  const loadAllGroupsAttendanceData = async (groups: Group[]) => {
+    const attendancePromises = groups.map(group => loadGroupAttendanceData(group));
+    await Promise.allSettled(attendancePromises);
+  };
+
   // Функция для получения групп с кэшированием
-    const fetchGroups = async (forceRefresh = false) => {
+  const fetchGroups = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -82,6 +149,10 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       );
 
       setAllGroups(uniqueGroups);
+      
+      // Загружаем данные посещаемости для всех групп
+      await loadAllGroupsAttendanceData(uniqueGroups);
+      
     } catch (err) {
       setError('Не удалось загрузить данные групп');
     } finally {
@@ -117,22 +188,21 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     setSelectedGroupRow(null);
   };
 
-  const [attendanceData, setAttendanceData] = useState<Record<string, {
-    records: AttendanceRecord[];
-    percentage: number;
-  }>>({});
-
-  // Обработчик обновления данных посещаемости
+  // Обработчик обновления данных посещаемости (при работе в TeacherAttendanceSection)
   const handleAttendanceUpdate = useCallback((groupKey: string, data: {
     records: AttendanceRecord[];
     percentage: number;
   }) => {
     setAttendanceData(prev => ({
       ...prev,
-      [groupKey]: data
+      [groupKey]: {
+        ...data,
+        lastCalculated: Date.now()
+      }
     }));
   }, []);
 
+  // Функция для получения актуального процента посещаемости
   const getRealAttendancePercent = (group: Group): number => {
     const groupKey = getGroupKey(group);
     const data = attendanceData[groupKey];
@@ -140,7 +210,9 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     if (data && data.percentage > 0) {
       return data.percentage;
     }
-    return 0;
+    
+    // Если данных нет, возвращаем 0 или базовый процент из группы
+    return group.attendancePercent || 0;
   };
 
   // Функция принудительного обновления данных
@@ -154,6 +226,25 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
       fetchGroups();
     }
   }, [user]);
+
+  // Сохраняем данные в localStorage при обновлении
+  useEffect(() => {
+    if (Object.keys(attendanceData).length > 0) {
+      localStorage.setItem('teacher_attendance_data', JSON.stringify(attendanceData));
+    }
+  }, [attendanceData]);
+
+  // Загружаем данные из localStorage при монтировании
+  useEffect(() => {
+    const savedData = localStorage.getItem('teacher_attendance_data');
+    if (savedData) {
+      try {
+        setAttendanceData(JSON.parse(savedData));
+      } catch (error) {
+        console.error('Error loading attendance data from localStorage:', error);
+      }
+    }
+  }, []);
 
   // Компонент информационной иконки
   const InfoIcon = () => (
@@ -215,7 +306,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     });
   }, [filteredGroups, subjectSortOrder]);
 
-
   const toggleSubjectSortOrder = () => {
     setSubjectSortOrder(subjectSortOrder === 'asc' ? 'desc' : 'asc');
   };
@@ -240,7 +330,29 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     );
     if (groupData) {
       setSelectedGroupData(groupData);
-      setShowAttendance(true);
+      
+      // Получаем idSt для выбранной группы и предмета
+      const getStIdForGroup = async () => {
+        try {
+          const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
+          const stId = await teacherApiService.getStId(
+            teacherId, 
+            groupData.subjectName,
+            groupData.numberGroup
+          );
+          
+          if (stId) {
+            setCurrentStId(stId);
+            setShowAttendance(true);
+          } else {
+            console.error('Не удалось получить idSt для группы');
+          }
+        } catch (error) {
+          console.error('Ошибка при получении idSt:', error);
+        }
+      };
+      
+      getStIdForGroup();
     }
   };
 
@@ -266,6 +378,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     setShowAttendance(false);
     setShowPerformance(false);
     setSelectedGroupData(null);
+    setCurrentStId(null);
   };
 
   // от успеваемости к посещаемости
@@ -294,25 +407,21 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     );
   }
 
-  /* ПОКА ЧТО ЗАКОММЕНТИЛА ПОТОМУ ЧТО ДРУГОЙ ЗАПРОС БУДЕТ НА ВЫВОД СПИСКА ГРУПП В ПОСЕЩАЕМОСТИ
-  if (showAttendance && selectedGroupData) {
+  if (showAttendance && selectedGroupData && currentStId) {
+    const groupKey = getGroupKey(selectedGroupData);
     return (
-      <div className="teacher-attendance-page">
-        <TeacherAttendanceSection
-          groupNumber={selectedGroupData.numberGroup}
-          subject={selectedGroupData.subjectName}
-          students={mockStudents}
-          onBackToGroups={handleBackToGroups}
-          onSetGrades={handleSetGradesFromAttendance}
-          onAttendanceUpdate={(data) => {
-            if (selectedGroupData) {
-              handleAttendanceUpdate(getGroupKey(selectedGroupData), data);
-            }
-          }}
-        />
-      </div>
+      <TeacherAttendanceSection
+        groupNumber={selectedGroupData.numberGroup}
+        subject={selectedGroupData.subjectName}
+        students={[]}
+        idSt={currentStId}
+        teacherId={parseInt(localStorage.getItem('teacher_id') || '0')}
+        onBackToGroups={handleBackToGroups}
+        onSetGrades={handleSetGradesFromAttendance}
+        onAttendanceUpdate={(data) => handleAttendanceUpdate(groupKey, data)}
+      />
     );
-  } */
+  }
 
   // Если данные пользователя еще не загружены
   if (!user) {

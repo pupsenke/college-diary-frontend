@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { teacherApiService, type LessonDate, type LessonInfo, type SubjectTeacherData, type AddDateColumnRequest, type DeleteDateColumnRequest } from '../services/teacherApiService';
+import { 
+  teacherApiService, 
+  type LessonDate, 
+  type LessonInfo, 
+  type SubjectTeacherData, 
+  type AddDateColumnRequest, 
+  type DeleteDateColumnRequest,
+  type UpdateMarkGradeRequest,
+  type UpdateMarkRequest,
+  type ApiLessonType,
+  type StData
+} from '../services/teacherApiService';
 import './TeacherPerformanceSection.css';
 
 // Типы данных
@@ -84,12 +95,32 @@ interface DeleteDateModalData {
   lessonNumber: number;
 }
 
+interface UpdateLessonTypeRequest {
+  idTeacher: number;
+  idGroup: number;
+  idStudent: number;
+  idSt: number;
+  number: number;
+  idTypeMark: number;
+}
+
+export interface ChangeHistory {
+  id: number;
+  dateTime: string;
+  action: string;
+  idSupplement: number | null;
+  comment: string | null;
+  files: string[] | null;
+  teacherOrStudent: boolean; // true - преподаватель, false - студент
+  newValue: string | null;
+}
+
 export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps> = ({
   groupNumber,
   subject,
   onBackToGroups,
   onSetAttendance
-}) => {
+}): React.ReactElement => {
   const [idTeacher, setIdTeacher] = useState<number | null>(null);
   const [idSt, setIdSt] = useState<number | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -117,7 +148,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     field: 'grade' | 'lessonType' | 'topic' | 'exam'
   } | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [showCommentModal, setShowCommentModal] = useState<{studentId: number; date: string} | null>(null);
   const [commentText, setCommentText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<boolean>(false);
@@ -128,12 +158,16 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     'II': 'Загрузка...'
   });
   const [subgroupStudents, setSubgroupStudents] = useState<SubgroupStudents>({
-  'I': [],
-  'II': []
-});
+    'I': [],
+    'II': []
+  });
   const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II'>>({});
   const [savingSubgroups, setSavingSubgroups] = useState<boolean>(false);
   const [showSubgroupModal, setShowSubgroupModal] = useState<boolean>(false);
+
+  const [updatingLessonType, setUpdatingLessonType] = useState(false);
+  const [lessonTypes, setLessonTypes] = useState<ApiLessonType[]>([]);
+  const [stData, setStData] = useState<StData | null>(null);
 
   const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
   const [teacherEditValue, setTeacherEditValue] = useState('');
@@ -154,21 +188,44 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     availableLessons: [],
     selectedLesson: null
   });
-  
+
   const [deleteDateModal, setDeleteDateModal] = useState<DeleteDateModalData>({
     isOpen: false,
     dateToDelete: '',
     lessonNumber: 0
   });
+
+  const [managingDate, setManagingDate] = useState(false);
   
   const [loadingLessons, setLoadingLessons] = useState(false);
-  const [managingDate, setManagingDate] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const teacherInputRef = useRef<HTMLInputElement>(null);
   const examInputRef = useRef<HTMLSelectElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [commentModalData, setCommentModalData] = useState<{studentId: number; date: string} | null>(null);
+  const [teacherCommentText, setTeacherCommentText] = useState('');
+  const [teacherAttachedFiles, setTeacherAttachedFiles] = useState<File[]>([]);
+  const [studentChangeHistory, setStudentChangeHistory] = useState<ChangeHistory[]>([]);
+  const [loadingStudentHistory, setLoadingStudentHistory] = useState(false);
+  const [activeCommentTab, setActiveCommentTab] = useState<'teacher' | 'student'>('teacher');
+
+  const [studentCommentsMap, setStudentCommentsMap] = useState<Record<string, {
+    teacher: ChangeHistory[];
+    student: ChangeHistory[];
+  }>>({});
+
+  const [imageModal, setImageModal] = useState<{
+    isOpen: boolean;
+    imageUrl: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    imageUrl: '',
+    fileName: ''
+  });
 
   // Допустимые оценки
   const validGrades = [
@@ -201,7 +258,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для получения цвета оценки
-  const getGradeColor = (grade: string) => {
+  const getGradeColor = (grade: string): string => {
     if (!grade) return '';
     
     if (grade === 'з') return '#2cbb00';
@@ -252,7 +309,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Компонент информационной иконки
-  const InfoIcon = () => (
+  const InfoIcon = (): React.ReactElement => (
     <div className="info-icon-btn" tabIndex={0}>
       <button className="header-btn" type="button">
         <span className="info-icon-text">i</span>
@@ -278,7 +335,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   );
 
   // Компонент кнопки обновления
-  const RefreshButton = () => (
+  const RefreshButton = (): React.ReactElement => (
     <button 
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
       onClick={handleRefresh}
@@ -294,7 +351,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   );
 
   // Обновленная функция загрузки всех данных
-  const loadAllData = async () => {
+  const loadAllData = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -358,7 +415,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Новая функция для загрузки студентов из всех подгрупп
-  const loadStudentsFromAllSubgroups = async (currentTeacherId: number, stId: number) => {
+  const loadStudentsFromAllSubgroups = async (currentTeacherId: number, stId: number): Promise<void> => {
     try {
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
       if (!groupId) {
@@ -466,6 +523,34 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
+  // Функция для загрузки данных о занятии (ST)
+  const loadStData = async (): Promise<void> => {
+    if (!idSt) return;
+
+    try {
+      console.log('Loading ST data...');
+      const stData = await teacherApiService.getStData(idSt);
+      setStData(stData);
+      console.log('ST data loaded:', stData);
+    } catch (error) {
+      console.error('Error loading ST data:', error);
+    }
+  };
+
+  // Функция для загрузки типов занятий
+  const loadLessonTypes = async (): Promise<void> => {
+    if (!idSt) return;
+
+    try {
+      console.log('Loading lesson types...');
+      const types = await teacherApiService.getLessonTypes(idSt);
+      setLessonTypes(types);
+      console.log('Lesson types loaded:', types);
+    } catch (error) {
+      console.error('Error loading lesson types:', error);
+    }
+  };
+
   // Функция для загрузки типов занятий из API
   const loadLessonTypesFromAPI = async (): Promise<Record<string, LessonTypeInfo>> => {
     if (!students.length || !lessonDates.length || !idSt) {
@@ -489,7 +574,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             const numPair = lesson.lessonInfo?.numPair || lesson.number;
             const displayDate = `${day}.${month} (${numPair})`;
             
-            const lessonType = getLessonTypeFromFullName(lessonInfo.typeMark);
+            const lessonType = lessonInfo.typeMark as LessonType;
             
             newLessonTypes[displayDate] = {
               type: lessonType || '',
@@ -513,7 +598,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для принудительного обновления типов занятий
-  const refreshLessonTypes = async () => {
+  const refreshLessonTypes = async (): Promise<void> => {
     try {
       setLoadingLessonTypes(true);
       console.log('Обновление типов занятий...');
@@ -613,7 +698,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // функция для распределения подгрупп
-  const fetchSubjectTeachersData = async (teacherId: number) => {
+  const fetchSubjectTeachersData = async (teacherId: number): Promise<void> => {
     try {
       const data = await teacherApiService.getTeacherSubjects(teacherId);
       setSubjectTeachersData(data);
@@ -628,7 +713,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для загрузки преподавателей подгрупп
-  const fetchSubgroupTeachers = async (teacherId: number) => {
+  const fetchSubgroupTeachers = async (teacherId: number): Promise<void> => {
     try {
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
       if (!groupId) return;
@@ -668,8 +753,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       setSubgroupTeachers(teachers);
       
       // Определяем, показывать ли подгруппы (показываем если есть хотя бы 2 преподавателя)
-      const hasMultipleTeachers = subjectData.teachers.length > 1;
-      setHasMultipleTeachers(hasMultipleTeachers);
+      const hasMultiple = subjectData.teachers.length > 1;
+      setHasMultipleTeachers(hasMultiple);
       
     } catch (error) {
       console.error('Error loading subgroup teachers:', error);
@@ -677,7 +762,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Загрузка данных о подгруппах
-  const fetchSubgroupsData = async (teacherId: number, students: Student[]) => {
+  const fetchSubgroupsData = async (teacherId: number, studentsList: Student[]): Promise<void> => {
     try {
       const subgroups = await teacherApiService.getSubgroupsForTeacher(teacherId);
       const updatedStudentSubgroups: Record<number, 'I' | 'II'> = {};
@@ -692,11 +777,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           });
         });
 
-        students.forEach(student => {
+        studentsList.forEach(student => {
           updatedStudentSubgroups[student.id] = studentToSubgroup[student.id] || 'I';
         });
       } else {
-        students.forEach(student => {
+        studentsList.forEach(student => {
           updatedStudentSubgroups[student.id] = 'I';
         });
       }
@@ -705,7 +790,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     } catch (error) {
       console.error('Ошибка загрузки данных подгрупп:', error);
       const defaultSubgroups: Record<number, 'I' | 'II'> = {};
-      students.forEach(student => {
+      studentsList.forEach(student => {
         defaultSubgroups[student.id] = 'I';
       });
       setStudentSubgroups(defaultSubgroups);
@@ -772,7 +857,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   }, [students, allDates]);
 
   // Функция для принудительного обновления данных
-  const handleRefresh = async () => {
+  const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
     try {
       // Инвалидируем все кэши перед обновлением
@@ -791,7 +876,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для открытия модального окна добавления даты
-  const handleOpenAddDateModal = async () => {
+  const handleOpenAddDateModal = async (): Promise<void> => {
     if (!idSt || !idTeacher) {
       alert('Недостаточно данных для добавления даты');
       return;
@@ -804,10 +889,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         throw new Error('Не удалось определить ID группы');
       }
 
-      console.log('Fetching available lessons for date addition...');
       const availableLessons = await teacherApiService.getLessonsForDateAddition(idSt, groupId, idTeacher);
-      
-      console.log('Available lessons:', availableLessons);
       
       setAddDateModal({
         isOpen: true,
@@ -823,7 +905,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для добавления столбца с датой
-  const handleAddDateColumn = async () => {
+  const handleAddDateColumn = async (): Promise<void> => {
     if (!addDateModal.selectedLesson || !idSt || !idTeacher) {
       alert('Выберите занятие для добавления');
       return;
@@ -842,8 +924,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         idLesson: addDateModal.selectedLesson.id,
         idTeacher: idTeacher
       };
-
-      console.log('Adding date column with request:', addRequest);
       
       const result = await teacherApiService.addDateColumn(addRequest);
       
@@ -851,11 +931,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         alert('Столбец с датой успешно добавлен');
         setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null });
         
-        // Инвалидируем кэш перед перезагрузкой данных
         teacherApiService.invalidateStudentCache();
         teacherApiService.invalidateLessonDatesCache();
         
-        // Перезагружаем данные
         await loadAllData();
       }
     } catch (error: any) {
@@ -867,7 +945,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для открытия модального окна удаления даты
-  const handleOpenDeleteDateModal = (date: string, lessonNumber: number) => {
+  const handleOpenDeleteDateModal = (date: string, lessonNumber: number): void => {
     setDeleteDateModal({
       isOpen: true,
       dateToDelete: date,
@@ -876,7 +954,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для удаления столбца с датой
-  const handleDeleteDateColumn = async () => {
+  const handleDeleteDateColumn = async (): Promise<void> => {
     if (!idSt || !idTeacher) {
       alert('Недостаточно данных для удаления даты');
       return;
@@ -895,8 +973,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         idTeacher: idTeacher,
         number: deleteDateModal.lessonNumber
       };
-
-      console.log('Deleting date column with request:', deleteRequest);
       
       const result = await teacherApiService.deleteDateColumn(deleteRequest);
       
@@ -904,11 +980,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         alert('Столбец с датой успешно удален');
         setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 });
         
-        // Инвалидируем кэш перед перезагрузкой данных
         teacherApiService.invalidateStudentCache();
         teacherApiService.invalidateLessonDatesCache();
         
-        // Перезагружаем данные
         await loadAllData();
       }
     } catch (error: any) {
@@ -919,16 +993,35 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  const handleDateButtonClick = async (date: string) => {
+  const handleDateButtonClick = async (date: string): Promise<void> => {
     const lessonNumber = getLessonNumber(date);
     if (lessonNumber === 0) return;
 
+    // Загружаем типы занятий если еще не загружены
+    if (lessonTypes.length === 0 && idSt) {
+      await loadLessonTypes();
+    }
+
     const firstStudent = filteredStudents[0];
-    if (!firstStudent) return;
+    if (!firstStudent || !idSt || !idTeacher) return;
 
     try {
+      console.log(`Открытие модального окна для даты: ${date}, номер занятия: ${lessonNumber}`);
+
+      // 1. Получаем информацию о занятии
       const lessonInfo = await fetchLessonInfo(firstStudent.id, lessonNumber);
       
+      // 2. Получаем дополнительные данные о занятии
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const lessonsInfo = await teacherApiService.getLessonsInfo(idSt, groupId, idTeacher);
+      const lessonFromInfo = lessonsInfo.find((lesson: any) => lesson.number === lessonNumber);
+
+      console.log('Найденные данные о занятии:', { lessonInfo, lessonFromInfo });
+
       const lessonFromDates = lessonDates.find(l => {
         const dateObj = new Date(l.date);
         const day = dateObj.getDate().toString().padStart(2, '0');
@@ -937,16 +1030,16 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         return date.startsWith(formattedDate) && l.number === lessonNumber;
       });
 
-      const correctNumPair = lessonFromDates?.lessonInfo?.numPair || lessonInfo?.numPair || lessonNumber;
+      const correctNumPair = lessonFromInfo?.numPair || lessonFromDates?.lessonInfo?.numPair || lessonInfo?.numPair || lessonNumber;
 
       const modalData: LessonDateModalData = {
         date,
         lessonNumber,
         typeMark: lessonInfo?.typeMark || '',
         comment: lessonInfo?.comment || '',
-        numberWeek: lessonInfo?.numberWeek || 0,
-        dayWeek: lessonInfo?.dayWeek || '',
-        typeWeek: lessonInfo?.typeWeek || '',
+        numberWeek: lessonFromInfo?.numberWeek || lessonInfo?.numberWeek || 0,
+        dayWeek: lessonFromInfo?.dayWeek || lessonInfo?.dayWeek || '',
+        typeWeek: lessonFromInfo?.typeWeek || lessonInfo?.typeWeek || '',
         numPair: correctNumPair,
         number: lessonNumber
       };
@@ -957,39 +1050,111 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         comment: lessonInfo?.comment || ''
       });
 
+      console.log('Модальное окно открыто с данными:', modalData);
+
     } catch (error) {
       console.error('Ошибка при открытии модального окна:', error);
+      alert('Не удалось загрузить данные о занятии');
     }
   };
 
-  const handleSaveDateInfo = async () => {
-    if (!showDateModal) return;
+  const handleSaveDateInfo = async (): Promise<void> => {
+    if (!showDateModal || !idSt || !idTeacher) return;
 
+    setUpdatingLessonType(true);
+    
     try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      // Получаем первого студента для обновления
       const firstStudent = filteredStudents[0];
-      if (!firstStudent) return;
+      if (!firstStudent) {
+        throw new Error('Не найден студент для обновления');
+      }
 
-      const success = await saveLessonInfo({
-        studentId: firstStudent.id,
-        lessonNumber: showDateModal.lessonNumber,
-        typeMark: dateModalData.typeMark,
-        comment: dateModalData.comment
-      });
+      // Получаем ID типа занятия по названию
+      const lessonTypeId = teacherApiService.getLessonTypeIdByName(lessonTypes, dateModalData.typeMark);
+      
+      if (!lessonTypeId) {
+        throw new Error(`Тип занятия "${dateModalData.typeMark}" не найден`);
+      }
 
-      if (success) {
-        // Инвалидируем кэш информации о занятиях
-        teacherApiService.invalidateLessonInfoCache();
+      // Формируем запрос на обновление типа занятия
+      const updateRequest: UpdateLessonTypeRequest = {
+        idTeacher: idTeacher,
+        idGroup: groupId,
+        idStudent: firstStudent.id,
+        idSt: idSt,
+        number: showDateModal.lessonNumber,
+        idTypeMark: lessonTypeId
+      };
+
+      console.log('Updating lesson type with request:', updateRequest);
+
+      // Отправляем запрос на обновление типа занятия
+      const result = await teacherApiService.updateLessonType(updateRequest);
+      
+      if (result.success) {
+        // Если есть комментарий, сохраняем его отдельно
+        if (dateModalData.comment && dateModalData.comment.trim() !== '') {
+          try {
+            // Получаем информацию о занятии для получения idSupplement
+            const lessonInfo = await teacherApiService.getLessonInfo(firstStudent.id, idSt, showDateModal.lessonNumber);
+            
+            if (lessonInfo && lessonInfo.idSupplement) {
+              await teacherApiService.updateLessonComment(lessonInfo.idSupplement, dateModalData.comment);
+            }
+          } catch (commentError) {
+            console.warn('Не удалось сохранить комментарий:', commentError);
+          }
+        }
+
+        // Обновляем локальное состояние
+        const lessonType = getLessonTypeFromFullName(dateModalData.typeMark);
+        const dateObj = new Date(showDateModal.date);
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const displayDate = `${day}.${month} (${showDateModal.lessonNumber})`;
         
+        setLessonTypesData(prev => ({
+          ...prev,
+          [displayDate]: {
+            type: lessonType || '',
+            topic: dateModalData.comment || '',
+            comment: dateModalData.comment || ''
+          }
+        }));
+
+        // Обновляем записи оценок
+        setGradeRecords(prev => 
+          prev.map(record => 
+            record.date === displayDate 
+              ? { ...record, lessonType: lessonType || '' }
+              : record
+          )
+        );
+
+        alert('Данные занятия успешно обновлены');
         setShowDateModal(null);
         setDateModalData({ typeMark: '', comment: '' });
-        console.log('Данные успешно сохранены');
-      } else {
-        console.error('Не удалось сохранить данные');
       }
-    } catch (error) {
-      console.error('Ошибка при сохранении:', error);
+    } catch (error: any) {
+      console.error('Error updating lesson data:', error);
+      alert(`Ошибка при обновлении данных занятия: ${error.message}`);
+    } finally {
+      setUpdatingLessonType(false);
     }
   };
+
+  useEffect(() => {
+    if (idSt) {
+      loadStData();
+      loadLessonTypes();
+    }
+  }, [idSt]);
 
   // Фильтрация студентов по подгруппе
   const filteredStudents = students.filter(student => {
@@ -1019,7 +1184,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   });
 
   // Функция для автоматического распределения студентов по подгруппам
-  const autoDistributeSubgroups = () => {
+  const autoDistributeSubgroups = (): void => {
     const newDistribution: Record<number, 'I' | 'II'> = {};
     
     // Сортируем студентов по фамилии для равномерного распределения
@@ -1037,7 +1202,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Функция для сохранения распределения по подгруппам
-  const saveSubgroupsDistribution = async () => {
+  const saveSubgroupsDistribution = async (): Promise<void> => {
     if (!idTeacher || !idSt) {
       alert('ID преподавателя не найден');
       return;
@@ -1279,7 +1444,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обновление записи оценки
-  const updateGradeRecord = (studentId: number, date: string, updates: Partial<GradeRecord>) => {
+  const updateGradeRecord = (studentId: number, date: string, updates: Partial<GradeRecord>): void => {
     setGradeRecords(prev => {
       const existingIndex = prev.findIndex(record => 
         record.studentId === studentId && record.date === date
@@ -1309,7 +1474,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обновление экзаменационной записи
-  const updateExamRecord = (studentId: number, updates: Partial<ExamRecord>) => {
+  const updateExamRecord = (studentId: number, updates: Partial<ExamRecord>): void => {
     setExamRecords(prev => {
       const existingIndex = prev.findIndex(record => record.studentId === studentId);
       
@@ -1330,7 +1495,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обновление подгруппы студента
-  const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II') => {
+  const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II'): void => {
     setStudentSubgroups(prev => ({
       ...prev,
       [studentId]: subgroup
@@ -1338,7 +1503,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обновление преподавателя подгруппы
-  const updateSubgroupTeacher = (subgroup: string, teacher: string) => {
+  const updateSubgroupTeacher = (subgroup: string, teacher: string): void => {
     setSubgroupTeachers(prev => ({
       ...prev,
       [subgroup]: teacher
@@ -1351,7 +1516,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     date: string, // Должен быть в формате "06.11 (1)"
     field: 'grade' | 'lessonType' | 'topic' | 'exam', 
     currentValue: string
-  ) => {
+  ): void => {
     const record = getGradeRecord(studentId, date);
     console.log(`Редактирование: студент ${studentId}, дата ${date}, поле ${field}, значение ${currentValue}`);
     
@@ -1359,43 +1524,65 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     setEditValue(currentValue);
   };
 
-  // Сохранение редактирования
-  const handleSaveEdit = () => {
+  // Сохранение редактирования оценки
+  const handleSaveEdit = async (): Promise<void> => {
     if (!editingCell) return;
 
-    if (editingCell.field === 'grade') {
-      // Валидация оценки
-      if (validGrades.includes(editValue) || editValue === '') {
-        updateGradeRecord(editingCell.studentId, editingCell.date, { grade: editValue });
+    try {
+      if (editingCell.field === 'grade') {
+        if (validGrades.includes(editValue) || editValue === '') {
+          updateGradeRecord(editingCell.studentId, editingCell.date, { grade: editValue });
+          
+          if (editValue !== '' && idSt) {
+            const lessonNumber = getLessonNumber(editingCell.date);
+            
+            const updateRequest: UpdateMarkGradeRequest = {
+              idStudent: editingCell.studentId,
+              idSt: idSt,
+              mark: parseFloat(editValue),
+              number: lessonNumber
+            };
+            
+            console.log('Sending mark update request:', updateRequest);
+            
+            // ЗАМЕНА: используем updateMark вместо updateMarkGrade
+            const result = await teacherApiService.updateMark(updateRequest);
+            
+            if (result.success) {
+              console.log('Mark successfully updated on server');
+            }
+          }
+        }
+      } else if (editingCell.field === 'lessonType') {
+        const lessonTypeValue = editValue as LessonType;
+        updateGradeRecord(editingCell.studentId, editingCell.date, { lessonType: lessonTypeValue });
+      } else if (editingCell.field === 'topic') {
+        updateGradeRecord(editingCell.studentId, editingCell.date, { topic: editValue });
+      } else if (editingCell.field === 'exam') {
+        const examRecord = getExamRecord(editingCell.studentId);
+        const allowedGrades = examGrades[examRecord.examType as keyof typeof examGrades] || [];
+        
+        if (editValue === '' || allowedGrades.includes(editValue)) {
+          updateExamRecord(editingCell.studentId, { grade: editValue });
+        }
       }
-    } else if (editingCell.field === 'lessonType') {
-      // Приводим значение к типу LessonType
-      const lessonTypeValue = editValue as LessonType;
-      updateGradeRecord(editingCell.studentId, editingCell.date, { lessonType: lessonTypeValue });
-    } else if (editingCell.field === 'topic') {
-      updateGradeRecord(editingCell.studentId, editingCell.date, { topic: editValue });
-    } else if (editingCell.field === 'exam') {
-      // Сохранение экзаменационной оценки
-      const examRecord = getExamRecord(editingCell.studentId);
-      const allowedGrades = examGrades[examRecord.examType as keyof typeof examGrades] || [];
-      
-      if (editValue === '' || allowedGrades.includes(editValue)) {
-        updateExamRecord(editingCell.studentId, { grade: editValue });
-      }
+    } catch (error) {
+      console.error('Error saving mark:', error);
+      alert('Ошибка при сохранении оценки. Попробуйте еще раз.');
+    } finally {
+      setEditingCell(null);
+      setEditValue('');
     }
-
-    setEditingCell(null);
-    setEditValue('');
   };
 
   // Отмена редактирования
-  const handleCancelEdit = () => {
+  const handleCancelEdit = (): void => {
     setEditingCell(null);
     setEditValue('');
   };
 
   // Обработка нажатия клавиш
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter') {
       handleSaveEdit();
     } else if (e.key === 'Escape') {
@@ -1403,8 +1590,519 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
+  // Функция для обновления карты комментариев
+  const updateStudentCommentsMap = (studentId: number, lessonNumber: number, history: ChangeHistory[]) => {
+    const key = `${studentId}_${lessonNumber}`;
+    setStudentCommentsMap(prev => ({
+      ...prev,
+      [key]: {
+        teacher: history.filter(change => change.teacherOrStudent && (change.comment || change.files)),
+        student: history.filter(change => !change.teacherOrStudent && (change.comment || change.files))
+      }
+    }));
+  };
+
+  // Функция для загрузки истории изменений студента
+  const loadStudentChangeHistory = async (studentId: number, lessonNumber: number): Promise<void> => {
+    if (!idSt) return;
+    
+    setLoadingStudentHistory(true);
+    try {
+      console.log(`Loading change history for student ${studentId}, lesson ${lessonNumber}`);
+      
+      const history = await teacherApiService.getStudentChangeHistory(studentId, idSt, lessonNumber);
+      setStudentChangeHistory(history);
+      updateStudentCommentsMap(studentId, lessonNumber, history);
+      console.log('Student change history loaded:', history);
+    } catch (error) {
+      console.error('Error loading student change history:', error);
+      setStudentChangeHistory([]);
+    } finally {
+      setLoadingStudentHistory(false);
+    }
+  };
+
+  // Функции для получения комментариев
+  const getStudentCommentsForCell = (studentId: number, date: string): ChangeHistory[] => {
+    const lessonNumber = getLessonNumber(date);
+    const key = `${studentId}_${lessonNumber}`;
+    return studentCommentsMap[key]?.student || [];
+  };
+
+  const getTeacherCommentsForCell = (studentId: number, date: string): ChangeHistory[] => {
+    const lessonNumber = getLessonNumber(date);
+    const key = `${studentId}_${lessonNumber}`;
+    return studentCommentsMap[key]?.teacher || [];
+  };
+
+  const handleOpenImageModal = (imageUrl: string, fileName: string): void => {
+    setImageModal({
+      isOpen: true,
+      imageUrl,
+      fileName
+    });
+  };
+
+  // Рендер модального окна изображения
+  const renderImageModal = (): React.ReactElement | null => {
+    if (!imageModal.isOpen) return null;
+
+    return (
+      <div className="modal-overlay image-modal-overlay" onClick={() => setImageModal({ isOpen: false, imageUrl: '', fileName: '' })}>
+        <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="image-modal-header">
+            <h3>{imageModal.fileName}</h3>
+            <button 
+              className="image-modal-close"
+              onClick={() => setImageModal({ isOpen: false, imageUrl: '', fileName: '' })}
+            >
+              ×
+            </button>
+          </div>
+          <div className="image-modal-body">
+            <img 
+              src={imageModal.imageUrl} 
+              alt={imageModal.fileName}
+              className="modal-image"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                // Показываем сообщение об ошибке
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'image-error-message';
+                errorDiv.textContent = 'Не удалось загрузить изображение';
+                target.parentNode?.appendChild(errorDiv);
+              }}
+            />
+          </div>
+          <div className="image-modal-actions">
+            <a 
+              href={imageModal.imageUrl} 
+              download={imageModal.fileName}
+              className="download-image-btn"
+            >
+              Скачать изображение
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Функция для открытия модального окна комментария
+  const handleOpenCommentModal = async (studentId: number, date: string): Promise<void> => {
+    const record = getGradeRecord(studentId, date);
+    const lessonNumber = getLessonNumber(date);
+    
+    setCommentModalData({ studentId, date });
+    setTeacherCommentText(record.comment || '');
+    setTeacherAttachedFiles([]);
+    setActiveCommentTab('teacher');
+    
+    // Загружаем историю изменений студента
+    await loadStudentChangeHistory(studentId, lessonNumber);
+  };
+
+  // Функция для получения комментариев студента из истории
+  const getStudentComments = (): ChangeHistory[] => {
+    return studentChangeHistory.filter(change => 
+      !change.teacherOrStudent && (change.comment || change.files)
+    );
+  };
+
+  // Функция для получения комментариев преподавателя из истории
+  const getTeacherComments = (): ChangeHistory[] => {
+    return studentChangeHistory.filter(change => 
+      change.teacherOrStudent && (change.comment || change.files)
+    );
+  };
+
+  // Функция для сохранения комментария преподавателя
+  const handleSaveTeacherComment = async (): Promise<void> => {
+    if (!commentModalData || !idTeacher || !idSt) return;
+
+    setUploadingFiles(true);
+    try {
+      const lessonNumber = getLessonNumber(commentModalData.date);
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      let idSupplement: number | undefined;
+
+      // Сохраняем комментарий преподавателя
+      if (teacherCommentText.trim() || teacherAttachedFiles.length > 0) {
+        const commentResult = await teacherApiService.addTeacherComment({
+          idTeacher: idTeacher,
+          idGroup: groupId,
+          idStudent: commentModalData.studentId,
+          idSt: idSt,
+          number: lessonNumber,
+          comment: teacherCommentText.trim()
+        });
+
+        if (commentResult.idSupplement) {
+          idSupplement = commentResult.idSupplement;
+          
+          // Сохраняем файлы преподавателя если есть
+          if (teacherAttachedFiles.length > 0) {
+            console.log('Starting file upload for supplement:', idSupplement);
+            const fileResult = await teacherApiService.addTeacherCommentFiles(
+              idSupplement, 
+              teacherAttachedFiles
+            );
+            console.log('File upload result:', fileResult);
+          }
+        }
+      }
+
+      // Обновляем локальное состояние
+      updateGradeRecord(
+        commentModalData.studentId, 
+        commentModalData.date, 
+        { 
+          comment: teacherCommentText.trim() || undefined
+        }
+      );
+
+      // Перезагружаем историю изменений
+      await loadStudentChangeHistory(commentModalData.studentId, lessonNumber);
+
+      // Очищаем форму
+      setTeacherCommentText('');
+      setTeacherAttachedFiles([]);
+
+      console.log('Комментарий преподавателя успешно сохранен');
+      
+    } catch (error) {
+      console.error('Ошибка при сохранении комментария преподавателя:', error);
+      alert('Ошибка при сохранении комментария. Попробуйте еще раз.');
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  // Функция для удаления файла преподавателя
+  const removeTeacherFile = (index: number): void => {
+    setTeacherAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Функция для рендера секции файлов преподавателя
+  const renderTeacherFilesSection = (files: File[], removeFile: (index: number) => void) => {
+    if (!files || files.length === 0) {
+      return null;
+    }
+
+    const createImagePreview = (file: File): string => {
+      return URL.createObjectURL(file);
+    };
+
+    const handleImagePreviewClick = (file: File) => {
+      const imageUrl = URL.createObjectURL(file);
+      window.open(imageUrl, '_blank');
+    };
+
+    return (
+      <div className="attached-files-section">
+        <div className="files-header">
+          <span>Прикрепленные файлы ({files.length})</span>
+        </div>
+        <div className="files-instruction">
+          Для прикрепления файлов перетащите их в область комментария или используйте Ctrl+V для изображений
+        </div>
+        <div className="files-list">
+          {files.map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const previewUrl = isImage ? createImagePreview(file) : '';
+            
+            return (
+              <div key={index} className="file-item">
+                {isImage ? (
+                  <div className="image-preview-container">
+                    <img 
+                      src={previewUrl} 
+                      alt="Превью" 
+                      className="file-preview"
+                      onClick={() => handleImagePreviewClick(file)}
+                    />
+                    <div className="file-info">
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-size">
+                        ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="file-info">
+                    <div className="file-icon">📄</div>
+                    <span className="file-name">{file.name}</span>
+                    <span className="file-size">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                )}
+                <button 
+                  className="remove-file-btn"
+                  onClick={() => removeFile(index)}
+                  title="Удалить файл"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Функция для рендера истории комментариев
+  const renderCommentHistory = (comments: ChangeHistory[], title: string, emptyMessage: string) => {
+    if (loadingStudentHistory) {
+      return (
+        <div className="loading-section">
+          <div className="loading-spinner"></div>
+          <span>Загрузка {title.toLowerCase()}...</span>
+        </div>
+      );
+    }
+
+    if (comments.length === 0) {
+      return (
+        <div className="no-comments-section">
+          {emptyMessage}
+        </div>
+      );
+    }
+
+    // Функция для создания предпросмотра файлов
+    const renderFilePreview = (fileUrl: any, fileName: string) => {
+      const urlString = typeof fileUrl === 'string' ? fileUrl : '';
+      const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fileName);
+      
+      if (isImage && urlString) {
+        return (
+          <div className="image-preview-modal">
+            <img 
+              src={fileUrl} 
+              alt="Превью" 
+              className="comment-image-preview"
+              onClick={() => handleOpenImageModal(fileUrl, fileName)}
+              style={{ cursor: 'pointer' }}
+            />
+            <div className="image-preview-actions">
+              <button 
+                className="view-full-btn"
+                onClick={() => handleOpenImageModal(fileUrl, fileName)}
+              >
+                Открыть в полном размере
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="file-preview">
+          <div className="file-icon">📄</div>
+          <a 
+            href={fileUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="file-link"
+          >
+            {fileName || `Файл`}
+          </a>
+        </div>
+      );
+    };
+
+    return (
+      <div className="comment-history-section">
+        <div className="comment-history-list">
+          {comments.map((comment, index) => (
+            <div key={comment.id} className="comment-history-item">
+              <div className="comment-header">
+                <span className="comment-date">
+                  {new Date(comment.dateTime).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                <span className={`comment-author-badge ${comment.teacherOrStudent ? 'teacher-badge' : 'student-badge'}`}>
+                </span>
+              </div>
+              
+              {comment.comment && (
+                <div className="comment-text">
+                  {comment.comment}
+                </div>
+              )}
+              
+              {comment.files && comment.files.length > 0 && (
+                <div className="comment-files">
+                  <div className="files-header">
+                    <span>Прикрепленные файлы ({comment.files.length})</span>
+                  </div>
+                  <div className="files-grid">
+                    {comment.files.map((fileUrl, fileIndex) => {
+                      // Безопасное извлечение имени файла
+                      let fileName = `Файл ${fileIndex + 1}`;
+                      if (typeof fileUrl === 'string') {
+                        fileName = fileUrl.split('/').pop() || fileName;
+                      }
+
+                      return (
+                        <div key={fileIndex} className="file-item-preview">
+                          {renderFilePreview(fileUrl, fileName)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {index < comments.length - 1 && <div className="comment-divider"></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер модального окна комментария с вкладками
+  const renderCommentModal = (): React.ReactElement | null => {
+    if (!commentModalData) return null;
+
+    const record = getGradeRecord(commentModalData.studentId, commentModalData.date);
+    const student = students.find(s => s.id === commentModalData.studentId);
+    const studentComments = getStudentComments();
+    const teacherComments = getTeacherComments();
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content comment-modal expanded">
+          <h3 style={{ marginBottom: '16px', color: '#002FA7' }}>
+            Комментарии к оценке {student ? `${student.lastName} ${student.firstName[0]}.${student.middleName[0]}.` : ''}
+          </h3>
+          
+          {/* Вкладки */}
+          <div className="comment-tabs-fullwidth">
+            <button 
+              className={`comment-tab-fullwidth ${activeCommentTab === 'teacher' ? 'active' : ''}`}
+              onClick={() => setActiveCommentTab('teacher')}
+            >
+              <span className="tab-title">Комментарий преподавателя</span>
+              {teacherComments.length > 0 && (
+                <span className="tab-badge-fullwidth">{teacherComments.length}</span>
+              )}
+            </button>
+            <button 
+              className={`comment-tab-fullwidth ${activeCommentTab === 'student' ? 'active' : ''}`}
+              onClick={() => setActiveCommentTab('student')}
+            >
+              <span className="tab-title">Комментарий студента</span>
+              {studentComments.length > 0 && (
+                <span className="tab-badge-fullwidth">{studentComments.length}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Содержимое вкладки преподавателя */}
+          {activeCommentTab === 'teacher' && (
+            <div className="tab-content-fullwidth">
+              <div className="comment-input-section">
+                <div className="comment-textarea-container">
+                  <textarea
+                    value={teacherCommentText}
+                    onChange={(e) => setTeacherCommentText(e.target.value)}
+                    onPaste={(e) => {
+                      const items = e.clipboardData?.items;
+                      if (!items) return;
+
+                      const newFiles: File[] = [];
+                      for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (item.kind === 'file') {
+                          const file = item.getAsFile();
+                          if (file && file.type.startsWith('image/')) {
+                            newFiles.push(file);
+                            e.preventDefault();
+                          }
+                        }
+                      }
+                      if (newFiles.length > 0) {
+                        setTeacherAttachedFiles(prev => [...prev, ...newFiles]);
+                      }
+                    }}
+                    placeholder="Введите комментарий преподавателя..."
+                    rows={4}
+                    className="comment-textarea"
+                  />
+                </div>
+                
+                {renderTeacherFilesSection(teacherAttachedFiles, removeTeacherFile)}
+              </div>
+              
+              {/* История комментариев преподавателя */}
+              {renderCommentHistory(
+                teacherComments, 
+                'Комментарии преподавателя', 
+                'Нет комментариев преподавателя'
+              )}
+            </div>
+          )}
+
+          {/* Содержимое вкладки студента */}
+          {activeCommentTab === 'student' && (
+            <div className="tab-content-fullwidth">
+              {renderCommentHistory(
+                studentComments, 
+                'Комментарии студента', 
+                'Нет комментариев студента'
+              )}
+            </div>
+          )}
+          
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => {
+                setCommentModalData(null);
+                setTeacherCommentText('');
+                setTeacherAttachedFiles([]);
+                setStudentChangeHistory([]);
+              }}
+              disabled={uploadingFiles}
+              type="button"
+            >
+              Отмена
+            </button>
+            
+            {/* Кнопка сохранения только для вкладки преподавателя */}
+            {activeCommentTab === 'teacher' && (
+              <button 
+                className="gradient-btn" 
+                onClick={handleSaveTeacherComment}
+                disabled={uploadingFiles || (!teacherCommentText && teacherAttachedFiles.length === 0)}
+                type="button"
+              >
+                {uploadingFiles ? 'Сохранение...' : 'Сохранить комментарий'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Обработка вставки файлов через Ctrl+V в текстовое поле
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent): void => {
     const items = e.clipboardData?.items;
     if (!items) return;
 
@@ -1449,6 +2147,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         if (response.ok) {
           const result = await response.json();
           uploadedUrls.push(result.fileUrl);
+          
+          // Для изображений создаем предпросмотр
+          if (file.type.startsWith('image/')) {
+            console.log(`Изображение загружено: ${result.fileUrl}`);
+          }
         } else {
           console.error('Ошибка загрузки файла:', file.name);
         }
@@ -1462,26 +2165,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return uploadedUrls;
   };
 
-  // Удаление прикрепленного файла
-  const removeFile = (index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Обработчик выбора файлов через input
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setAttachedFiles(prev => [...prev, ...Array.from(files)]);
-    }
-    // Сбрасываем значение input, чтобы можно было выбрать те же файлы снова
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   // Сохранение комментария с прикрепленными файлами
-  const handleSaveComment = async () => {
-    if (!showCommentModal) return;
+  const handleSaveComment = async (): Promise<void> => {
+    if (!commentModalData) return;
 
     try {
       let uploadedFileUrls: string[] = [];
@@ -1493,8 +2179,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       // Обновляем запись с комментарием и ссылками на файлы
       updateGradeRecord(
-        showCommentModal.studentId, 
-        showCommentModal.date, 
+        commentModalData.studentId, 
+        commentModalData.date, 
         { 
           comment: commentText,
           attachments: uploadedFileUrls
@@ -1505,7 +2191,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       teacherApiService.invalidateLessonInfoCache();
 
       // Закрываем модальное окно и сбрасываем состояние
-      setShowCommentModal(null);
+      setCommentModalData(null);
       setCommentText('');
       setAttachedFiles([]);
       
@@ -1515,13 +2201,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Начало редактирования преподавателя
-  const handleTeacherEditStart = (subgroup: string) => {
+  const handleTeacherEditStart = (subgroup: string): void => {
     setEditingTeacher(subgroup);
     setTeacherEditValue(subgroupTeachers[selectedSubgroup as 'I' | 'II']);
   };
 
   // Сохранение преподавателя
-  const handleTeacherSave = () => {
+  const handleTeacherSave = (): void => {
     if (editingTeacher) {
       updateSubgroupTeacher(editingTeacher, teacherEditValue);
       setEditingTeacher(null);
@@ -1530,13 +2216,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Отмена редактирования преподавателя
-  const handleTeacherCancel = () => {
+  const handleTeacherCancel = (): void => {
     setEditingTeacher(null);
     setTeacherEditValue('');
   };
 
   // Обработка изменения глобального типа экзамена
-  const handleGlobalExamTypeChange = (examType: string) => {
+  const handleGlobalExamTypeChange = (examType: string): void => {
     setGlobalExamType(examType);
     
     // Автоматически применяем ко всем студентам
@@ -1546,7 +2232,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обработчик клика по кнопке "Выставить посещаемость"
-  const handleSetAttendance = () => {
+  const handleSetAttendance = (): void => {
     if (onSetAttendance) {
       onSetAttendance();
     } else {
@@ -1613,17 +2299,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Получение доступных оценок для текущего типа экзамена
-  const getAvailableExamGrades = (examType: string) => {
+  const getAvailableExamGrades = (examType: string): string[] => {
     return examGrades[examType as keyof typeof examGrades] || [];
   };
 
   // Обработчик изменения оценки экзамена
-  const handleExamGradeChange = (studentId: number, newGrade: string) => {
+  const handleExamGradeChange = (studentId: number, newGrade: string): void => {
     updateExamRecord(studentId, { grade: newGrade });
   };
 
   // Обработчик клика по ячейке экзамена
-  const handleExamCellClick = (studentId: number, currentGrade: string) => {
+  const handleExamCellClick = (studentId: number, currentGrade: string): void => {
     if (globalExamType) {
       setEditingCell({ studentId, date: '', field: 'exam' });
       setEditValue(currentGrade);
@@ -1633,7 +2319,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер заголовка даты с кнопками управления
-  const renderDateHeader = (date: string, index: number) => {
+  const renderDateHeader = (date: string, index: number): React.ReactElement => {
     const lessonNumber = getLessonNumber(date);
     const lesson = lessonDates.find(l => {
       const dateObj = new Date(l.date);
@@ -1688,7 +2374,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер пустого столбца с "+" для добавления даты
-  const renderAddDateColumn = () => {
+  const renderAddDateColumn = (): React.ReactElement => {
     return (
       <th className="column-add-date" rowSpan={2}>
         <div 
@@ -1703,7 +2389,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер таблицы
-  const renderTable = () => {
+  const renderTable = (): React.ReactElement => {
     return (
       <div className="performance-table-wrapper">
         <table className="performance-table">
@@ -1824,13 +2510,22 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                           
                           {/* Кнопка комментария */}
                           <button 
-                            className="comment-btn"
-                            onClick={() => {
-                              setShowCommentModal({ studentId: student.id, date });
-                              setCommentText(record.comment || '');
-                              setAttachedFiles([]);
-                            }}
-                            title={record.comment ? 'Редактировать комментарий' : 'Добавить комментарий'}
+                            className={`comment-btn ${
+                              getTeacherCommentsForCell(student.id, date).length > 0 ? 'has-teacher-comment' : ''
+                            } ${
+                              getStudentCommentsForCell(student.id, date).length > 0 ? 'has-student-comment' : ''
+                            }`}
+                            onClick={() => handleOpenCommentModal(student.id, date)}
+                            title={`Комментарии: ${
+                              getTeacherCommentsForCell(student.id, date).length > 0 ? 
+                              `Преподаватель (${getTeacherCommentsForCell(student.id, date).length})` : ''
+                            }${
+                              getTeacherCommentsForCell(student.id, date).length > 0 && 
+                              getStudentCommentsForCell(student.id, date).length > 0 ? ', ' : ''
+                            }${
+                              getStudentCommentsForCell(student.id, date).length > 0 ? 
+                              `Студент (${getStudentCommentsForCell(student.id, date).length})` : ''
+                            }`}
                           >
                             💬
                           </button>
@@ -1841,11 +2536,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
                   {/* Пустая ячейка для добавления даты */}
                   <td className="column-add-date">
-                    <div 
-
-                    >
-                      <div className="add-date-cell-plus"></div>
-                    </div>
+                    <div className="add-date-cell-plus"></div>
                   </td>
                   
                   {/* Средний балл */}
@@ -1926,7 +2617,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер модального окна добавления даты
-  const renderAddDateModal = () => {
+  const renderAddDateModal = (): React.ReactElement | null => {
     if (!addDateModal.isOpen) return null;
 
     return (
@@ -1988,7 +2679,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер модального окна удаления даты
-  const renderDeleteDateModal = () => {
+  const renderDeleteDateModal = (): React.ReactElement | null => {
     if (!deleteDateModal.isOpen) return null;
 
     return (
@@ -2027,148 +2718,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна комментария с прикреплением файлов
-  const renderCommentModal = () => {
-    if (!showCommentModal) return null;
-
-    const record = getGradeRecord(showCommentModal.studentId, showCommentModal.date);
-    const student = students.find(s => s.id === showCommentModal.studentId);
-
-    // Функция для получения типа файла
-    const getFileType = (file: File): string => {
-      if (file.type.startsWith('image/')) {
-        const type = file.type.split('/')[1]?.toUpperCase();
-        return type || 'IMAGE';
-      }
-      return file.name.split('.').pop()?.toUpperCase() || 'FILE';
-    };
-
-    // Функция для создания превью изображения
-    const createImagePreview = (file: File): string => {
-      return URL.createObjectURL(file);
-    };
-
-    // Обработчик загрузки изображения для очистки URL
-    const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const target = e.target as HTMLImageElement;
-      URL.revokeObjectURL(target.src);
-    };
-
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content comment-modal">
-          <h3 style={{ marginBottom: '16px', color: '#002FA7' }}>
-            Комментарий к оценке {student ? `${student.lastName} ${student.firstName[0]}.${student.middleName[0]}.` : ''}
-          </h3>
-          
-          <div className="comment-textarea-container">
-            <textarea
-              ref={textareaRef}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onPaste={handlePaste}
-              placeholder="Введите комментарий..."
-              rows={4}
-              className="comment-textarea"
-            />
-          </div>
-          
-          {/* Блок прикрепленных файлов */}
-          <div className="attached-files-section">
-            <div className="files-header">
-              <span>Прикрепленные изображения ({attachedFiles.length})</span>
-            </div>
-            
-            <div className="files-instruction">
-              Используйте Ctrl+V в поле комментария для прикрепления изображений
-            </div>
-            
-            {attachedFiles.length > 0 ? (
-              <div className="files-list">
-                {attachedFiles.map((file, index) => (
-                  <div key={index} className="file-item">
-                    <div className="image-preview-container">
-                      {file.type.startsWith('image/') ? (
-                        <>
-                          <img 
-                            src={createImagePreview(file)} 
-                            alt="Превью" 
-                            className="file-preview"
-                            onLoad={handleImageLoad}
-                          />
-                          <div className="file-info">
-                            <span className="file-name" title={file.name}>
-                              {file.name}
-                            </span>
-                            <span className="file-type-badge">
-                              {getFileType(file)}
-                            </span>
-                            <span className="file-size">
-                              ({(file.size / 1024).toFixed(1)} KB)
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="file-info">
-                          <span className="file-name" title={file.name}>
-                            {file.name}
-                          </span>
-                          <span className="file-type-badge">
-                            {getFileType(file)}
-                          </span>
-                          <span className="file-size">
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="remove-file-btn"
-                      title="Удалить файл"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="no-files-placeholder">
-                Изображения не прикреплены<br />
-              </div>
-            )}
-          </div>
-          
-          <div className="modal-actions">
-            <button 
-              className="cancel-btn" 
-              onClick={() => {
-                setShowCommentModal(null);
-                setCommentText('');
-                setAttachedFiles([]);
-              }}
-              disabled={uploadingFiles}
-              type="button"
-            >
-              Отмена
-            </button>
-            <button 
-              className="gradient-btn" 
-              onClick={handleSaveComment}
-              disabled={uploadingFiles}
-              type="button"
-            >
-              {uploadingFiles ? 'Загрузка...' : 'Сохранить'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // Рендер модального окна темы занятия
-  const renderTopicModal = () => {
+  const renderTopicModal = (): React.ReactElement | null => {
     if (!showTopicModal) return null;
 
     return (
@@ -2189,9 +2740,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             <button className="gradient-btn" onClick={() => setShowTopicModal(null)}>
               Сохранить
             </button>
-            <button className="cancel-btn" onClick={() => setShowTopicModal(null)}>
-              Отмена
-            </button>
           </div>
         </div>
       </div>
@@ -2199,136 +2747,122 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер модального окна информации о занятии
-  const renderDateModal = () => {
+  const renderDateModal = (): React.ReactElement | null => {
     if (!showDateModal) return null;
 
-    const handleSaveDateInfo = async () => {
+    const availableLessonTypes = lessonTypes.map(lt => 
+      typeof lt === 'string' ? lt : (lt as any).name
+    ).filter(Boolean);
+
+    const handleSaveDateInfoInternal = async (): Promise<void> => {
       if (!showDateModal) return;
 
       try {
-        const firstStudent = filteredStudents[0];
-        if (!firstStudent) return;
-
-        const success = await saveLessonInfo({
-          studentId: firstStudent.id,
-          lessonNumber: showDateModal.lessonNumber,
-          typeMark: dateModalData.typeMark,
-          comment: dateModalData.comment
-        });
-
-        if (success) {
-          setShowDateModal(null);
-          setDateModalData({ typeMark: '', comment: '' });
-          console.log('Данные успешно сохранены');
-        } else {
-          console.error('Не удалось сохранить данные');
-        }
-        } catch (error) {
+        await handleSaveDateInfo();
+      } catch (error) {
         console.error('Ошибка при сохранении:', error);
       }
     };
 
-    const handleCloseModal = () => {
+    const handleCloseModal = (): void => {
       setShowDateModal(null);
       setDateModalData({ typeMark: '', comment: '' });
     };
 
     return (
-      <div className="pc-modal-overlay" onClick={handleCloseModal}>
-        <div className="pc-modal expanded" onClick={(e) => e.stopPropagation()}>
-          <div className="pc-modal-header">
+      <div className="lesson-info-modal-overlay" onClick={handleCloseModal}>
+        <div className="lesson-info-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="lesson-info-modal-header">
             <h3>Информация о занятии</h3>
             <button 
-              className="pc-modal-close"
+              className="lesson-info-modal-close"
               onClick={handleCloseModal}
             >
               ×
             </button>
           </div>
 
-          <div className="pc-modal-content">
-            <div className="pc-form-grid">
-              {/* Автоматически заполняемые поля (только для чтения) */}
-              <div className="pc-form-group">
-                <label>Номер недели</label>
-                <input
-                  type="text"
-                  value={showDateModal.numberWeek}
-                  className="pc-input"
-                  readOnly
-                />
+          <div className="lesson-info-modal-content">
+            {/* БЛОК 1: Информация о занятии (только чтение) */}
+            <div className="lesson-details-info">
+              <div className="info-section-header">
+                Детали расписания
               </div>
-
-              <div className="pc-form-group">
-                <label>День недели</label>
-                <input
-                  type="text"
-                  value={showDateModal.dayWeek}
-                  className="pc-input"
-                  readOnly
-                />
+              <div className="info-section-content">
+                <div className="info-grid-4">
+                  <div className="info-grid-item">
+                    <span className="info-grid-label">Номер недели</span>
+                    <span className="info-grid-value">{showDateModal.numberWeek || '—'}</span>
+                  </div>
+                  <div className="info-grid-item">
+                    <span className="info-grid-label">День недели</span>
+                    <span className="info-grid-value">{showDateModal.dayWeek || '—'}</span>
+                  </div>
+                  <div className="info-grid-item">
+                    <span className="info-grid-label">Тип недели</span>
+                    <span className="info-grid-value">{showDateModal.typeWeek || '—'}</span>
+                  </div>
+                  <div className="info-grid-item">
+                    <span className="info-grid-label">Номер пары</span>
+                    <span className="info-grid-value">{showDateModal.numPair || '—'}</span>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="pc-form-group">
-                <label>Тип недели</label>
-                <input
-                  type="text"
-                  value={showDateModal.typeWeek}
-                  className="pc-input"
-                  readOnly
-                />
+            {/* БЛОК 2: Управление занятием (редактируемые поля) */}
+            <div className="attendance-stats-section">
+              <div className="attendance-stats-header">
+                Управление занятием
               </div>
-
-              <div className="pc-form-group">
-                <label>Номер пары</label>
-                <input
-                  type="text"
-                  value={showDateModal.numPair}
-                  className="pc-input"
-                  readOnly
-                />
-              </div>
-
-              {/* Поле для редактирования преподавателем - с градиентным подчеркиванием */}
-              <div className="pc-form-group editable-field required">
-                <label>Тип занятия</label>
-                <select 
-                  value={dateModalData.typeMark}
-                  onChange={(e) => setDateModalData(prev => ({...prev, typeMark: e.target.value}))}
-                  className="pc-input"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <option value="">Выберите тип</option>
-                  <option value="Лекция">Лекция</option>
-                  <option value="Практика">Практическая работа</option>
-                  <option value="Самостоятельная работа">Самостоятельная работа</option>
-                  <option value="Контрольная работа">Контрольная работа</option>
-                  <option value="Домашнее задание">Домашнее задание</option>
-                  <option value="Тест">Тест</option>
+              <div className="attendance-stats-content">
+                {/* Поле типа занятия */}
+                <div className="form-group-full-width">
+                  <label className="form-label">Тип занятия *</label>
+                  <select 
+                    value={dateModalData.typeMark}
+                    onChange={(e) => setDateModalData(prev => ({...prev, typeMark: e.target.value}))}
+                    className="form-input"
+                    disabled={updatingLessonType}
+                  >
+                  <option value="">Выберите тип занятия</option>
+                  {lessonTypes.map(type => (
+                    <option key={type.id} value={type.name}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
+                {lessonTypes.length === 0 && (
+                  <div className="form-help-text">
+                    Загрузка типов занятий...
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Тема занятия*/}
-            <div className="pc-form-group full-width editable-field required">
-              <label>Тема занятия</label>
-              <textarea
-                value={dateModalData.comment}
-                onChange={(e) => setDateModalData(prev => ({...prev, comment: e.target.value}))}
-                className="pc-input"
-                placeholder="Введите тему занятия..."
-                rows={4}
-              />
-            </div>
+                {/* Поле темы занятия */}
+                <div className="form-group-full-width">
+                  <label className="form-label">Тема занятия *</label>
+                  <textarea
+                    value={dateModalData.comment}
+                    onChange={(e) => setDateModalData(prev => ({...prev, comment: e.target.value}))}
+                    className="form-textarea"
+                    placeholder="Введите тему занятия..."
+                    rows={3}
+                    disabled={updatingLessonType}
+                  />
+                </div>
 
-            <div className="pc-modal-actions">
-              <button
-                className="pc-confirm-btn"
-                onClick={handleSaveDateInfo}
-                disabled={!dateModalData.typeMark || !dateModalData.comment}
-              >
-                Сохранить
-              </button>
+                {/* Кнопка сохранения */}
+                <div className="lesson-info-actions">
+                  <button
+                      className="gradient-btn"
+                      onClick={handleSaveDateInfo}
+                      disabled={!dateModalData.typeMark || updatingLessonType}
+                  >
+                    {updatingLessonType ? 'Сохранение...' : 'Сохранить изменения'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2337,7 +2871,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер модального окна подгрупп
-  const renderSubgroupModal = () => {
+  const renderSubgroupModal = (): React.ReactElement | null => {
     if (!showSubgroupModal) return null;
 
     const studentsInSubgroupI = students.filter(student => studentSubgroups[student.id] === 'I');
@@ -2417,7 +2951,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Рендер фильтров с кнопкой добавления даты
-  const renderFilters = () => {
+  const renderFilters = (): React.ReactElement => {
     return (
       <div className="performance-filters">
         <div className="date-range-filter">
@@ -2646,6 +3180,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       {renderSubgroupModal()}
       {renderAddDateModal()}
       {renderDeleteDateModal()}
+      {renderImageModal()}
     </div>
   );
 };
+
+export default TeacherPerformanceSection;
