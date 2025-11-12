@@ -131,7 +131,6 @@ const fetchDisciplines = async (forceRefresh = false) => {
 
   // Фильтрация данных
   const filteredDisciplines = disciplines.filter(discipline => {
-    // Поскольку у нас нет информации о семестре в API, распределяем равномерно
     const semester = discipline.idSubject % 2 === 0 ? 2 : 1;
     const semesterFilter = selectedSemester === 'first' ? semester === 1 : semester === 2;
     const courseFilter = selectedCourse === 'all' || discipline.course.toString() === selectedCourse;

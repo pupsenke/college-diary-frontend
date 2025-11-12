@@ -57,6 +57,13 @@ interface LessonInfoModalData {
   } | null;
 }
 
+interface FilePreview {
+  id: number;
+  name: string;
+  url: string;
+  isImage: boolean;
+}
+
 export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> = ({
   groupNumber,
   subject,
@@ -80,10 +87,9 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     start: '',
     end: ''
   });
-  const [refreshing, setRefreshing] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-
+  
   const [managingDate, setManagingDate] = useState(false);
   const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
     isOpen: false,
@@ -106,7 +112,76 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
   const [loadingLessonInfo, setLoadingLessonInfo] = useState(false);
 
+  // Новые состояния для кэша и обновления
+  const [refreshing, setRefreshing] = useState(false);
+  const [isUsingCache, setIsUsingCache] = useState(false);
+
   const filteredStudents = students;
+
+  // Компонент информационной иконки для посещаемости
+  const InfoIcon = (): React.ReactElement => (
+    <div className="info-icon-btn" tabIndex={0}>
+      <button className="header-btn" type="button">
+        <span className="info-icon-text">i</span>
+        <span>Информация</span>
+      </button>
+      <div className="info-tooltip">
+        <div className="info-tooltip-content">
+          <p><strong>Управление посещаемостью</strong></p>
+          <p>В этом разделе вы можете отмечать посещаемость студентов, указывать причины отсутствия и отслеживать статистику.</p>
+          <p><strong>Основные возможности:</strong></p>
+          <ul>
+            <li>Отметка присутствия/отсутствия по датам занятий</li>
+            <li>Указание причин отсутствия</li>
+            <li>Фильтрация по периоду дат</li>
+            <li>Просмотр статистики посещаемости</li>
+            <li>Информация о каждом занятии</li>
+          </ul>
+          <p><strong>Статусы посещаемости:</strong></p>
+          <ul>
+            <li><strong>п</strong> - присутствовал</li>
+            <li><strong>у</strong> - отсутствовал по уважительной причине</li>
+            <li><strong>н</strong> - отсутствовал без уважительной причины</li>
+          </ul>
+          <p>Для изменения статуса нажмите на ячейку с посещаемостью.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Компонент кнопки обновления
+  const RefreshButton = (): React.ReactElement => (
+    <button 
+      className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+        alt="Обновить"
+      />
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+    </button>
+  );
+
+  // Функция для принудительного обновления данных
+  const handleRefresh = async (): Promise<void> => {
+    setRefreshing(true);
+    try {
+      // Очищаем кэш посещаемости
+      teacherApiService.invalidateAttendanceCache();
+      teacherApiService.invalidateStudentCache();
+      
+      // Перезагружаем данные
+      await loadAttendanceData();
+      console.log('Данные посещаемости успешно обновлены');
+    } catch (error) {
+      console.error('Ошибка при обновлении данных посещаемости:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Функция для извлечения чистой даты из формата "10.11 (539725)"
   const extractDateFromTableFormat = (tableDate: string): string => {
@@ -155,46 +230,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
     return true;
   });
-
-    // Компонент информационной иконки
-    const InfoIcon = (): React.ReactElement => (
-      <div className="info-icon-btn" tabIndex={0}>
-        <button className="header-btn" type="button">
-          <span className="info-icon-text">i</span>
-          <span>Информация</span>
-        </button>
-        <div className="info-tooltip">
-          <div className="info-tooltip-content">
-            <p><strong>Управление посещаемостью</strong></p>
-            <p>В этом разделе вы можете отмечать посещаемость студентов.</p>
-            <p><strong>Статусы:</strong></p>
-            <ul>
-              <li><strong>п</strong> - присутствовал</li>
-              <li><strong>у</strong> - отсутствовал по уважительной причине</li>
-              <li><strong>н</strong> - отсутствовал</li>
-            </ul>
-            <p>Нажмите на ячейку для изменения статуса.</p>
-            <p>Используйте кнопку "Обновить данные" для синхронизации с сервером.</p>
-          </div>
-        </div>
-      </div>
-    );
-  
-    // Компонент кнопки обновления
-    const RefreshButton = (): React.ReactElement => (
-      <button 
-        className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
-        onClick={handleRefresh}
-        disabled={refreshing}
-      >
-        <img 
-          src="/st-icons/upload_icon.svg" 
-          className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
-          alt="Обновить"
-        />
-        <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
-      </button>
-    );
 
   // Функция для получения номера занятия из даты
   const getLessonNumber = (date: string): number => {
@@ -315,124 +350,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   };
 
-  // Функция для открытия модального окна добавления даты
-  const handleOpenAddDateModal = async (): Promise<void> => {
-    if (!idSt || !teacherId) {
-      alert('Недостаточно данных для добавления даты');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
-      if (!groupId) {
-        throw new Error('Не удалось определить ID группы');
-      }
-
-      const availableLessons = await teacherApiService.getLessonsForDateAddition(idSt, groupId, teacherId);
-      
-      setAddDateModal({
-        isOpen: true,
-        availableLessons: availableLessons || [],
-        selectedLesson: null
-      });
-    } catch (error) {
-      console.error('Error fetching available lessons:', error);
-      alert('Не удалось загрузить доступные занятия для добавления');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Функция для добавления столбца с датой
-  const handleAddDateColumn = async (): Promise<void> => {
-    if (!addDateModal.selectedLesson || !idSt || !teacherId) {
-      alert('Выберите занятие для добавления');
-      return;
-    }
-
-    setManagingDate(true);
-    try {
-      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
-      if (!groupId) {
-        throw new Error('Не удалось определить ID группы');
-      }
-
-      const addRequest = {
-        idGroup: groupId,
-        idSt: idSt,
-        idLesson: addDateModal.selectedLesson.id,
-        idTeacher: teacherId
-      };
-      
-      const result = await teacherApiService.addDateColumn(addRequest);
-      
-      if (result.success) {
-        alert('Столбец с датой успешно добавлен');
-        setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null });
-        
-        teacherApiService.invalidateAttendanceCache();
-        teacherApiService.invalidateLessonDatesCache();
-        
-        await loadAttendanceData();
-      }
-    } catch (error: any) {
-      console.error('Error adding date column:', error);
-      alert(`Ошибка при добавлении столбца: ${error.message}`);
-    } finally {
-      setManagingDate(false);
-    }
-  };
-
-  // Функция для открытия модального окна удаления даты
-  const handleOpenDeleteDateModal = (date: string, lessonNumber: number): void => {
-    setDeleteDateModal({
-      isOpen: true,
-      dateToDelete: date,
-      lessonNumber: lessonNumber
-    });
-  };
-
-  // Функция для удаления столбца с датой
-  const handleDeleteDateColumn = async (): Promise<void> => {
-    if (!idSt || !teacherId) {
-      alert('Недостаточно данных для удаления даты');
-      return;
-    }
-
-    setManagingDate(true);
-    try {
-      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
-      if (!groupId) {
-        throw new Error('Не удалось определить ID группы');
-      }
-
-      const deleteRequest = {
-        idGroup: groupId,
-        idSt: idSt,
-        idTeacher: teacherId,
-        number: deleteDateModal.lessonNumber
-      };
-      
-      const result = await teacherApiService.deleteDateColumn(deleteRequest);
-      
-      if (result.success) {
-        alert('Столбец с датой успешно удален');
-        setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 });
-        
-        teacherApiService.invalidateAttendanceCache();
-        teacherApiService.invalidateLessonDatesCache();
-        
-        await loadAttendanceData();
-      }
-    } catch (error: any) {
-      console.error('Error deleting date column:', error);
-      alert(`Ошибка при удалении столбца: ${error.message}`);
-    } finally {
-      setManagingDate(false);
-    }
-  };
-
   // Загрузка данных посещаемости
   const loadAttendanceData = async () => {
     try {
@@ -540,46 +457,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       setStudents([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Функция принудительного обновления данных
-  const handleRefresh = async (): Promise<void> => {
-      console.log('Refresh button clicked');
-    setRefreshing(true);
-    try {
-      console.log('Начало принудительного обновления данных...');
-      
-      // ИНВАЛИДИРУЕМ КЭШ ПЕРЕД ЗАГРУЗКОЙ
-      teacherApiService.invalidateAttendanceCache();
-      teacherApiService.invalidateStudentCache();
-      teacherApiService.invalidateLessonDatesCache();
-      
-      // Добавляем небольшую задержку для гарантии инвалидации кэша
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      await loadAttendanceData();
-      console.log('Данные посещаемости успешно обновлены');
-      
-      // Показываем временное сообщение об успехе
-      const refreshBtn = document.querySelector('.pc-refresh-btn');
-      if (refreshBtn) {
-        const originalText = refreshBtn.querySelector('span')?.textContent;
-        const span = refreshBtn.querySelector('span');
-        if (span) {
-          span.textContent = 'Данные обновлены!';
-          setTimeout(() => {
-            if (span) {
-              span.textContent = originalText || 'Обновить данные';
-            }
-          }, 2000);
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка при обновлении данных:', error);
-      alert('Не удалось обновить данные. Пожалуйста, попробуйте еще раз.');
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -1074,15 +951,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         >
           ⋯
         </button>
-
-          {/* Кнопка удаления даты */}
-          <button 
-            className="date-delete-btn"
-            onClick={() => handleOpenDeleteDateModal(date, lessonId)}
-            title="Удалить столбец с датой"
-          >
-            ×
-          </button>
         </div>
           
         {/* ДАТА С ИНФОРМАЦИЕЙ О ЗАНЯТИИ */}
@@ -1095,123 +963,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
           </div>
         </div>
       </th>
-    );
-  };
-
-  // Рендер пустого столбца с "+" для добавления даты
-  const renderAddDateColumn = (): React.ReactElement => {
-    return (
-      <th className="column-add-date">
-        <div 
-          className="add-date-column"
-          onClick={handleOpenAddDateModal}
-          title="Добавить столбец с датой"
-        >
-          <div className="add-date-plus">+</div>
-        </div>
-      </th>
-    );
-  };
-
-  // Рендер модального окна добавления даты
-  const renderAddDateModal = (): React.ReactElement | null => {
-    if (!addDateModal.isOpen) return null;
-
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content add-date-modal">
-          <h3>Добавить столбец с датой</h3>
-          
-          <div className="available-lessons-list">
-            <h4>Доступные занятия:</h4>
-            
-            {addDateModal.availableLessons.length === 0 ? (
-              <div className="no-lessons-message">
-                Нет доступных занятий для добавления
-              </div>
-            ) : (
-              <div className="lessons-grid">
-                {addDateModal.availableLessons.map((lesson) => (
-                  <div 
-                    key={lesson.id}
-                    className={`lesson-item ${addDateModal.selectedLesson?.id === lesson.id ? 'selected' : ''}`}
-                    onClick={() => setAddDateModal(prev => ({
-                      ...prev,
-                      selectedLesson: lesson
-                    }))}
-                  >
-                    <div className="lesson-date">
-                      {new Date(lesson.date).toLocaleDateString('ru-RU')}
-                    </div>
-                    <div className="lesson-details">
-                      <div className="lesson-day">{lesson.dayWeek}</div>
-                      <div className="lesson-type">{lesson.typeWeek}</div>
-                      <div className="lesson-pair">Пара: {lesson.numPair}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="modal-actions">
-            <button 
-              className="cancel-btn" 
-              onClick={() => setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null })}
-              disabled={managingDate}
-            >
-              Отмена
-            </button>
-            <button 
-              className="gradient-btn" 
-              onClick={handleAddDateColumn}
-              disabled={!addDateModal.selectedLesson || managingDate || addDateModal.availableLessons.length === 0}
-            >
-              {managingDate ? 'Добавление...' : 'Добавить столбец'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Рендер модального окна удаления даты
-  const renderDeleteDateModal = (): React.ReactElement | null => {
-    if (!deleteDateModal.isOpen) return null;
-
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content delete-date-modal">
-          <h3>Удалить столбец с датой</h3>
-          
-          <div className="delete-confirmation">
-            <p>Вы уверены, что хотите удалить столбец с датой?</p>
-            <div className="date-to-delete">
-              <strong>{deleteDateModal.dateToDelete}</strong>
-            </div>
-            <p className="warning-text">
-              Внимание: Это действие нельзя отменить. Все данные посещаемости для этой даты будут удалены.
-            </p>
-          </div>
-
-          <div className="modal-actions">
-            <button 
-              className="cancel-btn" 
-              onClick={() => setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 })}
-              disabled={managingDate}
-            >
-              Отмена
-            </button>
-            <button 
-              className="delete-confirm-btn" 
-              onClick={handleDeleteDateColumn}
-              disabled={managingDate}
-            >
-              {managingDate ? 'Удаление...' : 'Удалить'}
-            </button>
-          </div>
-        </div>
-      </div>
     );
   };
 
@@ -1234,9 +985,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               <th className="column-name sticky-col">ФИО</th>
               
               {filteredDates.map((date: string, index: number) => renderDateHeader(date, index))}
-
-              {/* Пустой столбец для добавления даты */}
-              {renderAddDateColumn()}
               
               <th className="column-percentage sticky-col-right"></th>
             </tr>
@@ -1293,11 +1041,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                       </td>
                     );
                   })}
-
-                  {/* Пустая ячейка для добавления даты */}
-                  <td className="column-add-date">
-                    <div className="add-date-cell-plus"></div>
-                  </td>
                   
                   <td className="column-percentage sticky-col-right">
                     <div 
@@ -1320,8 +1063,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   };
 
   return (
-    <div className="teacher-attendance-section">
-      {/* Заголовок с кнопками информации и обновления */}
+    <div className="teacher-performance-section">
+      {/* Заголовок с кнопками управления */}
       <div className="attendance-cabinet-header">
         <div className="header-left-actions">
           {onBackToGroups && (
@@ -1333,6 +1076,12 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         </div>
         <RefreshButton />
       </div>
+
+      {isUsingCache && (
+        <div className="attendance-cache-warning">
+          Используются кэшированные данные. Для актуальной информации обновите данные.
+        </div>
+      )}
 
       {/* Основной заголовок */}
       <div className="attendance-header">
@@ -1425,8 +1174,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
       {/* Модальные окна */}
       {renderLessonInfoModal()}
-      {renderAddDateModal()}
-      {renderDeleteDateModal()}
     </div>
   );
 };

@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
         <div className="th-logo-mark">
           <img src='blue_icon.svg' alt="" className='th-image'/>
           <div>
-            <div className="th-logo-title">Цифровой двойник</div>
+            <div className="th-logo-title">Цифровой дневник</div>
             <div className="th-logo-subtitle">Политехнический колледж НовГУ</div>
           </div>
         </div>

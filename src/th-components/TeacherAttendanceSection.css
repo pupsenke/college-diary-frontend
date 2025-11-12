@@ -90,14 +90,14 @@ body.menu-collapsed .teacher-attendance-section {
 .set-grades-btn {
   min-width: 140px;
 }
-/* Стили для кнопок в заголовке посещаемости */
+
+/* Стили для заголовка с кнопками информации и обновления */
 .attendance-cabinet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
   gap: 16px;
-  margin-bottom: 24px;
-  padding: 0 8px;
 }
 
 .header-left-actions {
@@ -106,47 +106,37 @@ body.menu-collapsed .teacher-attendance-section {
   gap: 12px;
 }
 
-/* Общие стили для кнопок в заголовке */
+/* Стили для кнопок в заголовке */
 .header-btn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  color: #374151;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  min-height: 48px;
-  white-space: nowrap;
+  text-decoration: none;
 }
 
-.header-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
-  color: #002FA7;
+.header-btn:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-color: #94a3b8;
+  transform: translateY(-1px);
 }
 
-.header-btn:disabled {
-  background: #f1f5f9;
-  border-color: #d1d5db;
-  color: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+.header-btn:active {
+  transform: translateY(0);
 }
 
-/* Специфичные стили для кнопки информации */
 .info-icon-btn {
   position: relative;
   display: inline-flex;
-  align-items: center;
+  align-items: left;
 }
 
 .info-icon-btn:hover .info-tooltip,
@@ -155,12 +145,6 @@ body.menu-collapsed .teacher-attendance-section {
   visibility: visible;
   pointer-events: auto;
   transform: translateX(0%) translateY(8px);
-}
-
-.info-icon-text {
-  font-weight: 700;
-  font-size: 16px;
-  color: #002FA7;
 }
 
 .info-tooltip {
@@ -192,6 +176,7 @@ body.menu-collapsed .teacher-attendance-section {
   white-space: normal;
 }
 
+/* Стиль для синего заголовка */
 .info-tooltip-content strong {
   color: #002FA7;
   font-size: 15px;
@@ -199,6 +184,7 @@ body.menu-collapsed .teacher-attendance-section {
   margin-bottom: 8px;
 }
 
+/* Стрелка тултипа */
 .info-tooltip::before {
   content: '';
   position: absolute;
@@ -216,57 +202,81 @@ body.menu-collapsed .teacher-attendance-section {
 .pc-refresh-btn {
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pc-refresh-btn.pc-refreshing {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 .pc-refresh-icon {
-  width: 22px;
-  height: 22px;
-  transition: transform 0.3s ease;
+  width: 18px;
+  height: 18px;
+  transition: all 0.3s ease;
+  filter: brightness(0.8);
 }
 
 .pc-refresh-spin {
-  animation: pc-spin 1s linear infinite;
+  animation: pc-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  filter: brightness(1);
 }
 
 @keyframes pc-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  0% { 
+    transform: rotate(0deg);
+    filter: brightness(0.8);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+  100% { 
+    transform: rotate(360deg);
+    filter: brightness(0.8);
+  }
 }
 
-.pc-refreshing {
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+/* Эффект пульсации для кнопки во время обновления */
+.pc-refresh-btn.pc-refreshing::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
 }
 
-/* Кнопка назад */
-.back-button {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
-.back-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+/* Предупреждение о использовании кэша */
+.attendance-cache-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #856404;
+  font-size: 14px;
+  text-align: center;
 }
 
-.back-button img {
-  width: 20px;
-  height: 20px;
-  transition: all 0.2s ease;
-}
-
-/* Адаптивность */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .attendance-cabinet-header {
     flex-direction: column;
@@ -274,15 +284,9 @@ body.menu-collapsed .teacher-attendance-section {
     gap: 12px;
   }
   
-  .header-left-actions {
-    justify-content: space-between;
-    width: 100%;
-  }
-  
   .header-btn {
     justify-content: center;
-    flex: 1;
-    min-width: auto;
+    width: 100%;
   }
   
   .info-tooltip {
@@ -294,22 +298,28 @@ body.menu-collapsed .teacher-attendance-section {
     min-width: 280px;
     max-width: 90vw;
   }
+  
+  .info-icon-btn:hover .info-tooltip {
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .info-icon-btn:focus .info-tooltip,
+  .info-icon-btn:active .info-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
 }
 
 @media (max-width: 480px) {
   .header-btn {
     padding: 8px 12px;
     font-size: 13px;
-    min-height: 40px;
   }
   
   .info-tooltip-content {
-    padding: 16px;
-    font-size: 13px;
-  }
-  
-  .header-left-actions {
-    gap: 8px;
+    padding: 12px;
+    font-size: 12px;
   }
 }
 
@@ -788,27 +798,6 @@ body.menu-collapsed .teacher-attendance-section {
   border-radius: 12px;
   margin: 20px 0;
   border: 1px solid #e2e8f0;
-}
-
-/* Интеграция с существующими стилями разделов */
-.teacher-performance-section .performance-cabinet-header,
-.teacher-attendance-section .attendance-cabinet-header {
-  margin-bottom: 24px;
-  padding: 0 8px;
-}
-
-/* Убедимся, что кнопки правильно выровнены в заголовках */
-.performance-header,
-.attendance-header {
-  margin-bottom: 24px;
-}
-
-.performance-title-container,
-.attendance-title-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  width: 100%;
 }
 
 

@@ -1,98 +1,99 @@
-  import { cacheService } from './cacheService';
-  import { CACHE_TTL } from './cacheConstants';
+import { cacheService } from './cacheService';
+import { CACHE_TTL } from './cacheConstants';
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
-  const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    clearTimeout(id);
     
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
-      clearTimeout(id);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return response;
-    } catch (error) {
-      clearTimeout(id);
-      
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Превышено время ожидания ответа от сервера');
-        }
-      }
-      
-      throw error;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-  };
+    
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Превышено время ожидания ответа от сервера');
+      }
+    }
+    
+    throw error;
+  }
+};
 
-  export interface StaffApiResponse {
+// Базовые интерфейсы
+export interface StaffApiResponse {
+  id: number;
+  patronymic: string;
+  name: string;
+  lastName: string;
+  login: string;
+  password: string;
+  email: string | null;
+  staffPosition: Array<{
     id: number;
-    patronymic: string;
     name: string;
-    lastName: string;
-    login: string;
-    password: string;
-    email: string | null;
-    staffPosition: Array<{
-      id: number;
-      name: string;
-    }>;
-  }
+  }>;
+}
 
-  export interface TeacherSubject {
-    idTeacher: number;
-    idSubject: number;
-    subjectName: string;
-    idGroups: number[];
-  }
+export interface TeacherSubject {
+  idTeacher: number;
+  idSubject: number;
+  subjectName: string;
+  idGroups: number[];
+}
 
-  export interface TeacherData {
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    email: string;
-    position: string;
-    disciplines: string[];
-    teacherId?: number;
-    login?: string;
-  }
+export interface TeacherData {
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  email: string;
+  position: string;
+  disciplines: string[];
+  teacherId?: number;
+  login?: string;
+}
 
-  export interface PasswordChangeData {
-    newPassword: string;
-    confirmPassword: string;
-  }
+export interface PasswordChangeData {
+  newPassword: string;
+  confirmPassword: string;
+}
 
-  export interface LoginChangeData {
-    currentPassword?: string;
-    newLogin: string;
-    confirmNewLogin: string;
-  }
+export interface LoginChangeData {
+  currentPassword?: string;
+  newLogin: string;
+  confirmNewLogin: string;
+}
 
-  interface Discipline {
-    idTeacher: number;
-    idSubject: number;
-    subjectName: string;
-    course: number;
-    countGroup: number;
-  }
+interface Discipline {
+  idTeacher: number;
+  idSubject: number;
+  subjectName: string;
+  course: number;
+  countGroup: number;
+}
 
-  export interface Group {
-    numberGroup: string;
-    specialty: string;
-    subjectName: string;
-    countStudent: number;
-  }
+export interface Group {
+  numberGroup: string;
+  specialty: string;
+  subjectName: string;
+  countStudent: number;
+}
 
 export interface Student {
   id: number;
@@ -106,48 +107,36 @@ export interface Student {
   }>;
 }
 
-  export interface StudentsResponse {
-    students: Student[];
-  }
-
-export interface LessonDate {
-  number: number;  // Это номер из API (1, 3, 5, 6)
-  date: string;    // Это дата из API
-  lessonInfo?: { 
-    id: number;
-    numberWeek: number;
-    dayWeek: string;
-    typeWeek: string;
-    numPair: number;
-    replacement: boolean;
-  };
+export interface StudentsResponse {
+  students: Student[];
 }
 
 export interface LessonInfo {
+  idSupplement?: number;
+  value?: number;
+  number: number;
   dateLesson: string;
   typeMark: string;
-  numberWeek: number;
-  dayWeek: string;
-  typeWeek: string;
-  numPair: number;
-  replacement: boolean;
-  idSupplement: number;
+  lastNameTeacher: string;
+  nameTeacher: string;
+  patronymicTeacher: string;
   comment: string;
   files: Array<{
     id: number;
     name: string;
   }>;
+  numberWeek: number;
+  dayWeek: string;
+  typeWeek: string;
+  numPair: number;
+  replacement: boolean;
+  changes?: ChangeHistory[];
 }
 
-export interface LessonDateModalData {
+export interface LessonDate {
+  number: number;
   date: string;
-  lessonNumber: number;      // number из LessonDate
-  typeMark: string;          // для редактирования
-  comment: string;           // для редактирования
-  numberWeek: number;        // только для чтения
-  dayWeek: string;           // только для чтения
-  typeWeek: string;          // только для чтения
-  numPair: number;           // только для чтения
+  lessonInfo?: Pick<LessonInfo, 'idSupplement' | 'numberWeek' | 'dayWeek' | 'typeWeek' | 'numPair' | 'replacement'>;
 }
 
 export interface SubjectTeacherData {
@@ -162,8 +151,6 @@ export interface Subject {
   id: number;
   subjectName: string;
 }
-
-// Для типа занятия
 
 export interface UpdateMarkRequest {
   idTeacher: number;
@@ -188,8 +175,6 @@ export interface StData {
   groups: number[];
 }
 
-/* Для столбцов с датами */
-
 export interface AddDateColumnRequest {
   idGroup: number;
   idSt: number;
@@ -213,8 +198,6 @@ export interface CreateSupplementRequest {
   idTeacher: number;
 }
 
-// Оценки
-
 export interface UpdateMarkGradeRequest {
   idStudent: number;
   idSt: number;
@@ -228,13 +211,20 @@ export interface ChangeHistory {
   action: string;
   idSupplement: number | null;
   comment: string | null;
-  files: string[] | null;
-  teacherOrStudent: boolean; // true - преподаватель, false - студент
+  files: Array<{
+    id: number;
+    name: string;
+  }> | null;
+  teacherOrStudent: boolean;
   newValue: string | null;
 }
 
-
-/* Для подгрупп */
+export interface FileUploadResponse {
+  success: boolean;
+  fileUrls?: string[];
+  fileIds?: number[];
+  message?: string;
+}
 
 export interface SubgroupTeacherInfo {
   subgroup: 'I' | 'II';
@@ -267,14 +257,12 @@ export interface SubgroupDeleteStudentsRequest {
   students: number[];
 }
 
-/* Для посещаемости */
-
 export interface AttendanceRecord {
   idStudent: number;
   lastName: string;
-  name: string;        // это соответствует firstName
-  patronymic: string;  // это соответствует middleName
-  subgroup?: 'I' | 'II'; // добавляем опциональное поле подгруппы
+  name: string;
+  patronymic: string;
+  subgroup?: 'I' | 'II';
   attendances: Array<{
     idLesson: number;
     date: string;
@@ -298,22 +286,130 @@ export interface UpdateAttendanceRequest {
   idStudent: number;
 }
 
-  export const teacherApiService = {
-    // Получение всех сотрудников с кэшированием
-    async getAllStaff(): Promise<StaffApiResponse[]> {
-      const cacheKey = 'all_staff';
-      
-      const cached = cacheService.get<StaffApiResponse[]>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DATA 
-      });
-      
-      if (cached) {
-        console.log('Staff data loaded from cache');
-        return cached;
-      }
+// НОВЫЙ МЕТОД ДЛЯ ПОЛУЧЕНИЯ ТИПОВ ЗАНЯТИЙ ПО SUPPLEMENT ID
+export interface SupplementInfo {
+  id: number;
+  comment: string;
+  typeMark?: string;
+  // другие поля если нужны
+}
 
-      console.log('Fetching staff data from server');
-      const response = await fetch(`${API_BASE_URL}/staffs`, {
+export const teacherApiService = {
+  // Получение всех сотрудников с кэшированием
+  async getAllStaff(): Promise<StaffApiResponse[]> {
+    const cacheKey = 'all_staff';
+    
+    const cached = cacheService.get<StaffApiResponse[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    if (cached) {
+      console.log('Staff data loaded from cache');
+      return cached;
+    }
+
+    console.log('Fetching staff data from server');
+    const response = await fetch(`${API_BASE_URL}/staffs`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки данных персонала: ${response.status}`);
+    }
+
+    const data: StaffApiResponse[] = await response.json();
+    console.log('Staff data received from server:', data.length);
+    
+    cacheService.set(cacheKey, data, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    return data;
+  },
+
+  async refreshAllTeacherData(teacherId: number) {
+    const keysToRemove = [
+      `teacher_${teacherId}`,
+      `teacher_disciplines_${teacherId}`,
+      `teacher_disciplines_full_${teacherId}`,
+      `teacher_groups_${teacherId}`
+    ];
+    
+    keysToRemove.forEach(key => {
+      cacheService.remove(key);
+    });
+
+    const [teacherData, disciplines, groups] = await Promise.all([
+      this.getTeacherById(teacherId),
+      this.getTeacherDisciplines(teacherId),
+      this.getTeacherGroups(teacherId)
+    ]);
+
+    return {
+      teacherData,
+      disciplines,
+      groups
+    };
+  },
+
+  // Получение данных преподавателя по ID с кэшированием
+  async getTeacherById(teacherId: number): Promise<StaffApiResponse> {
+    const cacheKey = `teacher_${teacherId}`;
+    
+    const cached = cacheService.get<StaffApiResponse>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    if (cached) {
+      console.log(`Teacher ${teacherId} data loaded from cache`);
+      return cached;
+    }
+
+    console.log(`Fetching teacher ${teacherId} data from server`);
+    const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки данных преподавателя: ${response.status}`);
+    }
+
+    const data: StaffApiResponse = await response.json();
+    console.log('Teacher data received from server:', data);
+    
+    cacheService.set(cacheKey, data, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    return data;
+  },
+
+  // Получение дисциплин преподавателя с кэшированием
+  async getTeacherDisciplines(teacherId: number): Promise<string[]> {
+    const cacheKey = `teacher_disciplines_${teacherId}`;
+    
+    const cached = cacheService.get<string[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES
+    });
+    
+    if (cached) {
+      console.log(`Teacher ${teacherId} disciplines loaded from cache:`, cached.length);
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} disciplines from server`);
+      const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -321,392 +417,292 @@ export interface UpdateAttendanceRequest {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        throw new Error(`Ошибка загрузки данных персонала: ${response.status}`);
+        throw new Error(`Ошибка при получении дисциплин: ${response.status}`);
       }
 
-      const data: StaffApiResponse[] = await response.json();
-      console.log('Staff data received from server:', data.length);
+      const disciplinesData: TeacherSubject[] = await response.json();
+      console.log('Преподавательских дисциплин получено:', disciplinesData);
+
+      const allDisciplineNames = disciplinesData.map(item => item.subjectName);
+      const uniqueDisciplineNames = Array.from(new Set(allDisciplineNames));
       
-      cacheService.set(cacheKey, data, { 
-        ttl: CACHE_TTL.TEACHER_DATA 
-      });
+      console.log('Все названия дисциплин:', allDisciplineNames);
+      console.log('Уникальные названия для отображения:', uniqueDisciplineNames);
       
-      return data;
-    },
-
-    async refreshAllTeacherData(teacherId: number) {
-      const keysToRemove = [
-        `teacher_${teacherId}`,
-        `teacher_disciplines_${teacherId}`,
-        `teacher_disciplines_full_${teacherId}`,
-        `teacher_groups_${teacherId}`
-      ];
-      
-      keysToRemove.forEach(key => {
-        cacheService.remove(key);
-      });
-
-      const [teacherData, disciplines, groups] = await Promise.all([
-        this.getTeacherById(teacherId),
-        this.getTeacherDisciplines(teacherId),
-        this.getTeacherGroups(teacherId)
-      ]);
-
-      return {
-        teacherData,
-        disciplines,
-        groups
-      };
-    },
-
-    // Получение данных преподавателя по ID с кэшированием
-    async getTeacherById(teacherId: number): Promise<StaffApiResponse> {
-      const cacheKey = `teacher_${teacherId}`;
-      
-      const cached = cacheService.get<StaffApiResponse>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DATA 
-      });
-      
-      if (cached) {
-        console.log(`Teacher ${teacherId} data loaded from cache`);
-        return cached;
-      }
-
-      console.log(`Fetching teacher ${teacherId} data from server`);
-      const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        throw new Error(`Ошибка загрузки данных преподавателя: ${response.status}`);
-      }
-
-      const data: StaffApiResponse = await response.json();
-      console.log('Teacher data received from server:', data);
-      
-      cacheService.set(cacheKey, data, { 
-        ttl: CACHE_TTL.TEACHER_DATA 
-      });
-      
-      return data;
-    },
-
-    // Получение дисциплин преподавателя с кэшированием
-    async getTeacherDisciplines(teacherId: number): Promise<string[]> {
-      const cacheKey = `teacher_disciplines_${teacherId}`;
-      
-      const cached = cacheService.get<string[]>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DISCIPLINES
-      });
-      
-      if (cached) {
-        console.log(`Teacher ${teacherId} disciplines loaded from cache:`, cached.length);
-        return cached;
-      }
-
-      try {
-        console.log(`Fetching teacher ${teacherId} disciplines from server`);
-        const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Ошибка при получении дисциплин: ${response.status}`);
-        }
-
-        const disciplinesData: TeacherSubject[] = await response.json();
-        console.log('Преподавательских дисциплин получено:', disciplinesData);
-
-        const allDisciplineNames = disciplinesData.map(item => item.subjectName);
-        const uniqueDisciplineNames = Array.from(new Set(allDisciplineNames));
-        
-        console.log('Все названия дисциплин:', allDisciplineNames);
-        console.log('Уникальные названия для отображения:', uniqueDisciplineNames);
-        
-        cacheService.set(cacheKey, uniqueDisciplineNames, { 
-          ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-        });
-        
-        return uniqueDisciplineNames;
-      } catch (err) {
-        console.error('Ошибка при загрузке дисциплин преподавателя:', err);
-        throw err;
-      }
-    },
-
-    // Получение полных данных дисциплин преподавателя
-    async getTeacherDisciplinesFull(teacherId: number): Promise<Discipline[]> {
-      const cacheKey = `teacher_disciplines_full_${teacherId}`;
-      
-      const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      cacheService.set(cacheKey, uniqueDisciplineNames, { 
         ttl: CACHE_TTL.TEACHER_DISCIPLINES 
       });
       
-      if (cached) {
-        console.log('Полные данные дисциплин загружены из кэша');
-        return cached;
+      return uniqueDisciplineNames;
+    } catch (err) {
+      console.error('Ошибка при загрузке дисциплин преподавателя:', err);
+      throw err;
+    }
+  },
+
+  // Получение полных данных дисциплин преподавателя
+  async getTeacherDisciplinesFull(teacherId: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_full_${teacherId}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Полные данные дисциплин загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching full teacher ${teacherId} disciplines from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      try {
-        console.log(`Fetching full teacher ${teacherId} disciplines from server`);
-        const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        cacheService.set(cacheKey, data, { 
-          ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-        });
-        
-        return data;
-      } catch (error) {
-        console.error('Error fetching teacher disciplines:', error);
-        throw error;
-      }
-    },
-
-    // Получение групп преподавателя
-    async getTeacherGroups(teacherId: number): Promise<Group[]> {
-      const cacheKey = `teacher_groups_${teacherId}`;
+      const data = await response.json();
       
-      const cached = cacheService.get<Group[]>(cacheKey, { 
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines:', error);
+      throw error;
+    }
+  },
+
+  // Получение групп преподавателя
+  async getTeacherGroups(teacherId: number): Promise<Group[]> {
+    const cacheKey = `teacher_groups_${teacherId}`;
+    
+    const cached = cacheService.get<Group[]>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      console.log('Группы преподавателя загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} groups from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.GROUP_DATA 
       });
       
-      if (cached) {
-        console.log('Группы преподавателя загружены из кэша');
-        return cached;
-      }
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher groups:', error);
+      throw error;
+    }
+  },
 
-      try {
-        console.log(`Fetching teacher ${teacherId} groups from server`);
-        const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+  // Получение дисциплин по курсам
+  async getTeacherDisciplinesByCourse(teacherId: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_course_${teacherId}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Дисциплины по курсам загружены из кэша');
+      return cached;
+    }
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        cacheService.set(cacheKey, data, { 
-          ttl: CACHE_TTL.GROUP_DATA 
-        });
-        
-        return data;
-      } catch (error) {
-        console.error('Error fetching teacher groups:', error);
-        throw error;
-      }
-    },
-
-    // Получение дисциплин по курсам
-    async getTeacherDisciplinesByCourse(teacherId: number): Promise<Discipline[]> {
-      const cacheKey = `teacher_disciplines_course_${teacherId}`;
-      
-      const cached = cacheService.get<Discipline[]>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-      });
-      
-      if (cached) {
-        console.log('Дисциплины по курсам загружены из кэша');
-        return cached;
-      }
-
-      try {
-        console.log(`Fetching teacher ${teacherId} disciplines by course from server`);
-        const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        cacheService.set(cacheKey, data, { 
-          ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-        });
-        
-        return data;
-      } catch (error) {
-        console.error('Error fetching teacher disciplines by course:', error);
-        throw error;
-      }
-    },
-
-    // Получение дисциплин по семестрам
-    async getTeacherDisciplinesBySemester(teacherId: number, semester: number): Promise<Discipline[]> {
-      const cacheKey = `teacher_disciplines_semester_${teacherId}_${semester}`;
-      
-      const cached = cacheService.get<Discipline[]>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-      });
-      
-      if (cached) {
-        console.log('Дисциплины по семестрам загружены из кэша');
-        return cached;
-      }
-
-      try {
-        console.log(`Fetching teacher ${teacherId} disciplines by semester ${semester} from server`);
-        const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Фильтруем данные для семестра (временная логика)
-        const filteredData = data.filter((discipline: Discipline) => {
-          return semester === 1; // Пока возвращаем все данные для первого семестра
-        });
-        
-        cacheService.set(cacheKey, filteredData, { 
-          ttl: CACHE_TTL.TEACHER_DISCIPLINES 
-        });
-        
-        return filteredData;
-      } catch (error) {
-        console.error('Error fetching teacher disciplines by semester:', error);
-        throw error;
-      }
-    },
-
-    // Поиск преподавателя по ФИО
-    async findTeacherByName(name: string, lastName: string, patronymic: string): Promise<StaffApiResponse | null> {
-      const cacheKey = `teacher_search_${lastName}_${name}_${patronymic}`.toLowerCase();
-      
-      const cached = cacheService.get<StaffApiResponse>(cacheKey, { 
-        ttl: CACHE_TTL.TEACHER_DATA 
-      });
-      
-      if (cached) {
-        console.log('Teacher search result loaded from cache');
-        return cached;
-      }
-
-      console.log('Searching teacher in staff data');
-      const allStaff = await this.getAllStaff();
-      
-      const teacher = allStaff.find(staff => 
-        staff.name === name && 
-        staff.lastName === lastName &&
-        staff.patronymic === patronymic
-      );
-
-      if (teacher) {
-        cacheService.set(cacheKey, teacher, { 
-          ttl: CACHE_TTL.TEACHER_DATA 
-        });
-      }
-      
-      return teacher || null;
-    },
-
-    async updateTeacherData(teacherId: number, data: Partial<StaffApiResponse>) {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
-        method: 'PATCH',
+    try {
+      console.log(`Fetching teacher ${teacherId} disciplines by course from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: teacherId,
-          ...data
-        }),
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Ошибка обновления данных преподавателя: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const result = await response.json();
-      
-      this.invalidateTeacherCache(teacherId);
-      
-      return result;
-    },
 
-    invalidateTeacherCache(teacherId?: number): void {
-      const keysToRemove: string[] = ['all_staff'];
+      const data = await response.json();
       
-      if (teacherId) {
-        keysToRemove.push(
-          `teacher_${teacherId}`,
-          `teacher_disciplines_${teacherId}`,
-          `teacher_disciplines_full_${teacherId}`,
-          `teacher_groups_${teacherId}`,
-          `teacher_disciplines_course_${teacherId}`
-        );
-        
-        // Удаляем все связанные ключи поиска и семестров
-        for (let i = 1; i <= 2; i++) {
-          keysToRemove.push(`teacher_disciplines_semester_${teacherId}_${i}`);
-        }
-        
-        // Удаляем ключи поиска по имени
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.includes('cache_teacher_search_')) {
-            keysToRemove.push(key.replace('cache_', ''));
-          }
-        }
-      }
-      
-      keysToRemove.forEach(key => {
-        cacheService.remove(key);
-        console.log(`Invalidated teacher cache: ${key}`);
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
       });
-    },
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines by course:', error);
+      throw error;
+    }
+  },
 
-    // Принудительное обновление данных с инвалидацией кэша
-    async refreshTeacherData(teacherId: number) {
-      console.log('Refreshing teacher data with cache invalidation');
-      this.invalidateTeacherCache(teacherId);
+  // Получение дисциплин по семестрам
+  async getTeacherDisciplinesBySemester(teacherId: number, semester: number): Promise<Discipline[]> {
+    const cacheKey = `teacher_disciplines_semester_${teacherId}_${semester}`;
+    
+    const cached = cacheService.get<Discipline[]>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+    });
+    
+    if (cached) {
+      console.log('Дисциплины по семестрам загружены из кэша');
+      return cached;
+    }
+
+    try {
+      console.log(`Fetching teacher ${teacherId} disciplines by semester ${semester} from server`);
+      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      // Загружаем свежие данные
-      const [teacherData, disciplines] = await Promise.all([
-        this.getTeacherById(teacherId),
-        this.getTeacherDisciplines(teacherId)
-      ]);
+      // Фильтруем данные для семестра (временная логика)
+      const filteredData = data.filter((discipline: Discipline) => {
+        return semester === 1; // Пока возвращаем все данные для первого семестра
+      });
       
-      return {
-        teacherData,
-        disciplines
-      };
-    },
+      cacheService.set(cacheKey, filteredData, { 
+        ttl: CACHE_TTL.TEACHER_DISCIPLINES 
+      });
+      
+      return filteredData;
+    } catch (error) {
+      console.error('Error fetching teacher disciplines by semester:', error);
+      throw error;
+    }
+  },
+
+  // Поиск преподавателя по ФИО
+  async findTeacherByName(name: string, lastName: string, patronymic: string): Promise<StaffApiResponse | null> {
+    const cacheKey = `teacher_search_${lastName}_${name}_${patronymic}`.toLowerCase();
+    
+    const cached = cacheService.get<StaffApiResponse>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    if (cached) {
+      console.log('Teacher search result loaded from cache');
+      return cached;
+    }
+
+    console.log('Searching teacher in staff data');
+    const allStaff = await this.getAllStaff();
+    
+    const teacher = allStaff.find(staff => 
+      staff.name === name && 
+      staff.lastName === lastName &&
+      staff.patronymic === patronymic
+    );
+
+    if (teacher) {
+      cacheService.set(cacheKey, teacher, { 
+        ttl: CACHE_TTL.TEACHER_DATA 
+      });
+    }
+    
+    return teacher || null;
+  },
+
+  async updateTeacherData(teacherId: number, data: Partial<StaffApiResponse>) {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: teacherId,
+        ...data
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка обновления данных преподавателя: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    this.invalidateTeacherCache(teacherId);
+    
+    return result;
+  },
+
+  invalidateTeacherCache(teacherId?: number): void {
+    const keysToRemove: string[] = ['all_staff'];
+    
+    if (teacherId) {
+      keysToRemove.push(
+        `teacher_${teacherId}`,
+        `teacher_disciplines_${teacherId}`,
+        `teacher_disciplines_full_${teacherId}`,
+        `teacher_groups_${teacherId}`,
+        `teacher_disciplines_course_${teacherId}`
+      );
+      
+      // Удаляем все связанные ключи поиска и семестров
+      for (let i = 1; i <= 2; i++) {
+        keysToRemove.push(`teacher_disciplines_semester_${teacherId}_${i}`);
+      }
+      
+      // Удаляем ключи поиска по имени
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_teacher_search_')) {
+          keysToRemove.push(key.replace('cache_', ''));
+        }
+      }
+    }
+    
+    keysToRemove.forEach(key => {
+      cacheService.remove(key);
+      console.log(`Invalidated teacher cache: ${key}`);
+    });
+  },
+
+  // Принудительное обновление данных с инвалидацией кэша
+  async refreshTeacherData(teacherId: number) {
+    console.log('Refreshing teacher data with cache invalidation');
+    this.invalidateTeacherCache(teacherId);
+    
+    // Загружаем свежие данные
+    const [teacherData, disciplines] = await Promise.all([
+      this.getTeacherById(teacherId),
+      this.getTeacherDisciplines(teacherId)
+    ]);
+    
+    return {
+      teacherData,
+      disciplines
+    };
+  },
 
   // Метод для получения студентов группы с кэшированием
   async getGroupStudents(groupId: number, idSt: number, idTeacher: number): Promise<Student[]> {
@@ -814,91 +810,91 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-    // Смена пароля - без проверки текущего пароля
-    async changePassword(teacherId: number, passwordData: PasswordChangeData): Promise<{ success: boolean }> {
-      try {
-        console.log(`Changing password for teacher ${teacherId}`);
-        
-        const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: teacherId,
-            password: passwordData.newPassword
-          }),
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Password change failed: ${response.status}`, errorText);
-          throw new Error(`Ошибка смены пароля: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('Password change successful:', result);
-        
-        // Инвалидируем кэш
-        this.invalidateTeacherCache(teacherId);
-        
-        return { success: true };
-      } catch (error) {
-        console.error('Error changing password:', error);
-        throw error;
+  // Смена пароля - без проверки текущего пароля
+  async changePassword(teacherId: number, passwordData: PasswordChangeData): Promise<{ success: boolean }> {
+    try {
+      console.log(`Changing password for teacher ${teacherId}`);
+      
+      const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: teacherId,
+          password: passwordData.newPassword
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Password change failed: ${response.status}`, errorText);
+        throw new Error(`Ошибка смены пароля: ${response.status}`);
       }
-    },
+      
+      const result = await response.json();
+      console.log('Password change successful:', result);
+      
+      // Инвалидируем кэш
+      this.invalidateTeacherCache(teacherId);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  },
 
-    // метод для проверки логинов
-    async checkExistingLogins(): Promise<string[]> {
-      try {
-        const allStaff = await this.getAllStaff();
-        return allStaff.map(staff => staff.login).filter(login => login);
-      } catch (error) {
-        console.error('Error fetching existing logins:', error);
-        return [];
-      }
-    },
+  // метод для проверки логинов
+  async checkExistingLogins(): Promise<string[]> {
+    try {
+      const allStaff = await this.getAllStaff();
+      return allStaff.map(staff => staff.login).filter(login => login);
+    } catch (error) {
+      console.error('Error fetching existing logins:', error);
+      return [];
+    }
+  },
 
-    // И метод проверки доступности логина
-    async isLoginAvailable(newLogin: string): Promise<{ available: boolean; message?: string }> {
-      try {
-        console.log('Checking login availability for:', newLogin);
-        
-        if (!newLogin || newLogin.trim().length < 3) {
-          return { 
-            available: false, 
-            message: 'Логин должен содержать минимум 3 символа' 
-          };
-        }
-        
-        const loginRegex = /^[a-zA-Z0-9._-]+$/;
-        if (!loginRegex.test(newLogin)) {
-          return { 
-            available: false, 
-            message: 'Логин может содержать только латинские буквы, цифры и символы ._-' 
-          };
-        }
-        
-        const existingLogins = await this.checkExistingLogins();
-        const isAvailable = !existingLogins.includes(newLogin.trim());
-        
-        console.log('Login availability result:', isAvailable);
-        
-        return {
-          available: isAvailable,
-          message: isAvailable ? undefined : 'Этот логин уже занят. Выберите другой логин.'
-        };
-      } catch (error) {
-        console.error('Error checking login availability:', error);
+  // И метод проверки доступности логина
+  async isLoginAvailable(newLogin: string): Promise<{ available: boolean; message?: string }> {
+    try {
+      console.log('Checking login availability for:', newLogin);
+      
+      if (!newLogin || newLogin.trim().length < 3) {
         return { 
           available: false, 
-          message: 'Не удалось проверить доступность логина. Попробуйте позже.' 
+          message: 'Логин должен содержать минимум 3 символа' 
         };
       }
-    },
+      
+      const loginRegex = /^[a-zA-Z0-9._-]+$/;
+      if (!loginRegex.test(newLogin)) {
+        return { 
+          available: false, 
+          message: 'Логин может содержать только латинские буквы, цифры и символы ._-' 
+        };
+      }
+      
+      const existingLogins = await this.checkExistingLogins();
+      const isAvailable = !existingLogins.includes(newLogin.trim());
+      
+      console.log('Login availability result:', isAvailable);
+      
+      return {
+        available: isAvailable,
+        message: isAvailable ? undefined : 'Этот логин уже занят. Выберите другой логин.'
+      };
+    } catch (error) {
+      console.error('Error checking login availability:', error);
+      return { 
+        available: false, 
+        message: 'Не удалось проверить доступность логина. Попробуйте позже.' 
+      };
+    }
+  },
 
-// Смена логина без проверки пароля
+  // Смена логина без проверки пароля
   async changeLogin(teacherId: number, loginData: LoginChangeData): Promise<{ success: boolean }> {
     try {
       console.log('Starting login change process for teacher:', teacherId);
@@ -994,9 +990,8 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-
   /* Успеваемость */
-   // Получение дат занятий
+  // Получение дат занятий - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
   async getLessonDates(groupId: number, idSt: number): Promise<LessonDate[]> {
     // Получаем teacherId из localStorage
     const teacherId = localStorage.getItem('teacher_id');
@@ -1028,36 +1023,14 @@ export interface UpdateAttendanceRequest {
       const datesData = await response.json();
       console.log('Lesson dates received:', datesData);
       
-      // Для каждой даты получаем дополнительную информацию
-      const datesWithInfo: LessonDate[] = await Promise.all(
-        datesData.map(async (item: any) => {
-          try {
-            // Получаем информацию о занятии для первого студента (можно использовать любого)
-            const lessonInfo = await this.getLessonInfo(1, idSt, item.number);
-            
-            return {
-              number: item.number,
-              date: item.date,
-              lessonInfo: lessonInfo ? {
-                id: lessonInfo.idSupplement,
-                numberWeek: lessonInfo.numberWeek,
-                dayWeek: lessonInfo.dayWeek,
-                typeWeek: lessonInfo.typeWeek,
-                numPair: lessonInfo.numPair,
-                replacement: lessonInfo.replacement
-              } : undefined
-            };
-          } catch (error) {
-            console.error(`Error fetching lesson info for number ${item.number}:`, error);
-            return {
-              number: item.number,
-              date: item.date
-            };
-          }
-        })
-      );
+      // УПРОЩЕННАЯ ВЕРСИЯ - не делаем лишних запросов для каждой даты
+      const datesWithInfo: LessonDate[] = datesData.map((item: any) => ({
+        number: item.number,
+        date: item.date,
+        lessonInfo: undefined // Будет заполнено позже при необходимости
+      }));
       
-      console.log('Processed lesson dates with info:', datesWithInfo);
+      console.log('Processed lesson dates:', datesWithInfo);
       
       cacheService.set(cacheKey, datesWithInfo, { 
         ttl: CACHE_TTL.LESSON_DATES 
@@ -1070,7 +1043,10 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-  // Получение информации о занятии
+  /**
+   * Получение информации об оценке с типом занятия
+   * ОБЪЕДИНЕННЫЙ МЕТОД - заменяет getMarkInfo и getLessonInfo
+   */
   async getLessonInfo(studentId: number, idSt: number, lessonNumber: number): Promise<LessonInfo | null> {
     const cacheKey = `lesson_info_${studentId}_${idSt}_${lessonNumber}`;
     
@@ -1086,16 +1062,24 @@ export interface UpdateAttendanceRequest {
     try {
       console.log(`Fetching lesson info for student ${studentId}, lesson ${lessonNumber} from server`);
       
-      const response = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${idSt}/number/${lessonNumber}`);
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${idSt}/number/${lessonNumber}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('Lesson info not found, returning empty data');
+          console.log('Lesson info not found, returning null');
           return null;
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const lessonInfo: LessonInfo = await response.json();
       console.log('Lesson info received:', lessonInfo);
       
@@ -1110,40 +1094,7 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-  // Сохранение информации о занятии
-  async saveLessonInfo(lessonData: {
-    studentId: number;
-    idSt: number;
-    lessonNumber: number;
-    typeMark: string;
-    comment: string;
-  }): Promise<{ success: boolean }> {
-    try {
-      console.log('Saving lesson info:', lessonData);
-      
-      // Здесь будет запрос для сохранения данных
-      // Пока просто возвращаем успех
-      // const response = await fetch(`${API_BASE_URL}/marks/info/column`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(lessonData),
-      // });
-      
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-      
-      // Инвалидируем кэш
-      this.invalidateLessonInfoCache(lessonData.studentId, lessonData.idSt, lessonData.lessonNumber);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error saving lesson info:', error);
-      throw error;
-    }
-  },
+  // УДАЛЕН ДУБЛИРУЮЩИЙ МЕТОД getMarkInfo
 
   // Функция для инвалидации кэша дат занятий
   invalidateLessonDatesCache(groupId?: number, idSt?: number, teacherId?: number): void {
@@ -1175,7 +1126,7 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-    /**
+  /**
    * Получение информации о занятиях для конкретного ST, группы и преподавателя
    */
   async getLessonsInfo(idSt: number, groupId: number, teacherId: number): Promise<any[]> {
@@ -1418,7 +1369,7 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-   // Получение данных о предметах и преподавателях
+  // Получение данных о предметах и преподавателях
   async getSubjectTeachersData(): Promise<SubjectTeacherData[]> {
     const cacheKey = 'subject_teachers_data';
     
@@ -1556,7 +1507,6 @@ export interface UpdateAttendanceRequest {
       console.log(`Invalidated subject cache: ${key}`);
     });
   },
-
 
   // Получение ID предмета по названию
   async getSubjectIdByName(subjectName: string): Promise<number> {
@@ -1732,7 +1682,7 @@ export interface UpdateAttendanceRequest {
 
   /* Столбцы с датами */
 
-    // Получение информации о занятиях для добавления даты
+  // Получение информации о занятиях для добавления даты
   async getLessonsForDateAddition(idSt: number, groupId: number, teacherId: number): Promise<any[]> {
     const cacheKey = `lessons_for_date_${groupId}_${idSt}_${teacherId}`;
     
@@ -1877,7 +1827,7 @@ export interface UpdateAttendanceRequest {
 
   /* Тип занятия */
 
-    /**
+  /**
    * Получение данных о занятии (ST)
    */
   async getStData(idSt: number): Promise<StData | null> {
@@ -1959,7 +1909,6 @@ export interface UpdateAttendanceRequest {
       return lessonTypes;
     } catch (error) {
       console.error('Error fetching lesson types:', error);
-      // Возвращаем пустой массив вместо выброса ошибки
       return [];
     }
   },
@@ -2092,7 +2041,7 @@ export interface UpdateAttendanceRequest {
   },
 
   // инвалидация кэша для типов занятий
-    invalidateLessonTypesCache(stId?: number): void {
+  invalidateLessonTypesCache(stId?: number): void {
     if (stId) {
       cacheService.remove(`lesson_types_${stId}`);
       cacheService.remove(`st_data_${stId}`);
@@ -2149,7 +2098,7 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-    /**
+  /**
    * Получение истории изменений для студента
    */
   async getStudentChangeHistory(studentId: number, idSt: number, lessonNumber: number): Promise<ChangeHistory[]> {
@@ -2320,6 +2269,288 @@ export interface UpdateAttendanceRequest {
     }
   },
 
+  /**
+   * Загрузка файлов через проводник с использованием form-data
+   */
+  async uploadFilesFromExplorer(files: File[]): Promise<{ success: boolean; fileUrls?: string[]; fileIds?: number[] }> {
+    try {
+      console.log('Starting file upload from explorer:', files.length, 'files');
+      
+      const uploadedUrls: string[] = [];
+      const uploadedIds: number[] = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
+
+        const response = await fetch(`${API_BASE_URL}/paths/upload`, {
+          method: 'POST',
+          body: formData,
+          // НЕ устанавливаем Content-Type - браузер сделает это автоматически с boundary
+        });
+
+        console.log('File upload response status:', response.status);
+        
+        if (!response.ok) {
+          let errorText = '';
+          try {
+            errorText = await response.text();
+            console.error('File upload error text:', errorText);
+          } catch (e) {
+            errorText = 'Не удалось прочитать текст ошибки';
+          }
+          
+          throw new Error(`Ошибка загрузки файла ${file.name}: ${response.status} - ${errorText}`);
+        }
+
+        // Пытаемся получить ответ как JSON
+        let result;
+        try {
+          const responseText = await response.text();
+          console.log('File upload raw response:', responseText);
+          
+          if (responseText) {
+            result = JSON.parse(responseText);
+          } else {
+            result = { success: true };
+          }
+        } catch (parseError) {
+          console.log('Response is not JSON, treating as success');
+          result = { success: true };
+        }
+        
+        // Предполагаем, что API возвращает информацию о загруженном файле
+        if (result.fileUrl) {
+          uploadedUrls.push(result.fileUrl);
+        }
+        if (result.fileId) {
+          uploadedIds.push(result.fileId);
+        } else if (result.id) {
+          uploadedIds.push(result.id);
+        }
+        
+        console.log('File upload result:', result);
+      }
+      
+      console.log('All files uploaded successfully:', {
+        urls: uploadedUrls,
+        ids: uploadedIds
+      });
+      
+      return { 
+        success: true, 
+        fileUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
+        fileIds: uploadedIds.length > 0 ? uploadedIds : undefined
+      };
+    } catch (error) {
+      console.error('Error uploading files from explorer:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Универсальный метод загрузки файлов (объединяет оба способа)
+   */
+  async uploadFilesUniversal(files: File[], options?: {
+    idSupplement?: number;
+    useExplorerEndpoint?: boolean;
+  }): Promise<{ success: boolean; fileUrls?: string[]; fileIds?: number[] }> {
+    const useExplorer = options?.useExplorerEndpoint ?? true;
+    
+    if (useExplorer) {
+      return this.uploadFilesFromExplorer(files);
+    } else {
+      // Используем старый метод для supplement
+      if (!options?.idSupplement) {
+        throw new Error('idSupplement required for supplement file upload');
+      }
+      return this.addTeacherCommentFiles(options.idSupplement, files);
+    }
+  },
+
+  // Получение списка всех файлов
+  async getAllFiles(): Promise<any[]> {
+    try {
+      console.log('Fetching all files from server');
+      const response = await fetchWithTimeout(`${API_BASE_URL}/paths`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const files = await response.json();
+      console.log('All files received:', files.length);
+      return files;
+    } catch (error) {
+      console.error('Error fetching all files:', error);
+      return [];
+    }
+  },
+
+  // Получение информации о конкретном файле по ID
+  async getFileById(fileId: number): Promise<any> {
+    try {
+      console.log(`Fetching file info for ID: ${fileId}`);
+      const response = await fetchWithTimeout(`${API_BASE_URL}/paths/id/${fileId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const fileInfo = await response.json();
+      console.log('File info received:', fileInfo);
+      return fileInfo;
+    } catch (error) {
+      console.error('Error fetching file info:', error);
+      return null;
+    }
+  },
+
+  // Получение файлов для конкретного supplement
+  async getSupplementFiles(supplementId: number): Promise<any[]> {
+    try {
+      console.log(`Fetching files for supplement: ${supplementId}`);
+      
+      // Сначала получаем все файлы
+      const allFiles = await this.getAllFiles();
+      
+      // Фильтруем файлы по supplementId (если такая связь есть в данных)
+      // Это зависит от структуры вашего API
+      const supplementFiles = allFiles.filter(file => 
+        file.idSupplement === supplementId || 
+        file.supplementId === supplementId
+      );
+      
+      console.log(`Found ${supplementFiles.length} files for supplement ${supplementId}`);
+      return supplementFiles;
+    } catch (error) {
+      console.error('Error fetching supplement files:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Скачивание файла по ID файла (из paths)
+   */
+  async downloadFileById(fileId: number, fileName?: string): Promise<void> {
+    try {
+      console.log(`Downloading file by ID: ${fileId}`);
+      
+      // Получаем информацию о файле
+      const fileInfo = await this.getFileById(fileId);
+      if (!fileInfo) {
+        throw new Error('Файл не найден');
+      }
+
+      // Используем pathToFile для скачивания
+      const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
+      const actualFileName = fileName || fileInfo.nameFile || `file_${fileId}`;
+      
+      console.log('Download URL:', downloadUrl);
+      console.log('File name:', actualFileName);
+
+      // Создаем скрытую ссылку для скачивания
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = actualFileName;
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
+      
+      // Добавляем в DOM и кликаем
+      document.body.appendChild(link);
+      link.click();
+      
+      // Очистка
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+      
+      console.log(`File download initiated for file ID ${fileId}`);
+      
+    } catch (error) {
+      console.error('Error downloading file by ID:', error);
+      
+      // Альтернативный метод через fetch
+      try {
+        await this.downloadFileByIdWithFetch(fileId, fileName);
+      } catch (fetchError) {
+        console.error('Alternative download method also failed:', fetchError);
+        throw new Error('Не удалось скачать файл. Попробуйте позже.');
+      }
+    }
+  },
+
+  /**
+   * Альтернативный метод скачивания через fetch для fileId
+   */
+  async downloadFileByIdWithFetch(fileId: number, fileName?: string): Promise<void> {
+    try {
+      console.log(`Trying alternative download for file ID ${fileId}`);
+      
+      const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
+      
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Получаем информацию о файле для имени
+      const fileInfo = await this.getFileById(fileId);
+      const actualFileName = fileName || fileInfo?.nameFile || `file_${fileId}`;
+
+      // Получаем blob
+      const blob = await response.blob();
+      
+      // Проверяем размер файла
+      if (blob.size === 0) {
+        throw new Error('Получен пустой файл');
+      }
+
+      // Создаем URL для blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Создаем ссылку для скачивания
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = actualFileName;
+      link.style.display = 'none';
+      
+      // Добавляем в DOM и кликаем
+      document.body.appendChild(link);
+      link.click();
+      
+      // Очистка
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      console.log(`File ${actualFileName} downloaded successfully via fetch, size: ${blob.size} bytes`);
+      
+    } catch (error) {
+      console.error('Alternative download by ID failed:', error);
+      throw error;
+    }
+  },
+
   /* Подгруппы */
 
   // Получение подгрупп для конкретного преподавателя
@@ -2373,7 +2604,7 @@ export interface UpdateAttendanceRequest {
     idTeacher: number, 
     idSt: number, 
     groupNumber: string,
-    subjectName: string  // Добавляем параметр с названием предмета
+    subjectName: string
   ): Promise<{ subgroupIId: number; subgroupIIId: number }> {
     try {
       console.log(`Упрощенное получение ID подгрупп для преподавателя ${idTeacher}, группа ${groupNumber}, предмет ${subjectName}`);
@@ -2385,7 +2616,7 @@ export interface UpdateAttendanceRequest {
 
       // Получаем всех преподавателей для этой группы и предмета
       const subjectTeachersData = await this.getSubjectTeachersData();
-      const subjectId = await this.getSubjectIdByName(subjectName);  // Используем переданное название
+      const subjectId = await this.getSubjectIdByName(subjectName);
       
       const subjectData = subjectTeachersData.find(item => 
         item.groups.includes(groupId) && item.idSubject === subjectId
@@ -2739,7 +2970,7 @@ export interface UpdateAttendanceRequest {
     }
   },
 
-    /* Посещаемость */
+  /* Посещаемость */
 
   /**
    * Получение всех занятий (lessons)
@@ -2988,4 +3219,65 @@ export interface UpdateAttendanceRequest {
       }
     }
   },
+
+  // НОВЫЙ МЕТОД: Получение информации о supplement по ID
+  async getSupplementInfo(supplementId: number): Promise<SupplementInfo | null> {
+    try {
+      console.log(`Fetching supplement info for ID: ${supplementId}`);
+      
+      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/${supplementId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('Supplement not found');
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const supplementInfo: SupplementInfo = await response.json();
+      console.log('Supplement info received:', supplementInfo);
+      
+      return supplementInfo;
+    } catch (error) {
+      console.error('Error fetching supplement info:', error);
+      return null;
+    }
+  },
+
+  // НОВЫЙ МЕТОД: Получение типов занятий для списка supplement IDs
+  async getSupplementTypes(supplementIds: number[]): Promise<Map<number, string>> {
+    const typesMap = new Map<number, string>();
+    
+    if (supplementIds.length === 0) {
+      return typesMap;
+    }
+
+    try {
+      console.log(`Fetching supplement types for IDs:`, supplementIds);
+      
+      // Используем batch запрос если API поддерживает, или последовательные запросы
+      for (const id of supplementIds) {
+        try {
+          const supplementInfo = await this.getSupplementInfo(id);
+          if (supplementInfo && supplementInfo.typeMark) {
+            typesMap.set(id, supplementInfo.typeMark);
+          }
+        } catch (error) {
+          console.error(`Error fetching supplement ${id}:`, error);
+        }
+      }
+      
+      console.log(`Retrieved types for ${typesMap.size} supplements`);
+      return typesMap;
+    } catch (error) {
+      console.error('Error fetching supplement types:', error);
+      return typesMap;
+    }
+  }
 };

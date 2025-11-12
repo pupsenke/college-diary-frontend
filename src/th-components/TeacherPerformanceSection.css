@@ -349,6 +349,144 @@ body.menu-collapsed .teacher-performance-section {
   border-color: #002FA7;
 }
 
+/* Стили для кнопки обновления типов занятий */
+.refresh-types-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.refresh-types-btn:hover:not(:disabled) {
+  border-color: #9ca3af;
+  transform: translateY(-0.4px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-types-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.refresh-types-btn:disabled {
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.refresh-types-btn.pc-refreshing {
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Иконка обновления */
+.filter-select-wrapper .refresh-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.filter-select-wrapper .refresh-icon.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .filter-select-wrapper {
+    height: 32px;
+  }
+  
+  .filter-select-wrapper .filter-select {
+    min-width: 140px;
+    font-size: 13px;
+  }
+  
+  .filter-select-wrapper .refresh-types-btn {
+    width: 32px;
+  }
+  
+  .filter-select-wrapper .refresh-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.filter-group-with-button {
+  display: flex;
+  align-items: center;
+}
+
+.filter-select-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: 35px;
+}
+
+.filter-select-wrapper:focus-within {
+  border-color: #002FA7;
+  box-shadow: 0 0 0 2px rgba(0, 47, 167, 0.1);
+}
+
+.filter-select-wrapper .filter-select {
+  border: none;
+  border-radius: 8px 0 0 8px;
+  border-right: 1px solid #e2e8f0;
+  min-width: 160px;
+  height: 100%;
+  margin: 0;
+}
+
+.filter-select-wrapper .refresh-types-btn {
+  width: 36px;
+  height: 100%;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.filter-select-wrapper .refresh-types-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.filter-select-wrapper .refresh-types-btn:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.filter-select-wrapper .refresh-types-btn.refreshing {
+  background: #e2e8f0;
+}
+
+
 /* Новые стили для заголовков дат */
 .date-header-new {
   display: flex;
@@ -2034,7 +2172,7 @@ body.menu-collapsed .column-date {
   cursor: pointer;
   padding: 4px;
   color: #64748b;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -2044,118 +2182,271 @@ body.menu-collapsed .column-date {
   position: relative;
 }
 
-.comment-btn:hover {
-  color: white;
-  border-color: #8f949b;
-  transform: scale(1.05);
-}
-
-/* Стили для модального окна изображения */
-.image-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
-}
-
-.image-modal-content {
+/* Обновленные стили для комментариев */
+.comment-history-item {
+  padding: 16px;
   background: white;
-  border-radius: 12px;
-  max-width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.image-modal-header {
+.comment-history-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
+  margin-bottom: 12px;
+  gap: 12px;
 }
 
-.image-modal-header h3 {
-  margin: 0;
-  font-size: 16px;
-  color: #1e293b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.image-modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
+.comment-date {
+  font-size: 12px;
   color: #64748b;
-  padding: 4px;
-  margin-left: 16px;
-  transition: color 0.2s ease;
+  white-space: nowrap;
 }
 
-.image-modal-close:hover {
-  color: #ef4444;
+.comment-author-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
-.image-modal-body {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+.teacher-badge {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.student-badge {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding: 12px;
   background: #f8fafc;
-  max-height: 70vh;
-  overflow: auto;
+  border-radius: 6px;
+  border-left: 3px solid #002FA7;
 }
 
-.modal-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+.comment-files {
+  margin-top: 12px;
 }
 
-.image-modal-actions {
-  padding: 16px 20px;
-  border-top: 1px solid #e2e8f0;
+.files-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.files-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.file-item-preview-compact {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
   background: white;
-  display: flex;
-  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.download-image-btn {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+.file-item-preview-compact:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.explorer-upload-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #002FA7 0%, #0f53ff 100%);
   color: white;
-  text-decoration: none;
-  border-radius: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
-.download-image-btn:hover {
+.explorer-upload-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #001f7a 0%, #0a46e0 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
 }
 
-.image-error-message {
-  color: #ef4444;
-  padding: 20px;
-  text-align: center;
+.explorer-upload-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Стили для информации о форматах */
+.file-formats-info {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+/* Компактные стили для файлов */
+.file-preview {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+}
+
+.file-info-compact {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name-compact {
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.file-link, .download-link {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.file-link {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.file-link:hover {
+  background: #e5e7eb;
+}
+
+.download-link {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.download-link:hover {
+  background: #c7d2fe;
+}
+
+/* Индикатор файлов в кнопке комментария */
+.file-indicator {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .file-preview-modal {
+    max-width: 95vw;
+    max-height: 95vh;
+    margin: 10px;
+  }
+  
+  .file-preview-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .files-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
+
+.download-btn-simple:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.download-btn-simple:disabled::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid #002FA7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.file-item-simple {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+}
+
+.file-icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+.file-info-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.file-name-simple {
+  font-size: 14px;
+  color: #333;
+  flex-grow: 1;
+  margin-right: 12px;
+}
+
+.download-btn-simple {
+  background: #002FA7;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.download-btn-simple:hover:not(:disabled) {
+  background: linear-gradient(135deg, #001f7a 0%, #0a46e0 100%);
+  transform: translateY(-1px);
 }
 
 /* Стили для вкладок комментариев */
@@ -2229,208 +2520,80 @@ body.menu-collapsed .column-date {
   overflow-y: auto;
 }
 
-/* Стили для предпросмотра изображений */
-.files-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.file-item-preview {
-  position: relative;
+/* Простые стили для файлов */
+.file-item-simple {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  overflow: hidden;
+  margin-bottom: 8px;
   background: white;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.file-item-preview:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.image-preview-wrapper {
-  position: relative;
-  cursor: pointer;
-}
-
-.file-preview-image {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  display: block;
-  transition: all 0.3s ease;
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.image-preview-wrapper:hover .image-overlay {
-  opacity: 1;
-}
-
-.view-image-btn {
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #002FA7;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.view-image-btn:hover {
-  background: white;
-  transform: scale(1.05);
-}
-
-.remove-file-btn-preview {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.remove-file-btn-preview:hover {
-  background: #dc2626;
-  transform: scale(1.1);
-}
-
-.file-info-preview {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  gap: 8px;
-  position: relative;
-}
-
-.file-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.file-name-preview {
-  flex: 1;
-  font-size: 12px;
-  color: #374151;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
-
-.file-type-badge {
-  background: #e2e8f0;
-  color: #475569;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.file-size {
-  font-size: 10px;
-  color: #64748b;
-}
-
-/* Модальное окно предпросмотра изображения */
-.image-preview-modal {
-  position: relative;
-  margin: 8px 0;
-}
-
-.comment-image-preview {
-  max-width: 100%;
-  max-height: 150px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.comment-image-preview:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+.file-item-simple:hover {
   border-color: #002FA7;
-}
-
-.image-preview-actions {
-  margin-top: 8px;
-  text-align: center;
-}
-
-.view-full-btn {
-  background: #002FA7;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.view-full-btn:hover {
-  background: #001f7a;
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.15);
   transform: translateY(-1px);
 }
 
-/* Адаптивность для модального окна изображения */
-@media (max-width: 768px) {
-  .image-modal-content {
-    max-width: 95vw;
-    max-height: 95vh;
-    margin: 10px;
-  }
-  
-  .image-modal-header {
-    padding: 12px 16px;
-  }
-  
-  .image-modal-body {
-    padding: 10px;
-    max-height: 60vh;
-  }
-  
-  .image-modal-header h3 {
-    font-size: 14px;
-  }
+.file-info-simple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  margin-left: 8px;
+}
+
+.file-name-simple {
+  font-size: 14px;
+  color: #374151;
+  flex: 1;
+}
+
+.download-btn-simple {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #002FA7 0%, #0f53ff 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 12px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.download-btn-simple:hover {
+  background: linear-gradient(135deg, #001f7a 0%, #0a46e0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
+}
+
+.file-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.comment-files-simple {
+  margin-top: 12px;
+}
+
+.files-header-simple {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.files-list-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* Стили для существующих файлов */
@@ -2459,9 +2622,36 @@ body.menu-collapsed .column-date {
 
 /* Расширенное модальное окно комментариев */
 .comment-modal.expanded {
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: 900px !important;
+  max-height: 95vh !important;
+  width: 95vw !important;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Увеличенные области контента */
+.comment-modal.expanded .comment-input-section {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.comment-modal.expanded .comment-textarea {
+  min-height: 100px;
+  font-size: 14px;
+}
+
+.comment-modal.expanded .comment-history-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.comment-modal.expanded .comment-history-list {
+  flex: 1;
+  max-height: none !important;
+  min-height: 160px;
 }
 
 /* Адаптивность для мобильных устройств */
@@ -2671,25 +2861,34 @@ body.menu-collapsed .column-date {
   }
 }
 
-/* ПОМЕНЯТЬ */
-
-/* Стили для индикаторов комментариев */
 .comment-btn.has-teacher-comment {
-  color: #002FA7;
-  background: #d9daf8;
-  border-color: #002FA7;
+  border-color: rgb(169, 171, 173);
+  color: #a7aab4;
+  box-shadow: 0 2px 4px rgba(168, 85, 247, 0.2);
+}
+
+.comment-btn.has-teacher-comment:hover {
+  background: #e1e2e6;
+  border-color: #a7aab4;
+  transform: scale(1.1);
+}
+
+.comment-btn.has-student-comment:hover {
+  background: #e0e6fe;
+  border-color: #1d4ed8;
+  transform: scale(1.1);
 }
 
 .comment-btn.has-student-comment {
-  color: #002FA7;
-  background: #d9daf8;
-  border-color: #002FA7;
+  border-color: #6088c9;
+  color: #1d4ed8;
+  box-shadow: 0 2px 4px rgba(168, 85, 247, 0.2);
 }
 
 .comment-btn.has-both-comments {
-  color: #002fa752;
-  background: #d9daf8;
-  border-color: #002fa752;
+  border-color: #f59e0b;
+  color: #d97706;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
 
 /* Для комментария к оценке */
@@ -2728,6 +2927,7 @@ body.menu-collapsed .column-date {
   border-radius: 8px;
   padding: 16px;
   background: #f8fafc;
+  margin-top: 8px;
 }
 
 .files-header {
@@ -3062,17 +3262,8 @@ body.menu-collapsed .column-date {
 }
 
 /* Стили для отображения преподавателя в фильтрах */
-.teacher-display {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
 
-.teacher-value {
+.teacher-value-readonly {
   font-size: 14px;
   color: #002FA7;
   font-weight: 600;
@@ -3080,52 +3271,6 @@ body.menu-collapsed .column-date {
   padding: 4px 6px;
   border-radius: 4px;
   transition: all 0.2s ease;
-}
-
-.teacher-value:hover {
-  background: #f0f4ff;
-}
-
-.teacher-edit-container {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.teacher-edit-input {
-  border: 1px solid #002FA7;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 14px;
-  width: 120px;
-}
-
-.teacher-edit-input:focus {
-  outline: none;
-  border-color: #002FA7;
-}
-
-.teacher-save-btn,
-.teacher-cancel-btn {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 4px 6px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.teacher-save-btn:hover {
-  background: #2cbb00;
-  color: white;
-  border-color: #2cbb00;
-}
-
-.teacher-cancel-btn:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
 }
 
 /* Стили для управления подгруппами */

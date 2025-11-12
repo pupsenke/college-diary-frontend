@@ -181,7 +181,7 @@ export const TeacherPage: React.FC = () => {
         return 'Управление учебными дисциплинами';
     }
   };
-
+  
   const handleSidebarToggle = () => {
     setSidebarCollapsed(prev => !prev);
   };

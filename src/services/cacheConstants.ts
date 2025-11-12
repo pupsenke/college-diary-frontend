@@ -6,7 +6,7 @@ export const CACHE_TTL = {
   DOCUMENTS: 5 * 60 * 1000,        // 5 минут - часто добавляются/удаляются
   USER_DATA: 24 * 60 * 60 * 1000,  // 24 часа - редко меняются
 
-  TEACHER_DISCIPLINES: 24 * 60 * 60 * 1000,  // 24 часа - редко меняются дисциплины преподавателя
+  TEACHER_DISCIPLINES: 24 * 60 * 60 * 1000,
   MARKS_DATA: 2 * 60 * 1000,
   STUDENT_DATA: 10 * 60 * 1000,
   LESSON_DATES: 30 * 60 * 1000,
@@ -15,7 +15,7 @@ export const CACHE_TTL = {
   SUBGROUP_TEACHERS: 5 * 60 * 1000,
   SUBGROUP_DATA: 2 * 60 * 1000,
   LESSON_TYPES: 24 * 60 * 60 * 1000,
-  ATTENDANCE_DATA: 10 * 60 * 1000,
+  ATTENDANCE_DATA: 5 * 60 * 1000,
 };
 
 export {};
