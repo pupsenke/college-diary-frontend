@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './TeacherAttendanceSection.css';
+import { teacherApiService } from '../services/teacherApiService';
 
 // Типы данных
 export interface Student {
@@ -7,63 +8,294 @@ export interface Student {
   lastName: string;
   firstName: string;
   middleName: string;
-  subgroup?: 'I' | 'II';
 }
 
 export interface AttendanceRecord {
   id: number;
   studentId: number;
   date: string;
-  status: 'п' | 'у' | 'б' | 'н' | '';
+  status: 'п' | 'у' | 'н' | '';
   reason?: string;
-  sickStartDate?: string;
-  sickEndDate?: string;
+  lessonId?: number;
 }
 
 export interface TeacherAttendanceSectionProps {
-    groupNumber: string;
-    subject: string;
-    students: Student[];
-    onBackToGroups?: () => void;
-    onSetGrades?: () => void;
-    onAttendanceUpdate?: (attendanceData: {
-      records: AttendanceRecord[];
-      percentage: number;
-    }) => void;
+  groupNumber: string;
+  subject: string;
+  students?: Student[];
+  idSt: number;
+  teacherId: number;
+  onBackToGroups?: () => void;
+  onSetGrades?: () => void;
+  onAttendanceUpdate?: (attendanceData: {
+    records: AttendanceRecord[];
+    percentage: number;
+  }) => void;
+}
+
+interface AddDateModalData {
+  isOpen: boolean;
+  availableLessons: any[];
+  selectedLesson: any | null;
+}
+
+interface DeleteDateModalData {
+  isOpen: boolean;
+  dateToDelete: string;
+  lessonNumber: number;
+}
+
+interface LessonInfoModalData {
+  isOpen: boolean;
+  date: string;
+  lessonNumber: number;
+  lessonInfo: {
+    numberWeek: number;
+    dayWeek: string;
+    typeWeek: string;
+    numPair: number;
+  } | null;
 }
 
 export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> = ({
   groupNumber,
   subject,
-  students,
+  students: initialStudents = [],
+  idSt,
+  teacherId,
   onBackToGroups,
   onSetGrades,
   onAttendanceUpdate 
 }) => {
-  const [selectedSubgroup, setSelectedSubgroup] = useState<string>('all');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [allDates, setAllDates] = useState<string[]>([]);
+  const [lessonsData, setLessonsData] = useState<Array<{date: string, lessonId: number}>>([]);
   const [editingCell, setEditingCell] = useState<{studentId: number, date: string, type: 'status'} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [showReasonModal, setShowReasonModal] = useState<{studentId: number, date: string} | null>(null);
   const [reasonText, setReasonText] = useState('');
-  const [showSickModal, setShowSickModal] = useState<{studentId: number, date: string} | null>(null);
-  const [sickStartDate, setSickStartDate] = useState('');
-  const [sickEndDate, setSickEndDate] = useState('');
-  const [studentSubgroups, setStudentSubgroups] = useState<Record<number, 'I' | 'II' | undefined>>({});
-  const [subgroupTeachers, setSubgroupTeachers] = useState<Record<string, string>>({
-    'I': 'Иванов И.И.',
-    'II': 'Петров П.П.'
-  });
-  const [editingTeacher, setEditingTeacher] = useState<string | null>(null);
-  const [teacherEditValue, setTeacherEditValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<Student[]>(initialStudents);
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({
     start: '',
     end: ''
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const teacherInputRef = useRef<HTMLInputElement>(null);
+
+  const [managingDate, setManagingDate] = useState(false);
+  const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
+    isOpen: false,
+    availableLessons: [],
+    selectedLesson: null
+  });
+
+  const [deleteDateModal, setDeleteDateModal] = useState<DeleteDateModalData>({
+    isOpen: false,
+    dateToDelete: '',
+    lessonNumber: 0
+  });
+
+  const [lessonInfoModal, setLessonInfoModal] = useState<LessonInfoModalData>({
+    isOpen: false,
+    date: '',
+    lessonNumber: 0,
+    lessonInfo: null
+  });
+
+  const [loadingLessonInfo, setLoadingLessonInfo] = useState(false);
+
+  const filteredStudents = students;
+
+  // Функция для извлечения чистой даты из формата "10.11 (539725)"
+  const extractDateFromTableFormat = (tableDate: string): string => {
+    if (tableDate.includes('.')) {
+      return tableDate.split(' (')[0];
+    }
+    return tableDate;
+  };
+
+  // Вспомогательная функция для парсинга дат
+  const parseDate = (dateStr: string): number => {
+    if (!dateStr) return 0;
+    
+    // Для формата "10.11" (день.месяц)
+    if (dateStr.includes('.')) {
+      const [day, month] = dateStr.split('.');
+      const currentYear = new Date().getFullYear();
+      return new Date(currentYear, parseInt(month) - 1, parseInt(day)).getTime();
+    } 
+    // Для формата "2025-11-10"
+    else if (dateStr.includes('-')) {
+      return new Date(dateStr).getTime();
+    }
+    // Для других форматов
+    else {
+      return new Date(dateStr).getTime();
+    }
+  };
+
+  // Фильтрация дат по выбранному диапазону
+  const filteredDates = allDates.filter(date => {
+    if (!dateRange.start && !dateRange.end) return true;
+    
+    const cleanDate = extractDateFromTableFormat(date);
+    const currentDate = parseDate(cleanDate);
+    const startDate = parseDate(dateRange.start);
+    const endDate = parseDate(dateRange.end);
+    
+    if (startDate && endDate) {
+      return currentDate >= startDate && currentDate <= endDate;
+    } else if (startDate) {
+      return currentDate >= startDate;
+    } else if (endDate) {
+      return currentDate <= endDate;
+    }
+
+    return true;
+  });
+
+    // Компонент информационной иконки
+    const InfoIcon = (): React.ReactElement => (
+      <div className="info-icon-btn" tabIndex={0}>
+        <button className="header-btn" type="button">
+          <span className="info-icon-text">i</span>
+          <span>Информация</span>
+        </button>
+        <div className="info-tooltip">
+          <div className="info-tooltip-content">
+            <p><strong>Управление посещаемостью</strong></p>
+            <p>В этом разделе вы можете отмечать посещаемость студентов.</p>
+            <p><strong>Статусы:</strong></p>
+            <ul>
+              <li><strong>п</strong> - присутствовал</li>
+              <li><strong>у</strong> - отсутствовал по уважительной причине</li>
+              <li><strong>н</strong> - отсутствовал</li>
+            </ul>
+            <p>Нажмите на ячейку для изменения статуса.</p>
+            <p>Используйте кнопку "Обновить данные" для синхронизации с сервером.</p>
+          </div>
+        </div>
+      </div>
+    );
+  
+    // Компонент кнопки обновления
+    const RefreshButton = (): React.ReactElement => (
+      <button 
+        className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+        onClick={handleRefresh}
+        disabled={refreshing}
+      >
+        <img 
+          src="/st-icons/upload_icon.svg" 
+          className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+          alt="Обновить"
+        />
+        <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+      </button>
+    );
+
+  // Функция для получения номера занятия из даты
+  const getLessonNumber = (date: string): number => {
+    const match = date.match(/\((\d+)\)$/);
+    if (match) {
+      return parseInt(match[1]); // Это вернет idLesson (539725, 539726)
+    }
+    console.warn(`Could not extract lesson number from date: ${date}`);
+    return 0;
+  };
+
+  // Функция для получения информации о занятии
+  const fetchLessonInfo = async (lessonId: number): Promise<{
+    numberWeek: number;
+    dayWeek: string;
+    typeWeek: string;
+    numPair: number;
+    replacement: boolean;
+  } | null> => {
+    try {
+      setLoadingLessonInfo(true);
+
+      // СПОСОБ 1: Получаем информацию из эндпоинта lessons
+      const allLessons = await teacherApiService.getAllLessons();
+
+      // Ищем занятие по ID
+      const lesson = allLessons.find((l: any) => l.id === lessonId);
+
+      if (lesson) {
+        // Теперь используем idSchedule для получения информации из расписания
+        const scheduleId = lesson.idSchedule;
+
+        if (scheduleId) {
+          // Получаем информацию из расписания
+          const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule`);
+          if (scheduleResponse.ok) {
+            const scheduleData = await scheduleResponse.json();
+            
+            const scheduleItem = scheduleData.find((item: any) => item.id === scheduleId);
+
+            if (scheduleItem) {
+              const lessonInfo = {
+                numberWeek: lesson.numberWeek || 0,
+                dayWeek: scheduleItem.dayWeek || 'Не указано',
+                typeWeek: scheduleItem.typeWeek || 'Не указано',
+                numPair: scheduleItem.numPair || 0,
+                replacement: scheduleItem.replacement || false
+              };
+              return lessonInfo;
+            }
+          }
+        }
+
+        // Если не нашли в расписании, возвращаем базовую информацию из lessons
+        const basicInfo = {
+          numberWeek: lesson.numberWeek || 0,
+          dayWeek: 'Не указано',
+          typeWeek: 'Не указано', 
+          numPair: 0,
+          replacement: false
+        };
+        return basicInfo;
+      }
+
+      return null;
+
+    } catch (error) {
+      return null;
+    } finally {
+      setLoadingLessonInfo(false);
+    }
+  };
+
+  // Функция для открытия модального окна с информацией о занятии
+  const handleOpenLessonInfoModal = async (date: string): Promise<void> => {
+    const lessonNumber = getLessonNumber(date);
+    if (lessonNumber === 0) return;
+
+    try {
+      setLessonInfoModal({
+        isOpen: true,
+        date,
+        lessonNumber,
+        lessonInfo: null
+      });
+
+      // Загружаем информацию о занятии
+      const lessonInfo = await fetchLessonInfo(lessonNumber);
+      
+      setLessonInfoModal(prev => ({
+        ...prev,
+        lessonInfo
+      }));
+    } catch (error) {
+      console.error('Error opening lesson info modal:', error);
+      setLessonInfoModal(prev => ({
+        ...prev,
+        lessonInfo: null
+      }));
+    }
+  };
 
   // Функция для получения цвета процента
   const getPercentColor = (percent: number) => {
@@ -78,50 +310,278 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     switch (status) {
       case 'п': return 'status-present';
       case 'у': return 'status-absent';
-      case 'б': return 'status-sick';
       case 'н': return 'status-not';
       default: return 'status-empty';
     }
   };
 
-  // Вспомогательная функция для парсинга дат
-  const parseDate = (dateStr: string): number => {
-    if (!dateStr) return 0;
-    
-    if (dateStr.includes('.')) {
-      // Формат DD.MM
-      const [day, month] = dateStr.split('.');
-      return new Date(new Date().getFullYear(), parseInt(month) - 1, parseInt(day)).getTime();
-    } else {
-      // Формат YYYY-MM-DD
-      return new Date(dateStr).getTime();
+  // Функция для открытия модального окна добавления даты
+  const handleOpenAddDateModal = async (): Promise<void> => {
+    if (!idSt || !teacherId) {
+      alert('Недостаточно данных для добавления даты');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const availableLessons = await teacherApiService.getLessonsForDateAddition(idSt, groupId, teacherId);
+      
+      setAddDateModal({
+        isOpen: true,
+        availableLessons: availableLessons || [],
+        selectedLesson: null
+      });
+    } catch (error) {
+      console.error('Error fetching available lessons:', error);
+      alert('Не удалось загрузить доступные занятия для добавления');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // Фильтрация студентов по подгруппе
-  const filteredStudents = students.filter(student => {
-    if (selectedSubgroup === 'all') return true;
-    return studentSubgroups[student.id] === selectedSubgroup;
-  });
 
-  // Фильтрация дат по выбранному диапазону
-  const filteredDates = allDates.filter(date => {
-    if (!dateRange.start && !dateRange.end) return true;
-    
-    const currentDate = parseDate(date);
-    const startDate = parseDate(dateRange.start);
-    const endDate = parseDate(dateRange.end);
-    
-    if (startDate && endDate) {
-      return currentDate >= startDate && currentDate <= endDate;
-    } else if (startDate) {
-      return currentDate >= startDate;
-    } else if (endDate) {
-      return currentDate <= endDate;
+  // Функция для добавления столбца с датой
+  const handleAddDateColumn = async (): Promise<void> => {
+    if (!addDateModal.selectedLesson || !idSt || !teacherId) {
+      alert('Выберите занятие для добавления');
+      return;
     }
-  
-    return true;
-  });
+
+    setManagingDate(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const addRequest = {
+        idGroup: groupId,
+        idSt: idSt,
+        idLesson: addDateModal.selectedLesson.id,
+        idTeacher: teacherId
+      };
+      
+      const result = await teacherApiService.addDateColumn(addRequest);
+      
+      if (result.success) {
+        alert('Столбец с датой успешно добавлен');
+        setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null });
+        
+        teacherApiService.invalidateAttendanceCache();
+        teacherApiService.invalidateLessonDatesCache();
+        
+        await loadAttendanceData();
+      }
+    } catch (error: any) {
+      console.error('Error adding date column:', error);
+      alert(`Ошибка при добавлении столбца: ${error.message}`);
+    } finally {
+      setManagingDate(false);
+    }
+  };
+
+  // Функция для открытия модального окна удаления даты
+  const handleOpenDeleteDateModal = (date: string, lessonNumber: number): void => {
+    setDeleteDateModal({
+      isOpen: true,
+      dateToDelete: date,
+      lessonNumber: lessonNumber
+    });
+  };
+
+  // Функция для удаления столбца с датой
+  const handleDeleteDateColumn = async (): Promise<void> => {
+    if (!idSt || !teacherId) {
+      alert('Недостаточно данных для удаления даты');
+      return;
+    }
+
+    setManagingDate(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        throw new Error('Не удалось определить ID группы');
+      }
+
+      const deleteRequest = {
+        idGroup: groupId,
+        idSt: idSt,
+        idTeacher: teacherId,
+        number: deleteDateModal.lessonNumber
+      };
+      
+      const result = await teacherApiService.deleteDateColumn(deleteRequest);
+      
+      if (result.success) {
+        alert('Столбец с датой успешно удален');
+        setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 });
+        
+        teacherApiService.invalidateAttendanceCache();
+        teacherApiService.invalidateLessonDatesCache();
+        
+        await loadAttendanceData();
+      }
+    } catch (error: any) {
+      console.error('Error deleting date column:', error);
+      alert(`Ошибка при удалении столбца: ${error.message}`);
+    } finally {
+      setManagingDate(false);
+    }
+  };
+
+  // Загрузка данных посещаемости
+  const loadAttendanceData = async () => {
+    try {
+      setLoading(true);
+      console.log('Loading attendance data for:', {
+        groupNumber,
+        idSt, 
+        teacherId
+      });
+              
+      // Получаем данные посещаемости
+      const attendanceData = await teacherApiService.getGroupAttendance(groupNumber, idSt, teacherId);
+      
+      if (attendanceData && Array.isArray(attendanceData)) {
+        if (attendanceData[0]) {
+        }
+      }
+      
+      // ПРОВЕРКА: Если данных нет
+      if (!attendanceData || attendanceData.length === 0) {
+        setAllDates([]);
+        setAttendanceRecords([]);
+        setStudents([]);
+        return;
+      }
+      
+      // ПРЕОБРАЗУЕМ ДАННЫЕ
+      const transformedStudents: Student[] = attendanceData.map((studentData: any) => ({
+        id: studentData.idStudent,
+        lastName: studentData.lastName || '',
+        firstName: studentData.name || '',
+        middleName: studentData.patronymic || '',
+      }));
+      
+      // Преобразуем данные API в формат записей посещаемости
+      const records: AttendanceRecord[] = [];
+      const datesSet = new Set<string>();
+      const lessonsMap = new Map<string, number>();
+      
+      attendanceData.forEach((studentData: any) => {
+        
+        // ПРОВЕРКА: Есть ли attendances у студента
+        if (!studentData.attendances || !Array.isArray(studentData.attendances)) {
+          return;
+        }
+                
+        studentData.attendances.forEach((attendance: any) => {
+
+          // ПРОВЕРКА: Есть ли необходимые поля
+          if (!attendance.date || !attendance.idLesson) {
+            return;
+          }
+          
+          // ПРАВИЛЬНОЕ ПРЕОБРАЗОВАНИЕ ДАТЫ
+          let dateKey: string;
+          
+          try {
+            // Пробуем разные форматы дат
+            const dateObj = new Date(attendance.date);
+            
+            if (isNaN(dateObj.getTime())) {
+              // Если Date не распарсил, пробуем ручной парсинг
+              const dateParts = attendance.date.split('-');
+              if (dateParts.length === 3) {
+                dateKey = `${dateParts[2]}.${dateParts[1]} (${attendance.idLesson})`;
+              } else {
+                dateKey = `${attendance.date} (${attendance.idLesson})`;
+              }
+            } else {
+              // Стандартный формат
+              dateKey = dateObj.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit'
+              }) + ` (${attendance.idLesson})`;
+            }
+          } catch (error) {
+            dateKey = `${attendance.date} (${attendance.idLesson})`;
+          }
+                    
+          datesSet.add(dateKey);
+          lessonsMap.set(dateKey, attendance.idLesson);
+          
+          // Преобразуем null в пустую строку
+          const status = (attendance.status === null ? '' : attendance.status) as 'п' | 'у' | 'н' | '';
+          
+          records.push({
+            id: Date.now() + Math.random(),
+            studentId: studentData.idStudent,
+            date: dateKey,
+            status: status,
+            reason: attendance.comment || undefined,
+            lessonId: attendance.idLesson
+          });
+        });
+      });
+      
+      setAllDates(Array.from(datesSet).sort());
+      setLessonsData(Array.from(lessonsMap, ([date, lessonId]) => ({ date, lessonId })));
+      setAttendanceRecords(records);
+      setStudents(transformedStudents);
+              
+    } catch (error) {
+      setAllDates([]);
+      setAttendanceRecords([]);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Функция принудительного обновления данных
+  const handleRefresh = async (): Promise<void> => {
+      console.log('Refresh button clicked');
+    setRefreshing(true);
+    try {
+      console.log('Начало принудительного обновления данных...');
+      
+      // ИНВАЛИДИРУЕМ КЭШ ПЕРЕД ЗАГРУЗКОЙ
+      teacherApiService.invalidateAttendanceCache();
+      teacherApiService.invalidateStudentCache();
+      teacherApiService.invalidateLessonDatesCache();
+      
+      // Добавляем небольшую задержку для гарантии инвалидации кэша
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      await loadAttendanceData();
+      console.log('Данные посещаемости успешно обновлены');
+      
+      // Показываем временное сообщение об успехе
+      const refreshBtn = document.querySelector('.pc-refresh-btn');
+      if (refreshBtn) {
+        const originalText = refreshBtn.querySelector('span')?.textContent;
+        const span = refreshBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Данные обновлены!';
+          setTimeout(() => {
+            if (span) {
+              span.textContent = originalText || 'Обновить данные';
+            }
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при обновлении данных:', error);
+      alert('Не удалось обновить данные. Пожалуйста, попробуйте еще раз.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Обработчик обновления данных посещаемости
   const handleAttendanceUpdate = useCallback((attendanceData: {
@@ -141,46 +601,10 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     });
   }, [attendanceRecords, filteredStudents, filteredDates, handleAttendanceUpdate]);
 
-  // Инициализация дат и подгрупп
+  // Загрузка данных при монтировании
   useEffect(() => {
-    const initialDates = [
-      '04.09', '11.09', '18.09', '25.09', '02.10',
-      '05.02', '12.02', '19.02', '26.02', '05.03'
-    ];
-    
-    setAllDates(initialDates);
-
-    // Инициализация записей посещаемости
-    const initialRecords: AttendanceRecord[] = [];
-    
-    students.forEach(student => {
-      initialDates.forEach(date => {
-        initialRecords.push({
-          id: Date.now() + Math.random(),
-          studentId: student.id,
-          date: date,
-          status: ''
-        });
-      });
-    });
-    
-    setAttendanceRecords(initialRecords);
-
-    // Инициализация подгрупп студентов
-    const initialSubgroups: Record<number, 'I' | 'II' | undefined> = {};
-    students.forEach(student => {
-      initialSubgroups[student.id] = student.subgroup;
-    });
-    setStudentSubgroups(initialSubgroups);
-
-    // Установка начального диапазона дат (все даты)
-    if (initialDates.length > 0) {
-      setDateRange({
-        start: '',
-        end: ''
-      });
-    }
-  }, [students]);
+    loadAttendanceData();
+  }, [groupNumber, idSt, teacherId]);
 
   // Обработка нажатий клавиш для навигации по таблице
   useEffect(() => {
@@ -213,7 +637,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         case 'Tab':
           e.preventDefault();
           if (e.shiftKey) {
-            // Shift+Tab - двигаемся назад
             if (currentDateIndex > 0) {
               newDateIndex = currentDateIndex - 1;
             } else if (currentStudentIndex > 0) {
@@ -221,7 +644,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               newDateIndex = filteredDates.length - 1;
             }
           } else {
-            // Tab - двигаемся вперед
             if (currentDateIndex < filteredDates.length - 1) {
               newDateIndex = currentDateIndex + 1;
             } else if (currentStudentIndex < filteredStudents.length - 1) {
@@ -234,7 +656,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
           return;
       }
 
-      // Если позиция изменилась, переходим к новой ячейке
       if (newStudentIndex !== currentStudentIndex || newDateIndex !== currentDateIndex) {
         const newStudent = filteredStudents[newStudentIndex];
         const newDate = filteredDates[newDateIndex];
@@ -262,14 +683,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   }, [editingCell]);
 
-  // Фокус на input при редактировании преподавателя
-  useEffect(() => {
-    if (editingTeacher && teacherInputRef.current) {
-      teacherInputRef.current.focus();
-      teacherInputRef.current.select();
-    }
-  }, [editingTeacher]);
-
   // Получение записи посещаемости для студента и даты
   const getAttendanceRecord = (studentId: number, date: string): AttendanceRecord => {
     return attendanceRecords.find(record => 
@@ -278,47 +691,89 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       id: Date.now() + Math.random(),
       studentId,
       date,
-      status: ''
+      status: '',
+      lessonId: lessonsData.find(lesson => lesson.date === date)?.lessonId
     };
   };
 
-  // Обновление записи посещаемости
-  const updateAttendanceRecord = (studentId: number, date: string, updates: Partial<AttendanceRecord>) => {
-    setAttendanceRecords(prev => {
-      const existingIndex = prev.findIndex(record => 
-        record.studentId === studentId && record.date === date
-      );
+  // Получение ID занятия для даты
+  const getLessonIdForDate = (date: string): number | undefined => {
+    return lessonsData.find(lesson => lesson.date === date)?.lessonId;
+  };
+
+  // Обновление записи посещаемости с сохранением в API
+  const updateAttendanceRecord = async (studentId: number, date: string, updates: Partial<AttendanceRecord>) => {
+    const lessonId = getLessonIdForDate(date);
+    if (!lessonId) {
+      console.error('Lesson ID not found for date:', date);
+      return;
+    }
+
+    try {
+      console.log('Updating attendance record:', {
+        studentId,
+        date,
+        lessonId,
+        updates,
+        teacherId
+      });
+
+      // Формируем полный запрос с studentId
+      const updateRequest = {
+        idLesson: lessonId,
+        idTeacher: teacherId,
+        idStudent: studentId,
+        status: updates.status || '',
+        comment: updates.reason || ''
+      };
+
+      console.log('Sending update request:', updateRequest);
+
+      // Отправляем запрос на обновление
+      await teacherApiService.updateAttendance(updateRequest);
+
+      // Обновляем локальное состояние только после успешного запроса
+      setAttendanceRecords(prev => {
+        const existingIndex = prev.findIndex(record => 
+          record.studentId === studentId && record.date === date
+        );
+        
+        if (existingIndex >= 0) {
+          const newRecords = [...prev];
+          newRecords[existingIndex] = { 
+            ...newRecords[existingIndex], 
+            ...updates,
+            lessonId
+          };
+          console.log('Updated existing record:', newRecords[existingIndex]);
+          return newRecords;
+        } else {
+          // Создаем новую запись
+          const status = (updates.status || '') as 'п' | 'у' | 'н' | '';
+          
+          const newRecord: AttendanceRecord = {
+            id: Date.now() + Math.random(),
+            studentId,
+            date,
+            status: status,
+            reason: updates.reason,
+            lessonId
+          };
+          console.log('Created new record:', newRecord);
+          return [...prev, newRecord];
+        }
+      });
+
+      console.log('Attendance record successfully updated');
+
+    } catch (error) {
+      console.error('Error updating attendance in API:', error);
       
-      if (existingIndex >= 0) {
-        const newRecords = [...prev];
-        newRecords[existingIndex] = { ...newRecords[existingIndex], ...updates };
-        return newRecords;
-      } else {
-        return [...prev, {
-          id: Date.now() + Math.random(),
-          studentId,
-          date,
-          status: '',
-          ...updates
-        }];
-      }
-    });
-  };
-
-  // Обновление подгруппы студента
-  const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II' | undefined) => {
-    setStudentSubgroups(prev => ({
-      ...prev,
-      [studentId]: subgroup
-    }));
-  };
-
-  // Обновление преподавателя подгруппы
-  const updateSubgroupTeacher = (subgroup: string, teacher: string) => {
-    setSubgroupTeachers(prev => ({
-      ...prev,
-      [subgroup]: teacher
-    }));
+      // Показываем пользователю ошибку
+      alert(`Ошибка при сохранении посещаемости: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      
+      throw error;
+    }
   };
 
   // Начало редактирования ячейки
@@ -328,49 +783,49 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   };
 
   // Сохранение редактирования
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingCell) return;
 
     if (editingCell.type === 'status') {
-        const lowerCaseValue = editValue.toLowerCase();
+      const lowerCaseValue = editValue.toLowerCase();
 
-        const isValidStatus = (value: string): value is 'п' | 'у' | 'б' | 'н' | '' => {
-            return ['п', 'у', 'б', 'н', ''].includes(value);
-        };
+      const isValidStatus = (value: string): value is 'п' | 'у' | 'н' | '' => {
+        return ['п', 'у', 'н', ''].includes(value);
+      };
+      
+      if (isValidStatus(lowerCaseValue)) {
+        const status = lowerCaseValue;
+        const currentRecord = getAttendanceRecord(editingCell.studentId, editingCell.date);
         
-        if (isValidStatus(lowerCaseValue)) {
-            const status = lowerCaseValue;
-            const currentRecord = getAttendanceRecord(editingCell.studentId, editingCell.date);
-            
-            if (status === 'у') {
-              setShowReasonModal({ 
-                studentId: editingCell.studentId, 
-                date: editingCell.date
-              });
-              setReasonText(currentRecord.reason || '');
-            } else if (status === 'б') {
-              setShowSickModal({ 
-                studentId: editingCell.studentId, 
-                date: editingCell.date
-              });
-              setSickStartDate(currentRecord.sickStartDate || '');
-              setSickEndDate(currentRecord.sickEndDate || '');
-            } else if (status === 'п' || status === 'н' || status === '') {
-              updateAttendanceRecord(
-                editingCell.studentId, 
-                editingCell.date, 
-                { 
-                  status,
-                  reason: undefined,
-                  sickStartDate: undefined,
-                  sickEndDate: undefined
-                }
-              );
-            }
+        try {
+          if (status === 'у') {
+            setShowReasonModal({ 
+              studentId: editingCell.studentId, 
+              date: editingCell.date
+            });
+            setReasonText(currentRecord.reason || '');
+          } else {
+            // НЕМЕДЛЕННО обновляем статус
+            await updateAttendanceRecord(
+              editingCell.studentId, 
+              editingCell.date, 
+              { 
+                status,
+                reason: undefined
+              }
+            );
+          }
+          
+          setEditingCell(null);
+          setEditValue('');
+          
+        } catch (error) {
+          console.error('Error saving attendance:', error);
         }
+      } else {
+        alert('Неверный статус. Допустимые значения: п, у, н');
+      }
     }
-    setEditingCell(null);
-    setEditValue('');
   };
 
   // Отмена редактирования
@@ -389,61 +844,27 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   };
 
   // Сохранение причины отсутствия
-  const handleSaveReason = () => {
+  const handleSaveReason = async () => {
     if (showReasonModal) {
-      updateAttendanceRecord(
-        showReasonModal.studentId, 
-        showReasonModal.date, 
-        { 
-          status: 'у',
-          reason: reasonText 
-        }
-      );
-      setShowReasonModal(null);
-      setReasonText('');
+      try {
+        await updateAttendanceRecord(
+          showReasonModal.studentId, 
+          showReasonModal.date, 
+          { 
+            status: 'у',
+            reason: reasonText 
+          }
+        );
+        setShowReasonModal(null);
+        setReasonText('');
+      } catch (error) {
+        console.error('Error saving reason:', error);
+        // Оставляем модальное окно открытым при ошибке
+      }
     }
   };
 
-  // Сохранение периода больничного
-  const handleSaveSickPeriod = () => {
-    if (showSickModal) {
-      updateAttendanceRecord(
-        showSickModal.studentId, 
-        showSickModal.date, 
-        { 
-          status: 'б',
-          sickStartDate,
-          sickEndDate
-        }
-      );
-      setShowSickModal(null);
-      setSickStartDate('');
-      setSickEndDate('');
-    }
-  };
-
-  // Начало редактирования преподавателя
-  const handleTeacherEditStart = (subgroup: string) => {
-    setEditingTeacher(subgroup);
-    setTeacherEditValue(subgroupTeachers[subgroup]);
-  };
-
-  // Сохранение преподавателя
-  const handleTeacherSave = () => {
-    if (editingTeacher) {
-      updateSubgroupTeacher(editingTeacher, teacherEditValue);
-      setEditingTeacher(null);
-      setTeacherEditValue('');
-    }
-  };
-
-  // Отмена редактирования преподавателя
-  const handleTeacherCancel = () => {
-    setEditingTeacher(null);
-    setTeacherEditValue('');
-  };
-
-  // Расчет процента посещаемости для студента в выбранном диапазоне дат
+  // Расчет процента посещаемости для студента
   const calculateAttendancePercentage = (studentId: number): number => {
     const studentRecords = attendanceRecords.filter(record => 
       record.studentId === studentId && filteredDates.includes(record.date)
@@ -458,7 +879,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     return (presentCount / studentRecords.length) * 100;
   };
 
-  // Расчет общего процента посещаемости группы в выбранном диапазоне дат
+  // Расчет общего процента посещаемости группы
   const calculateGroupAttendancePercentage = (): number => {
     if (filteredStudents.length === 0) return 0;
     
@@ -469,6 +890,17 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     return totalPercentage / filteredStudents.length;
   };
 
+  // Вызываем колбэк при обновлении данных посещаемости
+  useEffect(() => {
+    const percentage = calculateGroupAttendancePercentage();
+    if (onAttendanceUpdate) {
+      onAttendanceUpdate({
+        records: attendanceRecords,
+        percentage: percentage
+      });
+    }
+  }, [attendanceRecords, filteredStudents, filteredDates, onAttendanceUpdate]);
+
   // Обработчик клика по кнопке "Выставить оценки"
   const handleSetGrades = () => {
     if (onSetGrades) {
@@ -476,26 +908,336 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     }
   };
 
+  // Рендер модального окна информации о занятии
+  const renderLessonInfoModal = (): React.ReactElement | null => {
+    if (!lessonInfoModal.isOpen) return null;
+
+    const { date, lessonNumber, lessonInfo } = lessonInfoModal;
+    const displayDate = date.split(' (')[0];
+
+    // Статистика посещаемости для этого занятия
+    const getAttendanceStats = () => {
+      const recordsForThisLesson = attendanceRecords.filter(record => 
+        record.date === date
+      );
+      
+      const totalStudents = recordsForThisLesson.length;
+      const presentCount = recordsForThisLesson.filter(record => record.status === 'п').length;
+      const absentWithReasonCount = recordsForThisLesson.filter(record => record.status === 'у').length;
+      const absentWithoutReasonCount = recordsForThisLesson.filter(record => record.status === 'н').length;
+      
+      return {
+        total: totalStudents,
+        present: presentCount,
+        absentWithReason: absentWithReasonCount,
+        absentWithoutReason: absentWithoutReasonCount,
+        percentage: totalStudents > 0 ? (presentCount / totalStudents) * 100 : 0
+      };
+    };
+
+    const attendanceStats = getAttendanceStats();
+
+    const handleCloseModal = (): void => {
+      setLessonInfoModal({
+        isOpen: false,
+        date: '',
+        lessonNumber: 0,
+        lessonInfo: null
+      });
+    };
+
+    return (
+      <div className="lesson-info-modal-overlay" onClick={handleCloseModal}>
+        <div className="lesson-info-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="lesson-info-modal-header">
+            <h3>Информация о занятии</h3>
+            <button 
+              className="lesson-info-modal-close"
+              onClick={handleCloseModal}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="lesson-info-modal-content">
+            {loadingLessonInfo ? (
+              <div className="lesson-info-loading">
+                <div className="lesson-info-loading-spinner"></div>
+                <div className="lesson-info-loading-text">Загрузка информации о занятии...</div>
+              </div>
+            ) : lessonInfo ? (
+              <>
+                {/* Детальная информация - 4 одинаковых блока */}
+                <div className="lesson-details-info">
+                  <div className="info-section-header">
+                    Детали расписания
+                  </div>
+                  <div className="info-section-content">
+                    <div className="info-grid-4">
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Номер недели</span>
+                        <span className="info-grid-value">{lessonInfo.numberWeek || '—'}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">День недели</span>
+                        <span className="info-grid-value">{lessonInfo.dayWeek || '—'}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Тип недели</span>
+                        <span className="info-grid-value">{lessonInfo.typeWeek || '—'}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Номер пары</span>
+                        <span className="info-grid-value">{lessonInfo.numPair || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Статистика посещаемости - 4 одинаковых блока */}
+                <div className="attendance-stats-section">
+                  <div className="attendance-stats-header">
+                    Статистика посещаемости
+                  </div>
+                  <div className="attendance-stats-content">
+                    <div className="info-grid-4">
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Студентов</span>
+                        <span className="info-grid-value">{attendanceStats.total}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Присутствовало</span>
+                        <span className="info-grid-value">{attendanceStats.present}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Уважительно</span>
+                        <span className="info-grid-value">{attendanceStats.absentWithReason}</span>
+                      </div>
+                      <div className="info-grid-item">
+                        <span className="info-grid-label">Отсутствовало</span>
+                        <span className="info-grid-value">{attendanceStats.absentWithoutReason}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Процент посещаемости - отдельный блок снизу */}
+                    <div 
+                      className="attendance-percentage"
+                      style={{
+                        '--percentage': `${attendanceStats.percentage}%`
+                      } as React.CSSProperties}
+                    >
+                      <div className="percentage-circle">
+                        <div className="percentage-value">
+                          {attendanceStats.percentage.toFixed(0)}%
+                        </div>
+                      </div>
+                      <div className="percentage-label">
+                        Общая посещаемость
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="lesson-info-no-data">
+                <div className="lesson-info-no-data-icon"></div>
+                <h4>Информация недоступна</h4>
+                <p>Детальная информация о данном занятии не найдена в системе.</p>
+              </div>
+            )}
+
+            <div className="lesson-info-actions">
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер заголовка даты с кнопками управления
+  const renderDateHeader = (date: string, index: number): React.ReactElement => {
+    const lessonId = getLessonNumber(date);
+    
+    // Извлекаем дату и номер занятия для отображения
+    const dateParts = date.split(' (');
+    const displayDate = dateParts[0]; // Основная дата "10.11"
+    const lessonNumber = dateParts[1] ? dateParts[1].replace(')', '') : '';
+    
+    return (
+      <th key={index} className="column-date">
+        <div className="date-header-actions">
+        {/* Кнопка информации о занятии */}
+        <button 
+          className="date-infos-btn"
+          onClick={() => handleOpenLessonInfoModal(date)}
+          title="Информация о занятии"
+        >
+          ⋯
+        </button>
+
+          {/* Кнопка удаления даты */}
+          <button 
+            className="date-delete-btn"
+            onClick={() => handleOpenDeleteDateModal(date, lessonId)}
+            title="Удалить столбец с датой"
+          >
+            ×
+          </button>
+        </div>
+          
+        {/* ДАТА С ИНФОРМАЦИЕЙ О ЗАНЯТИИ */}
+        <div className="dates-content">
+          <div className="dates-title-new">
+            {displayDate}
+          </div>
+          <div className="tas-lesson-id">
+            №{lessonId}
+          </div>
+        </div>
+      </th>
+    );
+  };
+
+  // Рендер пустого столбца с "+" для добавления даты
+  const renderAddDateColumn = (): React.ReactElement => {
+    return (
+      <th className="column-add-date">
+        <div 
+          className="add-date-column"
+          onClick={handleOpenAddDateModal}
+          title="Добавить столбец с датой"
+        >
+          <div className="add-date-plus">+</div>
+        </div>
+      </th>
+    );
+  };
+
+  // Рендер модального окна добавления даты
+  const renderAddDateModal = (): React.ReactElement | null => {
+    if (!addDateModal.isOpen) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content add-date-modal">
+          <h3>Добавить столбец с датой</h3>
+          
+          <div className="available-lessons-list">
+            <h4>Доступные занятия:</h4>
+            
+            {addDateModal.availableLessons.length === 0 ? (
+              <div className="no-lessons-message">
+                Нет доступных занятий для добавления
+              </div>
+            ) : (
+              <div className="lessons-grid">
+                {addDateModal.availableLessons.map((lesson) => (
+                  <div 
+                    key={lesson.id}
+                    className={`lesson-item ${addDateModal.selectedLesson?.id === lesson.id ? 'selected' : ''}`}
+                    onClick={() => setAddDateModal(prev => ({
+                      ...prev,
+                      selectedLesson: lesson
+                    }))}
+                  >
+                    <div className="lesson-date">
+                      {new Date(lesson.date).toLocaleDateString('ru-RU')}
+                    </div>
+                    <div className="lesson-details">
+                      <div className="lesson-day">{lesson.dayWeek}</div>
+                      <div className="lesson-type">{lesson.typeWeek}</div>
+                      <div className="lesson-pair">Пара: {lesson.numPair}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => setAddDateModal({ isOpen: false, availableLessons: [], selectedLesson: null })}
+              disabled={managingDate}
+            >
+              Отмена
+            </button>
+            <button 
+              className="gradient-btn" 
+              onClick={handleAddDateColumn}
+              disabled={!addDateModal.selectedLesson || managingDate || addDateModal.availableLessons.length === 0}
+            >
+              {managingDate ? 'Добавление...' : 'Добавить столбец'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Рендер модального окна удаления даты
+  const renderDeleteDateModal = (): React.ReactElement | null => {
+    if (!deleteDateModal.isOpen) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content delete-date-modal">
+          <h3>Удалить столбец с датой</h3>
+          
+          <div className="delete-confirmation">
+            <p>Вы уверены, что хотите удалить столбец с датой?</p>
+            <div className="date-to-delete">
+              <strong>{deleteDateModal.dateToDelete}</strong>
+            </div>
+            <p className="warning-text">
+              Внимание: Это действие нельзя отменить. Все данные посещаемости для этой даты будут удалены.
+            </p>
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              className="cancel-btn" 
+              onClick={() => setDeleteDateModal({ isOpen: false, dateToDelete: '', lessonNumber: 0 })}
+              disabled={managingDate}
+            >
+              Отмена
+            </button>
+            <button 
+              className="delete-confirm-btn" 
+              onClick={handleDeleteDateColumn}
+              disabled={managingDate}
+            >
+              {managingDate ? 'Удаление...' : 'Удалить'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Рендер таблицы
   const renderTable = () => {
+    if (loading) {
+      return <div className="loading-message">Загрузка данных посещаемости...</div>;
+    }
+
+    if (filteredDates.length === 0) {
+      return <div className="no-data-message">Нет данных о занятиях для отображения</div>;
+    }
+
     return (
       <div className="attendance-table-wrapper">
         <table className="attendance-table">
           <thead>
             <tr>
-              {/* Фиксированные колонки слева */}
               <th className="column-number sticky-col">№</th>
               <th className="column-name sticky-col">ФИО</th>
-              <th className="column-subgroup sticky-col">Подгруппа</th>
               
-              {/* Динамические колонки с датами */}
-              {filteredDates.map((date, index) => (
-                <th key={index} className="column-date">
-                  {date}
-                </th>
-              ))}
+              {filteredDates.map((date: string, index: number) => renderDateHeader(date, index))}
+
+              {/* Пустой столбец для добавления даты */}
+              {renderAddDateColumn()}
               
-              {/* Фиксированные колонки справа */}
               <th className="column-percentage sticky-col-right"></th>
             </tr>
           </thead>
@@ -505,7 +1247,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               
               return (
                 <tr key={student.id}>
-                  {/* Фиксированные ячейки слева */}
                   <td className="column-number sticky-col">
                     <div className="cell-number">{studentIndex + 1}</div>
                   </td>
@@ -514,21 +1255,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                       {student.lastName} {student.firstName} {student.middleName}
                     </div>
                   </td>
-                  <td className="column-subgroup sticky-col">
-                    <div className="cell-subgroup">
-                      <select 
-                        value={studentSubgroups[student.id] || ''}
-                        onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II' | undefined)}
-                        className="subgroup-select">
-                        <option value="">-</option>
-                        <option value="I">I</option>
-                        <option value="II">II</option>
-                      </select>
-                    </div>
-                  </td>
                   
-                  {/* Ячейки с посещаемостью по датам */}
-                  {filteredDates.map((date, dateIndex) => {
+                  {filteredDates.map((date: string, dateIndex: number) => {
                     const record = getAttendanceRecord(student.id, date);
                     const isEditing = editingCell?.studentId === student.id && 
                                     editingCell?.date === date;
@@ -553,7 +1281,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                                 onKeyPress={handleKeyPress}
                                 maxLength={1}
                                 className="status-input"
-                                placeholder="п/у/б/н"
+                                placeholder="п/у/н"
                               />
                             </div>
                           ) : (
@@ -565,8 +1293,12 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                       </td>
                     );
                   })}
+
+                  {/* Пустая ячейка для добавления даты */}
+                  <td className="column-add-date">
+                    <div className="add-date-cell-plus"></div>
+                  </td>
                   
-                  {/* Фиксированная ячейка справа - процент посещаемости */}
                   <td className="column-percentage sticky-col-right">
                     <div 
                       className="cell-percentage"
@@ -589,7 +1321,20 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
   return (
     <div className="teacher-attendance-section">
-      {/* Заголовок */}
+      {/* Заголовок с кнопками информации и обновления */}
+      <div className="attendance-cabinet-header">
+        <div className="header-left-actions">
+          {onBackToGroups && (
+            <button className="back-button" onClick={onBackToGroups}>
+              <img src="/th-icons/arrow_icon.svg" alt="Назад" />
+            </button>
+          )}
+          <InfoIcon />
+        </div>
+        <RefreshButton />
+      </div>
+
+      {/* Основной заголовок */}
       <div className="attendance-header">
         <div className="attendance-title-container">
           <div className="attendance-title">
@@ -601,14 +1346,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
             </div>
           </div>
           <div className="attendance-actions">
-            {onBackToGroups && (
-              <button className="back-button" onClick={onBackToGroups}>
-                <img 
-                  src="/th-icons/arrow_icon.svg" 
-                  alt="Назад" 
-                />
-              </button>
-            )}
             <button className="gradient-btn set-grades-btn" onClick={handleSetGrades}>
               Выставить оценки
             </button>
@@ -620,7 +1357,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       <div className="attendance-filters">
         <div className="date-range-filter">
           <div className="date-range-group">
-            <span className="date-range-label">Посмотреть посещаемость с</span>
+            <span className="date-range-label">Период с</span>
             <input
               type="date"
               value={dateRange.start}
@@ -636,61 +1373,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               onChange={(e) => setDateRange(prev => ({...prev, end: e.target.value}))}
               className="date-range-input"
             />
-          </div>
-        </div>
-
-        <div className="type-filters">
-          {/* Отображение преподавателя только при выборе конкретной подгруппы */}
-          {selectedSubgroup !== 'all' && (
-            <div className="filter-group teacher-display">
-              {editingTeacher === selectedSubgroup ? (
-                <div className="teacher-edit-container">
-                  <input
-                    ref={teacherInputRef}
-                    type="text"
-                    value={teacherEditValue}
-                    onChange={(e) => setTeacherEditValue(e.target.value)}
-                    onBlur={handleTeacherSave}
-                    onKeyPress={(e) => e.key === 'Enter' && handleTeacherSave()}
-                    className="teacher-edit-input"
-                  />
-                  <button 
-                    className="teacher-save-btn"
-                    onClick={handleTeacherSave}
-                    title="Сохранить"
-                  >
-                    ✓
-                  </button>
-                  <button 
-                    className="teacher-cancel-btn"
-                    onClick={handleTeacherCancel}
-                    title="Отмена"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  className="teacher-value"
-                  onClick={() => handleTeacherEditStart(selectedSubgroup)}
-                  title="Нажмите для редактирования"
-                >
-                  {subgroupTeachers[selectedSubgroup]}
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="filter-group">
-            <select 
-              value={selectedSubgroup} 
-              onChange={(e) => setSelectedSubgroup(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Все подгруппы</option>
-              <option value="I">I подгруппа</option>
-              <option value="II">II подгруппа</option>
-            </select>
           </div>
         </div>
       </div>
@@ -718,7 +1400,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         </div>
       </div>
 
-      {/* Модальные окна */}
+      {/* Модальное окно для причины отсутствия */}
       {showReasonModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -741,39 +1423,10 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         </div>
       )}
 
-      {showSickModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Период больничного</h3>
-            <div className="date-inputs">
-              <div className="date-input-group">
-                <label>Начало:</label>
-                <input
-                  type="date"
-                  value={sickStartDate}
-                  onChange={(e) => setSickStartDate(e.target.value)}
-                />
-              </div>
-              <div className="date-input-group">
-                <label>Конец:</label>
-                <input
-                  type="date"
-                  value={sickEndDate}
-                  onChange={(e) => setSickEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="modal-actions">
-              <button className="gradient-btn" onClick={handleSaveSickPeriod}>
-                Сохранить
-              </button>
-              <button className="cancel-btn" onClick={() => setShowSickModal(null)}>
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Модальные окна */}
+      {renderLessonInfoModal()}
+      {renderAddDateModal()}
+      {renderDeleteDateModal()}
     </div>
   );
 };

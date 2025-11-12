@@ -615,6 +615,29 @@
   animation: pc-spin 1s linear infinite;
 }
 
+.gs-clear-search {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.gs-clear-search:hover {
+  background: #f1f5f9;
+  color: #374151;
+}
+
+
 @keyframes pc-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

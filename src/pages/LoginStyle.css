@@ -196,7 +196,7 @@
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  padding: 0 16px;
+  padding: 0px;
   transition: all 0.3s ease;
 }
 
@@ -215,18 +215,20 @@
   flex: 1;
   border: none;
   outline: none;
-  padding: 16px 0;
+  padding: 16px 16px;
   font-size: 14px;
   background: transparent;
+  border-radius: 10px;
 }
 
 .password-input {
   flex: 1;
   border: none;
   outline: none;
-  padding: 16px 0;
+  padding: 16px 16px;
   font-size: 14px;
   background: transparent;
+  border-radius: 10px;
 }
 
 .login-input::placeholder {
