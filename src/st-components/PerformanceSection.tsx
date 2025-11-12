@@ -49,10 +49,25 @@ interface Grade {
   gradeDetails?: GradeDetail[];
   teacher: string;
 }
+  const useBodyOverflow = (isHidden: boolean) => {
+    useEffect(() => {
+      if (isHidden) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, [isHidden]);
+  };
 
 export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ 
   studentId
 }) => {
+
+  
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'analytics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -96,8 +111,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     currentComment: string;
   } | null>(null);
   const [newSupplementId, setNewSupplementId] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [deletingComment, setDeletingComment] = useState<number | null>(null);
+  const [markTypes, setMarkTypes] = useState<{[key: string]: string}>({});
 
   const { user } = useUser();
+  useBodyOverflow(!!selectedGrade);
 
   // Функция загрузки данных с приоритетом API
   const fetchStudentData = async (forceRefresh = false) => {
@@ -110,16 +129,13 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       setError(null);
       setIsUsingCache(false);
 
-      console.log('Загрузка данных с API...');
       const marksData = await apiService.getStudentMarks(studentId);
       setStudentMarks(marksData ?? []);
       
     } catch (error) {
       console.error('Ошибка при загрузке данных с API:', error);
       
-      // Если ошибка сети, пробуем загрузить из кэша
       try {
-        console.log('Попытка загрузки из кэша...');
         const cacheKey = `marks_${studentId}`;
         const cached = localStorage.getItem(`cache_${cacheKey}`);
         
@@ -130,7 +146,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             setStudentMarks(cachedData.data ?? []);
             setIsUsingCache(true);
             setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные загружены из кэша');
           } else {
             throw new Error('Кэш устарел');
           }
@@ -168,33 +183,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   const API_BASE_URL = 'http://localhost:8080/api/v1';
 
-  // Функция для предпросмотра файла
-  const handlePreviewFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
-    try {
-      const fileInfo = documentInfo || await apiService.getFileInfo(fileId);
-      
-      const fileUrl = `${API_BASE_URL}/paths/id/${fileId}`;
-      
-      if (fileName.toLowerCase().endsWith('.pdf') || 
-          fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-        window.open(fileUrl, '_blank');
-      } else {
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = fileName;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-    } catch (error) {
-      console.error('Ошибка предпросмотра файла:', error);
-      setError('Не удалось открыть файл');
-    }
-  };
-
-
   // Функция для скачивания файла
   const handleDownloadFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
     try {
@@ -219,6 +207,18 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     setMarkInfoLoading(true);
     try {
       const info = await apiService.getMarkInfo(studentId, stId, markNumber);
+      
+      // Если typeMark все еще отсутствует, попробуем получить информацию о колонке
+      if (!info.typeMark) {
+        try {
+          const columnInfo = await apiService.getMarkColumnInfo(studentId, stId, markNumber);
+          info.typeMark = columnInfo.typeMark;
+        } catch (columnError) {
+          console.warn('Не удалось получить тип работы:', columnError);
+          info.typeMark = 'Работа'; // Значение по умолчанию
+        }
+      }
+      
       setMarkInfo(info);
       
       // Загружаем supplements для изменений
@@ -275,10 +275,21 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Загрузка данных при монтировании
   useEffect(() => {
-    fetchStudentData();
-    fetchStudentCourse();
-    loadAllFiles();
+    const loadData = async () => {
+      await fetchStudentData();
+      await fetchStudentCourse();
+      await loadAllFiles();
+    };
+    
+    loadData();
   }, [studentId]);
+
+  // Загрузка типов работ после загрузки оценок
+  useEffect(() => {
+    if (studentMarks.length > 0) {
+      loadMarkTypes();
+    }
+  }, [studentMarks]);
 
 
 
@@ -317,54 +328,114 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   };
 
   const handleAddSupplement = async () => {
-    if (!selectedGrade || !selectedGrade.stId) return;
+    if (!selectedGrade || !selectedGrade.stId) {
+      console.error('Не выбрана оценка или отсутствует stId');
+      setError('Не выбрана оценка для комментария');
+      return;
+    }
     
     try {
-      // Шаг 1: Создаем изменение с пустым комментарием и получаем ID supplement
-      console.log('Создание изменения...');
-      const supplementId = await apiService.addMarkChangeAndGetSupplementId(
-        studentId, 
-        selectedGrade.stId, 
-        selectedGrade.number
-      );
+      
+      // Сразу переключаем режим для мгновенного отклика UI
+      setAddCommentMode(true);
+      setNewComment('');
+      setUploadingFiles([]);
+      
+      // Пробуем создать изменение
+      let supplementId: number;
+      
+      try {
+        supplementId = await apiService.addMarkChangeAndGetSupplementId(
+          studentId, 
+          selectedGrade.stId, 
+          selectedGrade.number
+        );
+        console.log('Supplement создан с ID:', supplementId);
+      } catch (apiError) {
+        console.warn('API error, using fallback:', apiError);
+        // Используем fallback - создаем временный ID для тестирования UI
+        supplementId = Date.now();
+        setError('Режим тестирования: комментарий не будет сохранен на сервере');
+      }
       
       setNewSupplementId(supplementId);
-      setAddCommentMode(true);
-      
-      console.log('Supplement создан с ID:', supplementId);
       
     } catch (error) {
-      console.error('Ошибка создания supplement:', error);
+      console.error('Ошибка создания комментария:', error);
       setError('Не удалось начать добавление комментария');
+      // В случае ошибки сбрасываем режим
+      setAddCommentMode(false);
+      setNewSupplementId(null);
+    }
+  };
+
+  // Функция для загрузки типов работ для всех оценок
+  const loadMarkTypes = async () => {
+    if (!studentMarks || studentMarks.length === 0) return;
+
+    try {
+      const markTypesMap: {[key: string]: string} = {};
+      const promises: Promise<void>[] = [];
+
+      studentMarks.forEach(studentMark => {
+        if (studentMark.marksBySt && studentMark.nameSubjectTeachersDTO) {
+          const stId = studentMark.nameSubjectTeachersDTO.idSt;
+          
+          studentMark.marksBySt.forEach(mark => {
+            if (mark && mark.number !== null && mark.number !== undefined) {
+              const promise = apiService.getMarkColumnInfo(studentId, stId, mark.number)
+                .then(columnInfo => {
+                  const key = `${stId}_${mark.number}`;
+                  markTypesMap[key] = columnInfo.typeMark || 'Работа';
+                })
+                .catch(error => {
+                  console.warn(`Не удалось загрузить тип работы для stId ${stId}, markNumber ${mark.number}:`, error);
+                  const key = `${stId}_${mark.number}`;
+                  markTypesMap[key] = 'Работа';
+                });
+              
+              promises.push(promise);
+            }
+          });
+        }
+      });
+
+      await Promise.all(promises);
+      setMarkTypes(markTypesMap);
+      
+    } catch (error) {
+      console.error('Ошибка загрузки типов работ:', error);
     }
   };
 
   const handleSaveComment = async () => {
-    if (!newSupplementId || !selectedGrade?.stId) return;
+    if (!newSupplementId || !selectedGrade?.stId) {
+      setError('Не удалось создать комментарий');
+      return;
+    }
     
     try {
-      // Шаг 2: Обновляем комментарий в supplement
+      // Сохраняем комментарий если он есть
       if (newComment.trim()) {
-        console.log('Обновление комментария в supplement...');
         await apiService.updateSupplementComment(newSupplementId, newComment);
       }
       
-      // Шаг 3: Загружаем файлы если они есть
+      // Загружаем файлы если они есть
       if (uploadingFiles.length > 0) {
-        console.log('Загрузка файлов в supplement...');
         await apiService.uploadSupplementFiles(newSupplementId, uploadingFiles);
       }
       
-      // Перезагружаем информацию для отображения обновленных данных
-      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      // Обновляем информацию об оценке
+      if (selectedGrade.stId) {
+        await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      }
       
       // Сбрасываем состояние
       setNewSupplementId(null);
       setAddCommentMode(false);
       setNewComment('');
       setUploadingFiles([]);
-      
-      console.log('Комментарий успешно сохранен');
+      setError('');
       
     } catch (error) {
       console.error('Ошибка сохранения комментария:', error);
@@ -374,7 +445,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   const handleCancelComment = async () => {
     if (!newSupplementId) {
-      // Если supplement еще не создан, просто закрываем режим добавления
       setAddCommentMode(false);
       setNewComment('');
       setUploadingFiles([]);
@@ -383,7 +453,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     
     try {
       // Удаляем созданный supplement
-      console.log('Удаление supplement с ID:', newSupplementId);
       await apiService.deleteSupplement(newSupplementId);
       
       // Сбрасываем состояние
@@ -392,35 +461,34 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       setNewComment('');
       setUploadingFiles([]);
       
-      console.log('Supplement успешно удален');
-      
     } catch (error) {
       console.error('Ошибка удаления supplement:', error);
       setError('Не удалось отменить добавление комментария');
     }
   };
 
-  const handleUpdateComment = async () => {
-    if (!editingComment || !editingComment.supplementId || !selectedGrade?.stId) return;
+// Функция для обновления комментария
+  const handleUpdateComment = async (changeId: number, supplementId: number | null) => {
+    if (!selectedGrade?.stId) return;
     
     try {
       // Обновляем комментарий
-      await apiService.updateSupplementComment(editingComment.supplementId, newComment);
+      if (supplementId) {
+        await apiService.updateSupplementComment(supplementId, newComment);
+      }
       
       // Загружаем файлы если они есть
-      if (uploadingFiles.length > 0) {
-        await apiService.uploadSupplementFiles(editingComment.supplementId, uploadingFiles);
+      if (uploadingFiles.length > 0 && supplementId) {
+        await apiService.uploadSupplementFiles(supplementId, uploadingFiles);
       }
       
       // Перезагружаем информацию
       await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
       
       setEditingComment(null);
-      setAddCommentMode(false);
       setNewComment('');
       setUploadingFiles([]);
-      
-      console.log('Комментарий успешно обновлен');
+
     } catch (error) {
       console.error('Ошибка обновления комментария:', error);
       setError('Не удалось обновить комментарий');
@@ -435,29 +503,65 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       currentComment 
     });
     setNewComment(currentComment);
-    setUploadingFiles([]); 
-    setAddCommentMode(true);
+    setUploadingFiles([]);
+    setAddCommentMode(false);
+    setMenuOpen(null);
   };
 
-  // Функция для скачивания файла по ID
-  const handleDownloadFileById = async (fileId: number, fileName: string) => {
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setNewComment('');
+    setUploadingFiles([]);
+  };
+
+  // Функция для удаления комментария
+  const handleDeleteComment = async (changeId: number, supplementId: number | null) => {
+    if (!selectedGrade?.stId) return;
+    
     try {
-      await apiService.downloadFileById(fileId, fileName);
+      setDeletingComment(changeId);
+      
+      // Если есть supplement, удаляем его
+      if (supplementId) {
+        await apiService.deleteSupplement(supplementId);
+      }
+      
+      // Перезагружаем информацию об оценке
+      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      
+      // Закрываем меню
+      setMenuOpen(null);
+      
     } catch (error) {
-      console.error('Ошибка скачивания файла:', error);
-      setError('Не удалось скачать файл');
+      console.error('Ошибка удаления комментария:', error);
+      setError('Не удалось удалить комментарий');
+    } finally {
+      setDeletingComment(null);
     }
   };
 
-  // Функция для скачивания документа
-  const handleDownloadDocument = async (documentId: number) => {
-    try {
-      await apiService.downloadDocument(documentId);
-    } catch (error) {
-      console.error('Ошибка скачивания документа:', error);
-      setError('Не удалось скачать документ');
+  // Функция для подтверждения удаления
+  const confirmDeleteComment = (changeId: number, supplementId: number | null) => {
+    if (window.confirm('Вы уверены, что хотите удалить этот комментарий?')) {
+      handleDeleteComment(changeId, supplementId);
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Проверяем, что клик был вне меню
+      const target = event.target as HTMLElement;
+      if (!target.closest('.pf-comment-menu')) {
+        setMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
 
   // Функция для обработки выбора файлов
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -523,31 +627,44 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (!studentMarks) return [];
 
     return studentMarks
-      .filter(studentMark => studentMark && studentMark.stNameSubjectDTO)
+      .filter(studentMark => studentMark && studentMark.nameSubjectTeachersDTO)
       .map((studentMark) => {
-        const subjectId = studentMark.stNameSubjectDTO?.idSubject;
+        const subjectId = studentMark.nameSubjectTeachersDTO?.idSubject;
         
         if (!subjectId) return null;
 
         const gradeDetails: GradeDetail[] = [];
         const validGrades: number[] = [];
         
+        const teachers = studentMark.nameSubjectTeachersDTO?.teachers || [];
+        const mainTeacher = teachers[0] || { 
+          lastnameTeacher: 'Неизвестно', 
+          nameTeacher: 'Н', 
+          patronymicTeacher: 'П' 
+        };
+        
+        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        
         if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
           studentMark.marksBySt.forEach((mark) => {
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
                 const lessonDate = getLessonDate(mark.number);
-                const lessonTopic = getLessonTopic(mark.number);
+                
+                // Получаем тип работы из загруженных данных
+                const stId = studentMark.nameSubjectTeachersDTO.idSt;
+                const markTypeKey = `${stId}_${mark.number}`;
+                const markType = markTypes[markTypeKey] || getLessonTopic(mark.number);
 
                 gradeDetails.push({
                   id: mark.number,
                   date: lessonDate,
-                  topic: lessonTopic,
+                  topic: markType, // Используем реальный тип работы
                   grade: mark.value || 0,
-                  teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`,
+                  teacher: teacherString,
                   type: 'Работа',
                   hasValue: mark.value !== null && mark.value !== undefined,
-                  stId: studentMark.stNameSubjectDTO.idSt
+                  stId: stId
                 });
 
                 if (mark.value !== null && mark.value !== undefined) {
@@ -566,12 +683,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
         return {
           id: subjectId,
-          subject: studentMark.stNameSubjectDTO.nameSubject || 'Неизвестный предмет',
+          subject: studentMark.nameSubjectTeachersDTO.nameSubject || 'Неизвестный предмет',
           grades: validGrades,
           average: parseFloat(average.toFixed(1)),
           examGrade: studentMark.certification,
           gradeDetails: gradeDetails,
-          teacher: `${studentMark.stNameSubjectDTO.lastnameTeacher} ${studentMark.stNameSubjectDTO.nameTeacher.charAt(0)}.${studentMark.stNameSubjectDTO.patronymicTeacher.charAt(0)}.`
+          teacher: teacherString
         };
       })
       .filter(grade => grade !== null) as Grade[];
@@ -584,33 +701,42 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     return workNumber <= 24 ? 'first' : 'second';
   };
 
-  const getLessonTopic = (markNumber: number): string => {
-    // Проверяем корректность markNumber
+  const getLessonTopic = (markNumber: number, typeMark?: string): string => {
     if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
       return 'Тема не определена';
+    }
+    if (typeMark && typeMark.trim() !== '') {
+      return typeMark;
     }
     return `Работа ${markNumber}`;
   };
 
   const getLessonDate = (markNumber: number): string => {
-    // Проверяем корректность markNumber
     if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
       return 'Дата не определена';
     }
     
     const currentDate = new Date();
     const semesterStart = selectedSemester === 'first' 
-      ? new Date(currentDate.getFullYear(), 8, 1)
-      : new Date(currentDate.getFullYear(), 0, 1);
+      ? new Date(currentDate.getFullYear(), 8, 1) // 1 сентября
+      : new Date(currentDate.getFullYear(), 0, 1); // 1 января
     
     const gradeDate = new Date(semesterStart);
     gradeDate.setDate(semesterStart.getDate() + (markNumber - 1) * 7);
     
     return gradeDate.toLocaleDateString('ru-RU');
   };
-
   const gradesData = transformStudentMarksToGrades(selectedSemester);
   const subjects = gradesData.map(grade => grade.subject);
+
+  // Обновляем gradesData при изменении markTypes
+  useEffect(() => {
+    // Принудительно обновляем данные при изменении типов работ
+    if (Object.keys(markTypes).length > 0) {
+      const updatedGrades = transformStudentMarksToGrades(selectedSemester);
+      // Здесь можно обновить состояние, если нужно
+    }
+  }, [markTypes, selectedSemester]);
 
   // Статистика
   const calculatePerformanceStatistics = () => {
@@ -622,14 +748,29 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     let totalAverage = 0;
     let subjectsWithGrades = 0;
 
+    // Проверяем что gradesData загружена
+    if (!gradesData || gradesData.length === 0) {
+      return {
+        totalGrades: 0,
+        grade5: 0,
+        grade4: 0,
+        grade3: 0,
+        grade2: 0,
+        overallAverage: 0,
+        excellentPercentage: 0,
+        totalSubjects: 0,
+        subjectsWithGrades: 0
+      };
+    }
+
     gradesData.forEach(subject => {
       if (subject.grades.length > 0) {
         subjectsWithGrades++;
         subject.grades.forEach(grade => {
           totalGrades++;
-          if (grade >= 4) grade5++;
-          else if (grade >= 3.5) grade4++;
-          else if (grade >= 2.5) grade3++;
+          if (grade >= 5) grade5++;
+          else if (grade >= 4) grade4++;
+          else if (grade >= 3) grade3++;
           else grade2++;
         });
         totalAverage += subject.average;
@@ -637,7 +778,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     });
 
     const overallAverage = subjectsWithGrades > 0 ? totalAverage / subjectsWithGrades : 0;
-    const excellentPercentage = totalGrades > 0 ? (grade5 / totalGrades) * 100 : 0;
+    const excellentPercentage = totalGrades > 0 ? (grade5 + grade4 / totalGrades) * 100 : 0;
 
     return {
       totalGrades,
@@ -656,7 +797,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (grade === null) return '#d1d5db';
     if (grade >= 4) return '#2cbb00';
     if (grade >= 3) return '#f59e0b';
-    if (grade >= 2) return '#ef4444';
+    if (grade >= 1) return '#ef4444';
     return '#d1d5db';
   };
 
@@ -878,7 +1019,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     <div className="pf-loading-spinner"></div>
                     <p>Загрузка информации...</p>
                   </div>
-                ) : markInfo ? (
+                ) : markInfo  ? (
                   <>
                     {/* Вкладка информации */}
                     {activeMarkTab === 'info' && (
@@ -909,9 +1050,11 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                             <span className="pf-info-value">{markInfo.numPair}</span>
                           </div>
                           <div className="pf-info-item">
-                            <span className="pf-info-label">Замена:</span>
+                            <span className="pf-info-label">Тип работы:</span>
                             <span className="pf-info-value">
-                              {markInfo.replacement ? 'Да' : 'Нет'}
+                              {markInfo?.typeMark || selectedSubjectData?.gradeDetails?.find(detail => 
+                                detail.id === selectedGrade?.number
+                              )?.topic || 'Работа'}
                             </span>
                           </div>
                           
@@ -938,13 +1081,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                     </div>
                                     <div className="pf-lesson-file-actions">
                                       <button 
-                                        className="pf-preview-file-btn"
-                                        onClick={() => handlePreviewFile(file.id, file.name)}
-                                        title="Просмотреть"
-                                      >
-                                        Посмотреть
-                                      </button>
-                                      <button 
                                         className="pf-download-file-btn"
                                         onClick={() => handleDownloadFile(file.id, file.name)}
                                         title="Скачать"
@@ -965,7 +1101,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                         {/* Секция комментариев с файлами из истории изменений */}
                         <div className="pf-comments-section">
                           <div className="pf-comments-list">
-                            {markInfo.changes
+                            {markInfo?.changes
+                              ?.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
                               .map((change) => {
                                 const supplement = change.idSupplement ? supplements[change.idSupplement] : null;
                                 const hasComment = change.comment || (supplement && supplement.comment);
@@ -983,13 +1120,55 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                 return (
                                   <div key={change.id} className="pf-comment-item">
                                     <div className="pf-comment-header">
-                                      <span className="pf-comment-author">
-                                        {change.teacherOrStudent ? 'Преподаватель' : 'Студент'}
-                                      </span>
-                                      <span className="pf-comment-date">
-                                        {formatDateTime(change.dateTime)}
-                                      </span>
+                                      <div className="pf-comment-header-info">
+                                        <span className="pf-comment-author">
+                                          {change.teacherOrStudent ? 'Преподаватель' : 'Студент'}
+                                        </span>
+                                        <span className="pf-comment-date">
+                                          {formatDateTime(change.dateTime)}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Меню с троеточием (только для комментариев студента) */}
+                                      {change.teacherOrStudent === false && (
+                                        <div className="pf-comment-menu">
+                                          <button 
+                                            className="pf-comment-menu-btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setMenuOpen(menuOpen === change.id ? null : change.id);
+                                            }}
+                                          >
+                                            <span className="pf-comment-menu-dots">...</span>
+                                          </button>
+                                          
+                                          {menuOpen === change.id && (
+                                            <div className="pf-comment-dropdown">
+                                              <button 
+                                                className="pf-comment-dropdown-item"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleEditComment(change.id, change.idSupplement, change.comment || (supplement?.comment || ''));
+                                                }}
+                                              >
+                                                Изменить
+                                              </button>
+                                              <button 
+                                                className="pf-comment-dropdown-item pf-delete-item"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  confirmDeleteComment(change.id, change.idSupplement);
+                                                }}
+                                                disabled={deletingComment === change.id}
+                                              >
+                                                {deletingComment === change.id ? 'Удаление...' : 'Удалить'}
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
+                                    
                                     <span className="pf-comment-action">
                                       {getActionType(change.action)}
                                     </span>
@@ -997,21 +1176,72 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                     {/* Комментарий (только если есть комментарий) */}
                                     {hasComment && (
                                       <div className="pf-comment-section">
-                                        <div className="pf-comment-header">
-                                          <div className="pf-comment-label">Комментарий:</div>
-                                          {/* Показывать кнопку редактирования только для комментариев студента */}
-                                          {change.teacherOrStudent === false && (
-                                            <button 
-                                              className="pf-edit-comment-btn"
-                                              onClick={() => handleEditComment(change.id, change.idSupplement, change.comment || (supplement?.comment || ''))}
-                                              title="Редактировать комментарий"
-                                            >
-                                              ✏️ Изменить
-                                            </button>
-                                          )}
-                                        </div>
                                         <div className="pf-comment-content">
                                           {change.comment || (supplement && supplement.comment)}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Форма редактирования под комментарием */}
+                                    {editingComment && editingComment.changeId === change.id && (
+                                      <div className="pf-edit-comment-form">
+                                        <h4>Редактировать комментарий</h4>
+                                        
+                                        <textarea
+                                          value={newComment}
+                                          onChange={(e) => setNewComment(e.target.value)}
+                                          placeholder="Введите ваш комментарий..."
+                                          className="pf-comment-textarea"
+                                          rows={4}
+                                        />
+                                        
+                                        <div className="pf-file-upload-section">
+                                          <button 
+                                            className="pf-upload-file-btn"
+                                            onClick={() => fileInputRef.current?.click()}
+                                          >
+                                            Прикрепить файлы
+                                          </button>
+                                          <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileSelect}
+                                            multiple
+                                            style={{ display: 'none' }}
+                                          />
+                                          
+                                          {uploadingFiles.length > 0 && (
+                                            <div className="pf-uploaded-files">
+                                              <h5>Файлы для загрузки:</h5>
+                                              {uploadingFiles.map((file, index) => (
+                                                <div key={index} className="pf-uploaded-file">
+                                                  <span>{file.name}</span>
+                                                  <button 
+                                                    onClick={() => handleRemoveFile(index)}
+                                                    className="pf-remove-file-btn"
+                                                  >
+                                                    ×
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        <div className="pf-comment-actions">
+                                          <button 
+                                            className="pf-cancel-comment-btn"
+                                            onClick={handleCancelEdit}
+                                          >
+                                            Отмена
+                                          </button>
+                                          <button 
+                                            className="pf-submit-comment-btn"
+                                            onClick={() => handleUpdateComment(change.id, change.idSupplement)}
+                                            disabled={!newComment.trim() && uploadingFiles.length === 0}
+                                          >
+                                            Обновить
+                                          </button>
                                         </div>
                                       </div>
                                     )}
@@ -1031,13 +1261,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <span className="pf-comment-file-name">{file.name}</span>
                                               </div>
                                               <div className="pf-comment-file-actions">
-                                                <button 
-                                                  className="pf-preview-file-btn"
-                                                  onClick={() => handlePreviewFile(file.id, file.name)}
-                                                  title="Просмотреть"
-                                                >
-                                                  Посмотреть
-                                                </button>
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
@@ -1059,13 +1282,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <span className="pf-comment-file-name">{file.name}</span>
                                               </div>
                                               <div className="pf-comment-file-actions">
-                                                <button 
-                                                  className="pf-preview-file-btn"
-                                                  onClick={() => handlePreviewFile(file.id, file.name)}
-                                                  title="Просмотреть"
-                                                >
-                                                  Посмотреть
-                                                </button>
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
@@ -1097,6 +1313,83 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                               })}
                           </div>
                           
+                          {/* Форма добавления нового комментария */}
+                          {addCommentMode ? (
+                            <div className="pf-add-comment-form">
+                              <h4>
+                                {newSupplementId ? 'Добавить комментарий и файлы' : 'Создание комментария...'}
+                              </h4>
+                              
+                              <textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Введите ваш комментарий..."
+                                className="pf-comment-textarea"
+                                rows={4}
+                                disabled={!newSupplementId}
+                              />
+                              
+                              <div className="pf-file-upload-section">
+                                <button 
+                                  className="pf-upload-file-btn"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  disabled={!newSupplementId}
+                                >
+                                  Прикрепить файлы
+                                </button>
+                                <input
+                                  type="file"
+                                  ref={fileInputRef}
+                                  onChange={handleFileSelect}
+                                  multiple
+                                  style={{ display: 'none' }}
+                                  disabled={!newSupplementId}
+                                />
+                                
+                                {uploadingFiles.length > 0 && (
+                                  <div className="pf-uploaded-files">
+                                    <h5>Файлы для загрузки:</h5>
+                                    {uploadingFiles.map((file, index) => (
+                                      <div key={index} className="pf-uploaded-file">
+                                        <span>{file.name}</span>
+                                        <button 
+                                          onClick={() => handleRemoveFile(index)}
+                                          className="pf-remove-file-btn"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="pf-comment-actions">
+                                <button 
+                                  className="pf-cancel-comment-btn"
+                                  onClick={handleCancelComment}
+                                  disabled={!newSupplementId}
+                                >
+                                  Отмена
+                                </button>
+                                <button 
+                                  className="pf-submit-comment-btn"
+                                  onClick={handleSaveComment}
+                                  disabled={(!newComment.trim() && uploadingFiles.length === 0) || !newSupplementId}
+                                >
+                                  {!newSupplementId ? 'Создание...' : 'Сохранить'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button 
+                              className="pf-add-comment-btn"
+                              onClick={handleAddSupplement}
+                            >
+                              Добавить комментарий
+                            </button>
+                          )}
+                          
                           {markInfo.changes.filter(change => {
                             const supplement = change.idSupplement ? supplements[change.idSupplement] : null;
                             const hasComment = change.comment || (supplement && supplement.comment);
@@ -1117,118 +1410,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                             </div>
                           )}
                         </div>
-
-                        {/* Ожидающий комментарий (показывается после создания supplement) */}
-                        {addCommentMode && !editingComment && (
-                          <div className="pf-comment-item pf-pending-comment">
-                            <div className="pf-comment-header">
-                              <span className="pf-comment-author">Студент</span>
-                              <span className="pf-comment-date">Сейчас</span>
-                              <span className="pf-comment-pending">Ожидает комментария...</span>
-                            </div>
-                            {uploadingFiles.length > 0 && (
-                              <div className="pf-comment-files">
-                                <div className="pf-comment-files-title">Файлы для загрузки:</div>
-                                <div className="pf-comment-files-list">
-                                  {uploadingFiles.map((file, index) => (
-                                    <div key={index} className="pf-comment-file-item">
-                                      <div className="pf-comment-file-info">
-                                        <span className="pf-comment-file-icon">
-                                          {getFileIcon(file.name)}
-                                        </span>
-                                        <span className="pf-comment-file-name">{file.name}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Кнопка добавления комментария или форма */}
-                        {!addCommentMode ? (
-                          <button 
-                            className="pf-add-comment-btn"
-                            onClick={handleAddSupplement}
-                          >
-                            Добавить комментарий
-                          </button>
-                        ) : (
-                          <div className="pf-add-comment-form">
-                            <h4>
-                              {editingComment ? 'Редактировать комментарий' : 'Добавить комментарий и файлы'}
-                              {newSupplementId && (
-                                <span className="pf-supplement-id">(Supplement ID: {newSupplementId})</span>
-                              )}
-                            </h4>
-                            
-                            <textarea
-                              value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
-                              placeholder="Введите ваш комментарий..."
-                              className="pf-comment-textarea"
-                              rows={4}
-                            />
-                            
-                            <div className="pf-file-upload-section">
-                              <button 
-                                className="pf-upload-file-btn"
-                                onClick={() => fileInputRef.current?.click()}
-                              >
-                                Прикрепить файлы
-                              </button>
-                              <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                multiple
-                                style={{ display: 'none' }}
-                              />
-                              
-                              {uploadingFiles.length > 0 && (
-                                <div className="pf-uploaded-files">
-                                  <h5>Файлы для загрузки:</h5>
-                                  {uploadingFiles.map((file, index) => (
-                                    <div key={index} className="pf-uploaded-file">
-                                      <span>{file.name}</span>
-                                      <button 
-                                        onClick={() => handleRemoveFile(index)}
-                                        className="pf-remove-file-btn"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="pf-comment-actions">
-                              <button 
-                                className="pf-cancel-comment-btn"
-                                onClick={editingComment ? 
-                                  () => {
-                                    setEditingComment(null);
-                                    setAddCommentMode(false);
-                                    setNewComment('');
-                                    setUploadingFiles([]);
-                                  } 
-                                  : handleCancelComment
-                                }
-                              >
-                                {editingComment ? 'Отмена' : 'Удалить'}
-                              </button>
-                              <button 
-                                className="pf-submit-comment-btn"
-                                onClick={editingComment ? handleUpdateComment : handleSaveComment}
-                                disabled={!newComment.trim() && uploadingFiles.length === 0}
-                              >
-                                {editingComment ? 'Обновить' : 'Сохранить'}
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </>
@@ -1276,6 +1457,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   );
 
   const ViewToggle = () => (
+  activeTab === 'semesters' ? (
     <div className="pf-view-toggle">
       <button
         className={`pf-toggle-btn ${viewMode === 'grid' ? 'pf-active' : ''}`}
@@ -1290,7 +1472,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         Список
       </button>
     </div>
-  );
+  ) : null
+);
 
   // Рендер карточек предметов
   const renderSubjectCards = () => (
@@ -1520,23 +1703,25 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         <button
           className={`pf-nav-btn ${activeTab === 'semesters' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('semesters')}
+          data-tab="semesters"
         >
           По семестрам
         </button>
         <button
           className={`pf-nav-btn ${activeTab === 'subjects' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('subjects')}
+          data-tab="subjects"
         >
           По предметам
         </button>
         <button
           className={`pf-nav-btn ${activeTab === 'analytics' ? 'pf-active' : ''}`}
           onClick={() => setActiveTab('analytics')}
+          data-tab="analytics"
         >
           Аналитика
         </button>
       </div>
-
       {/* Контролы */}
       <div className="pf-controls-section">
         <SemesterSelector />
@@ -1577,11 +1762,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     </div>
                   </div>
 
-                  <div className="pf-grades-timeline">
-                    {selectedSubjectData.gradeDetails?.map((detail) => (
+                 <div className="pf-grades-timeline">
+                    {selectedSubjectData?.gradeDetails?.map((detail) => (
                       <div key={detail.id} className="pf-timeline-item">
                         <div className="pf-timeline-content">
                           <div className="pf-grade-header">
+                            {/* Здесь будет отображаться реальный тип работы */}
                             <span className="pf-grade-topic">{detail.topic}</span>
                             <span className="pf-grade-date">{detail.date}</span>
                           </div>
@@ -1595,7 +1781,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                 selectedSubjectData.subject,
                                 detail.hasValue ? detail.grade : null,
                                 detail.id,
-                                detail.topic,
+                                detail.topic, // Передаем актуальный topic
                                 selectedSubjectData.teacher,
                                 detail.stId
                               )}

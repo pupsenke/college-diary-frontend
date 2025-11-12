@@ -112,7 +112,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // Очистка сессии
   const clearSession = () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
-    console.log('Сессия очищена');
   };
 
   // Функция выхода
@@ -124,15 +123,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // Обновленная функция setUser с сохранением в сессию
   const setUserWithSession = (userData: User | null) => {
-    console.log('setUserWithSession called with:', userData);
     if (userData) {
       setUser(userData);
       saveUserToSession(userData);
-      console.log('User set in context and session:', userData);
     } else {
       setUser(null);
       clearSession();
-      console.log('User cleared from context and session');
     }
   };
 
@@ -146,7 +142,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         
         if (savedUser) {
           setUser(savedUser);
-          console.log('Пользователь автоматически авторизован');
         } else {
           console.log('Сессия не найдена или истекла');
           setUser(null);

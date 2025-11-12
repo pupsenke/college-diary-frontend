@@ -33,7 +33,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    console.log('ProtectedRoute: No user, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
@@ -42,20 +41,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       (requiredUserType === 'student' && isStudent) ||
       (requiredUserType === 'teacher' && isTeacher) ||
       (requiredUserType === 'metodist' && isMetodist) ||
-      (requiredUserType === 'departmentHead' && isDepartmentHead);
-
-    console.log('ProtectedRoute access check:', {
-      requiredUserType,
-      hasAccess,
-      userType: user.userType
-    });
+      (requiredUserType === 'departmentHead' && isDepartmentHead);;
 
     if (!hasAccess) {
-      console.log('ProtectedRoute: Access denied, redirecting to unauthorized');
       return <Navigate to="/unauthorized" replace />;
     }
   }
-
-  console.log('ProtectedRoute: Access granted');
   return <>{children}</>;
 };

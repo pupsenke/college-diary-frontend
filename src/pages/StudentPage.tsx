@@ -54,64 +54,63 @@ export const StudentPage: React.FC = () => {
     return `${lastName} ${firstName}${middleName}`.trim();
   };
 
+  // ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО БАЛЛА 
   const calculateAverageGrade = (marks: StudentMark[]): number => {
-    if (!marks || marks.length === 0) return 0;
+    if (!marks || marks.length === 0) {
+      return 0;
+    }
 
     let totalGrade = 0;
     let gradeCount = 0;
 
-    marks.forEach(subject => {
+    marks.forEach((subject, subjectIndex) => {
+      if (!subject) {
+        return;
+      }
+
       if (subject.marksBySt && Array.isArray(subject.marksBySt)) {
-        subject.marksBySt.forEach(mark => {
-          if (mark.value !== null && mark.value > 0) {
-            totalGrade += mark.value;
-            gradeCount++;
+        subject.marksBySt.forEach((mark, markIndex) => {
+          if (mark && mark.value !== null && mark.value !== undefined) {
+            const gradeValue = mark.value;
+            
+            if (gradeValue >= 2 && gradeValue <= 5) {
+              totalGrade += gradeValue;
+              gradeCount++;
+            } else {
+            }
           }
         });
+      } else {
       }
     });
 
-    return gradeCount > 0 ? parseFloat((totalGrade / gradeCount).toFixed(1)) : 0;
+    const result = gradeCount > 0 ? parseFloat((totalGrade / gradeCount).toFixed(1)) : 0;
+    ;
+    
+    return result;
   };
 
+  // ЗАГЛУШКА ДЛЯ ПОСЕЩАЕМОСТИ
   const calculateAttendancePercentage = (marks: StudentMark[]): number => {
-    if (!marks || marks.length === 0) return 0;
-
-    let totalLessons = 0;
-    let attendedLessons = 0;
-
-    marks.forEach(subject => {
-      if (subject.marksBySt && Array.isArray(subject.marksBySt)) {
-        subject.marksBySt.forEach(mark => {
-          totalLessons++;
-          if (mark.value !== null) {
-            attendedLessons++;
-          }
-        });
-      }
-    });
-
-    return totalLessons > 0 ? Math.round((attendedLessons / totalLessons) * 100) : 0;
+    return 85;
   };
 
   // Загрузка данных студента
   useEffect(() => {
     const loadStudentData = async () => {
       if (!user || !isStudent) {
-        console.log('No student data');
         navigate('/login');
         return;
       }
 
       const student = user as Student;
-      console.log('Student data:', student);
+      console.log('Данные студента:', student);
       
       setLoading(true);
       setError(null);
 
       try {
         const groupId = student.idGroup;
-        console.log('Loading group data for ID:', groupId);
 
         if (!groupId) {
           throw new Error('ID группы не найден в данных студента');
@@ -119,51 +118,36 @@ export const StudentPage: React.FC = () => {
 
         // Загружаем данные группы
         const groupDataResponse = await apiService.getGroupData(groupId);
-        console.log('Group data loaded:', groupDataResponse);
         setGroupData(groupDataResponse);
 
         // Загружаем данные куратора
         if (groupDataResponse.idCurator) {
-          console.log('Loading curator data for ID:', groupDataResponse.idCurator);
           try {
             const curatorDataResponse = await apiService.getTeacherData(groupDataResponse.idCurator);
-            console.log('Curator data loaded:', curatorDataResponse);
             setCuratorData(curatorDataResponse);
           } catch (curatorError) {
-            console.warn('Could not load curator data:', curatorError);
             setCuratorData(null);
           }
         } else {
-          console.log('No curator ID in group data');
           setCuratorData(null);
         }
-
-        // Загружаем оценки студента для расчета статистики
-        console.log('Loading student marks for statistics...');
         try {
           const marksData = await apiService.getStudentMarks(student.id);
-          console.log('Student marks loaded for statistics:', marksData);
           setStudentMarks(marksData || []);
 
-          // Рассчитываем статистику
           const avgGrade = calculateAverageGrade(marksData || []);
-          const attendancePercent = calculateAttendancePercentage(marksData || []);
-
-          console.log('Calculated statistics:', {
-            averageGrade: avgGrade,
-            attendancePercentage: attendancePercent
-          });
+          
+          const attendancePercent = calculateAttendancePercentage(marksData || []);;
 
           setAverageGrade(avgGrade);
           setAttendancePercentage(attendancePercent);
         } catch (marksError) {
-          console.warn('Could not load student marks for statistics:', marksError);
-          setAverageGrade(0);
+          setAverageGrade(0.0);
           setAttendancePercentage(0);
         }
 
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('Ошибка загрузки данных:', err);
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
         setLoading(false);

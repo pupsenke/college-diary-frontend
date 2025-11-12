@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
@@ -15,6 +15,9 @@ interface UserWithRoles {
   telephone: string;
   birthDate: string;
   address: string;
+  lastNameGenitive?: string | null;
+  nameGenitive?: string | null;
+  patronymicGenitive?: string | null;
   roles: Array<{
     type: 'student' | 'teacher' | 'metodist' | 'departmentHead';
     position?: string;
@@ -40,8 +43,35 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [userWithRoles, setUserWithRoles] = useState<UserWithRoles | null>(null);
+  const [isAuthSuccess, setIsAuthSuccess] = useState(false);
+  
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { setUser, user } = useUser();
+
+  useEffect(() => {
+    if (isAuthSuccess && user) {
+      
+      // Определяем куда перенаправлять на основе типа пользователя
+      switch (user.userType) {
+        case 'student':
+          navigate("/student", { replace: true });
+          break;
+        case 'teacher':
+          navigate("/teacher", { replace: true });
+          break;
+        case 'metodist':
+          navigate("/metodist", { replace: true });
+          break;
+        case 'departmentHead':
+          navigate("/departmentHead", { replace: true });
+          break;
+        default:
+          console.error('Unknown user type');
+      }
+      
+      setIsAuthSuccess(false); // Сбрасываем флаг
+    }
+  }, [isAuthSuccess, user, navigate]);
 
   // Компонент модального окна для выбора роли
   const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({ 
@@ -119,215 +149,218 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleRoleSelection = (selectedRole: UserWithRoles['roles'][0]) => {
-  if (!userWithRoles) return;
+    if (!userWithRoles) return;
 
-  const baseUserData = {
-    id: userWithRoles.id,
-    name: userWithRoles.name || "",
-    patronymic: userWithRoles.patronymic || "",
-    lastName: userWithRoles.lastName || "",
-    login: userWithRoles.login || login,
-    email: userWithRoles.email || "",
-    telephone: userWithRoles.telephone || "",
-    birthDate: userWithRoles.birthDate || "",
-    address: userWithRoles.address || ""
-  };
+    const baseUserData = {
+      id: userWithRoles.id,
+      name: userWithRoles.name || "",
+      patronymic: userWithRoles.patronymic || "",
+      lastName: userWithRoles.lastName || "",
+      login: userWithRoles.login || login,
+      email: userWithRoles.email || "",
+      telephone: userWithRoles.telephone || "",
+      birthDate: userWithRoles.birthDate || "",
+      address: userWithRoles.address || ""
+    };
 
-  switch (selectedRole.type) {
-    case 'student':
-      const studentData = {
-        ...baseUserData,
-        idGroup: selectedRole.idGroup!,
-        numberGroup: selectedRole.numberGroup!,
-        userType: 'student' as const
-      };
-      console.log('Setting student user:', studentData);
-      setUser(studentData);
-      navigate("/student", { replace: true });
-      break;
+    let userData: any;
 
-    case 'teacher':
-    case 'metodist':
-    case 'departmentHead':
-      const staffData: Staff = {
-        ...baseUserData,
-        position: selectedRole.position || "",
-        staffPosition: selectedRole.staffPosition || [],
-        userType: selectedRole.type
-      };
-      
-      console.log('Setting staff user:', staffData);
-      setUser(staffData);
-      
-      // Добавляем небольшую задержку чтобы контекст успел обновиться
-      setTimeout(() => {
-        // Перенаправление в зависимости от роли
-        switch (selectedRole.type) {
-          case 'metodist':
-            navigate("/metodist", { replace: true });
-            break;
-          case 'departmentHead':
-            navigate("/departmentHead", { replace: true });
-            break;
-          case 'teacher':
-          default:
-            navigate("/teacher", { replace: true });
-            break;
-        }
-      }, 100);
-      break;
-  }
+    switch (selectedRole.type) {
+      case 'student':
+        userData = {
+          ...baseUserData,
+          idGroup: selectedRole.idGroup!,
+          numberGroup: selectedRole.numberGroup!,
+          userType: 'student' as const,
+          lastNameGenitive: userWithRoles.lastNameGenitive || userWithRoles.lastName || null,
+          nameGenitive: userWithRoles.nameGenitive || userWithRoles.name || null,
+          patronymicGenitive: userWithRoles.patronymicGenitive || userWithRoles.patronymic || null
+        };
+        break;
 
-  setShowRoleSelection(false);
-  setUserWithRoles(null);
+      case 'teacher':
+      case 'metodist':
+      case 'departmentHead':
+        userData = {
+          ...baseUserData,
+          position: selectedRole.position || "",
+          staffPosition: selectedRole.staffPosition || [],
+          userType: selectedRole.type
+        } as Staff;
+        break;
+    }
+
+    setUser(userData);
+    setIsAuthSuccess(true); 
+
+    setShowRoleSelection(false);
+    setUserWithRoles(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage("");
-  setIsLoading(true);
-  setShowRoleSelection(false);
-  setUserWithRoles(null);
+    e.preventDefault();
+    setErrorMessage("");
+    setIsLoading(true);
+    setShowRoleSelection(false);
+    setUserWithRoles(null);
+    setIsAuthSuccess(false);
 
-  if (!login.trim() || !password.trim()) {
-    setErrorMessage("Пожалуйста, заполните все поля");
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    const roles: UserWithRoles['roles'] = [];
-    let userBaseData: Partial<UserWithRoles> = {};
-
-    // Поиск студента
-    const studentResponse = await fetch(
-      `http://localhost:8080/api/v1/students/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
-    );
-
-    if (studentResponse.ok) {
-      const studentData = await studentResponse.json();
-      if (studentData && studentData.id) {
-        let numberGroup = 0;
-        try {
-          const groupData = await apiService.getGroupData(studentData.idGroup);
-          numberGroup = groupData.numberGroup;
-        } catch (error) {
-          console.error('Error fetching group data:', error);
-          numberGroup = studentData.idGroup;
-        }
-
-        roles.push({
-          type: 'student',
-          idGroup: studentData.idGroup,
-          numberGroup: numberGroup
-        });
-
-        // Сохраняем базовые данные пользователя из студента
-        userBaseData = {
-          id: studentData.id,
-          name: studentData.name || "",
-          patronymic: studentData.patronymic || "",
-          lastName: studentData.lastName || "",
-          login: studentData.login || login,
-          email: studentData.email || "",
-          telephone: studentData.telephone || "",
-          birthDate: studentData.birthDate || "",
-          address: studentData.address || ""
-        };
-      }
+    if (!login.trim() || !password.trim()) {
+      setErrorMessage("Пожалуйста, заполните все поля");
+      setIsLoading(false);
+      return;
     }
 
-    // Поиск сотрудника
-    const staffResponse = await fetch(
-      `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
-    );
+    try {
+      const roles: UserWithRoles['roles'] = [];
+      let userBaseData: Partial<UserWithRoles> = {};
 
-    if (staffResponse.ok) {
-      const staffData = await staffResponse.json();
-      if (staffData && staffData.id) {
-        // Если у нас еще нет базовых данных от студента, берем их от сотрудника
-        if (!userBaseData.id) {
+      try {
+        const studentData = await apiService.loginStudent(login, password);
+        if (studentData && studentData.id) {
+          let numberGroup = 0;
+          try {
+            const groupData = await apiService.getGroupData(studentData.idGroup);
+            numberGroup = groupData.numberGroup;
+          } catch (error) {
+            console.error('Ошибка получения данных группы:', error);
+            numberGroup = studentData.idGroup;
+          }
+
+          roles.push({
+            type: 'student',
+            idGroup: studentData.idGroup,
+            numberGroup: numberGroup
+          });
+
+          // Сохраняем базовые данные пользователя из студента
           userBaseData = {
-            id: staffData.id,
-            name: staffData.name || "",
-            patronymic: staffData.patronymic || "",
-            lastName: staffData.lastName || "",
-            login: staffData.login || login,
-            email: staffData.email || "",
-            telephone: staffData.telephone || "",
-            birthDate: staffData.birthDate || "",
-            address: staffData.address || ""
+            id: studentData.id,
+            name: studentData.name || "",
+            patronymic: studentData.patronymic || "",
+            lastName: studentData.lastName || "",
+            login: studentData.login || login,
+            email: studentData.email || "",
+            telephone: studentData.telephone || "",
+            birthDate: studentData.birthDate || "",
+            address: studentData.address || "",
+            lastNameGenitive: studentData.lastNameGenitive || null,
+            nameGenitive: studentData.nameGenitive || null,
+            patronymicGenitive: studentData.patronymicGenitive || null
           };
         }
+      } catch (studentError) {
+      }
 
-        // Определяем роли сотрудника на основе должностей
-        if (staffData.staffPosition && staffData.staffPosition.length > 0) {
-          for (const position of staffData.staffPosition) {
-            const positionName = position.name || '';
-            const lowerPosition = positionName.toLowerCase();
-            
-            let roleType: 'teacher' | 'metodist' | 'departmentHead' = 'teacher';
-            
-            if (lowerPosition.includes('методист')) {
-              roleType = 'metodist';
-            } else if (lowerPosition.includes('зав. отделением')) {
-              roleType = 'departmentHead';
-            } else if (lowerPosition.includes('преподаватель')) {
-              roleType = 'teacher';
-            }
+      const staffResponse = await fetch(
+        `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
+      );
 
-            // Добавляем роль сотрудника (не перезаписывая существующие)
-            roles.push({
-              type: roleType,
-              position: positionName,
-              staffPosition: staffData.staffPosition || []
-            });
+      if (staffResponse.ok) {
+        const staffData = await staffResponse.json();
+        if (staffData && staffData.id) {
+          if (!userBaseData.id) {
+            userBaseData = {
+              id: staffData.id,
+              name: staffData.name || "",
+              patronymic: staffData.patronymic || "",
+              lastName: staffData.lastName || "",
+              login: staffData.login || login,
+              email: staffData.email || "",
+              telephone: staffData.telephone || "",
+              birthDate: staffData.birthDate || "",
+              address: staffData.address || ""
+            };
           }
-        } else {
-          // Если нет информации о должностях, используем teacher по умолчанию
-          roles.push({
-            type: 'teacher',
-            position: '',
-            staffPosition: []
-          });
+
+          // Определяем роли сотрудника на основе должностей
+          if (staffData.staffPosition && staffData.staffPosition.length > 0) {
+            for (const position of staffData.staffPosition) {
+              const positionName = position.name || '';
+              const lowerPosition = positionName.toLowerCase();
+              
+              let roleType: 'teacher' | 'metodist' | 'departmentHead' = 'teacher';
+              
+              if (lowerPosition.includes('методист')) {
+                roleType = 'metodist';
+              } else if (lowerPosition.includes('зав. отделением')) {
+                roleType = 'departmentHead';
+              } else if (lowerPosition.includes('преподаватель')) {
+                roleType = 'teacher';
+              }
+
+              // Добавляем роль сотрудника
+              roles.push({
+                type: roleType,
+                position: positionName,
+                staffPosition: staffData.staffPosition || []
+              });
+            }
+          }
         }
       }
-    }
 
-    // Обработка результатов проверки
-    if (roles.length === 0) {
-      if (studentResponse.status === 404 && staffResponse.status === 404) {
+      // Обработка результатов проверки
+      if (roles.length === 0) {
         setErrorMessage("Неверный логин или пароль");
-      } else if (studentResponse.status === 500 || staffResponse.status === 500) {
-        setErrorMessage("Ошибка сервера. Попробуйте позже.");
       } else {
-        setErrorMessage("Ошибка при подключении к серверу");
-      }
-    } else {
-      // Создаем объект пользователя с ВСЕМИ ролями
-      const userWithRolesData: UserWithRoles = {
-        ...userBaseData,
-        roles: roles
-      } as UserWithRoles;
+        const userWithRolesData: UserWithRoles = {
+          ...userBaseData,
+          roles: roles
+        } as UserWithRoles;
 
-      setUserWithRoles(userWithRolesData);
+        setUserWithRoles(userWithRolesData);
 
-      if (roles.length === 1) {
-        // Если только одна роль, сразу авторизуем
-        handleRoleSelection(roles[0]);
-      } else {
-        // Если несколько ролей, показываем выбор
-        setShowRoleSelection(true);
+        if (roles.length === 1) {
+          
+          const selectedRole = roles[0];
+          const baseUserData = {
+            id: userBaseData.id!,
+            name: userBaseData.name || "",
+            patronymic: userBaseData.patronymic || "",
+            lastName: userBaseData.lastName || "",
+            login: userBaseData.login || login,
+            email: userBaseData.email || "",
+            telephone: userBaseData.telephone || "",
+            birthDate: userBaseData.birthDate || "",
+            address: userBaseData.address || ""
+          };
+
+          let userData: any;
+
+          if (selectedRole.type === 'student') {
+            userData = {
+              ...baseUserData,
+              idGroup: selectedRole.idGroup!,
+              numberGroup: selectedRole.numberGroup!,
+              userType: 'student' as const,
+              lastNameGenitive: userBaseData.lastNameGenitive || userBaseData.lastName || null,
+              nameGenitive: userBaseData.nameGenitive || userBaseData.name || null,
+              patronymicGenitive: userBaseData.patronymicGenitive || userBaseData.patronymic || null
+            };
+          } else {
+            userData = {
+              ...baseUserData,
+              position: selectedRole.position || "",
+              staffPosition: selectedRole.staffPosition || [],
+              userType: selectedRole.type
+            } as Staff;
+          }
+
+          setUser(userData);
+          setIsAuthSuccess(true); 
+        } else {
+          setShowRoleSelection(true);
+        }
       }
-    }
-    
-    } catch (err) {
-      console.error("Login error:", err);
-      setErrorMessage("Ошибка при попытке входа. Проверьте подключение к интернету.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      
+      } catch (err) {
+        console.error("Ошибка авторизации:", err);
+        setErrorMessage("Ошибка при попытке входа. Проверьте подключение к интернету.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

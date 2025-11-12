@@ -25,7 +25,6 @@ class CacheService {
       };
 
       localStorage.setItem(this.getKey(key), JSON.stringify(cachedData));
-      console.log(`Data cached for key: ${key}`);
     } catch (error) {
       console.warn('Failed to cache data:', error);
     }
@@ -51,8 +50,6 @@ class CacheService {
         this.remove(key);
         return null;
       }
-
-      console.log(`Data retrieved from cache for key: ${key}`);
       return cachedData.data;
     } catch (error) {
       console.warn('Failed to retrieve cached data:', error);
@@ -82,7 +79,6 @@ class CacheService {
       }
 
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      console.log('Cache cleared');
     } catch (error) {
       console.warn('Failed to clear cache:', error);
     }
