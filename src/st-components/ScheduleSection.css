@@ -554,7 +554,6 @@
   transition: all 0.3s ease;
 }
 
-
 .separated-subject {
   font-weight: 600;
   color: #2d3748;
@@ -811,6 +810,10 @@
   border-left: 4px solid #f44336;
   padding-left: 15px;
   border-radius: 5px;
+}
+
+.separated-lesson-item.clickable-lesson.replacement:hover {
+  background-color: #ffe0e5;
 }
 
 .next-lesson-card.replacement {

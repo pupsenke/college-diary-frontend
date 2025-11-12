@@ -21,29 +21,31 @@ type ApiLesson = {
   numberGroup: number;
 };
 
-// Типы для оценок
 type Mark = {
   number: number;
   value: number | null;
 };
 
-type StNameSubjectDTO = {
-  idSt: number;
-  idSubject: number;
-  nameSubject: string;
+type Teacher = {
   idTeacher: number;
   lastnameTeacher: string;
   nameTeacher: string;
   patronymicTeacher: string;
 };
 
+type NameSubjectTeachersDTO = {
+  idSt: number;
+  idSubject: number;
+  nameSubject: string;
+  teachers: Teacher[];
+};
+
 type StudentMarks = {
-  stNameSubjectDTO: StNameSubjectDTO;
+  nameSubjectTeachersDTO: NameSubjectTeachersDTO;
   marksBySt: (Mark | null)[];
   certification: any;
 };
 
-//для отображения
 type Lesson = {
   id: number;
   startTime: string;
@@ -97,9 +99,9 @@ const saveToCache = <T,>(key: string, data: T, userId: number): void => {
       hash: generateHash(data)
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.log(`Данные сохранены в кэш: ${key}`);
+    console.log(`Расписание. Данные сохранены в кэш: ${key}`);
   } catch (error) {
-    console.warn('Не удалось сохранить данные в кэш:', error);
+    console.warn('Расписание. Не удалось сохранить данные в кэш:', error);
   }
 };
 
@@ -107,32 +109,26 @@ const loadFromCache = <T,>(key: string, userId: number, maxAge: number = 24 * 60
   try {
     const cacheKey = `${key}_${userId}`;
     const cached = localStorage.getItem(cacheKey);
-    
     if (!cached) return null;
-
     const { data, timestamp, hash } = JSON.parse(cached);
-    
     // проверка актуальности кэша
     const isExpired = Date.now() - timestamp > maxAge;
-    
     if (isExpired) {
       localStorage.removeItem(cacheKey);
-      console.log(`Кэш устарел: ${key}`);
+      console.log(`Расписание. Кэш устарел: ${key}`);
       return null;
     }
-
     // проверка целостности данных
     const currentHash = generateHash(data);
     if (currentHash !== hash) {
       localStorage.removeItem(cacheKey);
-      console.log(`Целостность кэша нарушена: ${key}`);
+      console.log(`Расписание. Целостность кэша нарушена: ${key}`);
       return null;
     }
-
-    console.log(`Данные загружены из кэша: ${key}`);
+    console.log(`Расписание. Данные загружены из кэша: ${key}`);
     return data;
   } catch (error) {
-    console.warn('Ошибка при загрузке из кэша:', error);
+    console.warn('Расписание. Ошибка при загрузке из кэша:', error);
     return null;
   }
 };
@@ -141,9 +137,9 @@ const clearUserCache = (userId: number): void => {
   try {
     localStorage.removeItem(`${CACHE_KEYS.SCHEDULE}_${userId}`);
     localStorage.removeItem(`${CACHE_KEYS.MARKS}_${userId}`);
-    console.log('Кэш пользователя очищен');
+    console.log('Расписание. Кэш пользователя очищен');
   } catch (error) {
-    console.warn('Ошибка при очистке кэша:', error);
+    console.warn('Расписание. Ошибка при очистке кэша:', error);
   }
 };
 
@@ -161,12 +157,21 @@ const pairTimes: Record<number, { start: string; end: string }> = {
 // определение верхней/нижней недели
 export const getCurrentWeekType = (): 'upper' | 'lower' => {
   const today = new Date();
-  const startOfYear = new Date(today.getFullYear(), 0, 1);
-  const days = Math.floor((today.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((days + 1) / 7);
-  
-  // нечетные недели - верхние, четные - нижние
+  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025 (месяцы 0-11)
+  const diffTime = today.getTime() - startOfAcademicYear.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const weekNumber = Math.floor(diffDays / 7) + 1; 
+  // Согласно календарю: нечетные недели - верхние, четные - нижние
   return weekNumber % 2 === 1 ? 'upper' : 'lower';
+};
+
+// функция для получения номера текущей недели
+export const getCurrentWeekNumber = (): number => {
+  const today = new Date();
+  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025
+  const diffTime = today.getTime() - startOfAcademicYear.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return Math.floor(diffDays / 7) + 1;
 };
 
 // получение дат недели с определением типа недели
@@ -179,16 +184,13 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const today = new Date();
   const currentWeekType = getCurrentWeekType();
-  
   // если тип недели не указан, используем текущий
   const targetWeekType = weekType || currentWeekType;
-  
   // понедельник текущей недели
   const monday = new Date(today);
   const dayOfWeek = monday.getDay();
   const diff = monday.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   monday.setDate(diff);
-  
   // если нужна противоположная неделя, сдвигаем на 7 дней
   if (targetWeekType !== currentWeekType) {
     monday.setDate(monday.getDate() + (targetWeekType === 'upper' ? -7 : 7));
@@ -199,7 +201,6 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
   return daysOfWeek.map((weekday, index) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
-    
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     
@@ -259,15 +260,19 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
           const patronymicInitial = lesson.patronymicTeacher ? lesson.patronymicTeacher[0] : '';
           teacher = `${lesson.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
         }
-
-        let room: string | undefined = undefined;
-        if (lesson.room !== null) {
-          room = `ауд. ${lesson.room}`;
+        let room: string;
+        if (lesson.replacement) {
+          room = lesson.room !== null ? `ауд. ${lesson.room}` : "ауд. -";
+        } else {
+          // обычные занятия
+          if (lesson.room !== undefined && lesson.room !== null)  {
+            room = `ауд. ${lesson.room}`;
+          }
+          else {
+            room = `ауд. -`
+          }
         }
-
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
-
-        // Добавляем текст "(Замена)" если replacement: true
         const subjectName = lesson.replacement 
           ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
           : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
@@ -285,14 +290,11 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
           typeWeek: lesson.typeWeek,
           replacement: lesson.replacement
         };
-
         return transformedLesson;
       })
       .filter((lesson): lesson is TransformedLesson => lesson !== null);
-
     const groupedLessons: Lesson[] = [];
     const timeGroups: Record<string, Lesson[]> = {};
-
     dayLessons.forEach(lesson => {
       const timeKey = `${lesson.startTime}-${lesson.endTime}`;
       if (!timeGroups[timeKey]) {
@@ -300,7 +302,6 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
       }
       timeGroups[timeKey].push(lesson);
     });
-
     Object.values(timeGroups).forEach(lessonsInSlot => {
       if (lessonsInSlot.length === 1) {
         groupedLessons.push(lessonsInSlot[0]);
@@ -308,9 +309,7 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
         groupedLessons.push(...lessonsInSlot);
       }
     });
-
     groupedLessons.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
-
     return {
       date: { weekday, date },
       lessons: groupedLessons,
@@ -333,9 +332,7 @@ const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | '
 const getNextLesson = (lessons: Lesson[]): Lesson | null => {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
-  
   const allLessons = groupLessonsByTime(lessons).flatMap(slot => slot.lessons);
-  
   return allLessons.find(lesson => 
     timeToMinutes(lesson.startTime) > currentTime
   ) || null;
@@ -348,17 +345,31 @@ export const MarksModal: React.FC<{
   marks: StudentMarks[];
 }> = ({ isOpen, onClose, subjectName, marks }) => {
   if (!isOpen) return null;
-
-  const subjectMarks = marks
-    .filter(mark => mark.stNameSubjectDTO.nameSubject === subjectName)
-    .flatMap(mark => 
-      mark.marksBySt
-        .filter((m): m is Mark => m !== null && m.value !== null)
-        .map(m => ({ ...m, teacher: mark.stNameSubjectDTO }))
-    )
+  const subjectData = marks.find(mark => 
+    mark.nameSubjectTeachersDTO?.nameSubject === subjectName
+  );
+  if (!subjectData) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>{subjectName}</h3>
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
+          <div className="modal-body">
+            <div className="no-marks">
+              <p>Нет данных по этому предмету</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // фильтрация и сотрировка оценок
+  const subjectMarks = subjectData.marksBySt
+    .filter((mark): mark is Mark => mark !== null && mark.value !== null)
     .sort((a, b) => b.number - a.number)
     .slice(0, 5);
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -373,16 +384,23 @@ export const MarksModal: React.FC<{
                 <span>Оценка</span>
                 <span>Преподаватель</span>
               </div>
-              {subjectMarks.map((mark, index) => (
-                <div key={index} className="mark-item">
-                  <span className={`mark-value ${mark.value && mark.value >= 4 ? 'good' : mark.value && mark.value >= 3 ? 'average' : 'poor'}`}>
-                    {mark.value}
-                  </span>
-                  <span className="mark-teacher">
-                    {mark.teacher.lastnameTeacher} {mark.teacher.nameTeacher[0]}.{mark.teacher.patronymicTeacher ? mark.teacher.patronymicTeacher[0] + '.' : ''}
-                  </span>
-                </div>
-              ))}
+              {subjectMarks.map((mark, index) => {
+                const teacher = subjectData.nameSubjectTeachersDTO.teachers[0];
+                const teacherName = teacher ? 
+                  `${teacher.lastnameTeacher} ${teacher.nameTeacher[0]}.${teacher.patronymicTeacher ? teacher.patronymicTeacher[0] + '.' : ''}` 
+                  : 'Не указан';
+                return (
+                  <div key={index} className="mark-item">
+                    <span className={`mark-value ${
+                      mark.value && mark.value >= 4 ? 'good' : 
+                      mark.value && mark.value >= 3 ? 'average' : 'poor'
+                    }`}>
+                      {mark.value}
+                    </span>
+                    <span className="mark-teacher">{teacherName}</span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="no-marks">
@@ -428,7 +446,6 @@ const DayScheduleView: React.FC<{
   onLessonClick: (subjectName: string) => void;
 }> = ({ scheduleData, activeDay, onLessonClick }) => {
   const daySchedule = scheduleData.find(day => day.date.weekday === activeDay);
-
   if (!daySchedule) {
     return (
       <div className="day-schedule-content">
@@ -438,7 +455,6 @@ const DayScheduleView: React.FC<{
       </div>
     );
   }
-
   return (
     <div className="day-schedule-content">
       {daySchedule.lessons.length > 0 ? (
@@ -505,13 +521,10 @@ const NextLessonCard: React.FC<{
   const today = new Date();
   const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
   const todaySchedule = scheduleData.find(day => day.date.date === currentDateStr);
-
   if (!todaySchedule || todaySchedule.lessons.length === 0) {
     return null;
   }
-
   const nextLesson = getNextLesson(todaySchedule.lessons);
-
   if (!nextLesson) {
     return (
       <div className="next-lesson">
@@ -524,7 +537,6 @@ const NextLessonCard: React.FC<{
       </div>
     );
   }
-
   return (
     <div 
       className="next-lesson clickable-lesson"
@@ -577,28 +589,25 @@ export const ScheduleSection: React.FC = () => {
   const [isMarksModalOpen, setIsMarksModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [usingCachedData, setUsingCachedData] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null); 
   const { user, isStudent } = useUser();
   const userGroupId = isStudent ? (user as Student).idGroup : null;
   const userId = user?.id;
+  const currentWeekNumber = getCurrentWeekNumber();
+  const currentWeekType = getCurrentWeekType();
 
   useEffect(() => {
     const dates = getWeekDates(activeTab);
     setWeekDates(dates);
-    
     const today = new Date();
-    const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    let defaultActiveDay = dates[0].weekday;
-    
+    const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;   
+    let defaultActiveDay = dates[0].weekday;   
     if (dates.some(day => day.isCurrentWeek)) {
       const currentDay = dates.find(day => day.date === currentDateStr)?.weekday;
       if (currentDay) {
         defaultActiveDay = currentDay;
       }
-    }
-    
+    }   
     setActiveDay(defaultActiveDay);
   }, [activeTab]);
 
@@ -606,41 +615,31 @@ export const ScheduleSection: React.FC = () => {
     const fetchScheduleData = async () => {
       try {
         setLoading(true);
-        
         if (!userGroupId || !userId) {
           throw new Error('ID группы или пользователя не найден');
         }
-
         const cachedData = loadFromCache<ApiLesson[]>(CACHE_KEYS.SCHEDULE, userId);
-        
         if (cachedData) {
           setUsingCachedData(true);
           const transformedData = transformApiData(cachedData, weekDates);
           setScheduleData(transformedData);
           setLastUpdated(new Date());
         }
-
-        const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`);
-        
+        const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`); 
         if (!scheduleResponse.ok) {
           throw new Error('Ошибка загрузки расписания');
         }
-
-        const apiData: ApiLesson[] = await scheduleResponse.json();
-        
+        const apiData: ApiLesson[] = await scheduleResponse.json();      
         saveToCache(CACHE_KEYS.SCHEDULE, apiData, userId);
-        
         if (!cachedData || generateHash(cachedData) !== generateHash(apiData)) {
-          console.log('🔄 Обновляем расписание из API');
+          console.log('Расписание. Обновляем расписание из API');
           setUsingCachedData(false);
           const transformedData = transformApiData(apiData, weekDates);
           setScheduleData(transformedData);
           setLastUpdated(new Date());
         }
-
       } catch (err) {
-        console.error('Ошибка загрузки данных:', err);
-        // Если ошибка и нет кэшированных данных, показываем ошибку
+        console.error('Расписание. Ошибка загрузки данных:', err);
         if (!scheduleData.length) {
           setError(err instanceof Error ? err.message : 'Произошла ошибка');
         }
@@ -648,113 +647,92 @@ export const ScheduleSection: React.FC = () => {
         setLoading(false);
       }
     };
-
     if (userGroupId && userId && weekDates.length > 0) {
       fetchScheduleData();
     }
   }, [userGroupId, userId, weekDates]);
 
   useEffect(() => {
-    const fetchMarks = async () => {
-      if (!isStudent || !user || !userId) return;
-
-      try {
-        const cachedMarks = loadFromCache<StudentMarks[]>(CACHE_KEYS.MARKS, userId, 2 * 60 * 60 * 1000);
-        if (cachedMarks) {
-          setMarks(cachedMarks);
-        }
-        const marksResponse = await fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`);        
-        if (!marksResponse.ok) {
-          throw new Error('Ошибка загрузки оценок');
-        }
-        const marksData: StudentMarks[] = await marksResponse.json();
-        
-        saveToCache(CACHE_KEYS.MARKS, marksData, userId);        
-        if (!cachedMarks || generateHash(cachedMarks) !== generateHash(marksData)) {
-          setMarks(marksData);
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки оценок:', err);
+  const fetchMarks = async () => {
+    if (!isStudent || !user || !userId) return;
+    try {
+      const cachedMarks = loadFromCache<StudentMarks[]>(CACHE_KEYS.MARKS, userId, 2 * 60 * 60 * 1000);
+      if (cachedMarks) {
+        setMarks(cachedMarks);
+      }  
+      const marksResponse = await fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`);    
+      if (!marksResponse.ok) {
+        throw new Error('Ошибка загрузки оценок');
+      }    
+      const marksData: StudentMarks[] = await marksResponse.json();
+      console.log('Расписание. Загруженные оценки:', marksData);
+      saveToCache(CACHE_KEYS.MARKS, marksData, userId);    
+      if (!cachedMarks || generateHash(cachedMarks) !== generateHash(marksData)) {
+        setMarks(marksData);
       }
-    };
-
-    fetchMarks();
-  }, [isStudent, user, userId]);
+    } catch (err) {
+      console.error('Расписание. Ошибка загрузки оценок:', err);
+    }
+  };
+  fetchMarks();
+}, [isStudent, user, userId]);
 
   // функция для принудительного обновления данных
   const refreshData = async () => {
     if (!userGroupId || !userId) return;
-    
     setLoading(true);
     setUsingCachedData(false);
     setError(null);
-    
     try {
       clearUserCache(userId);
             const [scheduleResponse, marksResponse] = await Promise.all([
         fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`),
         isStudent && user ? fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`) : null
       ]);
-
       if (!scheduleResponse.ok) {
         throw new Error('Ошибка загрузки расписания');
       }
-
-      const apiData: ApiLesson[] = await scheduleResponse.json();
-      
-      // сохраняем в кэш
-      saveToCache(CACHE_KEYS.SCHEDULE, apiData, userId);
-      
+      const apiData: ApiLesson[] = await scheduleResponse.json(); 
+      saveToCache(CACHE_KEYS.SCHEDULE, apiData, userId);  
       const transformedData = transformApiData(apiData, weekDates);
       setScheduleData(transformedData);
       setLastUpdated(new Date());
-
-      // Обновляем оценки если пользователь студент
       if (isStudent && marksResponse && marksResponse.ok) {
         const marksData: StudentMarks[] = await marksResponse.json();
         saveToCache(CACHE_KEYS.MARKS, marksData, userId);
         setMarks(marksData);
       }
-
-      console.log('Данные успешно обновлены');
-
+      console.log('Расписание. Данные успешно обновлены');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка';
       setError(errorMessage);
-      console.error('Ошибка обновления данных:', err);
+      console.error('Расписание. Ошибка обновления данных:', err);
     } finally {
       setLoading(false);
     }
   };
-
   const getFilteredSchedule = (weekType: 'upper' | 'lower') => {
     return filterScheduleByWeekType(scheduleData, weekType);
   };
-
   const getCurrentDay = (): string => {
     const today = new Date();
     const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
     return weekDates.find(day => day.date === currentDateStr)?.weekday || '';
   };
-
   const handleLessonClick = (subjectName: string) => {
     setSelectedSubject(subjectName);
     setIsMarksModalOpen(true);
   };
-
   const closeMarksModal = () => {
     setIsMarksModalOpen(false);
     setSelectedSubject('');
   };
-
   const currentDay = getCurrentDay();
   const isCurrentWeek = weekDates.some(day => day.isCurrentWeek);
-
   const formatLastUpdated = (date: Date | null) => {
     if (!date) return '';
     return `Обновлено: ${date.toLocaleTimeString()}`;
   };
-
   if (loading && !scheduleData.length) {
     return (
       <div className="loading">
@@ -763,7 +741,6 @@ export const ScheduleSection: React.FC = () => {
       </div>
     );
   }
-
   if (error && !scheduleData.length) {
     return (
       <div className="error">
@@ -774,7 +751,6 @@ export const ScheduleSection: React.FC = () => {
       </div>
     );
   }
-
   if (!scheduleData || scheduleData.length === 0) {
     return (
       <div className="schedule-section">
@@ -787,10 +763,11 @@ export const ScheduleSection: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="schedule-section">
       <div className="schedule-header">
+        <div className="week-info">
+        </div>
         <div className="week-type-tabs">
           <button 
             className={`week-type-tab ${activeTab === 'upper' ? 'active' : ''}`}
@@ -811,7 +788,6 @@ export const ScheduleSection: React.FC = () => {
           </button>
         </div>
       </div>
-
       <div className="schedule-container">
         <DayTabs 
           days={weekDates}
@@ -819,15 +795,13 @@ export const ScheduleSection: React.FC = () => {
           onDayChange={setActiveDay}
           currentDay={currentDay}
           isCurrentWeek={isCurrentWeek}
-        />
-        
+        />   
         <div className="schedule-content">
           <DayScheduleView 
             scheduleData={getFilteredSchedule(activeTab)} 
             activeDay={activeDay}
             onLessonClick={handleLessonClick}
-          />
-          
+          /> 
           {activeDay === currentDay && isCurrentWeek && (
             <NextLessonCard 
               scheduleData={getFilteredSchedule(activeTab)} 
