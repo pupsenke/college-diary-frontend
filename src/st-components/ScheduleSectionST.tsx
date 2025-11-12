@@ -55,6 +55,7 @@ type Lesson = {
   subgroup?: number;
   dayWeek: string;
   typeWeek: string;
+  replacement: boolean;
 };
 
 export type DaySchedule = {
@@ -242,6 +243,7 @@ type TransformedLesson = {
   numPair: number;
   dayWeek: string;
   typeWeek: string;
+  replacement: boolean;
 };
 
 export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
@@ -265,17 +267,23 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
 
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
 
+        // Добавляем текст "(Замена)" если replacement: true
+        const subjectName = lesson.replacement 
+          ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
+          : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
+
         const transformedLesson: TransformedLesson = {
           id: lesson.id,
           startTime: pairTime.start,
           endTime: pairTime.end,
-          subject: lesson.nameSubject || `Предмет ${lesson.idSubject}`,
+          subject: subjectName,
           teacher,
           room,
           subgroup,
           numPair: lesson.numPair,
           dayWeek: lesson.dayWeek,
-          typeWeek: lesson.typeWeek
+          typeWeek: lesson.typeWeek,
+          replacement: lesson.replacement
         };
 
         return transformedLesson;
@@ -436,7 +444,7 @@ const DayScheduleView: React.FC<{
       {daySchedule.lessons.length > 0 ? (
         groupLessonsByTime(daySchedule.lessons).map((slot) => (
           slot.lessons.length > 1 ? (
-            <div key={`${slot.startTime}-${slot.endTime}`} className="separated-lesson-row">
+            <div key={`${slot.startTime}-${slot.endTime}`} className="separated-lesson-row clickable-lesson">
               <div className="separated-time">
                 {slot.startTime} - {slot.endTime}
               </div>
@@ -444,7 +452,7 @@ const DayScheduleView: React.FC<{
                 {slot.lessons.map((lesson: Lesson, index: number) => (
                   <div 
                     key={lesson.id} 
-                    className="separated-lesson-item clickable-lesson"
+                    className={`separated-lesson-item clickable-lesson ${lesson.replacement ? 'replacement' : ''}`}
                     onClick={() => onLessonClick(lesson.subject)}
                   >
                     <div className="separated-subject">
@@ -453,7 +461,7 @@ const DayScheduleView: React.FC<{
                     <div className="separated-lesson-meta">
                       {lesson.teacher && <div className="separated-teacher-room">{lesson.teacher}</div>}
                       {lesson.room && <div className="separated-room">{lesson.room}</div>}
-                      {lesson.subgroup && <div className="separated-subgroup">п/г {lesson.subgroup}</div>}
+                      {lesson.subgroup && <div className="separated-subgroup">Подгруппа №{lesson.subgroup}</div>}
                     </div>
                   </div>
                 ))}
@@ -462,7 +470,7 @@ const DayScheduleView: React.FC<{
           ) : (
             <div 
               key={`${slot.startTime}-${slot.endTime}`} 
-              className="lesson-row clickable-lesson"
+              className={`lesson-row clickable-lesson ${slot.lessons[0].replacement ? 'replacement' : ''}`}
               onClick={() => onLessonClick(slot.lessons[0].subject)}
             >
               <div className="lesson-time">{slot.startTime} - {slot.endTime}</div>
@@ -474,7 +482,7 @@ const DayScheduleView: React.FC<{
                   <div className="lesson-meta">
                     {slot.lessons[0].teacher && <div className="lesson-teacher-room">{slot.lessons[0].teacher}</div>}
                     {slot.lessons[0].room && <div className="lesson-room">{slot.lessons[0].room}</div>}
-                    {slot.lessons[0].subgroup && <div className="lesson-subgroup">п/г {slot.lessons[0].subgroup}</div>}
+                    {slot.lessons[0].subgroup && <div className="lesson-subgroup">Подгруппа №{slot.lessons[0].subgroup}</div>}
                   </div>
                 </div>
               </div>
@@ -525,7 +533,7 @@ const NextLessonCard: React.FC<{
       <div className="next-lesson-title">
         <h3>Следующая пара</h3>
       </div>
-      <div className="next-lesson-card">
+      <div className={`next-lesson-card ${nextLesson.replacement ? 'replacement' : ''}`}>
         <div className="next-lesson-subject">
           {nextLesson.subject}
         </div>
@@ -548,7 +556,7 @@ const NextLessonCard: React.FC<{
           )}
           {nextLesson.subgroup && (
             <div className="next-lesson-detail">
-              <div className="detail-label">п/г</div>
+              <div className="detail-label">Подгруппа №</div>
               <div className="detail-value">{nextLesson.subgroup}</div>
             </div>
           )}
@@ -708,7 +716,7 @@ export const ScheduleSection: React.FC = () => {
         setMarks(marksData);
       }
 
-      console.log('✅ Данные успешно обновлены');
+      console.log('Данные успешно обновлены');
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка';

@@ -348,7 +348,7 @@ const DayScheduleView: React.FC<{
                     <div className="separated-lesson-meta">
                       <div className="lesson-group-info">
                         <div className="lesson-group">Группа: {lesson.group}</div>
-                        {lesson.subgroup && <div className="lesson-subgroup">п/г {lesson.subgroup}</div>}
+                        {lesson.subgroup && <div className="lesson-subgroup">Подгруппа №{lesson.subgroup}</div>}
                       </div>
                       {lesson.room && <div className="separated-room">{lesson.room}</div>}
                     </div>
@@ -370,7 +370,7 @@ const DayScheduleView: React.FC<{
                   <div className="lesson-meta">
                     <div className="lesson-group-info">
                       <div className="lesson-group">Группа: {grouped[0].group}</div>
-                      {grouped[0].subgroup && <div className="lesson-subgroup">п/г {grouped[0].subgroup}</div>}
+                      {grouped[0].subgroup && <div className="lesson-subgroup">Подгруппа №{grouped[0].subgroup}</div>}
                     </div>
                     {grouped[0].room && <div className="lesson-room">{grouped[0].room}</div>}
                   </div>
@@ -430,7 +430,7 @@ const NextLessonCard: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleDat
           </div>
           {nextLesson.subgroup && (
             <div className="next-lesson-detail">
-              <div className="detail-label">п/г</div>
+              <div className="detail-label">Подгруппа №</div>
               <div className="detail-value">{nextLesson.subgroup}</div>
             </div>
           )}
