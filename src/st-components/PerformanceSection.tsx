@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './PerformanceSectionStyle.css';
 import { apiService, StudentMark, MarkInfo, Lesson, Supplement, MarkChange, Document } from '../services/studentApiService'; 
 import { useUser, Student } from '../context/UserContext';
@@ -38,6 +38,7 @@ interface GradeDetail {
   type: string;
   hasValue: boolean;
   stId?: number;
+  realDate?: string;
 }
 
 interface Grade {
@@ -114,6 +115,8 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [deletingComment, setDeletingComment] = useState<number | null>(null);
   const [markTypes, setMarkTypes] = useState<{[key: string]: string}>({});
+  const [gradesData, setGradesData] = useState<Grade[]>([]);
+  const [marksWithDates, setMarksWithDates] = useState<{[key: string]: string}>({});
 
   const { user } = useUser();
   useBodyOverflow(!!selectedGrade);
@@ -160,6 +163,44 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // ДОБАВИТЬ функцию загрузки реальных дат
+  const loadMarksRealDates = async () => {
+    if (!studentMarks) return;
+
+    const datesMap: {[key: string]: string} = {};
+    const promises: Promise<void>[] = [];
+
+    studentMarks.forEach(studentMark => {
+      if (studentMark.marksBySt && studentMark.nameSubjectTeachersDTO) {
+        const stId = studentMark.nameSubjectTeachersDTO.idSt;
+        
+        studentMark.marksBySt.forEach(mark => {
+          if (mark && mark.number !== null && mark.number !== undefined && mark.value !== null) {
+            const promise = apiService.getMarkColumnInfo(studentId, stId, mark.number)
+              .then(columnInfo => {
+                if (columnInfo.dateLesson) {
+                  const markKey = `${stId}_${mark.number}`;
+                  datesMap[markKey] = columnInfo.dateLesson;
+                }
+              })
+              .catch(error => {
+                console.warn(`Не удалось загрузить дату для оценки ${stId}_${mark.number}:`, error);
+              });
+            
+            promises.push(promise);
+          }
+        });
+      }
+    });
+
+    try {
+      await Promise.all(promises);
+      setMarksWithDates(datesMap);
+    } catch (error) {
+      console.error('Ошибка загрузки дат оценок:', error);
     }
   };
 
@@ -279,6 +320,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       await fetchStudentData();
       await fetchStudentCourse();
       await loadAllFiles();
+      await loadMarksRealDates(); 
     };
     
     loadData();
@@ -290,8 +332,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       loadMarkTypes();
     }
   }, [studentMarks]);
-
-
 
   useEffect(() => {
     if (selectedGrade && markInfo && activeMarkTab === 'comments') {
@@ -623,7 +663,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   };
 
   // Преобразование данных из API
-  const transformStudentMarksToGrades = (semesterType: 'first' | 'second'): Grade[] => {
+  const transformStudentMarksToGrades = useCallback((semesterType: 'first' | 'second'): Grade[] => {
     if (!studentMarks) return [];
 
     return studentMarks
@@ -649,22 +689,27 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           studentMark.marksBySt.forEach((mark) => {
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
-                const lessonDate = getLessonDate(mark.number);
-                
-                // Получаем тип работы из загруженных данных
+                // Используем реальные даты из marksWithDates или генерируем
                 const stId = studentMark.nameSubjectTeachersDTO.idSt;
+                const markKey = `${stId}_${mark.number}`;
+                const realDate = marksWithDates[markKey];
+                
+                const lessonDate = realDate ? new Date(realDate).toLocaleDateString('ru-RU') : getLessonDate(mark.number);
+                
+                // Получаем тип работы
                 const markTypeKey = `${stId}_${mark.number}`;
                 const markType = markTypes[markTypeKey] || getLessonTopic(mark.number);
 
                 gradeDetails.push({
                   id: mark.number,
                   date: lessonDate,
-                  topic: markType, // Используем реальный тип работы
+                  topic: markType,
                   grade: mark.value || 0,
                   teacher: teacherString,
                   type: 'Работа',
                   hasValue: mark.value !== null && mark.value !== undefined,
-                  stId: stId
+                  stId: stId,
+                  realDate: realDate
                 });
 
                 if (mark.value !== null && mark.value !== undefined) {
@@ -675,7 +720,13 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           });
         }
 
-        gradeDetails.sort((a, b) => a.id - b.id);
+        gradeDetails.sort((a, b) => {
+          // Сортируем по реальным датам если есть
+          if (a.realDate && b.realDate) {
+            return new Date(a.realDate).getTime() - new Date(b.realDate).getTime();
+          }
+          return a.id - b.id;
+        });
 
         const average = validGrades.length > 0 
           ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
@@ -692,7 +743,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         };
       })
       .filter(grade => grade !== null) as Grade[];
-  };
+  }, [studentMarks, markTypes, marksWithDates]);
+
+  useEffect(() => {
+    if (studentMarks) {
+      const transformed = transformStudentMarksToGrades(selectedSemester);
+      setGradesData(transformed);
+    }
+  }, [studentMarks, selectedSemester, transformStudentMarksToGrades]);
+
 
   const getSemesterByWorkNumber = (workNumber: number): 'first' | 'second' => {
     if (workNumber === null || workNumber === undefined || isNaN(workNumber)) {
@@ -711,22 +770,48 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     return `Работа ${markNumber}`;
   };
 
+  // ОБНОВИТЬ функцию getLessonDate
   const getLessonDate = (markNumber: number): string => {
     if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
-      return 'Дата не определена';
+      return '01.09.2024';
     }
     
-    const currentDate = new Date();
-    const semesterStart = selectedSemester === 'first' 
-      ? new Date(currentDate.getFullYear(), 8, 1) // 1 сентября
-      : new Date(currentDate.getFullYear(), 0, 1); // 1 января
+    // Создаем реалистичные даты на основе текущего учебного года
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
     
-    const gradeDate = new Date(semesterStart);
-    gradeDate.setDate(semesterStart.getDate() + (markNumber - 1) * 7);
+    // Определяем учебный год
+    const academicYear = currentMonth >= 8 ? currentYear : currentYear - 1;
     
-    return gradeDate.toLocaleDateString('ru-RU');
+    if (selectedSemester === 'first') {
+      // Первый семестр: сентябрь-декабрь
+      const semesterStart = new Date(academicYear, 8, 1); // 1 сентября
+      const lessonDate = new Date(semesterStart);
+      lessonDate.setDate(semesterStart.getDate() + (markNumber - 1) * 7);
+      
+      // Не выходим за пределы декабря
+      if (lessonDate.getMonth() > 11) {
+        lessonDate.setMonth(11);
+        lessonDate.setDate(31);
+      }
+      
+      return lessonDate.toLocaleDateString('ru-RU');
+    } else {
+      // Второй семестр: январь-май следующего года
+      const semesterStart = new Date(academicYear + 1, 0, 9); // 9 января
+      const lessonDate = new Date(semesterStart);
+      lessonDate.setDate(semesterStart.getDate() + (markNumber - 25) * 7);
+      
+      // Не выходим за пределы мая
+      if (lessonDate.getMonth() > 4) {
+        lessonDate.setMonth(4);
+        lessonDate.setDate(31);
+      }
+      
+      return lessonDate.toLocaleDateString('ru-RU');
+    }
   };
-  const gradesData = transformStudentMarksToGrades(selectedSemester);
+
   const subjects = gradesData.map(grade => grade.subject);
 
   // Обновляем gradesData при изменении markTypes
@@ -778,7 +863,9 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     });
 
     const overallAverage = subjectsWithGrades > 0 ? totalAverage / subjectsWithGrades : 0;
-    const excellentPercentage = totalGrades > 0 ? (grade5 + grade4 / totalGrades) * 100 : 0;
+    
+    // ИСПРАВЛЕННЫЙ РАСЧЕТ: процент оценок 4 и 5 от общего количества
+    const excellentPercentage = totalGrades > 0 ? ((grade5 + grade4) / totalGrades) * 100 : 0;
 
     return {
       totalGrades,
@@ -787,7 +874,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       grade3,
       grade2,
       overallAverage: parseFloat(overallAverage.toFixed(1)),
-      excellentPercentage: parseFloat(excellentPercentage.toFixed(1)),
+      excellentPercentage: parseFloat(excellentPercentage.toFixed(1)), // Теперь будет корректный процент
       totalSubjects: gradesData.length,
       subjectsWithGrades
     };
@@ -953,6 +1040,48 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       return [];
     }
   };
+
+  // Функция для расчета данных по типам оценок
+  const calculateGradeTypesData = () => {
+    const typeCount: { [key: string]: number } = {};
+    
+    gradesData.forEach(subject => {
+      subject.gradeDetails?.forEach(detail => {
+        if (detail.hasValue && detail.grade) {
+          const type = detail.topic || 'Работа';
+          typeCount[type] = (typeCount[type] || 0) + 1;
+        }
+      });
+    });
+
+    // Берем топ-5 типов оценок
+    const topTypes = Object.entries(typeCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([name, value]) => ({
+        name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+        value
+      }));
+
+    // Цвета для типов оценок
+    const colors = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe'];
+    
+    return topTypes.map((item, index) => ({
+      ...item,
+      color: colors[index] || '#6b7280'
+    }));
+  };
+
+
+  // Вспомогательная функция для получения номера недели (должна быть у вас уже)
+  const getWeekNumber = (date: Date): number => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return weekNumber;
+  };
+
 
   // Рендер попапа с детальной информацией об оценке
   const renderGradePopup = () => {
@@ -1531,9 +1660,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 {subject.average > 0 ? subject.average.toFixed(1) : '-'}
               </span>
             </div>
-            <div className="pf-grades-count">
-              {subject.grades.length} оценок
-            </div>
           </div>
         </div>
       ))}
@@ -1622,70 +1748,126 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   );
 
   // Рендер аналитики
-  const renderAnalytics = () => (
-    <div className="pf-analytics-container">
-      <div className="pf-stats-cards">
-        <div className="pf-stat-card">
-          <div className="pf-stat-content">
-            <div className="pf-stat-value">{statistics.overallAverage}</div>
-            <div className="pf-stat-label">Средний балл</div>
+  const renderAnalytics = () => {  
+    return (
+      <div className="pf-analytics-container">
+        <div className="pf-stats-cards">
+          <div className="pf-stat-card">
+            <div className="pf-stat-content">
+              <div className="pf-stat-value">{statistics.overallAverage}</div>
+              <div className="pf-stat-label">Средний балл</div>
+            </div>
+          </div>
+
+          <div className="pf-stat-card">
+            <div className="pf-stat-content">
+              <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
+              <div className="pf-stat-label">Оценок 4+</div>
+            </div>
+          </div>
+
+          <div className="pf-stat-card">
+            <div className="pf-stat-content">
+              <div className="pf-stat-value">{statistics.totalGrades}</div>
+              <div className="pf-stat-label">Всего оценок</div>
+            </div>
           </div>
         </div>
 
-        <div className="pf-stat-card">
-          <div className="pf-stat-content">
-            <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
-            <div className="pf-stat-label">Оценок 4+</div>
+        <div className="pf-charts-grid">
+          {/* Распределение оценок - оставляем */}
+          <div className="pf-chart-card">
+            <h3>Распределение оценок</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={performanceData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="subject" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value) => [`${value}`, 'Количество']}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Количество">
+                  {performanceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Новый график: Количество оценок по типам */}
+          <div className="pf-chart-card">
+            <h3>Типы оценок</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={calculateGradeTypesData()}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {calculateGradeTypesData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
-
-        <div className="pf-stat-card">
-          <div className="pf-stat-content">
-            <div className="pf-stat-value">{statistics.totalGrades}</div>
-            <div className="pf-stat-label">Всего оценок</div>
+        <div className="pf-full-width-chart">
+          <div className="pf-chart-card">
+            <h3>Средние баллы по предметам</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart 
+                data={gradesData
+                  .filter(subject => subject.average > 0)
+                  .sort((a, b) => b.average - a.average)
+                  .slice(0, 8)
+                }
+                layout="vertical"
+                margin={{ left: 100 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" domain={[0, 5]} />
+                <YAxis 
+                  type="category" 
+                  dataKey="subject" 
+                  tick={{ fontSize: 12 }}
+                  width={90}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value}`, 'Средний балл']}
+                />
+                <Bar 
+                  dataKey="average" 
+                  name="Средний балл"
+                  radius={[0, 4, 4, 0]}
+                >
+                  {gradesData
+                    .filter(subject => subject.average > 0)
+                    .sort((a, b) => b.average - a.average)
+                    .slice(0, 8)
+                    .map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={getPerformanceColor(entry.average)} 
+                      />
+                    ))
+                  }
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
-
-      <div className="pf-charts-grid">
-        <div className="pf-chart-card pf-large">
-          <h3>Распределение оценок</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="subject" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {performanceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="pf-chart-card pf-large">
-          <h3>Прогресс обучения</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={progressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="week" />
-              <YAxis domain={[3, 5]} />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="average" 
-                stroke="#2cbb00" 
-                strokeWidth={3}
-                dot={{ fill: '#2cbb00', strokeWidth: 2, r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (

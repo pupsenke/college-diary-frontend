@@ -189,6 +189,35 @@ export interface MarkColumnInfo {
   patronymicTeacher?: string;
 }
 
+
+export interface SubjectAttendance {
+  nameSubjectTeachersDTO: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
+  attendances: Array<{
+    idLesson: number;
+    date: string;
+    status: 'п' | 'у' | 'н' | null;
+    comment: string | null;
+  }>;
+}
+
+export interface LessonAttendance {
+  idLesson: number;
+  idTeacher: number;
+  status: 'п' | 'у' | 'н';
+  comment: string;
+}
+
+
 export const apiService = {
 // Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
@@ -374,7 +403,7 @@ export const apiService = {
     const data: MarkColumnInfo = await response.json();
     return data;
   },
-  
+
   // Получение информации о supplement
   async getSupplement(supplementId: number): Promise<Supplement> {
     
@@ -654,6 +683,83 @@ export const apiService = {
     
     const data: TeacherSubject[] = await response.json();
     return data;
+  },
+
+  // === ПОСЕЩАЕМОСТЬ ===
+
+  // Получение посещаемости студента
+  async getStudentAttendance(studentId: number, forceRefresh = false): Promise<SubjectAttendance[]> {
+    const cacheKey = `attendance_${studentId}`;
+    
+    // Если принудительное обновление, инвалидируем кэш
+    if (forceRefresh) {
+      cacheService.remove(cacheKey);
+    }
+    
+    const cached = cacheService.get<SubjectAttendance[]>(cacheKey, { 
+      ttl: 10 * 60 * 1000 // 10 минут
+    });
+    
+    if (cached && !forceRefresh) {
+      return cached;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/attendances/student/${studentId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки посещаемости студента: ${response.status}`);
+    }
+    
+    const data: SubjectAttendance[] = await response.json();
+    
+    cacheService.set(cacheKey, data, { 
+      ttl: 10 * 60 * 1000 
+    });
+    
+    return data;
+  },
+  // Получение посещаемости конкретного урока
+  async getLessonAttendance(lessonId: number, studentId: number): Promise<LessonAttendance> {
+    const cacheKey = `lesson_attendance_${lessonId}_${studentId}`;
+    
+    const cached = cacheService.get<LessonAttendance>(cacheKey, { 
+      ttl: 10 * 60 * 1000 // 10 минут
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/attendances/lesson/${lessonId}/student/${studentId}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки посещаемости урока: ${response.status}`);
+    }
+    
+    const data: LessonAttendance = await response.json();
+    
+    cacheService.set(cacheKey, data, { 
+      ttl: 10 * 60 * 1000 
+    });
+    
+    return data;
+  },
+
+  invalidateAttendanceCache(studentId: number): void {
+    const cacheKey = `attendance_${studentId}`;
+    cacheService.remove(cacheKey);
+    
+    // Также инвалидируем кэш уроков
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes(`cache_lesson_attendance_`) && key.includes(`_${studentId}`)) {
+        cacheService.remove(key.replace('cache_', ''));
+      }
+    }
   },
 
   // === ДОКУМЕНТЫ ===

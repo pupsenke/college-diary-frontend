@@ -20,171 +20,290 @@ import {
 export interface Attendance {
   id: number;
   subject: string;
-  statuses: ('п' | 'у' | 'б' | 'н')[];
+  statuses: ('п' | 'у'| 'н' | null)[];
   quantity: number;
   percent: number;
   teacher: string;
-  reasonStatus?: GradeDetail[];
+  reasonStatus?: AttendanceDetail[];
 }
 
-export interface GradeDetail {
-  id: number;
+export interface AttendanceDetail {
+  idLesson: number;
   date: string;
   topic: string;
-  status: 'п' | 'у' | 'б' | 'н';
+  status: 'п' | 'у' | 'н' | null;
   teacher: string;
-  reason?: string;
-  startDate?: string;
-  endDate?: string;
+  comment?: string;
 }
 
-interface PerformanceSectionProps {
+interface AttendanceSectionProps {
   studentId: number;
 }
 
-export const AttendanceSection: React.FC<PerformanceSectionProps> = ({ 
+interface SubjectAttendance {
+  nameSubjectTeachersDTO: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
+  attendances: Array<{
+    idLesson: number;
+    date: string;
+    status: 'п' | 'у' | 'н' | null;
+    comment: string | null;
+  }>;
+}
+
+interface LessonAttendance {
+  idLesson: number;
+  idTeacher: number;
+  status: 'п' | 'у'  | 'н';
+  comment: string;
+}
+
+interface SemesterInfo {
+  number: number;
+  name: string;
+  value: 'first' | 'second';
+}
+
+export const AttendanceSection: React.FC<AttendanceSectionProps> = ({ 
   studentId 
 }) => {
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'analytics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedAttendance, setSelectedAttendance] = useState<{subject: string, status: 'п' | 'у' | 'б' | 'н', number: number, topic: string, teacher: string, reason?: string, startDate?: string, endDate?: string} | null>(null);
+  const [selectedAttendance, setSelectedAttendance] = useState<{
+    subject: string, 
+    status: 'п' | 'у' | 'н' | null, 
+    idLesson: number, 
+    date: string, 
+    teacher: string, 
+    comment?: string
+  } | null>(null);
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<string | null>(null);
   const [isUsingCache, setIsUsingCache] = useState(false);
+  const [lessonAttendance, setLessonAttendance] = useState<LessonAttendance | null>(null);
+  const [lessonAttendanceLoading, setLessonAttendanceLoading] = useState(false);
+  const [semesters, setSemesters] = useState<SemesterInfo[]>([]);
+  const [studentCourse, setStudentCourse] = useState<number>(1);
+  const [activeAttendanceTab, setActiveAttendanceTab] = useState<'info' | 'comments'>('info');
+  const [newComment, setNewComment] = useState('');
+  const [addCommentMode, setAddCommentMode] = useState(false);
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<'3days' | 'week' | 'month' | 'all'>('week');
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: '',
+    end: ''
+  });
 
   // Функция загрузки данных с приоритетом API
   const fetchAttendanceData = async (forceRefresh = false) => {
     try {
       if (forceRefresh) {
         setRefreshing(true);
+        // Инвалидируем кэш при принудительном обновлении
+        const cacheKey = `attendance_${studentId}`;
+        localStorage.removeItem(`cache_${cacheKey}`);
       } else {
         setLoading(true);
       }
+      
       setError(null);
       setIsUsingCache(false);
-      // Временные данные вместо API
-      const data: Attendance[] = [
-        {
-          id: 1,
-          subject: 'Разработка программных модулей',
-          teacher: 'Цымбалюк Л.Н.',
-          statuses: ['п', 'п', 'у', 'п', 'п', 'н', 'п', 'п', 'б', 'п'],
-          quantity: 10,
-          percent: 80,
-          reasonStatus: [
-            { id: 1, date: '13.09.2024', topic: 'Введение', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 2, date: '20.09.2024', topic: 'Основы разработки', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 3, date: '27.09.2024', topic: 'История программирования', status: 'у', teacher: 'Иванова А.С.', reason: 'Семейные обстоятельства' },
-            { id: 4, date: '04.10.2024', topic: 'Фонетика', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 5, date: '11.10.2024', topic: 'Орфография', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 6, date: '18.10.2024', topic: 'Пунктуация', status: 'н', teacher: 'Иванова А.С.' },
-            { id: 7, date: '25.10.2024', topic: 'Стилистика', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 8, date: '01.11.2024', topic: 'Лексикология', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 9, date: '08.11.2024', topic: 'Фразеология', status: 'б', teacher: 'Иванова А.С.', startDate: '08.11.2024', endDate: '15.11.2024' },
-            { id: 10, date: '15.11.2024', topic: 'Словообразование', status: 'п', teacher: 'Иванова А.С.' },
-          ]
-        },
-        {
-          id: 2,
-          subject: 'Внедрение и поддержка компьютерных систем',
-          teacher: 'Богданов М.М.',
-          statuses: ['п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п', 'п'],
-          quantity: 10,
-          percent: 100,
-          reasonStatus: [
-            { id: 1, date: '14.09.2024', topic: 'Алгебра', status: 'п', teacher: 'Сидоров В.П.' },
-            { id: 2, date: '21.09.2024', topic: 'Геометрия', status: 'п', teacher: 'Сидоров В.П.' },
-            { id: 3, date: '28.09.2024', topic: 'Тригонометрия', status: 'п', teacher: 'Сидоров В.П.' },
-          ]
-        },
-        {
-          id: 3,
-          subject: 'Поддержка и тестирование программных модулей',
-          teacher: 'Андреев А.И.',
-          statuses: ['п', 'п', 'п', 'у', 'п', 'п', 'п', 'п', 'п', 'п'],
-          quantity: 10,
-          percent: 90,
-          reasonStatus: [
-            { id: 1, date: '16.09.2024', topic: 'JavaScript', status: 'п', teacher: 'Козлов Д.А.' },
-            { id: 2, date: '23.09.2024', topic: 'React', status: 'п', teacher: 'Козлов Д.А.' },
-            { id: 3, date: '30.09.2024', topic: 'API', status: 'п', teacher: 'Козлов Д.А.' },
-            { id: 4, date: '07.10.2024', topic: 'TypeScript', status: 'у', teacher: 'Козлов Д.А.', reason: 'Выезд на соревнования' },
-          ]
-        },
-        {
-          id: 4,
-          subject: 'Системное программирование',
-          teacher: 'Иванов А.',
-          statuses: ['п', 'п', 'н', 'п', 'у', 'п', 'п', 'н', 'п', 'п'],
-          quantity: 10,
-          percent: 70,
-          reasonStatus: [
-            { id: 1, date: '17.09.2024', topic: 'SQL', status: 'п', teacher: 'Николаев С.В.' },
-            { id: 2, date: '24.09.2024', topic: 'Нормализация', status: 'п', teacher: 'Николаев С.В.' },
-            { id: 3, date: '01.10.2024', topic: 'Транзакции', status: 'н', teacher: 'Николаев С.В.' },
-            { id: 4, date: '08.10.2024', topic: 'Оптимизация', status: 'п', teacher: 'Николаев С.В.' },
-            { id: 5, date: '15.10.2024', topic: 'Индексы', status: 'у', teacher: 'Николаев С.В.', reason: 'Посещение врача' },
-          ]
-        }
-      ];
-      setAttendanceData(data);
+
+      // Загружаем данные посещаемости с API с принудительным обновлением если нужно
+      const data: SubjectAttendance[] = await apiService.getStudentAttendance(studentId);
+      
+      // Преобразуем данные в формат компонента
+      const transformedData: Attendance[] = data.map(subject => {
+        const teachers = subject.nameSubjectTeachersDTO.teachers || [];
+        const mainTeacher = teachers[0] || { 
+          lastnameTeacher: 'Неизвестно', 
+          nameTeacher: 'Н', 
+          patronymicTeacher: 'П' 
+        };
+        
+        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        
+        // Включаем ВСЕ статусы для отображения (включая null)
+        const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances.map(a => a.status);
+        
+        // Для статистики учитываем только выставленные статусы (не null)
+        const validAttendances = subject.attendances.filter(a => a.status !== null);
+        const validStatuses = validAttendances.map(a => a.status as 'п' | 'у' | 'н');
+        
+        const presentCount = validStatuses.filter(status => status === 'п').length;
+        const totalCount = validStatuses.length; // Только для выставленных статусов
+        const percent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
+
+        const reasonStatus: AttendanceDetail[] = subject.attendances.map(attendance => ({
+          idLesson: attendance.idLesson,
+          date: attendance.date,
+          topic: `Занятие ${attendance.idLesson}`,
+          status: attendance.status,
+          teacher: teacherString,
+          comment: attendance.comment || undefined
+        }));
+
+        return {
+          id: subject.nameSubjectTeachersDTO.idSubject,
+          subject: subject.nameSubjectTeachersDTO.nameSubject,
+          teacher: teacherString,
+          statuses, // Все статусы для отображения
+          quantity: totalCount, // Только выставленные статусы для статистики
+          percent: parseFloat(percent.toFixed(1)),
+          reasonStatus
+        };
+      });
+
+      setAttendanceData(transformedData);
       
     } catch (error) {
       console.error('Ошибка при загрузке данных с API:', error);
-      
-      // Если ошибка сети, пробуем загрузить из кэша
-      try {
-        const cacheKey = `attendance_${studentId}`;
-        const cached = localStorage.getItem(`cache_${cacheKey}`);
-        
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          // Проверяем актуальность кэша (10 минут)
-          if (Date.now() - cachedData.timestamp < 10 * 60 * 1000) {
-            setAttendanceData(cachedData.data ?? []);
-            setIsUsingCache(true);
-            setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные загружены из кэша');
-          } else {
-            throw new Error('Кэш устарел');
-          }
-        } else {
-          throw new Error('Нет данных в кэше');
-        }
-      } catch (cacheError) {
-        console.error('Ошибка при загрузке из кэша:', cacheError);
-        setError('Не удалось загрузить данные. Проверьте подключение к интернету.');
-        setAttendanceData([]);
-      }
+      setError('Не удалось загрузить данные о посещаемости');
+      setAttendanceData([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  // Функция для определения семестров по курсу
+  const getSemestersByCourse = (course: number): SemesterInfo[] => {
+    const semesterPairs = [
+      { course: 1, semesters: [1, 2] },
+      { course: 2, semesters: [3, 4] },
+      { course: 3, semesters: [5, 6] },
+      { course: 4, semesters: [7, 8] }
+    ];
+    
+    const pair = semesterPairs.find(p => p.course === course) || semesterPairs[0];
+    
+    return pair.semesters.map(semesterNumber => ({
+      number: semesterNumber,
+      name: `${semesterNumber} семестр`,
+      value: semesterNumber % 2 === 1 ? 'first' : 'second'
+    }));
+  };
+
+
+  // Функция загрузки детальной информации о посещаемости урока
+  const fetchLessonAttendance = async (lessonId: number) => {
+    if (!lessonId) return;
+    
+    setLessonAttendanceLoading(true);
+    try {
+      const attendance = await apiService.getLessonAttendance(lessonId, studentId);
+      setLessonAttendance(attendance);
+    } catch (error) {
+      console.error('Ошибка загрузки информации о посещаемости урока:', error);
+      setLessonAttendance(null);
+    } finally {
+      setLessonAttendanceLoading(false);
+    }
+  };
+
+  const fetchStudentCourse = async () => {
+    try {
+      const studentData = await apiService.getStudentData(studentId);
+      if (studentData?.idGroup) {
+        const groupData = await apiService.getGroupData(studentData.idGroup);
+        const course = groupData.course || 1;
+        setStudentCourse(course);
+        setSemesters(getSemestersByCourse(course));
+      } else {
+        setStudentCourse(1);
+        setSemesters(getSemestersByCourse(1));
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке данных студента:', error);
+      setStudentCourse(1);
+      setSemesters(getSemestersByCourse(1));
+    }
+  };
+
+
+  useEffect(() => {
+  const loadData = async () => {
+    await fetchStudentCourse();
+    await fetchAttendanceData();
+  };
+  loadData();
+}, [studentId]);
+
+
   // Функция принудительного обновления
   const handleRefresh = async () => {
-    // Инвалидируем кэш перед обновлением
-    const cacheKey = `attendance_${studentId}`;
-    localStorage.removeItem(`cache_${cacheKey}`);
     await fetchAttendanceData(true);
   };
 
-  // Загрузка данных при монтировании
-  useEffect(() => {
-    fetchAttendanceData();
-  }, [studentId]);
 
-  const handleAttendanceClick = (subject: string, status: 'п' | 'у' | 'б' | 'н', number: number, topic: string, teacher: string, reason?: string, startDate?: string, endDate?: string) => {
-    setSelectedAttendance({ subject, status, number, topic, teacher, reason, startDate, endDate });
+  const handleAttendanceClick = async (
+    subject: string, 
+    status: 'п' | 'у' | 'н' | null, 
+    idLesson: number, 
+    date: string, 
+    teacher: string, 
+    comment?: string
+  ) => {
+    setSelectedAttendance({ subject, status, idLesson, date, teacher, comment });
+    
+    if (idLesson) {
+      await fetchLessonAttendance(idLesson);
+    }
+  };
+
+  // Функция для добавления комментария
+  const handleAddComment = async () => {
+    if (!selectedAttendance || !newComment.trim()) return;
+    
+    setCommentLoading(true);
+    try {
+      // Здесь будет вызов API для добавления комментария
+      // await apiService.addAttendanceComment(selectedAttendance.idLesson, studentId, newComment);
+      
+      // Временно имитируем успешное добавление
+      setTimeout(() => {
+        setAddCommentMode(false);
+        setNewComment('');
+        setCommentLoading(false);
+        
+        // Обновляем данные
+        if (selectedAttendance.idLesson) {
+          fetchLessonAttendance(selectedAttendance.idLesson);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Ошибка добавления комментария:', error);
+      setCommentLoading(false);
+    }
+  };
+
+  // Функция для форматирования даты
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const closeAttendancePopup = () => {
     setSelectedAttendance(null);
+    setLessonAttendance(null);
   };
 
   const subjects = attendanceData.map(attendance => attendance.subject);
@@ -193,26 +312,26 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   const calculateAttendanceStatistics = () => {
     let totalPresent = 0;
     let totalExcused = 0;
-    let totalSick = 0;
     let totalAbsent = 0;
-    let totalLessons = 0;
+    let totalLessons = 0; // Только уроки с выставленными статусами
 
     attendanceData.forEach(subject => {
-      const stats = calculateSubjectStats(subject.statuses);
+      // Для статистики учитываем только выставленные статусы
+      const validStatuses = subject.statuses.filter(status => status !== null) as ('п' | 'у' | 'н')[];
+      const stats = calculateSubjectStats(validStatuses);
+      
       totalPresent += stats.present;
       totalExcused += stats.excused;
-      totalSick += stats.sick;
       totalAbsent += stats.absent;
-      totalLessons += subject.statuses.length;
+      totalLessons += validStatuses.length; // Только выставленные статусы
     });
 
-    const totalAbsences = totalExcused + totalSick + totalAbsent;
+    const totalAbsences = totalExcused + totalAbsent;
     const overallPercent = totalLessons > 0 ? ((totalPresent / totalLessons) * 100) : 0;
 
     return {
       totalPresent,
       totalExcused,
-      totalSick,
       totalAbsent,
       totalLessons,
       totalAbsences,
@@ -220,32 +339,29 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
     };
   };
 
-  const calculateSubjectStats = (statuses: ('п' | 'у' | 'б' | 'н')[]) => {
+  const calculateSubjectStats = (statuses: ('п' | 'у' | 'н' | null)[]) => {
     const present = statuses.filter(status => status === 'п').length;
     const excused = statuses.filter(status => status === 'у').length;
-    const sick = statuses.filter(status => status === 'б').length;
     const absent = statuses.filter(status => status === 'н').length;
     
-    return { present, excused, sick, absent };
+    return { present, excused, absent };
   };
 
-  const getStatusColor = (status: 'п' | 'у' | 'б' | 'н') => {
+  const getStatusColor = (status: 'п' | 'у' | 'н' | null) => {
     switch (status) {
       case 'п': return '#2cbb00';
       case 'у': return '#f59e0b';
-      case 'б': return '#6b7280';
       case 'н': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#d1d5db';
     }
   };
 
-  const getStatusText = (status: 'п' | 'у' | 'б' | 'н') => {
+  const getStatusText = (status: 'п' | 'у'| 'н' | null) => {
     switch (status) {
       case 'п': return 'Присутствовал';
       case 'у': return 'Уважительная причина';
-      case 'б': return 'Больничный';
       case 'н': return 'Отсутствовал';
-      default: return '';
+      default: return 'Не отмечен';
     }
   };
 
@@ -263,7 +379,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   const attendanceChartData = [
     { subject: 'Присутствовал', count: statistics.totalPresent, color: '#2cbb00' },
     { subject: 'Уважительные', count: statistics.totalExcused, color: '#f59e0b' },
-    { subject: 'Больничные', count: statistics.totalSick, color: '#6b7280' },
     { subject: 'Неуважительные', count: statistics.totalAbsent, color: '#ef4444' }
   ];
 
@@ -275,6 +390,11 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
     { week: 'Нед. 5', attendance: 90 },
     { week: 'Нед. 6', attendance: 87 }
   ];
+  
+  const handleSubjectClick = (subjectName: string) => {
+    setSelectedSubject(subjectName);
+      setActiveTab('subjects');
+  };
 
   // Компоненты
   const RefreshButton = () => (
@@ -293,44 +413,48 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
   const SemesterSelector = () => (
     <div className="at-semester-selector">
       <div className="at-semester-buttons">
-        <button
-          className={`at-semester-btn ${selectedSemester === 'first' ? 'at-active' : ''}`}
-          onClick={() => setSelectedSemester('first')}
-        >
-          1 семестр
-        </button>
-        <button
-          className={`at-semester-btn ${selectedSemester === 'second' ? 'at-active' : ''}`}
-          onClick={() => setSelectedSemester('second')}
-        >
-          2 семестр
-        </button>
+        {semesters.map((semester) => (
+          <button
+            key={semester.number}
+            className={`at-semester-btn ${selectedSemester === semester.value ? 'at-active' : ''}`}
+            onClick={() => setSelectedSemester(semester.value)}
+          >
+            {semester.name}
+          </button>
+        ))}
       </div>
     </div>
   );
 
   const ViewToggle = () => (
-    <div className="at-view-toggle">
-      <button
-        className={`at-toggle-btn ${viewMode === 'grid' ? 'at-active' : ''}`}
-        onClick={() => setViewMode('grid')}
-      >
-        Сетка
-      </button>
-      <button
-        className={`at-toggle-btn ${viewMode === 'list' ? 'at-active' : ''}`}
-        onClick={() => setViewMode('list')}
-      >
-        Список
-      </button>
-    </div>
+    activeTab === 'semesters' ? (
+      <div className="at-view-toggle">
+        <button
+          className={`at-toggle-btn ${viewMode === 'grid' ? 'at-active' : ''}`}
+          onClick={() => setViewMode('grid')}
+        >
+          Сетка
+        </button>
+        <button
+          className={`at-toggle-btn ${viewMode === 'list' ? 'at-active' : ''}`}
+          onClick={() => setViewMode('list')}
+        >
+          Список
+        </button>
+      </div>
+    ) : null
   );
 
   // Рендер карточек предметов
   const renderSubjectCards = () => (
     <div className="at-subjects-grid">
       {attendanceData.map((subject) => (
-        <div key={subject.id} className="at-subject-card">
+        <div 
+          key={subject.id} 
+          className="at-subject-card"
+          onClick={() => handleSubjectClick(subject.subject)}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="at-card-header">
             <h3 className="at-subject-title">{subject.subject}</h3>
             <div className="at-teacher-badge">
@@ -339,28 +463,35 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           </div>
           
           <div className="at-attendance-preview">
-            {subject.statuses.slice(0, 8).map((status, index) => (
-              <div
-                key={index}
-                className="at-preview-status"
-                style={{ backgroundColor: getStatusColor(status) }}
-                onClick={() => handleAttendanceClick(
-                  subject.subject,
-                  status,
-                  index + 1,
-                  subject.reasonStatus?.[index]?.topic || `Занятие ${index + 1}`,
-                  subject.teacher,
-                  subject.reasonStatus?.[index]?.reason,
-                  subject.reasonStatus?.[index]?.startDate,
-                  subject.reasonStatus?.[index]?.endDate
-                )}
-                title={getStatusText(status)}
-              >
-                {status}
-              </div>
-            ))}
+            {subject.statuses.slice(0, 8).map((status, index) => {
+              const detail = subject.reasonStatus?.[index];
+              return (
+                <div
+                  key={index}
+                  className="at-preview-status"
+                  style={{ backgroundColor: getStatusColor(status) }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAttendanceClick(
+                      subject.subject,
+                      status,
+                      detail?.idLesson || 0,
+                      detail?.date || '',
+                      subject.teacher,
+                      detail?.comment
+                    );
+                  }}
+                  title={getStatusText(status)}
+                >
+                  {status || '-'}
+                </div>
+              );
+            })}
             {subject.statuses.length > 8 && (
               <div className="at-more-statuses">+{subject.statuses.length - 8}</div>
+            )}
+            {(!subject.statuses) && (
+              <div className="at-no-statuses">Нет данных о посещаемости</div>
             )}
           </div>
 
@@ -374,9 +505,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
                 {subject.percent}%
               </span>
             </div>
-            <div className="at-lessons-count">
-              {subject.statuses.length} занятий
-            </div>
           </div>
         </div>
       ))}
@@ -385,14 +513,14 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Рендер таблицы предметов
   const renderSubjectsTable = () => {
-    const calculateAbsencesStats = (statuses: ('п' | 'у' | 'б' | 'н')[]) => {
-      const stats = calculateSubjectStats(statuses);
+    const calculateAbsencesStats = (statuses: ('п' | 'у' | 'н' | null)[]) => {
+      const validStatuses = statuses.filter(status => status !== null) as ('п' | 'у' | 'н')[];
+      const stats = calculateSubjectStats(validStatuses);
       return {
         present: stats.present,
         excused: stats.excused,
-        sick: stats.sick,
         absent: stats.absent,
-        totalAbsences: stats.excused + stats.sick + stats.absent
+        totalAbsences: stats.excused + stats.absent
       };
     };
 
@@ -411,7 +539,12 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
             {attendanceData.map((subject) => {
               const stats = calculateAbsencesStats(subject.statuses);
               return (
-                <tr key={subject.id}>
+                <tr 
+                  key={subject.id}
+                  className="at-subject-row"
+                  onClick={() => handleSubjectClick(subject.subject)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td className="at-subject-cell">
                     <div className="at-subject-info">
                       <span className="at-subject-name">{subject.subject}</span>
@@ -419,26 +552,30 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
                   </td>
                   <td className="at-attendance-cell">
                     <div className="at-attendance-stack">
-                      {subject.statuses.slice(0, 16).map((status, index) => (
-                        <span
-                          key={index}
-                          className="at-stack-status"
-                          style={{ backgroundColor: getStatusColor(status) }}
-                          onClick={() => handleAttendanceClick(
-                            subject.subject,
-                            status,
-                            index + 1,
-                            subject.reasonStatus?.[index]?.topic || `Занятие ${index + 1}`,
-                            subject.teacher,
-                            subject.reasonStatus?.[index]?.reason,
-                            subject.reasonStatus?.[index]?.startDate,
-                            subject.reasonStatus?.[index]?.endDate
-                          )}
-                          title={`${getStatusText(status)} - Занятие ${index + 1}`}
-                        >
-                          {status}
-                        </span>
-                      ))}
+                      {subject.statuses.slice(0, 16).map((status, index) => {
+                        const detail = subject.reasonStatus?.[index];
+                        return (
+                          <span
+                            key={index}
+                            className="at-stack-status"
+                            style={{ backgroundColor: getStatusColor(status) }}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Останавливаем всплытие
+                              handleAttendanceClick(
+                                subject.subject,
+                                status,
+                                detail?.idLesson || 0,
+                                detail?.date || '',
+                                subject.teacher,
+                                detail?.comment
+                              );
+                            }}
+                            title={`${getStatusText(status)} - Занятие ${index + 1}`}
+                          >
+                            {status || '-'}
+                          </span>
+                        );
+                      })}
                     </div>
                   </td>
                   <td className="at-absences-cell">
@@ -446,10 +583,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
                       <div className="at-absence-type">
                         <span className="at-absence-dot at-excused"></span>
                         <span className="at-absence-count">У: {stats.excused}</span>
-                      </div>
-                      <div className="at-absence-type">
-                        <span className="at-absence-dot at-sick"></span>
-                        <span className="at-absence-count">Б: {stats.sick}</span>
                       </div>
                       <div className="at-absence-type">
                         <span className="at-absence-dot at-absent"></span>
@@ -480,71 +613,396 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
     );
   };
 
-  // Рендер аналитики
-  const renderAnalytics = () => (
-    <div className="at-analytics-container">
-      <div className="at-stats-cards">
-        <div className="at-stat-card">
-          <div className="at-stat-content">
-            <div className="at-stat-value">{statistics.overallPercent}%</div>
-            <div className="at-stat-label">Общая посещаемость</div>
-          </div>
-        </div>
-
-        <div className="at-stat-card">
-          <div className="at-stat-content">
-            <div className="at-stat-value">{statistics.totalPresent}</div>
-            <div className="at-stat-label">Присутствовал</div>
-          </div>
-        </div>
-
-        <div className="at-stat-card">
-          <div className="at-stat-content">
-            <div className="at-stat-value">{statistics.totalAbsences}</div>
-            <div className="at-stat-label">Всего пропусков</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="at-charts-grid">
-        <div className="at-chart-card at-large">
-          <h3>Распределение посещаемости</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={attendanceChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="subject" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {attendanceChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="at-chart-card at-large">
-          <h3>Динамика посещаемости</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={progressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="week" />
-              <YAxis domain={[60, 100]} />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="attendance" 
-                stroke="#2cbb00" 
-                strokeWidth={3}
-                dot={{ fill: '#2cbb00', strokeWidth: 2, r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+  // Компонент фильтра периодов
+  const PeriodFilter = () => (
+    <div className="at-period-filter">
+      <div className="at-date-range">
+        <div className="at-date-inputs">
+          <input
+            type="date"
+            value={dateRange.start}
+            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+            className="at-date-input"
+            placeholder="Начальная дата"
+          />
+          <span className="at-date-separator">—</span>
+          <input
+            type="date"
+            value={dateRange.end}
+            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+            className="at-date-input"
+            placeholder="Конечная дата"
+          />
+          <button
+            className="at-apply-filter-btn"
+            onClick={() => {
+              // Применяем фильтр - пересчитываем данные
+              const progressResult = calculateAttendanceProgress();
+              if (!progressResult.hasEnoughData) {
+                setError(progressResult.message);
+              }
+            }}
+          >
+            Применить
+          </button>
+          <button
+            className="at-reset-filter-btn"
+            onClick={() => {
+              setDateRange({ start: '', end: '' });
+            }}
+          >
+            Сбросить
+          </button>
         </div>
       </div>
     </div>
   );
+
+  //  функция для расчета динамики посещаемости
+  const calculateAttendanceProgress = () => {
+    const allDates: string[] = [];
+    
+    attendanceData.forEach(subject => {
+      subject.reasonStatus?.forEach(detail => {
+        if (detail.date && detail.status !== null) {
+          allDates.push(detail.date);
+        }
+      });
+    });
+
+    if (allDates.length === 0) {
+      return { data: [], hasEnoughData: false, message: 'Нет данных о посещаемости' };
+    }
+
+    // Уникальные даты, отсортированные по возрастанию
+    const uniqueDates = Array.from(new Set(allDates)).sort((a, b) => 
+      new Date(a).getTime() - new Date(b).getTime()
+    );
+
+    // Фильтруем даты по выбранному диапазону
+    let filteredDates = uniqueDates;
+    
+    if (dateRange.start && dateRange.end) {
+      filteredDates = uniqueDates.filter(date => {
+        try {
+          const currentDate = new Date(date);
+          const startDate = new Date(dateRange.start);
+          const endDate = new Date(dateRange.end);
+          // Добавляем 1 день к конечной дате чтобы включить её в диапазон
+          endDate.setDate(endDate.getDate() + 1);
+          return currentDate >= startDate && currentDate < endDate;
+        } catch (error) {
+          console.error('Ошибка фильтрации дат:', error);
+          return true;
+        }
+      });
+    }
+
+    if (filteredDates.length === 0) {
+      return { 
+        data: [], 
+        hasEnoughData: false, 
+        message: 'Нет данных в выбранном диапазоне дат' 
+      };
+    }
+
+    let progressData: { period: string; attendance: number; date: string }[] = [];
+    
+    const totalDays = filteredDates.length;
+    
+    if (totalDays <= 10) {
+      // Меньше 10 дней - группируем по дням
+      progressData = groupByDays(filteredDates);
+    } else if (totalDays <= 30) {
+      // 11-30 дней - группируем по 3 дням
+      progressData = groupBy3Days(filteredDates);
+    } else if (totalDays <= 90) {
+      // 31-90 дней - группируем по неделям
+      progressData = groupByWeeks(filteredDates);
+    } else {
+      // Больше 90 дней - группируем по месяцам
+      progressData = groupByMonths(filteredDates);
+    }
+
+    if (progressData.length === 0) {
+      return { 
+        data: [], 
+        hasEnoughData: false, 
+        message: 'Не удалось сгруппировать данные для построения графика' 
+      };
+    }
+
+    return { 
+      data: progressData, 
+      hasEnoughData: true, 
+      message: `Данные за период: ${formatDate(filteredDates[0])} - ${formatDate(filteredDates[filteredDates.length - 1])} (${totalDays} ${getDateWord(totalDays)})` 
+    };
+  };
+
+  // Функция для получения номера недели в году
+  const getWeekNumber = (date: Date): number => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return weekNumber;
+  };
+
+  const groupByDays = (dates: string[]) => {
+    const progressData: { period: string; attendance: number; date: string }[] = [];
+    
+    dates.forEach((date, index) => {
+      const periodLabel = formatShortDate(date);
+      const attendancePercent = calculateAttendanceForPeriod([date]);
+      
+      progressData.push({
+        period: periodLabel,
+        attendance: attendancePercent,
+        date: date
+      });
+    });
+    
+    return progressData;
+  };
+
+  // Функции группировки
+  const groupBy3Days = (dates: string[]) => {
+    const progressData: { period: string; attendance: number; date: string }[] = [];
+    
+    for (let i = 0; i < dates.length; i += 3) {
+      const periodDates = dates.slice(i, i + 3);
+      if (periodDates.length === 0) continue;
+      
+      const startDate = formatShortDate(periodDates[0]);
+      const endDate = formatShortDate(periodDates[periodDates.length - 1]);
+      const periodLabel = periodDates.length === 1 ? startDate : `${startDate} - ${endDate}`;
+      
+      const attendancePercent = calculateAttendanceForPeriod(periodDates);
+      
+      progressData.push({
+        period: periodLabel,
+        attendance: attendancePercent,
+        date: periodDates[0]
+      });
+    }
+    
+    return progressData;
+  };
+
+  const groupByWeeks = (dates: string[]) => {
+    const progressData: { period: string; attendance: number; date: string }[] = [];
+    const weeks: { [key: string]: string[] } = {};
+    
+    // Группируем даты по неделям
+    dates.forEach(date => {
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      const weekNumber = getWeekNumber(dateObj);
+      const weekKey = `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+      
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = [];
+      }
+      weeks[weekKey].push(date);
+    });
+    
+    // Обрабатываем каждую неделю
+    Object.keys(weeks).forEach(weekKey => {
+      const weekDates = weeks[weekKey];
+      const weekNum = parseInt(weekKey.split('-W')[1]);
+      const year = weekKey.split('-')[0];
+      const periodLabel = `Нед. ${weekNum}, ${year}`;
+      
+      const attendancePercent = calculateAttendanceForPeriod(weekDates);
+      
+      progressData.push({
+        period: periodLabel,
+        attendance: attendancePercent,
+        date: weekDates[0]
+      });
+    });
+    
+    // Сортируем по дате
+    return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  const groupByMonths = (dates: string[]) => {
+    const progressData: { period: string; attendance: number; date: string }[] = [];
+    const months: { [key: string]: string[] } = {};
+    
+    // Группируем даты по месяцам
+    dates.forEach(date => {
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth();
+      const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      if (!months[monthKey]) {
+        months[monthKey] = [];
+      }
+      months[monthKey].push(date);
+    });
+    
+    // Обрабатываем каждый месяц
+    Object.keys(months).forEach(monthKey => {
+      const monthDates = months[monthKey];
+      const [year, month] = monthKey.split('-');
+      const monthName = new Date(parseInt(year), parseInt(month)).toLocaleDateString('ru-RU', { 
+        month: 'long'
+      });
+      const periodLabel = `${monthName} ${year}`;
+      
+      const attendancePercent = calculateAttendanceForPeriod(monthDates);
+      
+      progressData.push({
+        period: periodLabel,
+        attendance: attendancePercent,
+        date: monthDates[0]
+      });
+    });
+    
+    // Сортируем по дате
+    return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  // Общая функция расчета посещаемости для периода
+  const calculateAttendanceForPeriod = (dates: string[]): number => {
+    let totalLessons = 0;
+    let presentLessons = 0;
+    
+    dates.forEach(date => {
+      attendanceData.forEach(subject => {
+        subject.reasonStatus?.forEach(detail => {
+          if (detail.date === date && detail.status !== null) {
+            totalLessons++;
+            if (detail.status === 'п') {
+              presentLessons++;
+            }
+          }
+        });
+      });
+    });
+    
+    return totalLessons > 0 ? parseFloat(((presentLessons / totalLessons) * 100).toFixed(1)) : 0;
+  };
+
+  // Вспомогательная функция для правильного склонения слов
+  const getDateWord = (count: number) => {
+    if (count === 1) return 'занятие';
+    if (count >= 2 && count <= 4) return 'занятия';
+    return 'занятий';
+  };
+
+  const getPeriodWord = (count: number) => {
+    if (count === 1) return 'период';
+    if (count >= 2 && count <= 4) return 'периода';
+    return 'периодов';
+  };
+
+  const formatShortDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit'
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+  // Обновите рендер аналитики
+  const renderAnalytics = () => {
+    const progressResult = calculateAttendanceProgress();
+    
+    return (
+      <div className="at-analytics-container">
+        <div className="at-stats-cards">
+          <div className="at-stat-card">
+            <div className="at-stat-content">
+              <div className="at-stat-value">{statistics.overallPercent}%</div>
+              <div className="at-stat-label">Общая посещаемость</div>
+            </div>
+          </div>
+
+          <div className="at-stat-card">
+            <div className="at-stat-content">
+              <div className="at-stat-value">{statistics.totalPresent}</div>
+              <div className="at-stat-label">Присутствовал</div>
+            </div>
+          </div>
+
+          <div className="at-stat-card">
+            <div className="at-stat-content">
+              <div className="at-stat-value">{statistics.totalAbsences}</div>
+              <div className="at-stat-label">Всего пропусков</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="at-charts-grid">
+          <div className="at-chart-card at-large">
+            <h3>Распределение посещаемости</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={attendanceChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="subject" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} name='Количество'>
+                  {attendanceChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+
+
+          <div className="at-chart-card at-large">
+            <div className="at-chart-header">
+              <h3>Динамика посещаемости</h3>
+              <PeriodFilter />
+            </div>
+
+            {progressResult.hasEnoughData ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={progressResult.data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="period" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip 
+                    formatter={(value) => [`${value}%`, 'Посещаемость']}
+                    labelFormatter={(label) => `Период: ${label}`}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="attendance" 
+                    stroke="#2cbb00" 
+                    strokeWidth={3}
+                    dot={{ fill: '#2cbb00', strokeWidth: 2, r: 6 }}
+                    name="Посещаемость"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="at-insufficient-data">
+                <div className="at-data-warning-icon">⚠️</div>
+                <h4>Недостаточно данных</h4>
+                <p>{progressResult.message}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -635,32 +1093,32 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
                   </div>
 
                   <div className="at-attendance-timeline">
-                    {selectedSubjectData.reasonStatus?.map((detail) => (
-                      <div key={detail.id} className="at-timeline-item">
-                        <div className="at-timeline-content">
+                    {selectedSubjectData.reasonStatus?.map((detail, index) => (
+                      <div key={detail.idLesson} className="at-timeline-item">
+                        <div className="at-timeline-content"
+                        onClick={() => handleAttendanceClick(
+                                selectedSubjectData.subject,
+                                detail.status,
+                                detail.idLesson,
+                                detail.date,
+                                detail.teacher,
+                                detail.comment
+                              )}>
                           <div className="at-attendance-header">
-                            <span className="at-attendance-topic">{detail.topic}</span>
-                            <span className="at-attendance-date">{detail.date}</span>
+                            
                           </div>
                           <div className="at-attendance-details">
+                            
                             <span 
                               className="at-attendance-value"
                               style={{ 
                                 backgroundColor: getStatusColor(detail.status)
                               }}
-                              onClick={() => handleAttendanceClick(
-                                selectedSubjectData.subject,
-                                detail.status,
-                                detail.id,
-                                detail.topic,
-                                detail.teacher,
-                                detail.reason,
-                                detail.startDate,
-                                detail.endDate
-                              )}
+                              
                             >
-                              {detail.status}
+                              {detail.status || '-'}
                             </span>
+                            <span className="at-attendance-date">{formatDate(detail.date)}</span>
                           </div>
                         </div>
                       </div>
@@ -685,59 +1143,87 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
       {/* Попап с информацией о посещаемости */}
       {selectedAttendance && (
         <div className="at-popup-overlay" onClick={closeAttendancePopup}>
-          <div className="at-popup" onClick={(e) => e.stopPropagation()}>
+          <div className="at-popup at-popup-large" onClick={(e) => e.stopPropagation()}>
             <div className="at-popup-header">
               <h3>Информация о посещаемости</h3>
               <button className="at-popup-close" onClick={closeAttendancePopup}>
                 <span>×</span>
               </button>
             </div>
+            
             <div className="at-popup-content">
-              <div className="at-attendance-info-minimal">
-                <div 
-                  className="at-status-circle-minimal"
-                  style={{ 
-                    backgroundColor: getStatusColor(selectedAttendance.status),
-                    borderColor: getStatusColor(selectedAttendance.status)
-                  }}
-                >
-                  <span className="at-status-symbol-minimal">
-                    {selectedAttendance.status}
-                  </span>
-                </div>
-                <div className="at-attendance-details-minimal">
-                  <div className="at-detail-item">
-                    <span className="at-detail-label">Предмет</span>
-                    <span className="at-detail-value">{selectedAttendance.subject}</span>
+              <div className="at-attendance-info-detailed">
+                <div className="at-attendance-main-info">
+                  <div 
+                    className="at-status-circle-large"
+                    style={{ 
+                      backgroundColor: getStatusColor(selectedAttendance.status),
+                      borderColor: getStatusColor(selectedAttendance.status)
+                    }}
+                  >
+                    <span className="at-status-symbol-large">
+                      {selectedAttendance.status || '-'}
+                    </span>
                   </div>
-                  <div className="at-detail-item">
-                    <span className="at-detail-label">Тема занятия</span>
-                    <span className="at-detail-value">{selectedAttendance.topic}</span>
-                  </div>
-                  <div className="at-detail-item">
-                    <span className="at-detail-label">Дата</span>
-                    <span className="at-detail-value">{selectedSubjectData?.reasonStatus?.[selectedAttendance.number - 1]?.date || 'Не указана'}</span>
-                  </div>
-                  <div className="at-detail-item">
-                    <span className="at-detail-label">Статус</span>
-                    <span className="at-detail-value at-status-text">{getStatusText(selectedAttendance.status)}</span>
-                  </div>
-                  <div className="at-detail-item">
-                    <span className="at-detail-label">Преподаватель</span>
-                    <span className="at-detail-value at-teacher">{selectedAttendance.teacher}</span>
-                  </div>
-                  {selectedAttendance.reason && (
+                  <div className="at-attendance-basic-details">
                     <div className="at-detail-item">
-                      <span className="at-detail-label">Причина</span>
-                      <span className="at-detail-value">{selectedAttendance.reason}</span>
+                      <span className="at-detail-label">Предмет</span>
+                      <span className="at-detail-value">{selectedAttendance.subject}</span>
                     </div>
-                  )}
-                  {selectedAttendance.startDate && selectedAttendance.endDate && (
                     <div className="at-detail-item">
-                      <span className="at-detail-label">Период больничного</span>
-                      <span className="at-detail-value">с {selectedAttendance.startDate} по {selectedAttendance.endDate}</span>
+                      <span className="at-detail-label">Дата занятия</span>
+                      <span className="at-detail-value">
+                        {selectedAttendance.date ? formatDate(selectedAttendance.date) : 'Не указана'}
+                      </span>
                     </div>
-                  )}
+                    <div className="at-detail-item">
+                      <span className="at-detail-label">Статус</span>
+                      <span className="at-detail-value at-status-text">
+                        {getStatusText(selectedAttendance.status)}
+                      </span>
+                    </div>
+                    <div className="at-detail-item">
+                      <span className="at-detail-label">Преподаватель</span>
+                      <span className="at-detail-value at-teacher">{selectedAttendance.teacher}</span>
+                    </div>
+                    
+                    {/* Причина пропуска для статуса "у" */}
+                    {selectedAttendance.status === 'у' && (
+                      <div className="at-detail-item at-reason-item">
+                        <span className="at-detail-label">Причина пропуска</span>
+                        <div className="at-reason-content">
+                          {lessonAttendanceLoading ? (
+                            <div className="at-loading-small">
+                              <div className="at-loading-spinner"></div>
+                              <p>Загрузка информации...</p>
+                            </div>
+                          ) : lessonAttendance?.comment ? (
+                            <span className="at-detail-value at-reason-text">
+                              {lessonAttendance.comment}
+                            </span>
+                          ) : selectedAttendance.comment ? (
+                            <span className="at-detail-value at-reason-text">
+                              {selectedAttendance.comment}
+                            </span>
+                          ) : (
+                            <span className="at-detail-value at-no-reason">
+                              Причина не указана
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Информация для неотмеченных статусов */}
+                    {selectedAttendance.status === null && (
+                      <div className="at-detail-item at-no-status-info">
+                        <span className="at-detail-label">Информация</span>
+                        <span className="at-detail-value at-no-status-text">
+                          Статус посещения ещё не выставлен преподавателем
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

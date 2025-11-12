@@ -382,9 +382,7 @@ export const DocumentsSection: React.FC = () => {
       const subjectIdsSet = new Set<number>();
       
       studentMarks.forEach(mark => {
-        // Используем новую структуру nameSubjectTeachersDTO
         if (mark.nameSubjectTeachersDTO && mark.nameSubjectTeachersDTO.teachers) {
-          // Берем первого преподавателя из массива teachers
           const mainTeacher = mark.nameSubjectTeachersDTO.teachers[0];
           if (mainTeacher && mainTeacher.idTeacher) {
             teacherIdsSet.add(mainTeacher.idTeacher);
