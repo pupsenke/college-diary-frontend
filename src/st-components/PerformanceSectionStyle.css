@@ -68,7 +68,10 @@
   box-shadow: 0 8px 25px rgba(0, 47, 167, 0.3);
 }
 
-
+.pf-nav-btn:nth-child(2).pf-active ~ .pf-view-toggle,
+.pf-nav-btn:nth-child(3).pf-active ~ .pf-view-toggle {
+  display: none;
+}
 /* Кнопка обновления */
 .pf-refresh-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -744,6 +747,7 @@
   z-index: 1000;
   padding: 20px;
   animation: pf-fadeIn 0.3s ease;
+  backdrop-filter: blur(5px);
 }
 
 .pf-popup-large {
@@ -1112,8 +1116,7 @@
   background: rgba(0, 47, 167, 0.05);
   padding: 8px 16px;
   border-radius: 20px;
-  display: flex;
-  align-items: center;
+  text-align: center;
   gap: 8px;
 }
 
@@ -1136,7 +1139,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .pf-comment-content {
@@ -1234,6 +1237,8 @@
   font-size: 0.95rem;
   color: #374151;
   font-weight: 600;
+  word-break: break-all;
+  padding-right: 12px;
 }
 
 .pf-comment-file-actions {
@@ -1500,7 +1505,7 @@
   padding: 16px 32px;
   background: #f7fafc;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 16px;
   color: #718096;
   cursor: pointer;
   font-weight: 500;
@@ -1606,6 +1611,132 @@
   color: #718096;
 }
 
+.pf-edit-comment-form {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.pf-edit-comment-form h4 {
+  margin: 0 0 10px 0;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+/* Стили для меню комментария */
+.pf-comment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.pf-comment-date {
+  color: #002FA7;
+  font-size: 0.875rem;
+}
+
+.pf-comment-menu {
+  position: relative;
+}
+
+.pf-comment-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.pf-comment-menu-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.pf-comment-menu-dots {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #6b7280;
+  line-height: 1;
+  align-items: center;
+}
+
+.pf-comment-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  min-width: 120px;
+}
+
+.pf-comment-dropdown-item {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.pf-comment-dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.pf-comment-dropdown-item:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.pf-comment-dropdown-item:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.pf-delete-item {
+  color: #dc2626;
+}
+
+.pf-delete-item:hover {
+  background-color: #fef2f2;
+}
+
+.pf-delete-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Закрытие меню при клике вне его */
+.pf-comment-menu::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: none;
+}
+
+.pf-comment-dropdown {
+  z-index: 20;
+}
+
+.pf-comment-menu-btn:focus + .pf-comment-dropdown,
+.pf-comment-dropdown:focus-within {
+  display: block;
+}
+
 /* Анимации */
 @keyframes pf-spin {
   0% { transform: rotate(0deg); }
@@ -1656,17 +1787,9 @@
   margin-top: 15px;
 }
 
-.pf-cancel-comment-btn {
-  padding: 8px 16px;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .pf-cancel-comment-btn:hover {
   background-color: #dc2626;
+  color: #ffe1e1;
 }
 
 .pf-submit-comment-btn:disabled {
@@ -1822,7 +1945,10 @@
   padding: 6px 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 14px;
+  font-size: 12px;
+  margin-top: 12px;
+  font-weight: 500;
+  color: #002FA7;
 }
 
 .pf-edit-comment-btn:hover {

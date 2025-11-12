@@ -66,9 +66,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
       }
       setError(null);
       setIsUsingCache(false);
-
-      // Сначала пытаемся загрузить с API
-      console.log('Загрузка данных посещаемости с API...');
       // Временные данные вместо API
       const data: Attendance[] = [
         {
@@ -80,8 +77,8 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
           percent: 80,
           reasonStatus: [
             { id: 1, date: '13.09.2024', topic: 'Введение', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 2, date: '20.09.2024', topic: 'Синтаксис', status: 'п', teacher: 'Иванова А.С.' },
-            { id: 3, date: '27.09.2024', topic: 'Морфология', status: 'у', teacher: 'Иванова А.С.', reason: 'Семейные обстоятельства' },
+            { id: 2, date: '20.09.2024', topic: 'Основы разработки', status: 'п', teacher: 'Иванова А.С.' },
+            { id: 3, date: '27.09.2024', topic: 'История программирования', status: 'у', teacher: 'Иванова А.С.', reason: 'Семейные обстоятельства' },
             { id: 4, date: '04.10.2024', topic: 'Фонетика', status: 'п', teacher: 'Иванова А.С.' },
             { id: 5, date: '11.10.2024', topic: 'Орфография', status: 'п', teacher: 'Иванова А.С.' },
             { id: 6, date: '18.10.2024', topic: 'Пунктуация', status: 'н', teacher: 'Иванова А.С.' },
@@ -141,7 +138,6 @@ export const AttendanceSection: React.FC<PerformanceSectionProps> = ({
       
       // Если ошибка сети, пробуем загрузить из кэша
       try {
-        console.log('Попытка загрузки из кэша...');
         const cacheKey = `attendance_${studentId}`;
         const cached = localStorage.getItem(`cache_${cacheKey}`);
         

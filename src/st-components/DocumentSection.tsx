@@ -83,6 +83,16 @@ export const DocumentsSection: React.FC = () => {
     fullNameGenitive: ''
   });
 
+  const [debouncedDocumentType, setDebouncedDocumentType] = useState(selectedDocumentType);
+
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedDocumentType(selectedDocumentType);
+  }, 300);
+  
+  return () => clearTimeout(timer);
+}, [selectedDocumentType]);
+
   // Типы документов
   const documentTypes = [
     'Все документы',
@@ -110,17 +120,15 @@ export const DocumentsSection: React.FC = () => {
     if (!user || !isStudent) return;
 
     try {
-      console.log('Saving student data:', updateData);
       await apiService.updateStudentData(user.id, updateData);
       
-      // Приводим user к типу Student, так как мы уже проверили isStudent
       const studentUser = user as Student;
       
       // Обновляем данные в контексте и localStorage
       const updatedUser: Student = {
         ...studentUser,
         ...updateData,
-        numberGroup: studentUser.numberGroup // Гарантируем, что numberGroup всегда есть
+        numberGroup: studentUser.numberGroup
       };
       
       setUser(updatedUser);
@@ -139,40 +147,31 @@ export const DocumentsSection: React.FC = () => {
         fullNameGenitive: savedFullNameGenitive
       } : null);
       
-      console.log('Student data saved successfully');
     } catch (error) {
-      console.error('Error saving student data:', error);
+      console.error('Не удалось сохранить данные в профиле:', error);
       throw new Error('Не удалось сохранить данные в профиле');
     }
   };
 
   // Функция загрузки данных пользователя с сохраненными значениями
-  const loadUserData = async () => {
-    if (!user || !isStudent) {
-      console.log('No user or not student, skipping user data load');
+  const loadUserData = useCallback(async () => {
+    if (!user || !isStudent) { 
       return;
     }
 
-    // Приводим user к типу Student, так как мы уже проверили isStudent
     const student = user as Student;
 
     try {
-      console.log('Loading user data for student:', student.id);
       
-      // Загружаем актуальные данные студента с сервера
       const studentData = await apiService.getStudentData(student.id);
-      console.log('Student data from server:', studentData);
       
       const userPhone = studentData.telephone || '';
       
-      // Ключевое исправление: ВСЕГДА используем данные из БД для ФИО в родительном падеже
       const savedFullNameGenitive = buildGenitiveName(
         studentData.lastNameGenitive,
         studentData.nameGenitive, 
         studentData.patronymicGenitive
       );
-      
-      console.log('Built genitive name from DB:', savedFullNameGenitive);
       
       const fullName = `${studentData.lastName} ${studentData.name} ${studentData.patronymic}`;
       
@@ -183,15 +182,13 @@ export const DocumentsSection: React.FC = () => {
         const groupData = await apiService.getGroupData(studentData.idGroup);
         groupNumber = groupData.numberGroup?.toString() || 'Неизвестно';
         course = groupData.course?.toString() || 'Неизвестно';
-        console.log('Group data loaded:', { groupNumber, course });
       } catch (groupError) {
         console.error('Ошибка загрузки данных группы:', groupError);
-        // Используем numberGroup из studentData
         groupNumber = studentData.numberGroup?.toString() || 'Неизвестно';
         course = 'Неизвестно';
       }
 
-      const userData: UserData = {
+      const newUserData: UserData = {
         fullName: fullName,
         fullNameGenitive: savedFullNameGenitive,
         group: groupNumber,
@@ -200,37 +197,20 @@ export const DocumentsSection: React.FC = () => {
         departmentHead: 'Голубева Галина Анатольевна'
       };
 
-      setUserData(userData);
+      setUserData(newUserData);
       
-      // ВСЕГДА заполняем форму данными из БД - как для телефона, так и для ФИО в родительном падеже
       setFormData(prev => ({
         ...prev,
         phone: userPhone,
-        fullNameGenitive: savedFullNameGenitive // Это ключевое изменение!
+        fullNameGenitive: savedFullNameGenitive
       }));
-
-      console.log('User data loaded successfully with genitive name from DB:', userData);
-
-      // Обновляем контекст пользователя актуальными данными из БД
-      const updatedUser: Student = {
-        ...student,
-        telephone: studentData.telephone,
-        lastNameGenitive: studentData.lastNameGenitive,
-        nameGenitive: studentData.nameGenitive,
-        patronymicGenitive: studentData.patronymicGenitive
-      };
-      
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
 
     } catch (error) {
       console.error('Ошибка загрузки данных пользователя:', error);
       
-      // Fallback на данные из контекста
       const student = user as Student;
       const userPhone = student.telephone || '';
       
-      // Используем данные из контекста как запасной вариант
       const savedFullNameGenitive = buildGenitiveName(
         student.lastNameGenitive,
         student.nameGenitive,
@@ -256,7 +236,7 @@ export const DocumentsSection: React.FC = () => {
         fullNameGenitive: savedFullNameGenitive
       }));
     }
-  };
+  }, [user, isStudent]); 
 
   // Функция для разделения ФИО в родительном падеже на отдельные компоненты
   const parseGenitiveName = (fullNameGenitive: string) => {
@@ -280,9 +260,11 @@ export const DocumentsSection: React.FC = () => {
       .trim();
   };
 
-  // Упрощенная функция загрузки документов с кэшированием как в успеваемости
+  // Упрощенная функция загрузки документов с кэшированием
   const loadDocuments = useCallback(async (forceRefresh = false) => {
-    if (!user || !isStudent) return;
+    if (!user || !isStudent || documentsLoading) {
+      return;
+    }
     
     const student = user as Student;
     setDocumentsLoading(true);
@@ -301,15 +283,12 @@ export const DocumentsSection: React.FC = () => {
           if (Date.now() - cachedData.timestamp < 10 * 60 * 1000) {
             setDocuments(cachedData.data ?? []);
             setIsUsingCache(true);
-            console.log('Документы загружены из кэша');
             setDocumentsLoading(false);
             return;
           }
         }
       }
 
-      // Загрузка с API
-      console.log('Загрузка документов с API...');
       let docs: Document[] = [];
 
       if (selectedDocumentType === 'Все документы') {
@@ -319,7 +298,6 @@ export const DocumentsSection: React.FC = () => {
       }
 
       setDocuments(docs);
-      console.log(`Loaded ${docs.length} documents for type: ${selectedDocumentType}`);
 
       // Сохранение в кеш
       const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
@@ -330,7 +308,7 @@ export const DocumentsSection: React.FC = () => {
       localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData));
 
     } catch (err) {
-      console.error('Error loading documents:', err);
+      console.error('Ошибка загрузки документов:', err);
       
       // Если ошибка API, пробуем загрузить из кэша как fallback
       try {
@@ -341,8 +319,7 @@ export const DocumentsSection: React.FC = () => {
           const cachedData = JSON.parse(cached);
           setDocuments(cachedData.data ?? []);
           setIsUsingCache(true);
-          setError('Используются кэшированные данные. Нет соединения с сервером.');
-          console.log('Документы загружены из кэша (fallback)');
+          setError('Используются кэшированные данные. Нет соединения с сервером.')
         } else {
           setError('Не удалось загрузить документы. Проверьте подключение к интернету.');
           setDocuments([]);
@@ -354,113 +331,118 @@ export const DocumentsSection: React.FC = () => {
     } finally {
       setDocumentsLoading(false);
     }
-  }, [user, isStudent, selectedDocumentType]);
+  }, [user, isStudent, selectedDocumentType, documentsLoading]);
 
   // Функция принудительного обновления
   const refreshDocuments = useCallback(async () => {
+    if (isRefreshing || !user || !isStudent) return;
+    
     setIsRefreshing(true);
     setError(null);
     
     try {
-      if (user && isStudent) {
-        const student = user as Student;
-        const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
-        localStorage.removeItem(`cache_${cacheKey}`);
-      }
+      const student = user as Student;
+      const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
+      localStorage.removeItem(`cache_${cacheKey}`);
       
       await loadDocuments(true);
     } catch (error) {
-      console.error('Error refreshing documents:', error);
+      console.error('Ошибка обновления документов:', error);
       setError('Не удалось обновить документы');
     } finally {
       setIsRefreshing(false);
     }
-  }, [user, isStudent, selectedDocumentType, loadDocuments]);
+  }, [user, isStudent, selectedDocumentType, loadDocuments, isRefreshing]);
 
-  // Загрузка данных пользователя 
+  // Загрузка данных пользователя при монтировании
   useEffect(() => {
-    loadUserData();
-  }, [user, isStudent]);
+    if (user && isStudent) {
+      loadUserData();
+    }
+  }, [user, isStudent, loadUserData]);
 
-  // Загрузка документов при изменении типа или пользователя
+  // Загрузка документов при изменении пользователя или типа документа
   useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+    if (user && isStudent && userData) {
+      loadDocuments();
+    }
+  }, [user, isStudent, userData, selectedDocumentType, loadDocuments]); 
 
   // Загрузка данных о предметах и преподавателях
   useEffect(() => {
     const loadTeacherSubjects = async () => {
-      if (!user || !isStudent) return;
+    if (!user || !isStudent) return;
+    
+    try {
+      const student = user as Student;
       
-      try {
-        const student = user as Student;
-        console.log('Loading teacher subjects for student:', student.id);
-        
-        const studentMarks = await apiService.getStudentMarks(student.id);
-        console.log('Student marks:', studentMarks);
-        
-        const teacherIdsSet = new Set<number>();
-        const subjectIdsSet = new Set<number>();
-        
-        studentMarks.forEach(mark => {
-          if (mark.stNameSubjectDTO.idTeacher) {
-            teacherIdsSet.add(mark.stNameSubjectDTO.idTeacher);
-          }
-          if (mark.stNameSubjectDTO.idSubject) {
-            subjectIdsSet.add(mark.stNameSubjectDTO.idSubject);
-          }
-        });
-        
-        const teacherIds = Array.from(teacherIdsSet);
-        const subjectIds = Array.from(subjectIdsSet);
-        
-        console.log('Found teacher IDs:', teacherIds);
-        console.log('Found subject IDs:', subjectIds);
-        
-        const subjectsData: Subject[] = [];
-        for (const subjectId of subjectIds) {
-          try {
-            const subject = await apiService.getSubjectById(subjectId);
-            subjectsData.push({
-              id: subjectId,
-              subjectName: subject.subjectName 
-            });
-          } catch (error) {
-            console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
+      const studentMarks = await apiService.getStudentMarks(student.id);
+      
+      const teacherIdsSet = new Set<number>();
+      const subjectIdsSet = new Set<number>();
+      
+      studentMarks.forEach(mark => {
+        // Используем новую структуру nameSubjectTeachersDTO
+        if (mark.nameSubjectTeachersDTO && mark.nameSubjectTeachersDTO.teachers) {
+          // Берем первого преподавателя из массива teachers
+          const mainTeacher = mark.nameSubjectTeachersDTO.teachers[0];
+          if (mainTeacher && mainTeacher.idTeacher) {
+            teacherIdsSet.add(mainTeacher.idTeacher);
           }
         }
-        setSubjects(subjectsData);
-        console.log('Subjects loaded:', subjectsData);
-        
-        const teachersData: Teacher[] = [];
-        for (const teacherId of teacherIds) {
-          try {
-            const teacher = await apiService.getTeacherData(teacherId);
-            teachersData.push({
-              id: teacherId,
-              name: teacher.name,
-              lastName: teacher.lastName,
-              patronymic: teacher.patronymic
-            });
-          } catch (error) {
-            console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
-          }
+        if (mark.nameSubjectTeachersDTO?.idSubject) {
+          subjectIdsSet.add(mark.nameSubjectTeachersDTO.idSubject);
         }
-        setTeachers(teachersData);
-        console.log('Teachers loaded:', teachersData);
-        
-        const teacherSubjectsData = studentMarks.map(mark => ({
-          idTeacher: mark.stNameSubjectDTO.idTeacher,
-          idSubject: mark.stNameSubjectDTO.idSubject,
-          subjectName: mark.stNameSubjectDTO.nameSubject
-        }));
-        setTeacherSubjects(teacherSubjectsData);
-        console.log('Teacher subjects loaded:', teacherSubjectsData);
-        
-      } catch (error) {
-        console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
+      });
+      
+      const teacherIds = Array.from(teacherIdsSet);
+      const subjectIds = Array.from(subjectIdsSet);
+      
+      const subjectsData: Subject[] = [];
+      for (const subjectId of subjectIds) {
+        try {
+          const subject = await apiService.getSubjectById(subjectId);
+          subjectsData.push({
+            id: subjectId,
+            subjectName: subject.subjectName 
+          });
+        } catch (error) {
+          console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
+        }
       }
-    };
+      setSubjects(subjectsData);
+      
+      const teachersData: Teacher[] = [];
+      for (const teacherId of teacherIds) {
+        try {
+          const teacher = await apiService.getTeacherData(teacherId);
+          teachersData.push({
+            id: teacherId,
+            name: teacher.name,
+            lastName: teacher.lastName,
+            patronymic: teacher.patronymic
+          });
+        } catch (error) {
+          console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
+        }
+      }
+      setTeachers(teachersData);
+      
+      const teacherSubjectsData = studentMarks.map(mark => {
+        const mainTeacher = mark.nameSubjectTeachersDTO?.teachers?.[0];
+        return {
+          idTeacher: mainTeacher?.idTeacher,
+          idSubject: mark.nameSubjectTeachersDTO?.idSubject,
+          subjectName: mark.nameSubjectTeachersDTO?.nameSubject
+        };
+      }).filter(ts => ts.idTeacher && ts.idSubject); // Фильтруем валидные записи
+      
+      setTeacherSubjects(teacherSubjectsData);
+      
+    } catch (error) {
+      console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
+    }
+  };
 
     loadTeacherSubjects();
   }, [user, isStudent]);
@@ -510,7 +492,6 @@ export const DocumentsSection: React.FC = () => {
 
   // Функции для работы с модальным окном
   const openModal = () => {
-    // ВСЕГДА заполняем форму актуальными данными при открытии модального окна
     if (userData) {
       setFormData(prev => ({
         ...prev,
@@ -621,15 +602,11 @@ export const DocumentsSection: React.FC = () => {
       });
 
       await apiService.uploadDocument(file, student.id, selectedDocumentType);
-      console.log('Document uploaded, cache will be invalidated');
 
       const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
       localStorage.removeItem(`cache_${cacheKey}`);
       
-      // Перезагружаем документы
-      setTimeout(() => {
-        loadDocuments(true);
-      }, 1000);
+      await loadDocuments(true);
 
     } catch (error) {
       console.error('Ошибка загрузки документа на сервер:', error);
@@ -656,7 +633,6 @@ export const DocumentsSection: React.FC = () => {
         paragraphLoop: true,
         linebreaks: true,
       });
-
       doc.render(data);
 
       const blob = doc.getZip().generate({ 
@@ -715,13 +691,10 @@ export const DocumentsSection: React.FC = () => {
 
       // Сохранение данных в БД, если есть изменения
       if (hasChanges) {
-        console.log('Saving student data before creating document:', updateData);
-        await saveStudentData(updateData);
-        console.log('Student data saved successfully before document creation');
+        await saveStudentData(updateData)
       }
 
     } catch (error) {
-      console.error('Error saving student data before document creation:', error);
       setError('Не удалось сохранить данные в профиле. Документ не будет создан.');
       return;
     }
@@ -872,7 +845,6 @@ export const DocumentsSection: React.FC = () => {
       
       await apiService.downloadDocument(documentId);
       
-      console.log('Документ успешно скачан');
       
     } catch (error) {
       console.error('Ошибка скачивания документа:', error);
@@ -887,7 +859,6 @@ export const DocumentsSection: React.FC = () => {
     if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
       try {
         await apiService.deleteDocument(id);
-        console.log('Document deleted, cache invalidated');
         
         // Инвалидируем кэш после удаления
         if (user && isStudent) {
@@ -1204,7 +1175,7 @@ export const DocumentsSection: React.FC = () => {
         <div className="ds-content">
           <div className="ds-loading">
             <div className="ds-loading-spinner"></div>
-            <p>Загрузка документов...</p>
+            <p>Загрузка данных пользователя...</p> 
           </div>
         </div>
       </div>
@@ -1222,7 +1193,6 @@ export const DocumentsSection: React.FC = () => {
                 id="document-type"
                 value={selectedDocumentType}
                 onChange={(e) => {
-                  console.log('Document type changed to:', e.target.value);
                   setSelectedDocumentType(e.target.value);
                 }}
                 className="ds-select"
@@ -1270,7 +1240,6 @@ export const DocumentsSection: React.FC = () => {
                 <th>№</th>
                 <th>Название документа</th>
                 <th>Тип</th>
-                <th>Дата создания</th>
                 <th>Действия</th>
               </tr>
             </thead>
@@ -1281,7 +1250,6 @@ export const DocumentsSection: React.FC = () => {
                   <td>{index + 1}.</td>
                   <td>{document.nameFile}</td>
                   <td>{document.type || 'Не указан'}</td>
-                  <td>{document.creationDate || 'Не указана'}</td>
                   <td>
                     <div className="ds-action-buttons">
                       <button 

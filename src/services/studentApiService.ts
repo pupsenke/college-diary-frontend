@@ -43,14 +43,16 @@ export interface StudentData {
 
 // Интерфейсы для успеваемости
 export interface StudentMark {
-  stNameSubjectDTO: {
+  nameSubjectTeachersDTO: {
     idSt: number;
     idSubject: number;
     nameSubject: string;
-    idTeacher: number;
-    lastnameTeacher: string;
-    nameTeacher: string;
-    patronymicTeacher: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
   };
   marksBySt: Array<{
     number: number | null;
@@ -97,7 +99,7 @@ export interface TeacherSubject {
 export interface MarkInfo {
   value: number | null;
   dateLesson: string;
-  typeMark: string;
+  typeMark: string; 
   lastNameTeacher: string;
   nameTeacher: string;
   patronymicTeacher: string;
@@ -144,7 +146,7 @@ export interface MarkChange {
   }> | null;
   teacherOrStudent: boolean;
   newValue: number | null;
-  isPending?: boolean; // для отображения ожидающих комментариев
+  isPending?: boolean;
 }
 
 
@@ -168,6 +170,25 @@ export interface UploadDocumentResponse {
   message: string;
 }
 
+export interface MarkColumnInfo {
+  dateLesson: string;
+  typeMark: string;
+  numberWeek: number;
+  dayWeek: string;
+  typeWeek: string;
+  numPair: number;
+  replacement: boolean;
+  idSupplement: number | null;
+  comment: string | null;
+  files: Array<{
+    id: number;
+    name: string;
+  }> | null;
+  lastNameTeacher?: string;
+  nameTeacher?: string;
+  patronymicTeacher?: string;
+}
+
 export const apiService = {
 // Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
@@ -177,7 +198,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    console.log(`Fetching group data for ID: ${groupId}`);
     const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
     
     if (!response.ok) {
@@ -187,7 +207,6 @@ export const apiService = {
     }
     
     const data: GroupData = await response.json();
-    console.log('Group data received:', data);
     
     cacheService.set(cacheKey, data, { ttl: CACHE_TTL.GROUP_DATA });
     
@@ -202,7 +221,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    console.log(`Fetching teacher data for ID: ${teacherId}`);
     const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`);
     
     if (!response.ok) {
@@ -212,7 +230,6 @@ export const apiService = {
     }
     
     const data: TeacherData = await response.json();
-    console.log('Teacher data received:', data);
     
     cacheService.set(cacheKey, data, { ttl: 60 * 60 * 1000 });
     
@@ -227,7 +244,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    console.log(`Fetching subject data for ID: ${subjectId}`);
     const response = await fetch(`${API_BASE_URL}/subjects/id/${subjectId}`);
     
     if (!response.ok) {
@@ -237,7 +253,6 @@ export const apiService = {
     }
     
     const data = await response.json();
-    console.log('Subject data received:', data);
     
     cacheService.set(cacheKey, data, { ttl: 60 * 60 * 1000 });
     
@@ -259,7 +274,6 @@ export const apiService = {
 
   // Обновление данных студента 
   async updateStudentData(studentId: number, data: Partial<StudentData>) {
-    console.log('Sending PATCH request for student:', studentId, data);
     
     const response = await fetch(`${API_BASE_URL}/students/update`, {
       method: 'PATCH',
@@ -279,7 +293,6 @@ export const apiService = {
     }
     
     const result = await response.json();
-    console.log('Student data updated successfully:', result);
     return result;
   },
 
@@ -287,7 +300,6 @@ export const apiService = {
   // === УСПЕВАЕМОСТЬ ===
   // Получение детальной информации об оценке
   async getMarkInfo(studentId: number, stId: number, markNumber: number): Promise<MarkInfo> {
-    console.log(`Fetching mark info for student ${studentId}, st ${stId}, mark ${markNumber}`);
     const response = await fetch(`${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
     
     if (!response.ok) {
@@ -297,13 +309,23 @@ export const apiService = {
     }
     
     const data: MarkInfo = await response.json();
-    console.log('Mark info received:', data);
+    
+    // Если в ответе нет typeMark, попробуем получить его из информации о колонке
+    if (!data.typeMark) {
+      try {
+        const columnInfo = await this.getMarkColumnInfo(studentId, stId, markNumber);
+        data.typeMark = columnInfo.typeMark;
+      } catch (error) {
+        console.warn('Не удалось получить тип работы из информации о колонке:', error);
+        data.typeMark = 'Работа'; // Значение по умолчанию
+      }
+    }
+    
     return data;
   },
 
   // Получение списка уроков
   async getLessons(): Promise<Lesson[]> {
-    console.log('Fetching lessons list');
     const response = await fetch(`${API_BASE_URL}/lessons`);
     
     if (!response.ok) {
@@ -313,13 +335,11 @@ export const apiService = {
     }
     
     const data: Lesson[] = await response.json();
-    console.log('Lessons received:', data.length);
     return data;
   },
 
   // Добавление supplement к уроку
   async addSupplementToLesson(lessonId: number, comment: string, files?: File[]): Promise<void> {
-    console.log(`Adding supplement to lesson ${lessonId}`);
     
     const formData = new FormData();
     formData.append('comment', comment);
@@ -339,13 +359,24 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка добавления supplement: ${response.status} - ${errorText}`);
     }
-
-    console.log('Supplement added successfully');
   },
 
+  // Получение детальной информации об оценке (колонке)
+  async getMarkColumnInfo(studentId: number, stId: number, markNumber: number): Promise<MarkColumnInfo> {
+    const response = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(`Ошибка загрузки информации о колонке оценок: ${response.status}`);
+    }
+    
+    const data: MarkColumnInfo = await response.json();
+    return data;
+  },
+  
   // Получение информации о supplement
   async getSupplement(supplementId: number): Promise<Supplement> {
-    console.log(`Fetching supplement ${supplementId}`);
     
     // Получаем все supplements и находим нужный по ID
     const response = await fetch(`${API_BASE_URL}/supplements`);
@@ -357,7 +388,6 @@ export const apiService = {
     }
     
     const supplements: Supplement[] = await response.json();
-    console.log('All supplements received:', supplements);
     
     // Находим supplement по ID
     const supplement = supplements.find(s => s.id === supplementId);
@@ -366,8 +396,6 @@ export const apiService = {
       console.error(`Supplement with ID ${supplementId} not found`);
       throw new Error(`Supplement с ID ${supplementId} не найден`);
     }
-    
-    console.log('Found supplement:', supplement);
     return supplement;
   },
 
@@ -377,35 +405,51 @@ export const apiService = {
     stId: number, 
     markNumber: number
   ): Promise<number> {
-    console.log(`Adding change and getting supplement ID: student ${studentId}, st ${stId}, mark ${markNumber}`);
     
-    // Шаг 1: Создаем изменение с пустым комментарием
-    const url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=`;
+    const url = `${API_BASE_URL}/changes/add/student/${studentId}/st/${stId}/number/${markNumber}`;
+    
+    console.log('Making POST request to:', url);
     
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Response error:', response.status, errorText);
       throw new Error(`Ошибка добавления изменения: ${response.status} - ${errorText}`);
     }
 
-    // Шаг 2: Получаем информацию об оценке чтобы найти ID нового supplement
-    const markInfoResponse = await fetch(`${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
-    if (!markInfoResponse.ok) {
-      throw new Error('Ошибка получения информации об оценке');
+    // Получаем ID созданного supplement из ответа
+    try {
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+      
+      if (responseData.idSupplement) {
+        return responseData.idSupplement;
+      }
+    } catch (jsonError) {
+      console.error('Error parsing JSON response:', jsonError);
     }
     
-    const markInfo: MarkInfo = await markInfoResponse.json();
-    
-    // Находим последнее изменение (новое) и возвращаем ID supplement
-    if (markInfo.changes && markInfo.changes.length > 0) {
-      const latestChange = markInfo.changes[markInfo.changes.length - 1];
-      if (latestChange.idSupplement) {
-        console.log('Supplement created with ID:', latestChange.idSupplement);
-        return latestChange.idSupplement;
+    // Альтернативный способ - получаем информацию об оценке
+    try {
+      const markInfoResponse = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
+      if (markInfoResponse.ok) {
+        const markInfo: MarkInfo = await markInfoResponse.json();
+        
+        if (markInfo.changes && markInfo.changes.length > 0) {
+          const latestChange = markInfo.changes[markInfo.changes.length - 1];
+          if (latestChange.idSupplement) {
+            return latestChange.idSupplement;
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error getting mark info:', error);
     }
     
     throw new Error('Supplement ID не получен после создания изменения');
@@ -413,7 +457,6 @@ export const apiService = {
 
   // Удаление supplement
   async deleteSupplement(supplementId: number): Promise<void> {
-    console.log(`Deleting supplement with ID: ${supplementId}`);
     
     const response = await fetch(`${API_BASE_URL}/supplements/delete/id/${supplementId}`, {
       method: 'DELETE',
@@ -423,13 +466,10 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка удаления supplement: ${response.status} - ${errorText}`);
     }
-
-    console.log('Supplement deleted successfully');
   },
 
   // Скачивание файла supplement
   async downloadSupplementFile(fileId: number, fileName: string): Promise<void> {
-    console.log(`Downloading supplement file ${fileId}`);
     
     try {
       const response = await fetch(`${API_BASE_URL}/supplements/files/id/${fileId}`, {
@@ -454,8 +494,6 @@ export const apiService = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      console.log(`Supplement file downloaded successfully: ${fileName}`);
-
     } catch (error) {
       console.error('Download error:', error);
       throw new Error(`Не удалось скачать файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
@@ -470,7 +508,6 @@ export const apiService = {
     comment: string, 
     supplementId?: number
   ): Promise<void> {
-    console.log(`Adding comment to mark: student ${studentId}, st ${stId}, mark ${markNumber}`);
     
     let url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
     
@@ -486,17 +523,14 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка добавления комментария: ${response.status} - ${errorText}`);
     }
-
-    console.log('Comment added successfully');
   },
 
   // Загрузка файлов к supplement
   async uploadSupplementFiles(supplementId: number, files: File[]): Promise<void> {
-    console.log(`Uploading files to supplement ${supplementId}`);
     
     const formData = new FormData();
     files.forEach(file => {
-      formData.append('files', file);
+      formData.append('file', file);
     });
 
     const response = await fetch(`${API_BASE_URL}/supplements/add/files/id/${supplementId}`, {
@@ -508,14 +542,11 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка загрузки файлов: ${response.status} - ${errorText}`);
     }
-
-    console.log('Files uploaded successfully');
   },
 
 
   // Создание supplement с комментарием
   async createSupplementWithComment(comment: string, files?: File[]): Promise<number> {
-    console.log('Creating supplement with comment');
     
     const formData = new FormData();
     formData.append('comment', comment);
@@ -537,7 +568,6 @@ export const apiService = {
     }
 
     const supplement = await response.json();
-    console.log('Supplement created:', supplement);
     return supplement.id;
   },
   
@@ -548,7 +578,6 @@ export const apiService = {
     markNumber: number, 
     comment: string
   ): Promise<void> {
-    console.log(`Adding change: student ${studentId}, st ${stId}, mark ${markNumber}`);
     
     const url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
 
@@ -561,12 +590,10 @@ export const apiService = {
       throw new Error(`Ошибка добавления изменения: ${response.status} - ${errorText}`);
     }
 
-    console.log('Change added successfully');
   },
 
   // Обновление комментария supplement
   async updateSupplementComment(supplementId: number, comment: string): Promise<void> {
-    console.log(`Updating supplement ${supplementId} comment`);
     
     const response = await fetch(`${API_BASE_URL}/supplements/update?id=${supplementId}&comment=${encodeURIComponent(comment)}`, {
       method: 'PATCH',
@@ -576,8 +603,6 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка обновления комментария: ${response.status} - ${errorText}`);
     }
-
-    console.log('Supplement comment updated successfully');
   },
 
   // Получение оценок студента с кэшированием
@@ -588,7 +613,6 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    console.log(`Fetching student marks for ID: ${studentId}`);
     const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
     
     if (!response.ok) {
@@ -598,7 +622,6 @@ export const apiService = {
     }
     
     const data: StudentMark[] = await response.json();
-    console.log('Student marks received:', data);
     
     cacheService.set(cacheKey, data, { ttl: 10 * 60 * 1000 });
     
@@ -607,7 +630,6 @@ export const apiService = {
 
   // Получение оценок по предмету
   async getSubjectMarks(studentId: number, subjectId: number): Promise<SubjectMark[]> {
-    console.log(`Fetching subject marks for student ${studentId}, subject ${subjectId}`);
     const response = await fetch(`${API_BASE_URL}/marks/student/${studentId}/subject/${subjectId}`);
     
     if (!response.ok) {
@@ -617,13 +639,11 @@ export const apiService = {
     }
     
     const data: SubjectMark[] = await response.json();
-    console.log('Subject marks received:', data);
     return data;
   },
 
   // Получение предметов преподавателя
   async getTeacherSubjects(teacherId: number): Promise<TeacherSubject[]> {
-    console.log(`Fetching teacher subjects for ID: ${teacherId}`);
     const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`);
     
     if (!response.ok) {
@@ -633,7 +653,6 @@ export const apiService = {
     }
     
     const data: TeacherSubject[] = await response.json();
-    console.log('Teacher subjects received:', data);
     return data;
   },
 
@@ -648,11 +667,9 @@ export const apiService = {
     });
     
     if (cached) {
-      console.log('Documents loaded from cache');
       return cached;
     }
 
-    console.log('Fetching documents from server');
     const response = await fetch(`${API_BASE_URL}/paths`);
     
     if (!response.ok) {
@@ -661,7 +678,6 @@ export const apiService = {
     }
     
     const data: Document[] = await response.json();
-    console.log('Documents received from server:', data.length);
     
     cacheService.set(cacheKey, data, { 
       ttl: CACHE_TTL.DOCUMENTS
@@ -679,19 +695,15 @@ export const apiService = {
     });
     
     if (cached) {
-      console.log(`Student ${studentId} documents loaded from cache:`, cached.length);
       return cached;
     }
 
-    console.log(`Fetching documents for student ${studentId} from server`);
     const allDocuments = await this.getAllDocuments();
     
     // Фильтрование документов студента
     const studentDocuments = allDocuments.filter(doc => 
       doc.idStudent === studentId || doc.studentId === studentId
     );
-    
-    console.log(`Filtered documents for student ${studentId}:`, studentDocuments.length);
     
     cacheService.set(cacheKey, studentDocuments, { 
       ttl: CACHE_TTL.DOCUMENTS
@@ -709,11 +721,8 @@ export const apiService = {
     });
     
     if (cached) {
-      console.log(`Student ${studentId} documents by type "${type}" loaded from cache:`, cached.length);
       return cached;
     }
-
-    console.log(`Fetching student ${studentId} documents by type: ${type}`);
     
     try {
       const allStudentDocs = await this.fetchDocumentsByStudent(studentId);
@@ -721,8 +730,6 @@ export const apiService = {
       const filteredDocs = allStudentDocs.filter(doc => 
         doc.type?.toLowerCase() === type.toLowerCase()
       );
-      
-      console.log(`Student ${studentId} documents by type "${type}":`, filteredDocs.length);
       
       cacheService.set(cacheKey, filteredDocs, { 
         ttl: CACHE_TTL.DOCUMENTS
@@ -738,7 +745,6 @@ export const apiService = {
 
   // Функция скачивания документа
   async downloadDocument(id: number): Promise<void> {
-    console.log(`Downloading document with ID: ${id}`);
     
     try {
       // Получаем информацию о документе
@@ -748,8 +754,6 @@ export const apiService = {
       if (!documentInfo) {
         throw new Error(`Документ с ID ${id} не найден`);
       }
-
-      console.log('Found document:', documentInfo);
 
       // Скачиваем файл
       const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
@@ -808,8 +812,6 @@ export const apiService = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      console.log(`Document downloaded successfully: ${filename}`);
-
     } catch (error) {
       console.error('Download error:', error);
       throw new Error(`Не удалось скачать документ: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
@@ -818,11 +820,6 @@ export const apiService = {
 
   // Загрузка документа на сервер с инвалидацией кэша
   async uploadDocument(file: File, studentId: number, documentType?: string): Promise<void> {
-    console.log('Uploading document:', { 
-      fileName: file.name, 
-      studentId, 
-      documentType 
-    });
     
     const formData = new FormData();
     formData.append('file', file);
@@ -841,14 +838,11 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка загрузки документа: ${response.status} - ${errorText}`);
     }
-
-    console.log('Document uploaded successfully');
     
     // Инвалидируем кэш после загрузки
     this.invalidateDocumentCache(studentId, documentType);
   },
   async getStudentData(studentId: number): Promise<StudentData> {
-    console.log(`Fetching student data for ID: ${studentId}`);
     const response = await fetch(`${API_BASE_URL}/students/id/${studentId}`);
     
     if (!response.ok) {
@@ -857,13 +851,11 @@ export const apiService = {
     }
     
     const data: StudentData = await response.json();
-    console.log('Student data received:', data);
     return data;
   },
 
   // Удаление документа с инвалидацией кэша
   async deleteDocument(id: number): Promise<void> {
-    console.log(`Deleting document with ID: ${id}`);
     const response = await fetch(`${API_BASE_URL}/paths/delete/${id}`, {
       method: 'DELETE',
     });
@@ -872,8 +864,6 @@ export const apiService = {
       const errorText = await response.text();
       throw new Error(`Ошибка удаления документа: ${response.status}`);
     }
-
-    console.log('Document deleted successfully');
     
     // Инвалидируем весь кэш документов, так как не знаем studentId
     this.invalidateAllDocumentCache();
@@ -881,7 +871,6 @@ export const apiService = {
 
   // Получение файла по ID
   async getFileById(fileId: number): Promise<Blob> {
-    console.log(`Fetching file by ID: ${fileId}`);
     
     const response = await fetch(`${API_BASE_URL}/paths/id/${fileId}`, {
       method: 'GET',
@@ -897,7 +886,6 @@ export const apiService = {
     }
 
     const blob = await response.blob();
-    console.log(`File ${fileId} loaded successfully`);
     return blob;
   },
 
@@ -942,8 +930,6 @@ export const apiService = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      console.log(`File downloaded successfully: ${fileName}`);
-
     } catch (error) {
       console.error('Download error:', error);
       throw new Error(`Не удалось скачать файл: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
@@ -952,7 +938,6 @@ export const apiService = {
 
   // Получение информации о файле по ID
   async getFileInfo(fileId: number): Promise<Document> {
-    console.log(`Fetching file info for ID: ${fileId}`);
     
     const allDocuments = await this.getAllDocuments();
     const fileInfo = allDocuments.find(doc => doc.id === fileId);
@@ -982,7 +967,6 @@ export const apiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated cache: ${key}`);
     });
   },
 
@@ -1002,7 +986,6 @@ export const apiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated cache: ${key}`);
     });
   }
   

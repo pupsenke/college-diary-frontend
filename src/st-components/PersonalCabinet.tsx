@@ -90,7 +90,6 @@ const PersonalCabinetComponent: React.FC = () => {
       setIsUsingCache(false);
 
       // Сначала пытаемся загрузить с API
-      console.log('Загрузка данных группы с API...');
       const groupData = await apiService.getGroupData(student.idGroup);
       
       updateGroupState(groupData);
@@ -100,7 +99,6 @@ const PersonalCabinetComponent: React.FC = () => {
       
       // Если ошибка сети, пробуем загрузить из кэша
       try {
-        console.log('Попытка загрузки группы из кэша...');
         const cacheKey = `group_${student.idGroup}`;
         const cached = localStorage.getItem(`cache_${cacheKey}`);
         
@@ -111,7 +109,6 @@ const PersonalCabinetComponent: React.FC = () => {
             updateGroupState(cachedData.data);
             setIsUsingCache(true);
             setError('Используются кэшированные данные. Нет соединения с сервером.');
-            console.log('Данные группы загружены из кэша');
           } else {
             throw new Error('Кэш группы устарел');
           }
@@ -204,7 +201,7 @@ const PersonalCabinetComponent: React.FC = () => {
         return;
       }
 
-      // Здесь должен быть вызов API для смены пароля
+
       // await apiService.changePassword({
       //   userId: user.id,
       //   currentPassword: passwordData.currentPassword,
@@ -212,7 +209,6 @@ const PersonalCabinetComponent: React.FC = () => {
       // });
 
       // Имитация успешной смены пароля
-      console.log('Пароль успешно изменен');
       setSuccessMessage('Пароль успешно изменен');
       setShowPasswordModal(false);
       resetPasswordForm();
@@ -354,7 +350,6 @@ const PersonalCabinetComponent: React.FC = () => {
         updateData.address = userData.address || undefined;
       }
 
-      console.log('Sending update data:', updateData);
       await apiService.updateStudentData(user.id, updateData);
       
       setSuccessMessage('Данные успешно сохранены');
