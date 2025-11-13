@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
+import { useCache } from '../context/CacheContext';
 import { teacherApiService } from '../services/teacherApiService';
 import { TeacherAttendanceSection, AttendanceRecord } from './TeacherAttendanceSection';
 import { TeacherPerformanceSection } from './TeacherPerformanceSection';
 import './GroupsSectionStyle.css';
+import { CacheWarning } from '../th-components/CacheWarning';
 
 export interface Group {
   numberGroup: string;
@@ -36,7 +38,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isUsingCache, setIsUsingCache] = useState(false);
+  const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
   
   const [activeTab, setActiveTab] = useState<'semesters' | 'course'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
@@ -123,7 +125,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     try {
       setLoading(true);
       setError(null);
-      setIsUsingCache(false);
+      setShowCacheWarning(false);
 
       if (forceRefresh) setRefreshing(true);
 
@@ -141,20 +143,80 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
       const teacherGroups = await teacherApiService.getTeacherGroups(teacher.id);
 
-      // Оставляем только уникальные группы сразу!
+      // Оставляем только уникальные группы
       const uniqueGroups = teacherGroups.filter((group, index, self) =>
         index === self.findIndex(g =>
           g.numberGroup === group.numberGroup && g.subjectName === group.subjectName
         )
       );
 
-      setAllGroups(uniqueGroups);
+      // Получаем уникальные номера групп
+      const uniqueGroupNumbers = uniqueGroups
+        .map(group => group.numberGroup) 
+        .filter((number, index, array) => array.indexOf(number) === index);
+
+      // Массово получаем информацию о группах
+      const groupInfos = await Promise.all(
+        uniqueGroupNumbers.map(number => {
+          const groupId = teacherApiService.getGroupIdFromNumber(number);
+          return groupId ? teacherApiService.getGroupById(groupId) : null;
+        })
+      );
+
+      // Создаем карту номер групп -> информация
+      const groupInfoMap = new Map();
+      groupInfos.forEach((info, index) => {
+        if (info) {
+          groupInfoMap.set(uniqueGroupNumbers[index], info);
+        }
+      });
+
+      // Обогащаем группы информацией о курсе
+      const groupsWithCourse = uniqueGroups.map(group => {
+        const groupInfo = groupInfoMap.get(group.numberGroup);
+        return {
+          ...group,
+          course: groupInfo?.course || 1
+        };
+      });
+
+      setAllGroups(groupsWithCourse);
       
       // Загружаем данные посещаемости для всех групп
-      await loadAllGroupsAttendanceData(uniqueGroups);
+      await loadAllGroupsAttendanceData(groupsWithCourse);
       
-    } catch (err) {
-      setError('Не удалось загрузить данные групп');
+    } catch (err: any) {
+      console.error('Ошибка при загрузке данных групп:', err);
+      
+      // Проверяем, является ли ошибка сетевой
+      const isNetworkError = 
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Network request failed') ||
+        err.message?.includes('Превышено время ожидания') ||
+        err.name === 'TypeError';
+      
+      if (isNetworkError) {
+        forceCacheCheck();
+        
+        setShowCacheWarning(true);
+          
+          // Пытаемся загрузить данные из кэша
+          try {
+            const teacherId = localStorage.getItem('teacher_id');
+            if (teacherId) {
+              const cachedGroups = localStorage.getItem(`cache_teacher_groups_${teacherId}`);
+              if (cachedGroups) {
+                const parsedGroups = JSON.parse(cachedGroups);
+                setAllGroups(parsedGroups);
+              }
+            }
+          } catch (cacheError) {
+            console.error('Error loading cached groups:', cacheError);
+          }
+      } else {
+        setError('Не удалось загрузить данные групп');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -253,11 +315,66 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
         <span className="info-icon-text">i</span>
         <span>Информация</span>
       </button>
-      <div className="info-tooltip">
+      <div className="info-tooltip small">
         <div className="info-tooltip-content">
-          <p><strong>Управление группами</strong></p>
-          <p>Здесь отображаются все группы по преподаваемым дисциплинам. Вы можете фильтровать их по семестрам или курсам.</p>
-          <p>Для работы с посещаемостью или оценками выберите группу и нажмите соответствующую кнопку.</p>
+          <div className="info-header">
+            <div className="info-title">
+              <h3>Управление группами</h3>
+              <p>Здесь отображаются все группы по преподаваемым дисциплинам. Вы можете фильтровать их по семестрам или курсам, а также есть поиск по номеру группы</p>
+            </div>
+          </div>
+          
+          <div className="info-section">
+            <h4>Основные возможности</h4>
+            <div className="features-grid">
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр всех учебных групп по дисциплине</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Фильтрация групп по семестрам и курсам</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр количества студентов в группах</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Работа с посещаемостью студентов</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Выставление оценок и контроль успеваемости</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Как использовать</h4>
+            <div className="usage-steps">
+              <div className="step">
+                <span className="step-number">1</span>
+                <span>Выберите нужную группу из списка</span>
+              </div>
+              <div className="step">
+                <span className="step-number">2</span>
+                <span>Для работы с посещаемостью нажмите "Выставить посещаемость"</span>
+              </div>
+              <div className="step">
+                <span className="step-number">3</span>
+                <span>Для работы с оценками нажмите "Выставить оценки"</span>
+              </div>
+              <div className="step">
+                <span className="step-number">4</span>
+                <span>Используйте фильтры или поиск по группам</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-tip">
+            Для удобства используйте фильтрацию или поиск при большом количестве групп
+          </div>
         </div>
       </div>
     </div>
@@ -268,14 +385,14 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     <button 
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
       onClick={handleRefresh}
-      disabled={refreshing}
+      disabled={refreshing || loading}
     >
       <img 
         src="/st-icons/upload_icon.svg" 
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+      <span>{refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить данные'}</span>
     </button>
   );
 
@@ -289,6 +406,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
       let courseFilter = true;
       if (activeTab === 'course' && selectedCourse !== 'all') {
+        // Преобразуем selectedCourse в число для сравнения
         courseFilter = group.course === parseInt(selectedCourse);
       }
 
@@ -442,12 +560,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
         <RefreshButton />
       </div>
 
-      {/* Индикация использования кэша */}
-      {isUsingCache && (
-        <div className="gs-cache-warning">
-          Используются кэшированные данные. Для актуальной информации обновите данные.
-        </div>
-      )}
+      {showCacheWarning && <CacheWarning />}
 
       {/* Блок выбранной дисциплины с кнопкой сброса фильтра */}
       {selectedDiscipline && (

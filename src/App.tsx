@@ -1,6 +1,8 @@
+// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
+import { CacheProvider } from './context/CacheContext';
 import { LoginPage } from './pages/LoginPage';
 import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
@@ -11,50 +13,52 @@ import { ProtectedRoute } from './st-components/ProtectedRoute';
 function App() {
   return (
     <UserProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          
-          <Route 
-            path="/student/*" 
-            element={
-              <ProtectedRoute requiredUserType="student">
-                <StudentPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/teacher/*" 
-            element={
-              <ProtectedRoute requiredUserType="teacher">
-                <TeacherPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/metodist/*" 
-            element={
-              <ProtectedRoute requiredUserType="metodist">
-                <MetodistPage />
-              </ProtectedRoute>
-            } 
-          />
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            
+            <Route 
+              path="/student/*" 
+              element={
+                <ProtectedRoute requiredUserType="student">
+                  <StudentPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/teacher/*" 
+              element={
+                <ProtectedRoute requiredUserType="teacher">
+                  <CacheProvider>
+                    <TeacherPage />
+                  </CacheProvider>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/metodist/*" 
+              element={
+                <ProtectedRoute requiredUserType="metodist">
+                  <MetodistPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          <Route 
-            path="/departmentHead/*" 
-            element={
-              <ProtectedRoute requiredUserType="departmentHead">
-                <DepartmentHeadPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+            <Route 
+              path="/departmentHead/*" 
+              element={
+                <ProtectedRoute requiredUserType="departmentHead">
+                  <DepartmentHeadPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
     </UserProvider>
   );
 }

@@ -93,6 +93,7 @@ export interface Group {
   specialty: string;
   subjectName: string;
   countStudent: number;
+  course?: number;
 }
 
 export interface Student {
@@ -304,11 +305,9 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Staff data loaded from cache');
       return cached;
     }
 
-    console.log('Fetching staff data from server');
     const response = await fetch(`${API_BASE_URL}/staffs`, {
       method: 'GET',
       headers: {
@@ -323,7 +322,6 @@ export const teacherApiService = {
     }
 
     const data: StaffApiResponse[] = await response.json();
-    console.log('Staff data received from server:', data.length);
     
     cacheService.set(cacheKey, data, { 
       ttl: CACHE_TTL.TEACHER_DATA 
@@ -366,11 +364,9 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Teacher ${teacherId} data loaded from cache`);
       return cached;
     }
 
-    console.log(`Fetching teacher ${teacherId} data from server`);
     const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`, {
       method: 'GET',
       headers: {
@@ -385,7 +381,6 @@ export const teacherApiService = {
     }
 
     const data: StaffApiResponse = await response.json();
-    console.log('Teacher data received from server:', data);
     
     cacheService.set(cacheKey, data, { 
       ttl: CACHE_TTL.TEACHER_DATA 
@@ -403,12 +398,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Teacher ${teacherId} disciplines loaded from cache:`, cached.length);
       return cached;
     }
 
     try {
-      console.log(`Fetching teacher ${teacherId} disciplines from server`);
       const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -421,14 +414,10 @@ export const teacherApiService = {
       }
 
       const disciplinesData: TeacherSubject[] = await response.json();
-      console.log('Преподавательских дисциплин получено:', disciplinesData);
 
       const allDisciplineNames = disciplinesData.map(item => item.subjectName);
       const uniqueDisciplineNames = Array.from(new Set(allDisciplineNames));
-      
-      console.log('Все названия дисциплин:', allDisciplineNames);
-      console.log('Уникальные названия для отображения:', uniqueDisciplineNames);
-      
+            
       cacheService.set(cacheKey, uniqueDisciplineNames, { 
         ttl: CACHE_TTL.TEACHER_DISCIPLINES 
       });
@@ -449,12 +438,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Полные данные дисциплин загружены из кэша');
       return cached;
     }
 
     try {
-      console.log(`Fetching full teacher ${teacherId} disciplines from server`);
       const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -488,12 +475,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Группы преподавателя загружены из кэша');
       return cached;
     }
 
     try {
-      console.log(`Fetching teacher ${teacherId} groups from server`);
       const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -518,6 +503,87 @@ export const teacherApiService = {
     }
   },
 
+  async getGroupByNumber(groupNumber: string): Promise<any> {
+    const cacheKey = `group_info_${groupNumber}`;
+    
+    const cached = cacheService.get<any>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/groups/number/${groupNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // API возвращает массив, берем первый элемент
+      const groupInfo = Array.isArray(data) ? data[0] : data;
+      
+      cacheService.set(cacheKey, groupInfo, { 
+        ttl: CACHE_TTL.GROUP_DATA 
+      });
+      
+      return groupInfo;
+    } catch (error) {
+      console.error(`Error fetching group ${groupNumber} info:`, error);
+      return null;
+    }
+  },
+
+  async getGroupById(groupId: number): Promise<any> {
+    const cacheKey = `group_info_id_${groupId}`;
+    
+    const cached = cacheService.get<any>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/groups/id/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const groupInfo = await response.json();
+      
+      cacheService.set(cacheKey, groupInfo, { 
+        ttl: CACHE_TTL.GROUP_DATA 
+      });
+      
+      return groupInfo;
+    } catch (error) {
+      console.error(`Error fetching group ID ${groupId} info:`, error);
+      return null;
+    }
+  },
+
   // Получение дисциплин по курсам
   async getTeacherDisciplinesByCourse(teacherId: number): Promise<Discipline[]> {
     const cacheKey = `teacher_disciplines_course_${teacherId}`;
@@ -527,12 +593,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Дисциплины по курсам загружены из кэша');
       return cached;
     }
 
     try {
-      console.log(`Fetching teacher ${teacherId} disciplines by course from server`);
       const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -552,7 +616,6 @@ export const teacherApiService = {
       
       return data;
     } catch (error) {
-      console.error('Error fetching teacher disciplines by course:', error);
       throw error;
     }
   },
@@ -566,12 +629,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Дисциплины по семестрам загружены из кэша');
       return cached;
     }
 
     try {
-      console.log(`Fetching teacher ${teacherId} disciplines by semester ${semester} from server`);
       const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -585,7 +646,6 @@ export const teacherApiService = {
 
       const data = await response.json();
       
-      // Фильтруем данные для семестра (временная логика)
       const filteredData = data.filter((discipline: Discipline) => {
         return semester === 1; // Пока возвращаем все данные для первого семестра
       });
@@ -610,11 +670,9 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Teacher search result loaded from cache');
       return cached;
     }
 
-    console.log('Searching teacher in staff data');
     const allStaff = await this.getAllStaff();
     
     const teacher = allStaff.find(staff => 
@@ -683,13 +741,11 @@ export const teacherApiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated teacher cache: ${key}`);
     });
   },
 
   // Принудительное обновление данных с инвалидацией кэша
   async refreshTeacherData(teacherId: number) {
-    console.log('Refreshing teacher data with cache invalidation');
     this.invalidateTeacherCache(teacherId);
     
     // Загружаем свежие данные
@@ -718,16 +774,13 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Group ${groupId} students loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching group ${groupId} students from server`);
       
       // Формируем URL с правильными параметрами как в Postman
       const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
-      console.log('Request URL:', url);
       
       const response = await fetch(url);
       
@@ -736,15 +789,12 @@ export const teacherApiService = {
       }
       
       const students = await response.json();
-      console.log('Raw API response:', students);
       
       // Сортируем студентов по фамилии от А до Я
       const sortedStudents = students.sort((a: Student, b: Student) => 
         a.lastName.localeCompare(b.lastName)
       );
-      
-      console.log('Sorted students:', sortedStudents);
-      
+            
       cacheService.set(cacheKey, sortedStudents, { 
         ttl: CACHE_TTL.STUDENT_DATA 
       });
@@ -759,11 +809,8 @@ export const teacherApiService = {
   // Метод для получения студентов группы без использования кэша
   async getGroupStudentsWithoutCache(groupId: number, idSt: number, idTeacher: number): Promise<Student[]> {
     try {
-      console.log(`Fetching group ${groupId} students from server (without cache)`);
-      
       // Формируем URL с правильными параметрами как в Postman
       const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
-      console.log('Request URL:', url);
       
       const response = await fetch(url);
       
@@ -772,15 +819,12 @@ export const teacherApiService = {
       }
       
       const students = await response.json();
-      console.log('Raw API response:', students);
       
       // Сортируем студентов по фамилии от А до Я
       const sortedStudents = students.sort((a: Student, b: Student) => 
         a.lastName.localeCompare(b.lastName)
       );
-      
-      console.log('Sorted students:', sortedStudents);
-      
+            
       return sortedStudents;
     } catch (error) {
       console.error('Error fetching group students:', error);
@@ -805,16 +849,13 @@ export const teacherApiService = {
       
       keysToRemove.forEach(key => {
         cacheService.remove(key);
-        console.log(`Invalidated student cache: ${key}`);
       });
     }
   },
 
   // Смена пароля - без проверки текущего пароля
   async changePassword(teacherId: number, passwordData: PasswordChangeData): Promise<{ success: boolean }> {
-    try {
-      console.log(`Changing password for teacher ${teacherId}`);
-      
+    try {      
       const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
         method: 'PATCH',
         headers: {
@@ -833,7 +874,6 @@ export const teacherApiService = {
       }
       
       const result = await response.json();
-      console.log('Password change successful:', result);
       
       // Инвалидируем кэш
       this.invalidateTeacherCache(teacherId);
@@ -859,7 +899,6 @@ export const teacherApiService = {
   // И метод проверки доступности логина
   async isLoginAvailable(newLogin: string): Promise<{ available: boolean; message?: string }> {
     try {
-      console.log('Checking login availability for:', newLogin);
       
       if (!newLogin || newLogin.trim().length < 3) {
         return { 
@@ -878,9 +917,7 @@ export const teacherApiService = {
       
       const existingLogins = await this.checkExistingLogins();
       const isAvailable = !existingLogins.includes(newLogin.trim());
-      
-      console.log('Login availability result:', isAvailable);
-      
+            
       return {
         available: isAvailable,
         message: isAvailable ? undefined : 'Этот логин уже занят. Выберите другой логин.'
@@ -897,8 +934,6 @@ export const teacherApiService = {
   // Смена логина без проверки пароля
   async changeLogin(teacherId: number, loginData: LoginChangeData): Promise<{ success: boolean }> {
     try {
-      console.log('Starting login change process for teacher:', teacherId);
-      console.log('New login requested:', loginData.newLogin);
       
       // Дополнительная валидация логина
       if (!loginData.newLogin || loginData.newLogin.trim().length < 3) {
@@ -911,7 +946,6 @@ export const teacherApiService = {
       }
       
       // Проверяем доступность логина более тщательно
-      console.log('Checking login availability...');
       const availability = await this.isLoginAvailable(loginData.newLogin);
       if (!availability.available) {
         throw new Error(availability.message || 'Этот логин уже занят');
@@ -921,9 +955,7 @@ export const teacherApiService = {
         id: teacherId,
         login: loginData.newLogin.trim()
       };
-      
-      console.log('Sending login change request:', requestBody);
-      
+            
       const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
         method: 'PATCH',
         headers: {
@@ -931,9 +963,7 @@ export const teacherApiService = {
         },
         body: JSON.stringify(requestBody),
       });
-      
-      console.log('Response status:', response.status);
-      
+            
       if (!response.ok) {
         let errorMessage = 'Не удалось изменить логин';
         
@@ -971,7 +1001,6 @@ export const teacherApiService = {
       }
       
       const result = await response.json();
-      console.log('Login change successful!', result);
       
       // Инвалидируем кэш
       this.invalidateTeacherCache(teacherId);
@@ -1006,12 +1035,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Lesson dates for group ${groupId} loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching lesson dates for group ${groupId} from server`);
       
       // Используем правильный endpoint для получения дат
       const response = await fetch(`${API_BASE_URL}/lessons/date/st/${idSt}/group/${groupId}/teacher/${teacherId}`);
@@ -1021,17 +1048,14 @@ export const teacherApiService = {
       }
       
       const datesData = await response.json();
-      console.log('Lesson dates received:', datesData);
       
-      // УПРОЩЕННАЯ ВЕРСИЯ - не делаем лишних запросов для каждой даты
+      // не делаем лишних запросов для каждой даты
       const datesWithInfo: LessonDate[] = datesData.map((item: any) => ({
         number: item.number,
         date: item.date,
-        lessonInfo: undefined // Будет заполнено позже при необходимости
+        lessonInfo: undefined
       }));
-      
-      console.log('Processed lesson dates:', datesWithInfo);
-      
+            
       cacheService.set(cacheKey, datesWithInfo, { 
         ttl: CACHE_TTL.LESSON_DATES 
       });
@@ -1055,12 +1079,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Lesson info for student ${studentId}, lesson ${lessonNumber} loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching lesson info for student ${studentId}, lesson ${lessonNumber} from server`);
       
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${idSt}/number/${lessonNumber}`,
@@ -1074,14 +1096,12 @@ export const teacherApiService = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('Lesson info not found, returning null');
           return null;
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const lessonInfo: LessonInfo = await response.json();
-      console.log('Lesson info received:', lessonInfo);
       
       cacheService.set(cacheKey, lessonInfo, { 
         ttl: CACHE_TTL.LESSON_INFO 
@@ -1094,7 +1114,6 @@ export const teacherApiService = {
     }
   },
 
-  // УДАЛЕН ДУБЛИРУЮЩИЙ МЕТОД getMarkInfo
 
   // Функция для инвалидации кэша дат занятий
   invalidateLessonDatesCache(groupId?: number, idSt?: number, teacherId?: number): void {
@@ -1137,12 +1156,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Lessons info loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching lessons info from server`);
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
         {
@@ -1158,7 +1175,6 @@ export const teacherApiService = {
       }
 
       const data = await response.json();
-      console.log('Lessons info received:', data);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.LESSON_DATES 
@@ -1182,7 +1198,7 @@ export const teacherApiService = {
     lessonNumber: number
   ): Promise<{ success: boolean; idSupplement?: number }> {
     try {
-      console.log('Creating new supplement:', { 
+      console.log({ 
         idTypeMark, 
         comment, 
         studentId, 
@@ -1206,8 +1222,6 @@ export const teacherApiService = {
         idTeacher: parseInt(teacherId)
       };
 
-      console.log('Create supplement request:', createRequest);
-
       const response = await fetchWithTimeout(`${API_BASE_URL}/changes/add/supplement`, {
         method: 'POST',
         headers: {
@@ -1215,8 +1229,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(createRequest),
       });
-
-      console.log('Create supplement response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1231,15 +1243,12 @@ export const teacherApiService = {
       }
 
       const responseData = await response.json();
-      console.log('Create supplement response:', responseData);
 
-      // Предполагаем, что API возвращает ID созданной записи
       const idSupplement = responseData.id || responseData.idSupplement;
       
       // Инвалидируем кэш
       this.invalidateLessonInfoCache();
       
-      console.log('Supplement created successfully, ID:', idSupplement);
       return { 
         success: true, 
         idSupplement: idSupplement
@@ -1254,16 +1263,12 @@ export const teacherApiService = {
    * Обновление типа занятия в supplement
    */
   async updateSupplementType(idSupplement: number, idTypeMark: number): Promise<{ success: boolean }> {
-    try {
-      console.log('Updating supplement type:', { idSupplement, idTypeMark });
-      
+    try {      
       // Обновляем supplement с новым типом занятия
       const updateData = {
         id: idSupplement,
         idTypeMark: idTypeMark
       };
-
-      console.log('Update supplement request data:', updateData);
 
       const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update`, {
         method: 'PATCH',
@@ -1272,8 +1277,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(updateData),
       });
-
-      console.log('Update supplement response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1288,12 +1291,10 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('Update supplement response:', responseText);
       
       // Инвалидируем кэш информации о занятиях
       this.invalidateLessonInfoCache();
       
-      console.log('Supplement type updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating supplement type:', error);
@@ -1306,17 +1307,13 @@ export const teacherApiService = {
    */
   async updateLessonComment(idSupplement: number, comment: string): Promise<{ success: boolean }> {
     try {
-      console.log('Updating lesson comment:', { idSupplement, comment });
       
-      // ПРАВИЛЬНЫЙ endpoint для обновления комментария
       const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
-      console.log('Update lesson comment response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1331,12 +1328,10 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('Update lesson comment response:', responseText);
       
       // Инвалидируем кэш информации о занятиях
       this.invalidateLessonInfoCache();
       
-      console.log('Lesson comment updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating lesson comment:', error);
@@ -1349,7 +1344,6 @@ export const teacherApiService = {
    */
   async getLessonId(idSt: number, groupId: number, teacherId: number, lessonNumber: number): Promise<number | null> {
     try {
-      console.log(`Getting lesson ID for number ${lessonNumber}`);
       
       const lessonsInfo = await this.getLessonsInfo(idSt, groupId, teacherId);
       
@@ -1357,7 +1351,6 @@ export const teacherApiService = {
       const lesson = lessonsInfo.find((lesson: any) => lesson.number === lessonNumber);
       
       if (lesson) {
-        console.log(`Found lesson ID: ${lesson.id} for number ${lessonNumber}`);
         return lesson.id;
       }
       
@@ -1378,12 +1371,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('Subject teachers data loaded from cache');
       return cached;
     }
 
     try {
-      console.log('Fetching subject teachers data from server');
       const response = await fetchWithTimeout(`${API_BASE_URL}/st`, {
         method: 'GET',
         headers: {
@@ -1396,7 +1387,6 @@ export const teacherApiService = {
       }
 
       const data: SubjectTeacherData[] = await response.json();
-      console.log('Subject teachers data received:', data.length);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.SUBJECT_TEACHERS 
@@ -1418,12 +1408,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Teacher ${teacherId} subjects loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching teacher ${teacherId} subjects from server`);
       const response = await fetchWithTimeout(`${API_BASE_URL}/st/teacher/${teacherId}`, {
         method: 'GET',
         headers: {
@@ -1436,7 +1424,6 @@ export const teacherApiService = {
       }
 
       const data: SubjectTeacherData[] = await response.json();
-      console.log(`Teacher ${teacherId} subjects received:`, data.length);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.SUBJECT_TEACHERS 
@@ -1458,12 +1445,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('All subjects loaded from cache');
       return cached;
     }
 
     try {
-      console.log('Fetching all subjects from server');
       const response = await fetchWithTimeout(`${API_BASE_URL}/subjects`, {
         method: 'GET',
         headers: {
@@ -1476,7 +1461,6 @@ export const teacherApiService = {
       }
 
       const data: Subject[] = await response.json();
-      console.log('All subjects received:', data.length);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.SUBJECT_DATA 
@@ -1504,7 +1488,6 @@ export const teacherApiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated subject cache: ${key}`);
     });
   },
 
@@ -1517,12 +1500,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Subject ID for ${subjectName} loaded from cache:`, cached);
       return cached;
     }
 
     try {
-      console.log(`Fetching subject ID for: ${subjectName}`);
       
       // Получаем все предметы из API
       const allSubjects = await this.getAllSubjects();
@@ -1533,13 +1514,11 @@ export const teacherApiService = {
       );
       
       if (subject) {
-        console.log(`Found subject ID for "${subjectName}":`, subject.id);
         cacheService.set(cacheKey, subject.id, { 
           ttl: CACHE_TTL.SUBJECT_DATA 
         });
         return subject.id;
       } else {
-        console.log(`Subject "${subjectName}" not found, returning 0`);
         const defaultId = 0;
         cacheService.set(cacheKey, defaultId, { 
           ttl: CACHE_TTL.SUBJECT_DATA 
@@ -1572,7 +1551,6 @@ export const teacherApiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated subject cache: ${key}`);
     });
   },
 
@@ -1589,7 +1567,6 @@ export const teacherApiService = {
     }
 
     try {
-      console.log(`Fetching subject name for ID: ${subjectId}`);
       
       const allSubjectsData = await this.getSubjectTeachersData();
       const subject = allSubjectsData.find(item => item.idSubject === subjectId);
@@ -1627,8 +1604,6 @@ export const teacherApiService = {
       if (cached) {
         return cached;
       }
-
-      console.log(`Fetching stId for teacher ${teacherId}, subject ${subjectName}, group ${groupNumber}`);
       
       // Получаем все распределения
       const subjectTeachersData = await this.getSubjectTeachersData();
@@ -1655,7 +1630,6 @@ export const teacherApiService = {
       );
 
       if (stRecord) {
-        console.log(`Found stId: ${stRecord.id} for teacher ${teacherId}, subject ${subjectName}, group ${groupNumber}`);
         cacheService.set(cacheKey, stRecord.id, { 
           ttl: CACHE_TTL.SUBJECT_TEACHERS 
         });
@@ -1691,12 +1665,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Lessons for date addition loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching lessons for date addition from server`);
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
         {
@@ -1712,7 +1684,6 @@ export const teacherApiService = {
       }
 
       const data = await response.json();
-      console.log('Lessons for date addition received:', data);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.LESSON_DATES 
@@ -1728,7 +1699,6 @@ export const teacherApiService = {
   // Добавление столбца с датой
   async addDateColumn(addRequest: AddDateColumnRequest): Promise<{ success: boolean }> {
     try {
-      console.log('Adding date column:', addRequest);
       
       const response = await fetchWithTimeout(`${API_BASE_URL}/marks/save/group`, {
         method: 'POST',
@@ -1737,8 +1707,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(addRequest),
       });
-
-      console.log('Add date column response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1761,13 +1729,11 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('Add date column response:', responseText);
       
       // Инвалидируем кэш дат занятий и студентов
       this.invalidateLessonDatesCache(addRequest.idGroup, addRequest.idSt, addRequest.idTeacher);
       this.invalidateStudentCache(addRequest.idGroup, addRequest.idSt, addRequest.idTeacher);
       
-      console.log('Date column added successfully');
       return { success: true };
     } catch (error) {
       console.error('Error adding date column:', error);
@@ -1777,9 +1743,7 @@ export const teacherApiService = {
 
   // Удаление столбца с датой
   async deleteDateColumn(deleteRequest: DeleteDateColumnRequest): Promise<{ success: boolean }> {
-    try {
-      console.log('Deleting date column:', deleteRequest);
-      
+    try {      
       const response = await fetchWithTimeout(`${API_BASE_URL}/marks/delete/group`, {
         method: 'DELETE',
         headers: {
@@ -1787,8 +1751,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(deleteRequest),
       });
-
-      console.log('Delete date column response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1811,13 +1773,11 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('Delete date column response:', responseText);
       
       // Инвалидируем кэш дат занятий и студентов
       this.invalidateLessonDatesCache(deleteRequest.idGroup, deleteRequest.idSt, deleteRequest.idTeacher);
       this.invalidateStudentCache(deleteRequest.idGroup, deleteRequest.idSt, deleteRequest.idTeacher);
       
-      console.log('Date column deleted successfully');
       return { success: true };
     } catch (error) {
       console.error('Error deleting date column:', error);
@@ -1838,12 +1798,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`ST data for ${idSt} loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching ST data for ${idSt} from server`);
       const response = await fetchWithTimeout(`${API_BASE_URL}/st`, {
         method: 'GET',
         headers: {
@@ -1882,12 +1840,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Lesson types for ST ${stId} loaded from cache:`, cached.length);
       return cached;
     }
 
     try {
-      console.log(`Fetching lesson types for ST ${stId} from server`);
       const response = await fetchWithTimeout(`${API_BASE_URL}/typeMarks/st/${stId}`, {
         method: 'GET',
         headers: {
@@ -1900,7 +1856,6 @@ export const teacherApiService = {
       }
 
       const lessonTypes: ApiLessonType[] = await response.json();
-      console.log(`Received ${lessonTypes.length} lesson types for ST ${stId}:`, lessonTypes);
       
       cacheService.set(cacheKey, lessonTypes, { 
         ttl: CACHE_TTL.LESSON_TYPES 
@@ -1918,13 +1873,7 @@ export const teacherApiService = {
    */
   async updateLessonType(updateRequest: UpdateMarkRequest): Promise<{ success: boolean }> {
     try {
-      console.log('Updating lesson type with request:', updateRequest);
-      
-      // ДОБАВИМ ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
-      console.log('=== ДЕТАЛИ ЗАПРОСА НА ОБНОВЛЕНИЕ ТИПА ===');
-      console.log('URL:', `${API_BASE_URL}/marks/updateOneMark`);
-      console.log('Request body:', JSON.stringify(updateRequest, null, 2));
-      
+
       const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
         method: 'PATCH',
         headers: {
@@ -1932,8 +1881,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(updateRequest),
       });
-
-      console.log('Update lesson type response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -1957,16 +1904,13 @@ export const teacherApiService = {
 
       // Читаем ответ как текст сначала
       const responseText = await response.text();
-      console.log('Update lesson type raw response:', responseText);
       
       let result;
       try {
         // Пытаемся распарсить JSON, если ответ не пустой
         result = responseText ? JSON.parse(responseText) : { success: true };
-        console.log('Update lesson type parsed result:', result);
       } catch (e) {
         // Если не JSON, считаем успешным
-        console.log('Response is not JSON, treating as success');
         result = { success: true };
       }
       
@@ -1975,7 +1919,6 @@ export const teacherApiService = {
       this.invalidateLessonInfoCache();
       this.invalidateLessonDatesCache(updateRequest.idGroup, updateRequest.idSt, updateRequest.idTeacher);
       
-      console.log('Lesson type updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating lesson type:', error);
@@ -1991,10 +1934,6 @@ export const teacherApiService = {
       console.error('Lesson types array is empty');
       return null;
     }
-
-    console.log('=== ПОИСК ID ТИПА ЗАНЯТИЯ ===');
-    console.log('Искомый тип:', typeName);
-    console.log('Доступные типы:', lessonTypes.map(lt => ({ id: lt.id, name: lt.name })));
 
     // Карта для корректного сопоставления названий (учитывая опечатки в API)
     const typeMap: Record<string, string> = {
@@ -2015,8 +1954,6 @@ export const teacherApiService = {
     // Нормализуем название типа
     const normalizedTypeName = typeMap[typeName] || typeName;
     
-    console.log(`Нормализованное название: "${normalizedTypeName}"`);
-
     // Ищем точное совпадение
     let lessonType = lessonTypes.find(lt => 
       lt.name.toLowerCase() === normalizedTypeName.toLowerCase()
@@ -2024,7 +1961,6 @@ export const teacherApiService = {
     
     // Если не нашли, ищем частичное совпадение
     if (!lessonType) {
-      console.log('Точное совпадение не найдено, ищем частичное...');
       lessonType = lessonTypes.find(lt => 
         lt.name.toLowerCase().includes(normalizedTypeName.toLowerCase()) || 
         normalizedTypeName.toLowerCase().includes(lt.name.toLowerCase())
@@ -2032,7 +1968,6 @@ export const teacherApiService = {
     }
     
     if (lessonType) {
-      console.log(`Найден ID типа: ${lessonType.id} для названия: "${typeName}" (сопоставлено: "${lessonType.name}")`);
       return lessonType.id;
     }
     
@@ -2060,7 +1995,6 @@ export const teacherApiService = {
 
   async updateMark(updateRequest: UpdateMarkGradeRequest): Promise<{ success: boolean }> {
     try {
-      console.log('Updating mark:', updateRequest);
       
       const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
         method: 'PATCH',
@@ -2069,8 +2003,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(updateRequest),
       });
-
-      console.log('Update mark response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -2085,12 +2017,10 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('Update mark response:', responseText);
       
       // Инвалидируем кэш студентов
       this.invalidateStudentCache();
       
-      console.log('Mark updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating mark:', error);
@@ -2102,9 +2032,7 @@ export const teacherApiService = {
    * Получение истории изменений для студента
    */
   async getStudentChangeHistory(studentId: number, idSt: number, lessonNumber: number): Promise<ChangeHistory[]> {
-    try {
-      console.log(`Fetching change history for student ${studentId}, st ${idSt}, lesson ${lessonNumber}`);
-      
+    try {      
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/changes/mark/st/${idSt}/student/${studentId}/number/${lessonNumber}`,
         {
@@ -2117,14 +2045,12 @@ export const teacherApiService = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('Change history not found, returning empty array');
           return [];
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const history: ChangeHistory[] = await response.json();
-      console.log('Change history received:', history.length, 'items');
       
       return history;
     } catch (error) {
@@ -2145,7 +2071,6 @@ export const teacherApiService = {
     comment: string;
   }): Promise<{ success: boolean; idSupplement?: number }> {
     try {
-      console.log('Adding teacher comment:', request);
 
       // Сначала создаем запись изменения
       const addResponse = await fetchWithTimeout(
@@ -2164,8 +2089,6 @@ export const teacherApiService = {
           }),
         }
       );
-
-      console.log('Add teacher comment response status:', addResponse.status);
       
       if (!addResponse.ok) {
         let errorText = '';
@@ -2182,11 +2105,8 @@ export const teacherApiService = {
       const addResult = await addResponse.json();
       const idSupplement = addResult.idSupplement || addResult.id;
 
-      console.log('Teacher comment created, supplement ID:', idSupplement);
-
       // Если есть комментарий и idSupplement, обновляем его
       if (idSupplement && request.comment) {
-        console.log('Updating comment for supplement:', idSupplement);
         await this.updateLessonComment(idSupplement, request.comment);
       }
 
@@ -2201,28 +2121,21 @@ export const teacherApiService = {
    * Добавление файлов к комментарию преподавателя
    */
   async addTeacherCommentFiles(idSupplement: number, files: File[]): Promise<{ success: boolean; fileUrls?: string[] }> {
-    try {
-      console.log('Adding teacher comment files:', { idSupplement, fileCount: files.length });
-      
+    try {      
       const uploadedUrls: string[] = [];
       
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        
-        console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
-        
-        // Используем fetch напрямую без обертки, чтобы не устанавливать Content-Type
+                
         const response = await fetch(
           `${API_BASE_URL}/supplements/add/files/id/${idSupplement}`,
           {
             method: 'POST',
             body: formData,
-            // НЕ устанавливаем Content-Type - браузер сделает это автоматически с boundary
           }
         );
 
-        console.log('File upload response status:', response.status);
         
         if (!response.ok) {
           let errorText = '';
@@ -2240,7 +2153,6 @@ export const teacherApiService = {
         let result;
         try {
           const responseText = await response.text();
-          console.log('File upload raw response:', responseText);
           
           if (responseText) {
             result = JSON.parse(responseText);
@@ -2248,20 +2160,16 @@ export const teacherApiService = {
             result = { success: true };
           }
         } catch (parseError) {
-          console.log('Response is not JSON, treating as success');
           result = { success: true };
         }
         
         if (result.fileUrl) {
           uploadedUrls.push(result.fileUrl);
         } else {
-          // Если API не возвращает URL, считаем успешным
-          console.log('File uploaded successfully, but no URL returned');
           uploadedUrls.push(`uploaded://${file.name}`);
         }
       }
       
-      console.log('All files uploaded successfully, URLs:', uploadedUrls);
       return { success: true, fileUrls: uploadedUrls };
     } catch (error) {
       console.error('Error adding teacher comment files:', error);
@@ -2274,7 +2182,6 @@ export const teacherApiService = {
    */
   async uploadFilesFromExplorer(files: File[]): Promise<{ success: boolean; fileUrls?: string[]; fileIds?: number[] }> {
     try {
-      console.log('Starting file upload from explorer:', files.length, 'files');
       
       const uploadedUrls: string[] = [];
       const uploadedIds: number[] = [];
@@ -2283,15 +2190,11 @@ export const teacherApiService = {
         const formData = new FormData();
         formData.append('file', file);
         
-        console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
 
         const response = await fetch(`${API_BASE_URL}/paths/upload`, {
           method: 'POST',
           body: formData,
-          // НЕ устанавливаем Content-Type - браузер сделает это автоматически с boundary
         });
-
-        console.log('File upload response status:', response.status);
         
         if (!response.ok) {
           let errorText = '';
@@ -2309,7 +2212,6 @@ export const teacherApiService = {
         let result;
         try {
           const responseText = await response.text();
-          console.log('File upload raw response:', responseText);
           
           if (responseText) {
             result = JSON.parse(responseText);
@@ -2317,11 +2219,9 @@ export const teacherApiService = {
             result = { success: true };
           }
         } catch (parseError) {
-          console.log('Response is not JSON, treating as success');
           result = { success: true };
         }
         
-        // Предполагаем, что API возвращает информацию о загруженном файле
         if (result.fileUrl) {
           uploadedUrls.push(result.fileUrl);
         }
@@ -2331,10 +2231,9 @@ export const teacherApiService = {
           uploadedIds.push(result.id);
         }
         
-        console.log('File upload result:', result);
       }
       
-      console.log('All files uploaded successfully:', {
+      console.log({
         urls: uploadedUrls,
         ids: uploadedIds
       });
@@ -2373,7 +2272,6 @@ export const teacherApiService = {
   // Получение списка всех файлов
   async getAllFiles(): Promise<any[]> {
     try {
-      console.log('Fetching all files from server');
       const response = await fetchWithTimeout(`${API_BASE_URL}/paths`, {
         method: 'GET',
         headers: {
@@ -2386,7 +2284,6 @@ export const teacherApiService = {
       }
 
       const files = await response.json();
-      console.log('All files received:', files.length);
       return files;
     } catch (error) {
       console.error('Error fetching all files:', error);
@@ -2397,7 +2294,6 @@ export const teacherApiService = {
   // Получение информации о конкретном файле по ID
   async getFileById(fileId: number): Promise<any> {
     try {
-      console.log(`Fetching file info for ID: ${fileId}`);
       const response = await fetchWithTimeout(`${API_BASE_URL}/paths/id/${fileId}`, {
         method: 'GET',
         headers: {
@@ -2410,7 +2306,6 @@ export const teacherApiService = {
       }
 
       const fileInfo = await response.json();
-      console.log('File info received:', fileInfo);
       return fileInfo;
     } catch (error) {
       console.error('Error fetching file info:', error);
@@ -2421,19 +2316,14 @@ export const teacherApiService = {
   // Получение файлов для конкретного supplement
   async getSupplementFiles(supplementId: number): Promise<any[]> {
     try {
-      console.log(`Fetching files for supplement: ${supplementId}`);
       
       // Сначала получаем все файлы
       const allFiles = await this.getAllFiles();
-      
-      // Фильтруем файлы по supplementId (если такая связь есть в данных)
-      // Это зависит от структуры вашего API
       const supplementFiles = allFiles.filter(file => 
         file.idSupplement === supplementId || 
         file.supplementId === supplementId
       );
       
-      console.log(`Found ${supplementFiles.length} files for supplement ${supplementId}`);
       return supplementFiles;
     } catch (error) {
       console.error('Error fetching supplement files:', error);
@@ -2446,7 +2336,6 @@ export const teacherApiService = {
    */
   async downloadFileById(fileId: number, fileName?: string): Promise<void> {
     try {
-      console.log(`Downloading file by ID: ${fileId}`);
       
       // Получаем информацию о файле
       const fileInfo = await this.getFileById(fileId);
@@ -2457,9 +2346,6 @@ export const teacherApiService = {
       // Используем pathToFile для скачивания
       const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
       const actualFileName = fileName || fileInfo.nameFile || `file_${fileId}`;
-      
-      console.log('Download URL:', downloadUrl);
-      console.log('File name:', actualFileName);
 
       // Создаем скрытую ссылку для скачивания
       const link = document.createElement('a');
@@ -2476,9 +2362,7 @@ export const teacherApiService = {
       setTimeout(() => {
         document.body.removeChild(link);
       }, 100);
-      
-      console.log(`File download initiated for file ID ${fileId}`);
-      
+            
     } catch (error) {
       console.error('Error downloading file by ID:', error);
       
@@ -2496,9 +2380,7 @@ export const teacherApiService = {
    * Альтернативный метод скачивания через fetch для fileId
    */
   async downloadFileByIdWithFetch(fileId: number, fileName?: string): Promise<void> {
-    try {
-      console.log(`Trying alternative download for file ID ${fileId}`);
-      
+    try {      
       const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
       
       const response = await fetch(downloadUrl, {
@@ -2533,7 +2415,6 @@ export const teacherApiService = {
       link.download = actualFileName;
       link.style.display = 'none';
       
-      // Добавляем в DOM и кликаем
       document.body.appendChild(link);
       link.click();
       
@@ -2542,9 +2423,7 @@ export const teacherApiService = {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
       }, 100);
-      
-      console.log(`File ${actualFileName} downloaded successfully via fetch, size: ${blob.size} bytes`);
-      
+            
     } catch (error) {
       console.error('Alternative download by ID failed:', error);
       throw error;
@@ -2562,12 +2441,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Subgroups for teacher ${idTeacher} loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching subgroups for teacher ${idTeacher}`);
       const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups`, {
         method: 'GET',
         headers: {
@@ -2585,9 +2462,7 @@ export const teacherApiService = {
       const teacherSubgroups = allSubgroups.filter(subgroup => 
         subgroup.idTeacher === idTeacher
       );
-      
-      console.log(`Найдено подгрупп для преподавателя ${idTeacher}:`, teacherSubgroups);
-      
+            
       cacheService.set(cacheKey, teacherSubgroups, { 
         ttl: CACHE_TTL.SUBGROUP_DATA 
       });
@@ -2607,7 +2482,6 @@ export const teacherApiService = {
     subjectName: string
   ): Promise<{ subgroupIId: number; subgroupIIId: number }> {
     try {
-      console.log(`Упрощенное получение ID подгрупп для преподавателя ${idTeacher}, группа ${groupNumber}, предмет ${subjectName}`);
       
       const groupId = this.getGroupIdFromNumber(groupNumber);
       if (!groupId) {
@@ -2625,8 +2499,6 @@ export const teacherApiService = {
       if (!subjectData || subjectData.teachers.length === 0) {
         throw new Error(`Не найдены преподаватели для группы ${groupId} и предмета ${subjectName}`);
       }
-
-      console.log('Все преподаватели для предмета:', subjectData.teachers);
 
       // Для двух преподавателей просто возвращаем их ID в порядке из массива
       if (subjectData.teachers.length >= 2) {
@@ -2655,7 +2527,6 @@ export const teacherApiService = {
     students: number[];
   }): Promise<{ success: boolean }> {
     try {
-      console.log('DELETE запрос на удаление студентов:', deleteRequest);
       
       const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups/delete/students`, {
         method: 'DELETE',
@@ -2664,8 +2535,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(deleteRequest),
       });
-
-      console.log('DELETE статус:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -2688,7 +2557,6 @@ export const teacherApiService = {
         throw new Error(`Ошибка удаления студентов: ${response.status} - ${errorData.message || errorText}`);
       }
 
-      console.log('DELETE успешно');
       return { success: true };
     } catch (error) {
       console.error('DELETE исключение:', error);
@@ -2703,7 +2571,6 @@ export const teacherApiService = {
     students: number[];
   }): Promise<{ success: boolean }> {
     try {
-      console.log('POST запрос на добавление студентов:', addRequest);
       
       const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups/add/students`, {
         method: 'POST',
@@ -2712,8 +2579,6 @@ export const teacherApiService = {
         },
         body: JSON.stringify(addRequest),
       });
-
-      console.log('POST статус:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -2737,9 +2602,7 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
-      console.log('POST ответ:', responseText);
       
-      console.log('POST успешно');
       return { success: true };
     } catch (error) {
       console.error('POST исключение:', error);
@@ -2756,21 +2619,16 @@ export const teacherApiService = {
     subjectName: string
   ): Promise<{ success: boolean }> {
     try {
-      console.log('=== НАЧАЛО СОХРАНЕНИЯ ПОДГРУПП ===');
-      console.log('Параметры:', { idSt, idTeacher, studentSubgroups, groupNumber, subjectName });
 
       // 1. Получаем ID преподавателей для подгрупп
-      console.log('1. Получение ID преподавателей для подгрупп...');
       const { subgroupIId, subgroupIIId } = await this.getTeacherSubgroupIds(
         idTeacher, 
         idSt, 
         groupNumber,
         subjectName
       );
-      console.log('ID преподавателей для подгрупп получены:', { subgroupIId, subgroupIIId });
 
       // 2. Группируем студентов по подгруппам
-      console.log('2. Группировка студентов...');
       const subgroupIStudents: number[] = [];
       const subgroupIIStudents: number[] = [];
       
@@ -2787,20 +2645,12 @@ export const teacherApiService = {
           subgroupIIStudents.push(numericStudentId);
         }
       });
-      
-      console.log('Студенты для I подгруппы:', subgroupIStudents);
-      console.log('Студенты для II подгруппы:', subgroupIIStudents);
 
       // 3. Получаем текущее состояние подгрупп ОБОИХ преподавателей
-      console.log('3. Получение текущего состояния подгрупп обоих преподавателей...');
       const currentSubgroupsTeacherI = await this.getSubgroupsForTeacher(subgroupIId);
       const currentSubgroupsTeacherII = await this.getSubgroupsForTeacher(subgroupIIId);
       
-      console.log('Текущие подгруппы преподавателя I:', currentSubgroupsTeacherI);
-      console.log('Текущие подгруппы преподавателя II:', currentSubgroupsTeacherII);
-
       // 4. Собираем ВСЕХ студентов для удаления ИЗ ОБОИХ ПОДГРУПП
-      console.log('4. Сбор студентов для удаления из обеих подгрупп...');
       const allStudentsToRemove: number[] = [];
       
       // Собираем студентов из подгрупп первого преподавателя
@@ -2816,14 +2666,12 @@ export const teacherApiService = {
       const uniqueStudentsToRemove = allStudentsToRemove.filter((studentId, index, array) => 
         array.indexOf(studentId) === index
       );
-      console.log('Все студенты для удаления из обеих подгрупп:', uniqueStudentsToRemove);
 
       // 5. УДАЛЯЕМ всех студентов из подгрупп ОБОИХ ПРЕПОДАВАТЕЛЕЙ
       if (uniqueStudentsToRemove.length > 0) {
-        console.log('5. Удаление студентов из всех подгрупп обоих преподавателей...');
         
         // Удаляем из подгрупп первого преподавателя
-        console.log('DELETE запрос для преподавателя I:', {
+        console.log({
           idTeacher: subgroupIId,
           idSt: idSt,
           students: uniqueStudentsToRemove
@@ -2834,11 +2682,10 @@ export const teacherApiService = {
           idSt: idSt,
           students: uniqueStudentsToRemove
         });
-        console.log('Результат удаления из подгрупп преподавателя I:', deleteResultI);
         
         // Удаляем из подгрупп второго преподавателя (если это разные преподаватели)
         if (subgroupIIId !== subgroupIId) {
-          console.log('DELETE запрос для преподавателя II:', {
+          console.log({
             idTeacher: subgroupIIId,
             idSt: idSt,
             students: uniqueStudentsToRemove
@@ -2849,18 +2696,15 @@ export const teacherApiService = {
             idSt: idSt,
             students: uniqueStudentsToRemove
           });
-          console.log('Результат удаления из подгрупп преподавателя II:', deleteResultII);
         }
       } else {
-        console.log('5. Нет студентов для удаления');
       }
 
       // 6. ДОБАВЛЯЕМ студентов к соответствующим преподавателям
-      console.log('6. Добавление студентов к преподавателям...');
       
       // Для I подгруппы (первый преподаватель)
       if (subgroupIStudents.length > 0) {
-        console.log('Добавление студентов к преподавателю I подгруппы:', {
+        console.log({
           idSt: idSt,
           idTeacher: subgroupIId,
           students: subgroupIStudents
@@ -2871,12 +2715,11 @@ export const teacherApiService = {
           idTeacher: subgroupIId,
           students: subgroupIStudents
         });
-        console.log('Результат добавления к I подгруппе:', addResultI);
       }
       
       // Для II подгруппы (второй преподаватель)
       if (subgroupIIStudents.length > 0) {
-        console.log('Добавление студентов к преподавателю II подгруппы:', {
+        console.log({
           idSt: idSt,
           idTeacher: subgroupIIId,
           students: subgroupIIStudents
@@ -2887,15 +2730,12 @@ export const teacherApiService = {
           idTeacher: subgroupIIId,
           students: subgroupIIStudents
         });
-        console.log('Результат добавления к II подгруппе:', addResultII);
       }
 
       // 7. Инвалидируем кэш
-      console.log('7. Инвалидация кэша...');
       this.invalidateSubgroupsCache();
       this.invalidateStudentCache();
 
-      console.log('=== СОХРАНЕНИЕ УСПЕШНО ЗАВЕРШЕНО ===');
       return { success: true };
       
     } catch (error: any) {
@@ -2930,14 +2770,12 @@ export const teacherApiService = {
     
     keysToRemove.forEach(key => {
       cacheService.remove(key);
-      console.log(`Invalidated subgroups cache: ${key}`);
     });
   },
 
   // Метод для проверки и создания подгрупп если их нет
   async ensureSubgroupsExist(idTeacher: number, idSt: number): Promise<{ subgroupIId: number; subgroupIIId: number }> {
     try {
-      console.log(`Проверка подгрупп для преподавателя ${idTeacher}`);
       
       // Получаем текущие подгруппы
       const currentSubgroups = await this.getSubgroupsForTeacher(idTeacher);
@@ -2960,8 +2798,6 @@ export const teacherApiService = {
         throw new Error(`Преподаватель ${idTeacher} не найден в данных о предметах`);
       }
       
-      // Здесь должна быть логика создания подгрупп, но по условиям задачи мы не можем создавать подгруппы
-      // Поэтому просто выбрасываем ошибку
       throw new Error(`Недостаточно подгрупп для преподавателя. Найдено: ${currentSubgroups.length}, требуется: 2`);
       
     } catch (error) {
@@ -2983,12 +2819,10 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log('All lessons loaded from cache');
       return cached;
     }
 
     try {
-      console.log('Fetching all lessons from server');
       const response = await fetchWithTimeout(`${API_BASE_URL}/lessons`, {
         method: 'GET',
         headers: {
@@ -3001,7 +2835,6 @@ export const teacherApiService = {
       }
 
       const data = await response.json();
-      console.log('All lessons received:', data.length);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.LESSON_DATES 
@@ -3047,8 +2880,6 @@ export const teacherApiService = {
           'Content-Type': 'application/json',
         },
       });
-
-      console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -3098,15 +2929,11 @@ export const teacherApiService = {
     });
     
     if (cached) {
-      console.log(`Student ${studentId} attendance for lesson ${lessonId} loaded from cache`);
       return cached;
     }
 
     try {
-      console.log(`Fetching student ${studentId} attendance for lesson ${lessonId} from server`);
-      
       const url = `${API_BASE_URL}/attendances/lesson/${lessonId}/student/${studentId}`;
-      console.log('Request URL:', url);
       
       const response = await fetchWithTimeout(url, {
         method: 'GET',
@@ -3129,7 +2956,6 @@ export const teacherApiService = {
       }
 
       const data: AttendanceStatus = await response.json();
-      console.log('Student attendance data received:', data);
       
       cacheService.set(cacheKey, data, { 
         ttl: CACHE_TTL.ATTENDANCE_DATA 
@@ -3153,11 +2979,7 @@ export const teacherApiService = {
    */
   async updateAttendance(updateRequest: UpdateAttendanceRequest): Promise<{ success: boolean }> {
     try {
-      console.log('Updating attendance:', updateRequest);
-      
-      // ПРАВИЛЬНЫЙ endpoint с учетом studentId
       const url = `${API_BASE_URL}/attendances/student/${updateRequest.idStudent}`;
-      console.log('Update attendance URL:', url);
       
       const response = await fetchWithTimeout(url, {
         method: 'PATCH',
@@ -3171,8 +2993,6 @@ export const teacherApiService = {
           comment: updateRequest.comment
         }),
       });
-
-      console.log('Update attendance response status:', response.status);
       
       if (!response.ok) {
         let errorText = '';
@@ -3183,7 +3003,6 @@ export const teacherApiService = {
           errorText = 'Не удалось прочитать текст ошибки';
         }
         
-        // Детальная диагностика ошибки
         let errorMessage = `Ошибка обновления посещаемости: ${response.status}`;
         if (errorText) {
           errorMessage += ` - ${errorText}`;
@@ -3194,12 +3013,10 @@ export const teacherApiService = {
 
       // Обработка успешного ответа
       const responseText = await response.text();
-      console.log('Update attendance response:', responseText);
       
       // Инвалидируем кэш посещаемости
       this.invalidateAttendanceCache();
       
-      console.log('Attendance updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating attendance:', error);
@@ -3220,11 +3037,9 @@ export const teacherApiService = {
     }
   },
 
-  // НОВЫЙ МЕТОД: Получение информации о supplement по ID
+  // Получение информации о supplement по ID
   async getSupplementInfo(supplementId: number): Promise<SupplementInfo | null> {
-    try {
-      console.log(`Fetching supplement info for ID: ${supplementId}`);
-      
+    try {      
       const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/${supplementId}`, {
         method: 'GET',
         headers: {
@@ -3234,14 +3049,12 @@ export const teacherApiService = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('Supplement not found');
           return null;
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const supplementInfo: SupplementInfo = await response.json();
-      console.log('Supplement info received:', supplementInfo);
       
       return supplementInfo;
     } catch (error) {
@@ -3250,7 +3063,7 @@ export const teacherApiService = {
     }
   },
 
-  // НОВЫЙ МЕТОД: Получение типов занятий для списка supplement IDs
+  //Получение типов занятий для списка supplement IDs
   async getSupplementTypes(supplementIds: number[]): Promise<Map<number, string>> {
     const typesMap = new Map<number, string>();
     
@@ -3258,10 +3071,7 @@ export const teacherApiService = {
       return typesMap;
     }
 
-    try {
-      console.log(`Fetching supplement types for IDs:`, supplementIds);
-      
-      // Используем batch запрос если API поддерживает, или последовательные запросы
+    try {      
       for (const id of supplementIds) {
         try {
           const supplementInfo = await this.getSupplementInfo(id);
@@ -3273,7 +3083,6 @@ export const teacherApiService = {
         }
       }
       
-      console.log(`Retrieved types for ${typesMap.size} supplements`);
       return typesMap;
     } catch (error) {
       console.error('Error fetching supplement types:', error);

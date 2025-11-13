@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
+import { useCache } from '../context/CacheContext';
 import { teacherApiService } from '../services/teacherApiService';
 import './DisciplinesSectionStyle.css';
+import { CacheWarning } from '../th-components/CacheWarning';
 
 export interface Discipline {
   idTeacher: number;
@@ -22,67 +24,135 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isUsingCache, setIsUsingCache] = useState(false);
-  
+  const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
+
   const [activeTab, setActiveTab] = useState<'semesters' | 'course'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
   const [selectedCourse, setSelectedCourse] = useState<'all' | '1' | '2' | '3' | '4'>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-// Функция для получения дисциплин с кэшированием
-const fetchDisciplines = async (forceRefresh = false) => {
-  try {
-    setLoading(true);
-    setError(null);
-    setIsUsingCache(false);
-
-    if (forceRefresh) {
-      setRefreshing(true);
+  // Функция для проверки наличия кэшированных данных дисциплин
+  const checkCachedDisciplinesData = useCallback((): boolean => {
+    try {
+      // Проверяем различные ключи кэша, которые могут содержать данные дисциплин
+      const teacherId = localStorage.getItem('teacher_id');
+      if (teacherId) {
+        const cacheKeys = [
+          `teacher_disciplines_full_${teacherId}`,
+          `teacher_disciplines_${teacherId}`,
+          'all_staff'
+        ];
+        
+        for (const key of cacheKeys) {
+          const cached = localStorage.getItem(`cache_${key}`);
+          if (cached) {
+            return true;
+          }
+        }
+      }
+      
+      // Ищем любые кэшированные данные дисциплин в localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_teacher_disciplines_')) {
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('Error checking disciplines cache:', err);
+      return false;
     }
+  }, []);
 
-    console.log('Загрузка дисциплин преподавателя...');
-    
-    if (!user?.name || !user?.lastName || !user?.patronymic) {
-      throw new Error('Недостаточно данных пользователя для поиска');
-    }
+  // Функция для получения дисциплин с кэшированием
+  const fetchDisciplines = async (forceRefresh = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setShowCacheWarning(false);
 
-    // Инвалидируем кэш при принудительном обновлении
-    if (forceRefresh) {
+      if (forceRefresh) {
+        setRefreshing(true);
+      }
+
+      console.log('Загрузка дисциплин преподавателя...');
+      
+      if (!user?.name || !user?.lastName || !user?.patronymic) {
+        throw new Error('Недостаточно данных пользователя для поиска');
+      }
+
+      // Инвалидируем кэш при принудительном обновлении
+      if (forceRefresh) {
+        const teacher = await teacherApiService.findTeacherByName(
+          user.name, 
+          user.lastName, 
+          user.patronymic
+        );
+        if (teacher) {
+          teacherApiService.invalidateTeacherCache(teacher.id);
+        }
+      }
+
       const teacher = await teacherApiService.findTeacherByName(
         user.name, 
         user.lastName, 
         user.patronymic
       );
-      if (teacher) {
-        teacherApiService.invalidateTeacherCache(teacher.id);
+
+      if (!teacher) {
+        throw new Error('Преподаватель не найден');
       }
+
+      // Получаем дисциплины - cacheService автоматически обработает кэширование
+      const teacherDisciplines = await teacherApiService.getTeacherDisciplinesFull(teacher.id);
+      
+      setDisciplines(teacherDisciplines);
+      console.log('Дисциплины преподавателя загружены:', teacherDisciplines);
+      
+    } catch (err: any) {
+      console.error('Ошибка при загрузке дисциплин:', err);
+      
+      // Проверяем, является ли ошибка сетевой
+      const isNetworkError = 
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Network request failed') ||
+        err.message?.includes('Превышено время ожидания') ||
+        err.name === 'TypeError';
+      
+      if (isNetworkError) {
+        // Проверяем, есть ли кэшированные данные
+        const hasCachedData = checkCachedDisciplinesData();
+        
+        if (hasCachedData) {
+          setShowCacheWarning(true);
+          
+          // Пытаемся загрузить данные из кэша
+          try {
+            const teacherId = localStorage.getItem('teacher_id');
+            if (teacherId) {
+              const cachedDisciplines = localStorage.getItem(`cache_teacher_disciplines_full_${teacherId}`);
+              if (cachedDisciplines) {
+                const parsedDisciplines = JSON.parse(cachedDisciplines);
+                setDisciplines(parsedDisciplines);
+              }
+            }
+          } catch (cacheError) {
+            console.error('Error loading cached disciplines:', cacheError);
+          }
+        } else {
+          setError('Отсутствует подключение к интернету и нет кэшированных данных дисциплин.');
+        }
+      } else {
+        setError('Не удалось загрузить данные дисциплин');
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-
-    const teacher = await teacherApiService.findTeacherByName(
-      user.name, 
-      user.lastName, 
-      user.patronymic
-    );
-
-    if (!teacher) {
-      throw new Error('Преподаватель не найден');
-    }
-
-    // Получаем дисциплины - cacheService автоматически обработает кэширование
-    const teacherDisciplines = await teacherApiService.getTeacherDisciplinesFull(teacher.id);
-    
-    setDisciplines(teacherDisciplines);
-    console.log('Дисциплины преподавателя загружены:', teacherDisciplines);
-    
-  } catch (err) {
-    console.error('Ошибка при загрузке дисциплин:', err);
-    setError('Не удалось загрузить данные дисциплин');
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
-
+  };
 
   // Функция принудительного обновления данных
   const handleRefresh = async () => {
@@ -103,11 +173,57 @@ const fetchDisciplines = async (forceRefresh = false) => {
         <span className="info-icon-text">i</span>
         <span>Информация</span>
       </button>
-      <div className="info-tooltip">
+      <div className="info-tooltip small">
         <div className="info-tooltip-content">
-          <p><strong>Управление дисциплинами</strong></p>
-          <p>Здесь отображаются все преподаваемые дисциплины. Вы можете фильтровать их по семестрам или курсам, а также сортировать по названию.</p>
-          <p>Для просмотра подробной информации о группах и студентах нажмите на интересующую дисциплину.</p>
+          <div className="info-header">
+            <div className="info-title">
+              <h3>Управление дисциплинами</h3>
+              <p>Здесь отображаются все преподаваемые дисциплины. Вы можете фильтровать их по семестрам или курсам, а также сортировать по названию.</p>
+            </div>
+          </div>
+          
+          <div className="info-section">
+            <h4>Основные возможности</h4>
+            <div className="features-grid">
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр всех преподаваемых дисциплин</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Фильтрация по семестрам и курсам</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Сортировка по названию дисциплины</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Быстрый переход к группам по дисциплине</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр курса и количества групп</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Как использовать</h4>
+            <div className="usage-steps">
+              <div className="step">
+                <span className="step-number">1</span>
+                <span>Например, выберите курс для фильтрации дисциплин</span>
+              </div>
+              <div className="step">
+                <span className="step-number">2</span>
+                <span>Нажмите на карточку дисциплины для перехода к группам</span>
+              </div>
+            </div>
+          </div>
+          <div className="info-tip">
+            Для удобства используйте фильтрацию при большом количестве дисциплин
+          </div>
         </div>
       </div>
     </div>
@@ -118,14 +234,14 @@ const fetchDisciplines = async (forceRefresh = false) => {
     <button 
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
       onClick={handleRefresh}
-      disabled={refreshing}
+      disabled={refreshing || loading}
     >
       <img 
         src="/st-icons/upload_icon.svg" 
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+      <span>{refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить данные'}</span>
     </button>
   );
 
@@ -176,12 +292,7 @@ const fetchDisciplines = async (forceRefresh = false) => {
         <RefreshButton />
       </div>
 
-      {/* Индикация использования кэша */}
-      {isUsingCache && (
-        <div className="ds-cache-warning">
-          Используются кэшированные данные. Для актуальной информации обновите данные.
-        </div>
-      )}
+      {showCacheWarning && <CacheWarning />}
 
       {selectedDiscipline && (
         <div className="ds-discipline-filter">
@@ -194,6 +305,12 @@ const fetchDisciplines = async (forceRefresh = false) => {
           >
             Сбросить фильтр
           </button>
+        </div>
+      )}
+
+      {error && !isUsingCache && (
+        <div className="ds-error-message">
+          {error}
         </div>
       )}
 
@@ -218,10 +335,6 @@ const fetchDisciplines = async (forceRefresh = false) => {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
             Загрузка дисциплин...
-          </div>
-        ) : error && !isUsingCache ? (
-          <div className="ds-error-message">
-            {error}
           </div>
         ) : (
           <>
@@ -291,7 +404,7 @@ const fetchDisciplines = async (forceRefresh = false) => {
                       ) : (
                         <tr>
                           <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                            Нет дисциплин для отображения
+                            Второй семестр пока недоступен
                           </td>
                         </tr>
                       )}

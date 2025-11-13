@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './TeacherAttendanceSection.css';
+import { useCache } from '../context/CacheContext';
 import { teacherApiService } from '../services/teacherApiService';
+import { CacheWarning } from '../th-components/CacheWarning';
 
 // Типы данных
 export interface Student {
@@ -64,6 +66,125 @@ interface FilePreview {
   isImage: boolean;
 }
 
+const InfoIcon = (): React.ReactElement => (
+  <div className="info-icon-btn" tabIndex={0}>
+    <button className="header-btn" type="button">
+      <span className="info-icon-text">i</span>
+      <span>Информация</span>
+    </button>
+    <div className="info-tooltip large">
+      <div className="info-tooltip-content">
+        <div className="info-header">
+          <div className="info-title">
+            <h3>Управление посещаемостью</h3>
+            <p>В этом разделе вы можете отмечать посещаемость студентов, указывать причины отсутствия и отслеживать статистику.</p>
+          </div>
+        </div>
+        
+        <div className="info-section">
+          <h4>Основные возможности</h4>
+          <div className="features-grid">
+            <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Отметка присутствия или отсутствия студента</span>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Указание причин отсутствия</span>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Фильтрация по периоду дат</span>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Просмотр статистики</span>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Информация о занятиях</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="info-section">
+          <h4>Статусы посещаемости</h4>
+          <div className="statuses-grid">
+            <div className="status-item">
+              <div className="status-demo status-present">п</div>
+              <div className="status-info">
+                <span>Студент был на занятии</span>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-demo status-absent">у</div>
+              <div className="status-info">
+                <span>Отсутствие по уважительной причине</span>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-demo status-not">н</div>
+              <div className="status-info">
+                <span>Отсутствие без уважительной причины</span>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-demo status-empty">+</div>
+              <div className="status-info">
+                <span>Статус не установлен</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="info-section">
+          <h4>Как использовать</h4>
+          <div className="usage-steps">
+            <div className="step">
+              <span className="step-number">1</span>
+              <span>Нажмите на ячейку с посещаемостью</span>
+            </div>
+            <div className="step">
+              <span className="step-number">2</span>
+              <span>Введите статус: <code>п</code>, <code>у</code> или <code>н</code></span>
+            </div>
+            <div className="step">
+              <span className="step-number">3</span>
+              <span>Для статуса <code>у</code> укажите причину отсутствия</span>
+            </div>
+            <div className="step">
+              <span className="step-number">4</span>
+              <span>Нажмите "Сохранить"</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="info-tip">
+          Используйте клавиши со стрелками для быстрой навигации по таблице
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+  const RefreshButton = ({ refreshing, onRefresh }: { 
+    refreshing: boolean; 
+    onRefresh: () => void; 
+  }): React.ReactElement => (
+    <button 
+      className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+      onClick={onRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+        alt="Обновить"
+      />
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+    </button>
+  );
+
 export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> = ({
   groupNumber,
   subject,
@@ -89,19 +210,6 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
   });
 
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  const [managingDate, setManagingDate] = useState(false);
-  const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
-    isOpen: false,
-    availableLessons: [],
-    selectedLesson: null
-  });
-
-  const [deleteDateModal, setDeleteDateModal] = useState<DeleteDateModalData>({
-    isOpen: false,
-    dateToDelete: '',
-    lessonNumber: 0
-  });
 
   const [lessonInfoModal, setLessonInfoModal] = useState<LessonInfoModalData>({
     isOpen: false,
@@ -112,76 +220,10 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
   const [loadingLessonInfo, setLoadingLessonInfo] = useState(false);
 
-  // Новые состояния для кэша и обновления
   const [refreshing, setRefreshing] = useState(false);
-  const [isUsingCache, setIsUsingCache] = useState(false);
+  const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
 
   const filteredStudents = students;
-
-  // Компонент информационной иконки для посещаемости
-  const InfoIcon = (): React.ReactElement => (
-    <div className="info-icon-btn" tabIndex={0}>
-      <button className="header-btn" type="button">
-        <span className="info-icon-text">i</span>
-        <span>Информация</span>
-      </button>
-      <div className="info-tooltip">
-        <div className="info-tooltip-content">
-          <p><strong>Управление посещаемостью</strong></p>
-          <p>В этом разделе вы можете отмечать посещаемость студентов, указывать причины отсутствия и отслеживать статистику.</p>
-          <p><strong>Основные возможности:</strong></p>
-          <ul>
-            <li>Отметка присутствия/отсутствия по датам занятий</li>
-            <li>Указание причин отсутствия</li>
-            <li>Фильтрация по периоду дат</li>
-            <li>Просмотр статистики посещаемости</li>
-            <li>Информация о каждом занятии</li>
-          </ul>
-          <p><strong>Статусы посещаемости:</strong></p>
-          <ul>
-            <li><strong>п</strong> - присутствовал</li>
-            <li><strong>у</strong> - отсутствовал по уважительной причине</li>
-            <li><strong>н</strong> - отсутствовал без уважительной причины</li>
-          </ul>
-          <p>Для изменения статуса нажмите на ячейку с посещаемостью.</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Компонент кнопки обновления
-  const RefreshButton = (): React.ReactElement => (
-    <button 
-      className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
-      onClick={handleRefresh}
-      disabled={refreshing}
-    >
-      <img 
-        src="/st-icons/upload_icon.svg" 
-        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
-        alt="Обновить"
-      />
-      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
-    </button>
-  );
-
-  // Функция для принудительного обновления данных
-  const handleRefresh = async (): Promise<void> => {
-    setRefreshing(true);
-    try {
-      // Очищаем кэш посещаемости
-      teacherApiService.invalidateAttendanceCache();
-      teacherApiService.invalidateStudentCache();
-      
-      // Перезагружаем данные
-      await loadAttendanceData();
-      console.log('Данные посещаемости успешно обновлены');
-    } catch (error) {
-      console.error('Ошибка при обновлении данных посещаемости:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   // Функция для извлечения чистой даты из формата "10.11 (539725)"
   const extractDateFromTableFormat = (tableDate: string): string => {
@@ -452,12 +494,49 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       setStudents(transformedStudents);
               
     } catch (error) {
+      console.error('Ошибка при загрузке данных посещаемости:', error);
+      
+      // Проверяем, является ли ошибка сетевой
+      const isNetworkError = 
+        error instanceof Error && (
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('Network request failed') ||
+          error.message?.includes('Превышено время ожидания') ||
+          error.name === 'TypeError'
+        );
+      
+      if (isNetworkError) {
+        // Проверяем, есть ли кэшированные данные
+        forceCacheCheck();
+        
+        setShowCacheWarning(true);
+        
+          setShowCacheWarning(true);
+          console.log('Используются кэшированные данные посещаемости');
+          
+          // Пытаемся загрузить данные из кэша
+          try {
+            const cachedAttendance = localStorage.getItem(`cache_group_attendance_${groupNumber}_${idSt}_${teacherId}`);
+            if (cachedAttendance) {
+              const parsedData = JSON.parse(cachedAttendance);
+            }
+          } catch (cacheError) {
+            console.error('Error loading cached attendance data:', cacheError);
+          }
+      }
+      
       setAllDates([]);
       setAttendanceRecords([]);
       setStudents([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Функция принудительного обновления данных
+  const handleRefresh = async () => {
+    await loadAttendanceData();
   };
 
   // Обработчик обновления данных посещаемости
@@ -1074,14 +1153,13 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
           )}
           <InfoIcon />
         </div>
-        <RefreshButton />
+        <RefreshButton 
+          refreshing={refreshing} 
+          onRefresh={handleRefresh} 
+        />
       </div>
 
-      {isUsingCache && (
-        <div className="attendance-cache-warning">
-          Используются кэшированные данные. Для актуальной информации обновите данные.
-        </div>
-      )}
+      {showCacheWarning && <CacheWarning />}
 
       {/* Основной заголовок */}
       <div className="attendance-header">

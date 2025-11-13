@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useCache } from '../context/CacheContext';
+import { CacheWarning } from '../th-components/CacheWarning';
 import { 
   teacherApiService, 
   type LessonDate, 
@@ -136,7 +138,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const [idSt, setIdSt] = useState<number | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [lessonDates, setLessonDates] = useState<LessonDate[]>([]);
   const [showDateModal, setShowDateModal] = useState<LessonDateModalData | null>(null);
   const [dateModalData, setDateModalData] = useState<{
@@ -190,7 +191,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
   const [loadingLessonTypes, setLoadingLessonTypes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isUsingCache, setIsUsingCache] = useState(false);
+  const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
+  const [error, setError] = useState<string | null>(null);
 
   // Новые состояния для управления датами
   const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
@@ -346,20 +348,104 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         <span className="info-icon-text">i</span>
         <span>Информация</span>
       </button>
-      <div className="info-tooltip">
+      <div className="info-tooltip large">
         <div className="info-tooltip-content">
-          <p><strong>Управление успеваемостью</strong></p>
-          <p>В этом разделе вы можете выставлять оценки студентам, управлять подгруппами и отслеживать успеваемость.</p>
-          <p><strong>Основные возможности:</strong></p>
-          <ul>
-            <li>Выставление оценок по датам занятий</li>
-            <li>Фильтрация по подгруппам и типам занятий</li>
-            <li>Добавление комментариев и прикрепление файлов</li>
-            <li>Управление распределением по подгруппам</li>
-            <li>Выставление экзаменационных оценок</li>
-            <li>Добавление и удаление столбцов с датами</li>
-          </ul>
-          <p>Для редактирования оценки нажмите на ячейку с оценкой.</p>
+          <div className="info-header">
+            <div className="info-title">
+              <h3>Управление успеваемостью</h3>
+              <p>В этом разделе вы можете выставлять оценки студентам, управлять подгруппами и отслеживать успеваемость.</p>
+            </div>
+          </div>
+          
+          <div className="info-section">
+            <h4>Основные возможности</h4>
+            <div className="features-grid">
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Выставление оценок по датам занятий</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Фильтрация по датам, подгруппам и типам занятий</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Добавление и просмотр комментариев, прикрепление и скачивание файлов</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Управление распределением по подгруппам, если они есть</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Выставление экзаменационных оценок</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Добавление и удаление столбцов с датами</span>
+              </div>
+              <div className="feature-item">
+              <span className="feature-icon"></span>
+              <span>Информация о занятиях</span>
+            </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Допустимые оценки</h4>
+            <div className="grades-grid">
+              <div className="grades-row">
+                <div className="grade-demo grade-excellent">5</div>
+                <div className="grade-demo grade-excellent">4.75</div>
+                <div className="grade-demo grade-excellent">4.5</div>
+                <div className="grade-demo grade-excellent">4.25</div>
+                <div className="grade-demo grade-good">4</div>
+              </div>
+              <div className="grades-row">
+                <div className="grade-demo grade-good">3.75</div>
+                <div className="grade-demo grade-good">3.5</div>
+                <div className="grade-demo grade-satisfactory">3.25</div>
+                <div className="grade-demo grade-satisfactory">3</div>
+                <div className="grade-demo grade-unsatisfactory">2.75</div>
+              </div>
+              <div className="grades-row">
+                <div className="grade-demo grade-unsatisfactory">2.5</div>
+                <div className="grade-demo grade-unsatisfactory">2.25</div>
+                <div className="grade-demo grade-unsatisfactory">2</div>
+                <div className="grade-demo grade-unsatisfactory">1</div>
+                <div className="grade-demo grade-unsatisfactory">0</div>
+              </div>
+            </div>
+            <div className="grades-note">
+              <code>з</code> (зачет), <code>нз</code> (незачет)
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Как использовать</h4>
+            <div className="usage-steps">
+              <div className="step">
+                <span className="step-number">1</span>
+                <span>Нажмите на ячейку с оценкой</span>
+              </div>
+              <div className="step">
+                <span className="step-number">2</span>
+                <span>Введите оценку из списка допустимых</span>
+              </div>
+              <div className="step">
+                <span className="step-number">3</span>
+                <span>Для комментария нажмите кнопку 💬</span>
+              </div>
+              <div className="step">
+                <span className="step-number">4</span>
+                <span>Нажмите "Сохранить комментарий"</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-tip">
+            Используйте клавиши со стрелками для быстрой навигации по таблице
+          </div>
         </div>
       </div>
     </div>
@@ -370,14 +456,14 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     <button 
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
       onClick={handleRefresh}
-      disabled={refreshing}
+      disabled={refreshing || loading}
     >
       <img 
         src="/st-icons/upload_icon.svg" 
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+      <span>{refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить данные'}</span>
     </button>
   );
 
@@ -385,6 +471,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     try {
       setLoading(true);
       setError(null);
+      setShowCacheWarning(false);
 
       console.log('Starting to load all data...');
 
@@ -437,7 +524,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       // 7. Инициализируем данные о типах занятий для дат
       console.log('Initializing lesson types data for dates...');
-      const lessonTypesData = await loadLessonTypes(); // Теперь idSt доступен
+      const lessonTypesData = await loadLessonTypes();
       setLessonTypesData(lessonTypesData);
 
       console.log('All data loaded successfully');
@@ -445,13 +532,53 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
     } catch (err: any) {
       console.error('Ошибка при загрузке данных:', err);
-      setError(`Не удалось загрузить данные: ${err.message}`);
+      
+      // Проверяем, является ли ошибка сетевой
+      const isNetworkError = 
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Network request failed') ||
+        err.message?.includes('Превышено время ожидания') ||
+        err.name === 'TypeError';
+      
+      if (isNetworkError) {
+        // Проверяем, есть ли кэшированные данные
+        forceCacheCheck();
+        
+        setShowCacheWarning(true);
+
+          // Пытаемся загрузить данные из кэша
+          try {
+            const teacherId = localStorage.getItem('teacher_id');
+            if (teacherId) {
+              // Определяем groupId для кэша
+              const cachedGroupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+              
+              // Пытаемся загрузить студентов из кэша
+              const cachedStudents = localStorage.getItem(`cache_group_students_${cachedGroupId}_${idSt}_${teacherId}`);
+              if (cachedStudents) {
+                const parsedStudents = JSON.parse(cachedStudents);
+                console.log('Loaded cached students data');
+              }
+              
+              // Пытаемся загрузить даты занятий из кэша
+              const cachedDates = localStorage.getItem(`cache_lesson_dates_${cachedGroupId}_${idSt}_${teacherId}`);
+              if (cachedDates) {
+                const parsedDates = JSON.parse(cachedDates);
+                console.log('Loaded cached lesson dates');
+              }
+            }
+          } catch (cacheError) {
+            console.error('Error loading cached performance data:', cacheError);
+          }
+      } else {
+        setError(`Не удалось загрузить данные: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Добавьте этот useEffect после существующих useEffect
   useEffect(() => {
     // Загружаем типы занятий когда есть idSt и даты занятий
     if (idSt && lessonDates.length > 0 && lessonTypes.length === 0) {
@@ -857,14 +984,19 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     });
   }, [students, allDates]);
 
+
   // Функция для принудительного обновления данных
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
+    setError(null);
+    setShowCacheWarning(false);
+    
     try {
       teacherApiService.invalidateStudentCache();
       teacherApiService.invalidateLessonDatesCache();
       teacherApiService.invalidateLessonInfoCache();
       teacherApiService.invalidateSubgroupsCache();
+      teacherApiService.invalidateLessonTypesCache();
       
       await loadAllData();
       console.log('Данные успешно обновлены');
@@ -3158,11 +3290,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         <RefreshButton />
       </div>
 
-      {isUsingCache && (
-        <div className="performance-cache-warning">
-          Используются кэшированные данные. Для актуальной информации обновите данные.
-        </div>
-      )}
+      {showCacheWarning && <CacheWarning />}
 
       <div className="performance-header">
         <div className="performance-title-container">

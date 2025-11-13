@@ -6,6 +6,7 @@
 }
 
 .personal-info-main {
+  margin-top: -20px;
   display: flex;
   gap: 24px;
   align-items: stretch;
@@ -308,16 +309,6 @@
 @keyframes pc-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-.cache-warning {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  color: #856404;
-  font-size: 14px;
 }
 
 /* Стили для модальных окон */

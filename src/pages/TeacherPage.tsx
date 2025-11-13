@@ -9,6 +9,7 @@ import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+
 export const TeacherPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('personal');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

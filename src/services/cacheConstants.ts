@@ -16,6 +16,7 @@ export const CACHE_TTL = {
   SUBGROUP_DATA: 2 * 60 * 1000,
   LESSON_TYPES: 24 * 60 * 60 * 1000,
   ATTENDANCE_DATA: 5 * 60 * 1000,
+  GROUP_INFO: 30 * 60 * 1000,
 };
 
 export {};

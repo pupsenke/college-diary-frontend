@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
+import { useCache } from '../context/CacheContext';
 import { teacherApiService } from '../services/teacherApiService';
 import './PersonalCabinet.css';
+import { CacheWarning } from '../th-components/CacheWarning';
 
 interface StaffApiResponse {
   id: number;
@@ -72,8 +74,7 @@ export const PersonalCabinet: React.FC<Props> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isUsingCache, setIsUsingCache] = useState(false);
-  
+  const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   
@@ -101,12 +102,11 @@ export const PersonalCabinet: React.FC<Props> = ({
     }, 5000);
   }, []);
 
-  // Функция для получения данных преподавателя с кэшированием
   const fetchTeacherData = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      setIsUsingCache(false);
+      setShowCacheWarning(false);
 
       if (forceRefresh) {
         setRefreshing(true);
@@ -181,7 +181,6 @@ export const PersonalCabinet: React.FC<Props> = ({
         }
       } else {
         console.log('Преподаватель не найден, используются контекстные данные');
-        // Если преподаватель не найден в API, используем данные из контекста
         const formattedEmail = user?.email 
           ? user.email.replace(/@.*$/, '@novsu.ru')
           : `${user?.login}@novsu.ru`;
@@ -197,29 +196,58 @@ export const PersonalCabinet: React.FC<Props> = ({
         };
         setTeacherData(fallbackData);
         
-        // Очищаем teacher_id если преподаватель не найден
         localStorage.removeItem('teacher_id');
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Ошибка при загрузке данных преподавателя:', err);
-      setError('Не удалось загрузить данные преподавателя');
       
-      // В случае ошибки используем данные из контекста
-      const formattedEmail = user?.email 
-        ? user.email.replace(/@.*$/, '@novsu.ru')
-        : `${user?.login}@novsu.ru`;
+      // Проверяем, является ли ошибка сетевой
+      const isNetworkError = 
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Network request failed') ||
+        err.message?.includes('Превышено время ожидания') ||
+        err.name === 'TypeError';
       
-      const fallbackData: TeacherData = {
-        firstName: user?.name || '',
-        lastName: user?.lastName || '',
-        middleName: user?.patronymic || '',
-        email: formattedEmail,
-        position: 'Преподаватель',
-        disciplines: ['Ошибка загрузки дисциплин'],
-        login: user?.login || ''
-      };
-      setTeacherData(fallbackData);
+      if (isNetworkError) {
+        // Принудительно проверяем глобальное состояние кэша
+        forceCacheCheck();
+        
+        setShowCacheWarning(true);
+
+        const formattedEmail = user?.email 
+          ? user.email.replace(/@.*$/, '@novsu.ru')
+          : `${user?.login}@novsu.ru`;
+          
+          const fallbackData: TeacherData = {
+            firstName: user?.name || '',
+            lastName: user?.lastName || '',
+            middleName: user?.patronymic || '',
+            email: formattedEmail,
+            position: 'Преподаватель',
+            disciplines: ['Данные загружены из кэша'],
+            login: user?.login || ''
+          };
+          setTeacherData(fallbackData);
+      } else {
+        setError('Не удалось загрузить данные преподавателя');
+        
+        const formattedEmail = user?.email 
+          ? user.email.replace(/@.*$/, '@novsu.ru')
+          : `${user?.login}@novsu.ru`;
+        
+        const fallbackData: TeacherData = {
+          firstName: user?.name || '',
+          lastName: user?.lastName || '',
+          middleName: user?.patronymic || '',
+          email: formattedEmail,
+          position: 'Преподаватель',
+          disciplines: ['Ошибка загрузки дисциплин'],
+          login: user?.login || ''
+        };
+        setTeacherData(fallbackData);
+      }
       
       // Очищаем teacher_id при ошибке
       localStorage.removeItem('teacher_id');
@@ -416,11 +444,62 @@ export const PersonalCabinet: React.FC<Props> = ({
         <span className="info-icon-text">i</span>
         <span>Информация</span>
       </button>
-      <div className="info-tooltip">
+      <div className="info-tooltip small">
         <div className="info-tooltip-content">
-          <p><strong>Добро пожаловать в личный кабинет преподавателя!</strong></p>
-          <p>Здесь вы можете просмотреть свои личные данные, изменить логин или пароль, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
-          <p>Для навигации по группам и студентам нажмите на интересующую дисциплину.</p>
+          <div className="info-header">
+            <div className="info-title">
+              <h3>Личный кабинет преподавателя</h3>
+              <p>Здесь вы можете просмотреть свои личные данные, изменить логин или пароль, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
+            </div>
+          </div>
+          
+          <div className="info-section">
+            <h4>Основные возможности</h4>
+            <div className="features-grid">
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр личных и учетных данных</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Изменение логина и пароля учетной записи</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Просмотр списка преподаваемых дисциплин</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Быстрый переход к управлению группами</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Как использовать</h4>
+            <div className="usage-steps">
+              <div className="step">
+                <span className="step-number">1</span>
+                <span>Для изменения данных нажмите кнопку "Сменить ..."</span>
+              </div>
+              <div className="step">
+                <span className="step-number">2</span>
+                <span>Внесите необходимые изменения в форму</span>
+              </div>
+              <div className="step">
+                <span className="step-number">3</span>
+                <span>Сохраните изменения или отмените редактирование</span>
+              </div>
+              <div className="step">
+                <span className="step-number">4</span>
+                <span>Для перехода к дисциплине нажмите на её название</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-tip">
+            Регулярно обновляйте пароль для обеспечения безопасности учетной записи
+          </div>
         </div>
       </div>
     </div>
@@ -520,6 +599,7 @@ export const PersonalCabinet: React.FC<Props> = ({
   if (!user) {
     return (
       <div className="personal-cabinet">
+        <SuccessNotification />
         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
           Загрузка данных пользователя...
         </div>
@@ -538,12 +618,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         <RefreshButton />
       </div>
 
-      {/* Индикация использования кэша */}
-      {isUsingCache && (
-        <div className="cache-warning">
-          Используются кэшированные данные. Для актуальной информации обновите данные.
-        </div>
-      )}
+      {showCacheWarning && <CacheWarning />}
 
       <div className="personal-info-main">
         {/* Левый блок - ФИО */}

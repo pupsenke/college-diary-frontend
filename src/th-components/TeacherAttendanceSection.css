@@ -133,10 +133,240 @@ body.menu-collapsed .teacher-attendance-section {
   transform: translateY(0);
 }
 
+/* Базовые стили для всех тултипов */
 .info-icon-btn {
   position: relative;
   display: inline-flex;
   align-items: left;
+}
+
+.info-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  transform: translateX(0%) translateY(8px);
+  background: white;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Размеры тултипов */
+.info-tooltip.small {
+  width: 320px;
+  max-width: calc(80vw - 40px);
+}
+
+.info-tooltip.large {
+  width: 320px;
+  max-width: calc(100vw - 40px);
+}
+
+/* Стили контента остаются прежними */
+.info-tooltip-content {
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  word-break: break-word;
+  white-space: normal;
+  overflow-y: auto;
+  max-height: 50vh; 
+  overflow-y: auto;
+}
+
+/* Остальные стили остаются без изменений */
+.info-header {
+  padding: 18px 20px 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4ff 100%);
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.info-title h3 {
+  margin: 0 0 6px 0;
+  color: #002FA7;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.info-title p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.info-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.info-section:last-child {
+  border-bottom: none;
+}
+
+.info-section h4 {
+  margin: 0 0 12px 0;
+  color: #002FA7;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-section h4::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: #002FA7;
+  border-radius: 2px;
+}
+
+.features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.feature-icon {
+  width: 6px;
+  height: 6px;
+  background: #002FA7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statuses-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.status-demo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.status-info span {
+  color: #576374;
+  font-size: 12px;
+}
+
+.status-present { background: #2cbb00; }
+.status-absent { background: #f59e0b; }
+.status-not { background: #ef4444; }
+.status-empty {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #94a3b8;
+  text-shadow: none;
+}
+
+.usage-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.step-number {
+  width: 20px;
+  height: 20px;
+  background: #002FA7;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step span:last-child {
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.step code {
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  color: #002FA7;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+.info-tip {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4ff 100%);
+  border-top: 1px solid #e0e7ff;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Анимации */
+@keyframes tooltipAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(0%) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0%) translateY(8px);
+  }
 }
 
 .info-icon-btn:hover .info-tooltip,
@@ -145,57 +375,84 @@ body.menu-collapsed .teacher-attendance-section {
   visibility: visible;
   pointer-events: auto;
   transform: translateX(0%) translateY(8px);
+  animation: tooltipAppear 0.3s ease;
 }
 
-.info-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  transform: translateX(0%) translateY(10px);
-  background: white;
-  border: 2px solid #e0e7ff;
-  border-radius: 12px;
-  padding: 20px;
-  width: 320px;
-  max-width: calc(100vw - 40px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.info-tooltip-content {
-  color: #374151;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: left;
-  word-break: break-word;
-  white-space: normal;
-}
-
-/* Стиль для синего заголовка */
-.info-tooltip-content strong {
-  color: #002FA7;
-  font-size: 15px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-/* Стрелка тултипа */
 .info-tooltip::before {
   content: '';
   position: absolute;
-  top: -6px;
-  left: 4px;
+  top: -5px;
+  left: 16px;
   transform: rotate(45deg);
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   background: white;
-  border-left: 2px solid #e0e7ff;
-  border-top: 2px solid #e0e7ff;
+  border-left: 1px solid #e0e7ff;
+  border-top: 1px solid #e0e7ff;
+  z-index: 1;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .info-tooltip.small,
+  .info-tooltip.medium,
+  .info-tooltip.large {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    min-width: 85vw; /* Увеличить минимальную ширину */
+    max-width: 90vw;
+    width: auto;
+    max-height: 85vh; /* Ограничить высоту на мобильных */
+  }
+  
+  .info-tooltip-content {
+    max-height: 70vh; /* Уменьшить максимальную высоту контента на мобильных */
+  }
+  
+  .info-header { padding: 16px 18px 12px; }
+  .info-section { padding: 14px 18px; }
+  .status-item { gap: 12px; padding: 8px; }
+  .status-demo { width: 30px; height: 30px; font-size: 13px; }
+  .step { gap: 8px; }
+  .info-tip { padding: 12px 18px; }
+}
+
+@media (max-width: 480px) {
+  .info-tooltip.small,
+  .info-tooltip.medium,
+  .info-tooltip.large {
+    max-height: 90vh; /* Еще больше на очень маленьких экранах */
+  }
+  
+  .info-tooltip-content {
+    max-height: 80vh;
+  }
+  
+  .info-title h3 { font-size: 15px; }
+  .info-section h4 { font-size: 13px; }
+  .feature-item, .status-item, .step { padding: 4px 0; }
+  .status-demo { width: 28px; height: 28px; font-size: 12px; }
+}
+
+.info-tooltip-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.info-tooltip-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 2px;
+}
+
+.info-tooltip-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.info-tooltip-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Стили для кнопки обновления */
@@ -264,18 +521,6 @@ body.menu-collapsed .teacher-attendance-section {
   }
 }
 
-/* Предупреждение о использовании кэша */
-.attendance-cache-warning {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  color: #856404;
-  font-size: 14px;
-  text-align: center;
-}
-
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .attendance-cabinet-header {
@@ -315,11 +560,6 @@ body.menu-collapsed .teacher-attendance-section {
   .header-btn {
     padding: 8px 12px;
     font-size: 13px;
-  }
-  
-  .info-tooltip-content {
-    padding: 12px;
-    font-size: 12px;
   }
 }
 
