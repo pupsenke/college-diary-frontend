@@ -1314,3 +1314,34 @@
     flex: 1;
   }
 }
+
+
+.at-no-data-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.at-empty-state {
+  text-align: center;
+  padding: 2rem;
+  max-width: 400px;
+}
+
+.at-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.at-empty-state h3 {
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.at-empty-state p {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}

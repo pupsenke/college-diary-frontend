@@ -914,6 +914,20 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     { week: 'Нед. 6', average: 4.9 }
   ];
 
+  const hasDataInSelectedSemester = useCallback(() => {
+    if (selectedSemester === 'first') return true; // Всегда показываем данные для первого семестра
+    
+    if (!gradesData || gradesData.length === 0) return false;
+    
+    return gradesData.some(subject => 
+      subject.gradeDetails && 
+      subject.gradeDetails.some(detail => 
+        detail.hasValue && 
+        getSemesterByWorkNumber(detail.id) === selectedSemester
+      )
+    );
+  }, [gradesData, selectedSemester]);
+
   // Функция для получения информации о курсе студента
   const fetchStudentCourse = async () => {
   // Приводим тип пользователя к Student для доступа к idGroup
@@ -1071,17 +1085,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       color: colors[index] || '#6b7280'
     }));
   };
-
-
-  // Вспомогательная функция для получения номера недели (должна быть у вас уже)
-  const getWeekNumber = (date: Date): number => {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-    return weekNumber;
-  };
-
 
   // Рендер попапа с детальной информацией об оценке
   const renderGradePopup = () => {
@@ -1604,151 +1607,179 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   ) : null
 );
 
-  // Рендер карточек предметов
-  const renderSubjectCards = () => (
-    <div className="pf-subjects-grid">
-      {gradesData.map((subject, index) => (
-        <div 
-          key={subject.id} 
-          className="pf-subject-card"
-          onClick={() => handleSubjectClick(subject.subject)}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="pf-card-header">
-            <h3 className="pf-subject-title">{subject.subject}</h3>
-            <div className="at-teacher-badge">
-              {subject.teacher}
-            </div>
-          </div>
-          
-          <div className="pf-grades-preview">
-            {subject.gradeDetails?.slice(0, 8).map((detail, gradeIndex) => (
-              <div
-                key={detail.id}
-                className={`pf-preview-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
-                style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleGradeClick(
-                    subject.subject,
-                    detail.hasValue ? detail.grade : null,
-                    detail.id,
-                    detail.topic,
-                    subject.teacher,
-                    detail.stId
-                  );
-                }}
-              >
-                {detail.hasValue ? detail.grade : '-'}
-              </div>
-            ))}
-            {subject.gradeDetails && subject.gradeDetails.length > 8 && (
-              <div className="pf-more-grades">+{subject.gradeDetails.length - 8}</div>
-            )}
-            {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
-              <div className="pf-no-grades">Нет оценок</div>
-            )}
-          </div>
-
-          <div className="pf-card-footer">
-            <div className="pf-average-score">
-              <span className="pf-average-label">Средний балл:</span>
-              <span 
-                className="pf-average-value"
-                style={{ color: getPerformanceColor(subject.average) }}
-              >
-                {subject.average > 0 ? subject.average.toFixed(1) : '-'}
-              </span>
-            </div>
-          </div>
-        </div>
-      ))}
+// Функция для отображения состояния "нет данных"
+  const renderNoDataState = () => (
+    <div className="pf-no-data-state">
+      <div className="pf-empty-state">
+        <p>Нет данных за выбранный семестр</p>
+      </div>
     </div>
   );
 
-  // Рендер таблицы предметов
-  const renderSubjectsTable = () => (
-    <div className="pf-subjects-table-container">
-      <table className="pf-subjects-table">
-        <thead>
-          <tr>
-            <th>Предмет</th>
-            <th>Оценки</th>
-            <th>Средний балл</th>
-            <th>Сессия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {gradesData.map((subject) => (
-            <tr 
-              key={subject.id}
-              className="pf-subject-row"
-              onClick={() => handleSubjectClick(subject.subject)}
-              style={{ cursor: 'pointer' }}
-            >
-              <td className="pf-subject-cell">
-                <div className="pf-subject-info">
-                  <span className="pf-subject-name">{subject.subject}</span>
-                </div>
-              </td>
-              <td className="pf-grades-cell">
-                <div className="pf-grades-stack">
-                  {subject.gradeDetails?.slice(0, 24).map((detail) => (
-                    <span
-                      key={detail.id}
-                      className={`pf-stack-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
-                      style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGradeClick(
-                          subject.subject,
-                          detail.hasValue ? detail.grade : null,
-                          detail.id,
-                          detail.topic,
-                          subject.teacher,
-                          detail.stId
-                        );
-                      }}
-                    >
-                      {detail.hasValue ? detail.grade : '-'}
-                    </span>
-                  ))}
-                  {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
-                    <span className="pf-no-data-text">Нет оценок</span>
-                  )}
-                </div>
-              </td>
-              <td className="pf-average-cell">
-                <div 
-                  className="pf-average-badge"
-                  style={{ 
-                    backgroundColor: subject.average > 0 ? getPerformanceColor(subject.average) + '20' : '#f8fafc',
-                    color: subject.average > 0 ? getPerformanceColor(subject.average) : '#64748b'
+  // Обновленный рендер карточек предметов - ВСЕ оценки для первого семестра
+  const renderSubjectCards = () => {
+    if (selectedSemester === 'second') {
+      return renderNoDataState();
+    }
+
+    return (
+      <div className="pf-subjects-grid">
+        {gradesData.map((subject, index) => (
+          <div 
+            key={subject.id} 
+            className="pf-subject-card"
+            onClick={() => handleSubjectClick(subject.subject)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="pf-card-header">
+              <h3 className="pf-subject-title">{subject.subject}</h3>
+              <div className="at-teacher-badge">
+                {subject.teacher}
+              </div>
+            </div>
+            
+            <div className="pf-grades-preview">
+              {subject.gradeDetails?.slice(0, 8).map((detail, gradeIndex) => (
+                <div
+                  key={detail.id}
+                  className={`pf-preview-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
+                  style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGradeClick(
+                      subject.subject,
+                      detail.hasValue ? detail.grade : null,
+                      detail.id,
+                      detail.topic,
+                      subject.teacher,
+                      detail.stId
+                    );
                   }}
+                >
+                  {detail.hasValue ? detail.grade : '-'}
+                </div>
+              ))}
+              {subject.gradeDetails && subject.gradeDetails.length > 8 && (
+                <div className="pf-more-grades">+{subject.gradeDetails.length - 8}</div>
+              )}
+              {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
+                <div className="pf-no-grades">Нет оценок</div>
+              )}
+            </div>
+
+            <div className="pf-card-footer">
+              <div className="pf-average-score">
+                <span className="pf-average-label">Средний балл:</span>
+                <span 
+                  className="pf-average-value"
+                  style={{ color: getPerformanceColor(subject.average) }}
                 >
                   {subject.average > 0 ? subject.average.toFixed(1) : '-'}
-                </div>
-              </td>
-              <td className="pf-session-cell">
-                <div 
-                  className="pf-session-grade"
-                  style={{ 
-                    backgroundColor: subject.examGrade !== null ? getGradeColor(subject.examGrade) : '#f8fafc',
-                    color: subject.examGrade !== null ? 'white' : '#64748b'
-                  }}
-                >
-                  {subject.examGrade !== null ? subject.examGrade : '-'}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-  // Рендер аналитики
-  const renderAnalytics = () => {  
+  // Обновленный рендер таблицы предметов - ВСЕ оценки для первого семестра
+  const renderSubjectsTable = () => {
+    if (selectedSemester === 'second') {
+      return renderNoDataState();
+    }
+
+    return (
+      <div className="pf-subjects-table-container">
+        <table className="pf-subjects-table">
+          <thead>
+            <tr>
+              <th>Предмет</th>
+              <th>Оценки</th>
+              <th>Средний балл</th>
+              <th>Сессия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {gradesData.map((subject) => (
+              <tr 
+                key={subject.id}
+                className="pf-subject-row"
+                onClick={() => handleSubjectClick(subject.subject)}
+                style={{ cursor: 'pointer' }}
+              >
+                <td className="pf-subject-cell">
+                  <div className="pf-subject-info">
+                    <span className="pf-subject-name">{subject.subject}</span>
+                  </div>
+                </td>
+                <td className="pf-grades-cell">
+                  <div className="pf-grades-stack">
+                    {subject.gradeDetails?.slice(0, 24).map((detail) => (
+                      <span
+                        key={detail.id}
+                        className={`pf-stack-grade ${!detail.hasValue ? 'pf-no-data' : ''}`}
+                        style={{ backgroundColor: getGradeColor(detail.hasValue ? detail.grade : null) }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGradeClick(
+                            subject.subject,
+                            detail.hasValue ? detail.grade : null,
+                            detail.id,
+                            detail.topic,
+                            subject.teacher,
+                            detail.stId
+                          );
+                        }}
+                      >
+                        {detail.hasValue ? detail.grade : '-'}
+                      </span>
+                    ))}
+                    {(!subject.gradeDetails || subject.gradeDetails.length === 0) && (
+                      <span className="pf-no-data-text">Нет оценок</span>
+                    )}
+                  </div>
+                </td>
+                <td className="pf-average-cell">
+                  <div 
+                    className="pf-average-badge"
+                    style={{ 
+                      backgroundColor: subject.average > 0 ? getPerformanceColor(subject.average) + '20' : '#f8fafc',
+                      color: subject.average > 0 ? getPerformanceColor(subject.average) : '#64748b'
+                    }}
+                  >
+                    {subject.average > 0 ? subject.average.toFixed(1) : '-'}
+                  </div>
+                </td>
+                <td className="pf-session-cell">
+                  <div 
+                    className="pf-session-grade"
+                    style={{ 
+                      backgroundColor: subject.examGrade !== null ? getGradeColor(subject.examGrade) : '#f8fafc',
+                      color: subject.examGrade !== null ? 'white' : '#64748b'
+                    }}
+                  >
+                    {subject.examGrade !== null ? subject.examGrade : '-'}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Обновленный рендер аналитики - ВСЕ данные для первого семестра
+  const renderAnalytics = () => {
+    if (selectedSemester === 'second') {
+      return (
+        <div className="pf-analytics-container">
+          {renderNoDataState()}
+        </div>
+      );
+    }
     return (
       <div className="pf-analytics-container">
         <div className="pf-stats-cards">
@@ -1823,7 +1854,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         <div className="pf-full-width-chart">
           <div className="pf-chart-card">
             <h3>Средние баллы по предметам</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer 
+              width="100%" 
+              height={Math.max(250, gradesData
+                .filter(subject => subject.average > 0)
+                .sort((a, b) => b.average - a.average)
+                .slice(0, 8)
+                .length * 90 + 80)} // Динамическая высота: 40px на предмет + 80px отступы
+            >
               <BarChart 
                 data={gradesData
                   .filter(subject => subject.average > 0)
@@ -1831,15 +1869,25 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   .slice(0, 8)
                 }
                 layout="vertical"
-                margin={{ left: 100 }}
+                margin={{ 
+                  left: 100,
+                  top: 20,
+                  bottom: 20,
+                  right: 20 
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" domain={[0, 5]} />
+                <XAxis 
+                  type="number" 
+                  domain={[0, 5]} 
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis 
                   type="category" 
                   dataKey="subject" 
                   tick={{ fontSize: 12 }}
                   width={90}
+                  interval={0}
                 />
                 <Tooltip 
                   formatter={(value) => [`${value}`, 'Средний балл']}
@@ -1980,7 +2028,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 <div className="pf-no-subject-selected">
                   <div className="pf-empty-state">
                     <h3>Выберите предмет</h3>
-                    <p>Для просмотра детальной информации выберите предмет из списка или кликните на предмет в семестре</p>
+                    <p>Для просмотра детальной информации выберите предмет из списка</p>
                   </div>
                 </div>
               )}

@@ -217,8 +217,48 @@ export interface LessonAttendance {
   comment: string;
 }
 
+export interface UpdatePasswordRequest {
+  id: number;
+  login: string;
+  password: string;
+}
+
 
 export const apiService = {
+
+  // Смена пароля студента
+  async updateStudentPassword(
+    studentId: number, 
+    login: string, 
+    newPassword: string
+  ): Promise<void> {
+    const requestBody: UpdatePasswordRequest = {
+      id: studentId,
+      login: login,
+      password: newPassword
+    };
+
+    const response = await fetch(`${API_BASE_URL}/students/update`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PATCH request failed:', response.status, errorText);
+      throw new Error(`Ошибка смены пароля: ${response.status}`);
+    }
+
+    // Инвалидируем кэш данных студента после смены пароля
+    const studentCacheKey = `student_${studentId}`;
+    cacheService.remove(studentCacheKey);
+    
+    console.log('Пароль успешно обновлен');
+  }, 
+  
 // Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
     const cacheKey = `group_${groupId}`;

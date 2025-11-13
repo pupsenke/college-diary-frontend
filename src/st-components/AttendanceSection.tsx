@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './AttendanceSectionStyle.css';
 import { apiService } from '../services/studentApiService'; 
 import {
@@ -445,74 +445,93 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     ) : null
   );
 
-  // Рендер карточек предметов
-  const renderSubjectCards = () => (
-    <div className="at-subjects-grid">
-      {attendanceData.map((subject) => (
-        <div 
-          key={subject.id} 
-          className="at-subject-card"
-          onClick={() => handleSubjectClick(subject.subject)}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="at-card-header">
-            <h3 className="at-subject-title">{subject.subject}</h3>
-            <div className="at-teacher-badge">
-              {subject.teacher}
-            </div>
-          </div>
-          
-          <div className="at-attendance-preview">
-            {subject.statuses.slice(0, 8).map((status, index) => {
-              const detail = subject.reasonStatus?.[index];
-              return (
-                <div
-                  key={index}
-                  className="at-preview-status"
-                  style={{ backgroundColor: getStatusColor(status) }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAttendanceClick(
-                      subject.subject,
-                      status,
-                      detail?.idLesson || 0,
-                      detail?.date || '',
-                      subject.teacher,
-                      detail?.comment
-                    );
-                  }}
-                  title={getStatusText(status)}
-                >
-                  {status || '-'}
-                </div>
-              );
-            })}
-            {subject.statuses.length > 8 && (
-              <div className="at-more-statuses">+{subject.statuses.length - 8}</div>
-            )}
-            {(!subject.statuses) && (
-              <div className="at-no-statuses">Нет данных о посещаемости</div>
-            )}
-          </div>
-
-          <div className="at-card-footer">
-            <div className="at-percent-score">
-              <span className="at-percent-label">Посещаемость:</span>
-              <span 
-                className="at-percent-value"
-                style={{ color: getPercentColor(subject.percent) }}
-              >
-                {subject.percent}%
-              </span>
-            </div>
-          </div>
-        </div>
-      ))}
+  // Функция для отображения состояния "нет данных"
+  const renderNoDataState = () => (
+    <div className="at-no-data-state">
+      <div className="at-empty-state">
+        <p>Нет данных за выбранный семестр</p>
+      </div>
     </div>
   );
 
-  // Рендер таблицы предметов
+  // Обновленный рендер карточек предметов - ВСЕ данные для первого семестра
+  const renderSubjectCards = () => {
+    if (selectedSemester === 'second') {
+      return renderNoDataState();
+    }
+
+    return (
+      <div className="at-subjects-grid">
+        {attendanceData.map((subject) => (
+          <div 
+            key={subject.id} 
+            className="at-subject-card"
+            onClick={() => handleSubjectClick(subject.subject)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="at-card-header">
+              <h3 className="at-subject-title">{subject.subject}</h3>
+              <div className="at-teacher-badge">
+                {subject.teacher}
+              </div>
+            </div>
+            
+            <div className="at-attendance-preview">
+              {subject.statuses.slice(0, 8).map((status, index) => {
+                const detail = subject.reasonStatus?.[index];
+                return (
+                  <div
+                    key={index}
+                    className="at-preview-status"
+                    style={{ backgroundColor: getStatusColor(status) }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAttendanceClick(
+                        subject.subject,
+                        status,
+                        detail?.idLesson || 0,
+                        detail?.date || '',
+                        subject.teacher,
+                        detail?.comment
+                      );
+                    }}
+                    title={getStatusText(status)}
+                  >
+                    {status || '-'}
+                  </div>
+                );
+              })}
+              {subject.statuses.length > 8 && (
+                <div className="at-more-statuses">+{subject.statuses.length - 8}</div>
+              )}
+              {(!subject.statuses) && (
+                <div className="at-no-statuses">Нет данных о посещаемости</div>
+              )}
+            </div>
+
+            <div className="at-card-footer">
+              <div className="at-percent-score">
+                <span className="at-percent-label">Посещаемость:</span>
+                <span 
+                  className="at-percent-value"
+                  style={{ color: getPercentColor(subject.percent) }}
+                >
+                  {subject.percent}%
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Обновленный рендер таблицы предметов - ВСЕ данные для первого семестра
   const renderSubjectsTable = () => {
+    if (selectedSemester === 'second') {
+      return renderNoDataState();
+    }
+
     const calculateAbsencesStats = (statuses: ('п' | 'у' | 'н' | null)[]) => {
       const validStatuses = statuses.filter(status => status !== null) as ('п' | 'у' | 'н')[];
       const stats = calculateSubjectStats(validStatuses);
@@ -893,12 +912,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     return 'занятий';
   };
 
-  const getPeriodWord = (count: number) => {
-    if (count === 1) return 'период';
-    if (count >= 2 && count <= 4) return 'периода';
-    return 'периодов';
-  };
-
   const formatShortDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -910,8 +923,27 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       return dateString;
     }
   };
+
+    const hasDataInSelectedSemester = useCallback(() => {
+    if (selectedSemester === 'first') return true;
+    
+    if (!attendanceData || attendanceData.length === 0) return false;
+    
+    return attendanceData.some(subject => 
+      subject.reasonStatus && 
+      subject.reasonStatus.some(detail => detail.status !== null)
+    );
+  }, [attendanceData, selectedSemester]);
+
   // Обновите рендер аналитики
   const renderAnalytics = () => {
+    if (selectedSemester === 'second') {
+      return (
+        <div className="at-analytics-container">
+          {renderNoDataState()}
+        </div>
+      );
+    }
     const progressResult = calculateAttendanceProgress();
     
     return (

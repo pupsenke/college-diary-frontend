@@ -2177,3 +2177,47 @@
 .pf-full-width-chart {
   margin-top: 20px;
 }
+
+.pf-no-data-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.pf-empty-state {
+  text-align: center;
+  padding: 2rem;
+  max-width: 400px;
+}
+
+.pf-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.pf-empty-state h3 {
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.pf-empty-state p {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.pf-semester-hint {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.pf-semester-hint p {
+  color: #475569;
+  font-size: 0.875rem;
+  margin: 0;
+}

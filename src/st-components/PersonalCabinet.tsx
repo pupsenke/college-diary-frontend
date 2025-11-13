@@ -39,6 +39,12 @@ interface GroupData {
   profile: string;
 }
 
+interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // Основной компонент
 const PersonalCabinetComponent: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -191,8 +197,8 @@ const PersonalCabinetComponent: React.FC = () => {
         return;
       }
 
-      if (passwordData.newPassword.length < 6) {
-        setError('Пароль должен содержать минимум 6 символов');
+      if (passwordData.newPassword.length < 4) { // Изменено с 6 на 4 символа
+        setError('Пароль должен содержать минимум 4 символа');
         return;
       }
 
@@ -201,20 +207,26 @@ const PersonalCabinetComponent: React.FC = () => {
         return;
       }
 
+      // Проверка текущего пароля (можно добавить дополнительную проверку через API)
+      // if (passwordData.currentPassword !== user.password) {
+      //   setError('Текущий пароль неверен');
+      //   return;
+      // }
 
-      // await apiService.changePassword({
-      //   userId: user.id,
-      //   currentPassword: passwordData.currentPassword,
-      //   newPassword: passwordData.newPassword
-      // });
+      // Вызов метода смены пароля из apiService
+      await apiService.updateStudentPassword(
+        user.id,
+        user.login,
+        passwordData.newPassword
+      );
 
-      // Имитация успешной смены пароля
       setSuccessMessage('Пароль успешно изменен');
       setShowPasswordModal(false);
       resetPasswordForm();
       
     } catch (err) {
-      setError('Не удалось изменить пароль. Проверьте текущий пароль.');
+      console.error('Ошибка смены пароля:', err);
+      setError('Не удалось изменить пароль. Проверьте текущий пароль и попробуйте еще раз.');
     } finally {
       setPasswordLoading(false);
     }
