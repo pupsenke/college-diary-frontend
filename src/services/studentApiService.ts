@@ -251,8 +251,6 @@ export const apiService = {
       console.error('PATCH request failed:', response.status, errorText);
       throw new Error(`Ошибка смены пароля: ${response.status}`);
     }
-
-    // Инвалидируем кэш данных студента после смены пароля
     const studentCacheKey = `student_${studentId}`;
     cacheService.remove(studentCacheKey);
     
@@ -368,6 +366,8 @@ export const apiService = {
 
 
   // === УСПЕВАЕМОСТЬ ===
+
+
   // Получение детальной информации об оценке
   async getMarkInfo(studentId: number, stId: number, markNumber: number): Promise<MarkInfo> {
     const response = await fetch(`${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
@@ -380,14 +380,13 @@ export const apiService = {
     
     const data: MarkInfo = await response.json();
     
-    // Если в ответе нет typeMark, попробуем получить его из информации о колонке
     if (!data.typeMark) {
       try {
         const columnInfo = await this.getMarkColumnInfo(studentId, stId, markNumber);
         data.typeMark = columnInfo.typeMark;
       } catch (error) {
         console.warn('Не удалось получить тип работы из информации о колонке:', error);
-        data.typeMark = 'Работа'; // Значение по умолчанию
+        data.typeMark = 'Работа';
       }
     }
     
@@ -505,7 +504,6 @@ export const apiService = {
       console.error('Error parsing JSON response:', jsonError);
     }
     
-    // Альтернативный способ - получаем информацию об оценке
     try {
       const markInfoResponse = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
       if (markInfoResponse.ok) {
@@ -726,13 +724,14 @@ export const apiService = {
     return data;
   },
 
+
   // === ПОСЕЩАЕМОСТЬ ===
+
 
   // Получение посещаемости студента
   async getStudentAttendance(studentId: number, forceRefresh = false): Promise<SubjectAttendance[]> {
     const cacheKey = `attendance_${studentId}`;
     
-    // Если принудительное обновление, инвалидируем кэш
     if (forceRefresh) {
       cacheService.remove(cacheKey);
     }
@@ -761,6 +760,7 @@ export const apiService = {
     
     return data;
   },
+
   // Получение посещаемости конкретного урока
   async getLessonAttendance(lessonId: number, studentId: number): Promise<LessonAttendance> {
     const cacheKey = `lesson_attendance_${lessonId}_${studentId}`;
@@ -794,7 +794,6 @@ export const apiService = {
     const cacheKey = `attendance_${studentId}`;
     cacheService.remove(cacheKey);
     
-    // Также инвалидируем кэш уроков
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.includes(`cache_lesson_attendance_`) && key.includes(`_${studentId}`)) {
@@ -803,7 +802,9 @@ export const apiService = {
     }
   },
 
+
   // === ДОКУМЕНТЫ ===
+
 
   // Получение всех документов с кэшированием
   async getAllDocuments(): Promise<Document[]> {
@@ -894,7 +895,6 @@ export const apiService = {
   async downloadDocument(id: number): Promise<void> {
     
     try {
-      // Получаем информацию о документе
       const allDocuments = await this.getAllDocuments();
       const documentInfo = allDocuments.find((doc: Document) => doc.id === id);
       
@@ -902,7 +902,6 @@ export const apiService = {
         throw new Error(`Документ с ID ${id} не найден`);
       }
 
-      // Скачиваем файл
       const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
         method: 'GET',
         headers: {
@@ -914,14 +913,11 @@ export const apiService = {
         throw new Error(`HTTP error! status: ${fileResponse.status}`);
       }
 
-      // Получаем blob
       const blob = await fileResponse.blob();
       
-      // Определяем MIME тип и имя файла
       let filename = documentInfo.nameFile;
       let mimeType = 'application/octet-stream';
 
-      // Определяем MIME тип по расширению файла
       if (filename) {
         const extension = filename.split('.').pop()?.toLowerCase();
         const mimeTypes: { [key: string]: string } = {
@@ -934,7 +930,6 @@ export const apiService = {
           'txt': 'text/plain',
         };
         
-        // проверяем что extension не undefined
         if (extension && mimeTypes[extension]) {
           mimeType = mimeTypes[extension];
         } else {
@@ -942,20 +937,16 @@ export const apiService = {
         }
       }
 
-      // Создаем blob с правильным типом
       const typedBlob = new Blob([blob], { type: mimeType });
 
-      // Создаем ссылку для скачивания
       const url = window.URL.createObjectURL(typedBlob);
       const link = document.createElement('a');
       link.href = url;
       link.download = filename || `document_${id}`;
       
-      // Добавляем в DOM и кликаем
       document.body.appendChild(link);
       link.click();
       
-      // Очистка
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -1041,7 +1032,6 @@ export const apiService = {
     try {
       const blob = await this.getFileById(fileId);
       
-      // Определяем MIME тип по расширению файла
       let mimeType = 'application/octet-stream';
       if (fileName) {
         const extension = fileName.split('.').pop()?.toLowerCase();
@@ -1060,20 +1050,16 @@ export const apiService = {
         }
       }
 
-      // Создаем blob с правильным типом
       const typedBlob = new Blob([blob], { type: mimeType });
 
-      // Создаем ссылку для скачивания
       const url = window.URL.createObjectURL(typedBlob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName || `file_${fileId}`;
       
-      // Добавляем в DOM и кликаем
       document.body.appendChild(link);
       link.click();
       
-      // Очистка
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -1098,7 +1084,6 @@ export const apiService = {
 
   // Методы для инвалидации кэша
   invalidateDocumentCache(studentId?: number, documentType?: string): void {
-    // Удаляем все связанные ключи кэша
     const keysToRemove: string[] = [];
     
     if (studentId && documentType) {
@@ -1109,7 +1094,6 @@ export const apiService = {
       keysToRemove.push(`student_documents_${studentId}`);
     }
     
-    // Всегда инвалидируем общий кэш документов
     keysToRemove.push('all_documents');
     
     keysToRemove.forEach(key => {
@@ -1118,7 +1102,6 @@ export const apiService = {
   },
 
   invalidateAllDocumentCache(): void {
-    // Удаляем все ключи, связанные с документами
     const keysToRemove: string[] = [];
     
     for (let i = 0; i < localStorage.length; i++) {
@@ -1148,7 +1131,6 @@ export const calculateOverallAttendancePercentage = (attendanceData: SubjectAtte
   let totalLessons = 0;
 
   attendanceData.forEach(subject => {
-    // Учитываем только занятия с выставленными статусами (не null)
     const validAttendances = subject.attendances.filter(a => a.status !== null);
     
     validAttendances.forEach(attendance => {

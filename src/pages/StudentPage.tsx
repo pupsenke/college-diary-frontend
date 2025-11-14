@@ -87,7 +87,7 @@ export const StudentPage: React.FC = () => {
     return result;
   };
 
-  // ФУНКЦИЯ РАСЧЕТА ПРОЦЕНТА ПОСЕЩАЕМОСТИ (использует те же данные что и AttendanceSection)
+  // ФУНКЦИЯ РАСЧЕТА ПРОЦЕНТА ПОСЕЩАЕМОСТИ
   const calculateAttendancePercentage = (attendanceData: SubjectAttendance[]): number => {
     return calculateOverallAttendancePercentage(attendanceData);
   };

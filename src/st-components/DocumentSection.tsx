@@ -260,7 +260,7 @@ export const DocumentsSection: React.FC = () => {
       .trim();
   };
 
-  // Упрощенная функция загрузки документов с кэшированием
+  // функция загрузки документов с кэшированием
   const loadDocuments = useCallback(async (forceRefresh = false) => {
     if (!user || !isStudent || documentsLoading) {
       return;
@@ -299,7 +299,6 @@ export const DocumentsSection: React.FC = () => {
 
       setDocuments(docs);
 
-      // Сохранение в кеш
       const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
       const cacheData = {
         data: docs,
@@ -310,7 +309,6 @@ export const DocumentsSection: React.FC = () => {
     } catch (err) {
       console.error('Ошибка загрузки документов:', err);
       
-      // Если ошибка API, пробуем загрузить из кэша как fallback
       try {
         const cacheKey = `documents_${student.id}_${selectedDocumentType}`;
         const cached = localStorage.getItem(`cache_${cacheKey}`);
@@ -527,25 +525,6 @@ export const DocumentsSection: React.FC = () => {
     return monthsGenitive[monthNumber - 1];
   };
 
-  // Функция для преобразования месяца из именительного в родительный падеж
-  const getMonthGenitive = (monthNominative: string): string => {
-    const monthMap: { [key: string]: string } = {
-      'январь': 'января',
-      'февраль': 'февраля',
-      'март': 'марта',
-      'апрель': 'апреля',
-      'май': 'мая',
-      'июнь': 'июня',
-      'июль': 'июля',
-      'август': 'августа',
-      'сентябрь': 'сентября',
-      'октябрь': 'октября',
-      'ноябрь': 'ноября',
-      'декабрь': 'декабря'
-    };
-    return monthMap[monthNominative] || monthNominative;
-  };
-
   // Функция для преобразования месяца из именительного в предложный падеж
   const getMonthPrepositional = (monthNominative: string): string => {
     const monthMap: { [key: string]: string } = {
@@ -671,15 +650,12 @@ export const DocumentsSection: React.FC = () => {
       const updateData: StudentUpdateData = {};
       let hasChanges = false;
 
-      // Сохранение телефона, если он изменился
       if (formData.phone !== userData.phone) {
         updateData.telephone = formData.phone;
         hasChanges = true;
       }
 
-      // Сохранение ФИО в родительном падеже, если оно изменилось или отсутствует в профиле
       if (formData.fullNameGenitive !== userData.fullNameGenitive || !userData.fullNameGenitive) {
-        // Парсинг ФИО в родительном падеже на отдельные компоненты для сохранения в БД
         const genitiveParts = parseGenitiveName(formData.fullNameGenitive);
         updateData.lastNameGenitive = genitiveParts.lastNameGenitive;
         updateData.nameGenitive = genitiveParts.nameGenitive;
@@ -687,7 +663,6 @@ export const DocumentsSection: React.FC = () => {
         hasChanges = true;
       }
 
-      // Сохранение данных в БД, если есть изменения
       if (hasChanges) {
         await saveStudentData(updateData)
       }

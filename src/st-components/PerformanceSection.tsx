@@ -166,7 +166,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
   };
 
-  // ДОБАВИТЬ функцию загрузки реальных дат
+  // функция загрузки реальных дат
   const loadMarksRealDates = async () => {
     if (!studentMarks) return;
 
@@ -256,13 +256,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           info.typeMark = columnInfo.typeMark;
         } catch (columnError) {
           console.warn('Не удалось получить тип работы:', columnError);
-          info.typeMark = 'Работа'; // Значение по умолчанию
+          info.typeMark = 'Работа'; 
         }
       }
       
       setMarkInfo(info);
       
-      // Загружаем supplements для изменений
       const supplementPromises = info.changes
         .filter(change => change.idSupplement)
         .map(async (change) => {
@@ -363,7 +362,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       await loadMarkInfo(stId, gradeNumber);
     }
     
-    // Загружаем уроки при открытии попапа
     await loadLessons();
   };
 
@@ -376,12 +374,10 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     
     try {
       
-      // Сразу переключаем режим для мгновенного отклика UI
       setAddCommentMode(true);
       setNewComment('');
       setUploadingFiles([]);
       
-      // Пробуем создать изменение
       let supplementId: number;
       
       try {
@@ -393,7 +389,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         console.log('Supplement создан с ID:', supplementId);
       } catch (apiError) {
         console.warn('API error, using fallback:', apiError);
-        // Используем fallback - создаем временный ID для тестирования UI
+
         supplementId = Date.now();
         setError('Режим тестирования: комментарий не будет сохранен на сервере');
       }
@@ -403,7 +399,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } catch (error) {
       console.error('Ошибка создания комментария:', error);
       setError('Не удалось начать добавление комментария');
-      // В случае ошибки сбрасываем режим
       setAddCommentMode(false);
       setNewSupplementId(null);
     }
@@ -455,17 +450,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
     
     try {
-      // Сохраняем комментарий если он есть
       if (newComment.trim()) {
         await apiService.updateSupplementComment(newSupplementId, newComment);
       }
       
-      // Загружаем файлы если они есть
       if (uploadingFiles.length > 0) {
         await apiService.uploadSupplementFiles(newSupplementId, uploadingFiles);
       }
       
-      // Обновляем информацию об оценке
       if (selectedGrade.stId) {
         await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
       }
@@ -492,7 +484,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
     
     try {
-      // Удаляем созданный supplement
       await apiService.deleteSupplement(newSupplementId);
       
       // Сбрасываем состояние
@@ -512,17 +503,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (!selectedGrade?.stId) return;
     
     try {
-      // Обновляем комментарий
       if (supplementId) {
         await apiService.updateSupplementComment(supplementId, newComment);
       }
       
-      // Загружаем файлы если они есть
       if (uploadingFiles.length > 0 && supplementId) {
         await apiService.uploadSupplementFiles(supplementId, uploadingFiles);
       }
       
-      // Перезагружаем информацию
       await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
       
       setEditingComment(null);
@@ -561,15 +549,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     try {
       setDeletingComment(changeId);
       
-      // Если есть supplement, удаляем его
       if (supplementId) {
         await apiService.deleteSupplement(supplementId);
       }
       
-      // Перезагружаем информацию об оценке
       await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
       
-      // Закрываем меню
       setMenuOpen(null);
       
     } catch (error) {
@@ -589,7 +574,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Проверяем, что клик был вне меню
       const target = event.target as HTMLElement;
       if (!target.closest('.pf-comment-menu')) {
         setMenuOpen(null);
@@ -689,14 +673,12 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           studentMark.marksBySt.forEach((mark) => {
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
-                // Используем реальные даты из marksWithDates или генерируем
                 const stId = studentMark.nameSubjectTeachersDTO.idSt;
                 const markKey = `${stId}_${mark.number}`;
                 const realDate = marksWithDates[markKey];
                 
                 const lessonDate = realDate ? new Date(realDate).toLocaleDateString('ru-RU') : getLessonDate(mark.number);
                 
-                // Получаем тип работы
                 const markTypeKey = `${stId}_${mark.number}`;
                 const markType = markTypes[markTypeKey] || getLessonTopic(mark.number);
 
@@ -770,26 +752,22 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     return `Работа ${markNumber}`;
   };
 
-  // ОБНОВИТЬ функцию getLessonDate
+
   const getLessonDate = (markNumber: number): string => {
     if (markNumber === null || markNumber === undefined || isNaN(markNumber)) {
       return '01.09.2024';
     }
     
-    // Создаем реалистичные даты на основе текущего учебного года
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth();
     
-    // Определяем учебный год
     const academicYear = currentMonth >= 8 ? currentYear : currentYear - 1;
     
     if (selectedSemester === 'first') {
-      // Первый семестр: сентябрь-декабрь
       const semesterStart = new Date(academicYear, 8, 1); // 1 сентября
       const lessonDate = new Date(semesterStart);
       lessonDate.setDate(semesterStart.getDate() + (markNumber - 1) * 7);
       
-      // Не выходим за пределы декабря
       if (lessonDate.getMonth() > 11) {
         lessonDate.setMonth(11);
         lessonDate.setDate(31);
@@ -797,12 +775,10 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       
       return lessonDate.toLocaleDateString('ru-RU');
     } else {
-      // Второй семестр: январь-май следующего года
       const semesterStart = new Date(academicYear + 1, 0, 9); // 9 января
       const lessonDate = new Date(semesterStart);
       lessonDate.setDate(semesterStart.getDate() + (markNumber - 25) * 7);
       
-      // Не выходим за пределы мая
       if (lessonDate.getMonth() > 4) {
         lessonDate.setMonth(4);
         lessonDate.setDate(31);
@@ -814,12 +790,9 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   const subjects = gradesData.map(grade => grade.subject);
 
-  // Обновляем gradesData при изменении markTypes
   useEffect(() => {
-    // Принудительно обновляем данные при изменении типов работ
     if (Object.keys(markTypes).length > 0) {
       const updatedGrades = transformStudentMarksToGrades(selectedSemester);
-      // Здесь можно обновить состояние, если нужно
     }
   }, [markTypes, selectedSemester]);
 
@@ -833,7 +806,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     let totalAverage = 0;
     let subjectsWithGrades = 0;
 
-    // Проверяем что gradesData загружена
     if (!gradesData || gradesData.length === 0) {
       return {
         totalGrades: 0,
@@ -864,7 +836,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
     const overallAverage = subjectsWithGrades > 0 ? totalAverage / subjectsWithGrades : 0;
     
-    // ИСПРАВЛЕННЫЙ РАСЧЕТ: процент оценок 4 и 5 от общего количества
+    // процент оценок 4 и 5 от общего количества
     const excellentPercentage = totalGrades > 0 ? ((grade5 + grade4) / totalGrades) * 100 : 0;
 
     return {
@@ -914,23 +886,9 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     { week: 'Нед. 6', average: 4.9 }
   ];
 
-  const hasDataInSelectedSemester = useCallback(() => {
-    if (selectedSemester === 'first') return true; // Всегда показываем данные для первого семестра
-    
-    if (!gradesData || gradesData.length === 0) return false;
-    
-    return gradesData.some(subject => 
-      subject.gradeDetails && 
-      subject.gradeDetails.some(detail => 
-        detail.hasValue && 
-        getSemesterByWorkNumber(detail.id) === selectedSemester
-      )
-    );
-  }, [gradesData, selectedSemester]);
 
   // Функция для получения информации о курсе студента
   const fetchStudentCourse = async () => {
-  // Приводим тип пользователя к Student для доступа к idGroup
   const student = user as Student;
   
   if (student?.idGroup) {
@@ -945,7 +903,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       setSemesters(getSemestersByCourse(1));
     }
   } else {
-    // Если нет idGroup, используем курс по умолчанию
     setStudentCourse(1);
     setSemesters(getSemestersByCourse(1));
   }
@@ -982,7 +939,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     if (!markInfo) return [];
 
     try {
-      // Получаем все документы для получения pathToFile
       const allDocuments = await apiService.getAllDocuments();
       const files: Array<{
         id: number;
@@ -994,7 +950,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         changeId?: number;
       }> = [];
       
-      // Файлы из основной информации об оценке (уроке)
       if (markInfo.files) {
         markInfo.files.forEach(file => {
           const documentInfo = allDocuments.find(doc => doc.id === file.id);
@@ -1010,9 +965,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         });
       }
       
-      // Файлы из истории изменений
       markInfo.changes.forEach(change => {
-        // Файлы напрямую из changes
         if (change.files && Array.isArray(change.files)) {
           change.files.forEach((file: { id: number; name: string }) => {
             const documentInfo = allDocuments.find(doc => doc.id === file.id);
@@ -1028,7 +981,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           });
         }
         
-        // Файлы из supplement (если есть)
         if (change.idSupplement && supplements[change.idSupplement]) {
           const supplement = supplements[change.idSupplement];
           if (supplement.files) {
@@ -1068,7 +1020,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       });
     });
 
-    // Берем топ-5 типов оценок
     const topTypes = Object.entries(typeCount)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5)
@@ -1616,7 +1567,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     </div>
   );
 
-  // Обновленный рендер карточек предметов - ВСЕ оценки для первого семестра
+  // рендер карточек предметов
   const renderSubjectCards = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
@@ -1684,7 +1635,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     );
   };
 
-  // Обновленный рендер таблицы предметов - ВСЕ оценки для первого семестра
+  // рендер таблицы предметов
   const renderSubjectsTable = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
@@ -1771,7 +1722,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     );
   };
 
-  // Обновленный рендер аналитики - ВСЕ данные для первого семестра
+  // рендер аналитики
   const renderAnalytics = () => {
     if (selectedSemester === 'second') {
       return (

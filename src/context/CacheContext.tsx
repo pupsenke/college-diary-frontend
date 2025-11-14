@@ -1,4 +1,3 @@
-// src/context/CacheContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface CacheContextType {
@@ -29,7 +28,6 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
   // Функция для проверки наличия кэшированных данных
   const checkCachedData = useCallback((): boolean => {
     try {
-      // Проверяем различные ключи кэша в localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes('cache_')) {
@@ -40,7 +38,6 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
         }
       }
       
-      // Также проверяем teacher_id как индикатор наличия данных
       const teacherId = localStorage.getItem('teacher_id');
       if (teacherId) {
         return true;
@@ -55,7 +52,6 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
 
   // Функция для проверки онлайн-статуса
     const checkOnlineStatus = useCallback(async (): Promise<boolean> => {
-    // Просто проверяем статус браузера без запросов к API
     const isOnline = navigator.onLine;
     return isOnline;
     }, []);
@@ -75,7 +71,6 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
         }
         return true;
       } else {
-        // Мы офлайн
         if (hasCachedData) {
           setIsUsingCache(true);
           setShowCacheWarning(true);
@@ -106,7 +101,6 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
       }
     };
 
-    // Начальная проверка при загрузке
     const initialCheck = async () => {
       await forceCacheCheck();
     };

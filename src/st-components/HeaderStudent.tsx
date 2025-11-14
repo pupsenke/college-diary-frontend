@@ -59,7 +59,6 @@ export const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Очищаем данные пользователя
     localStorage.removeItem('user');
     navigate('/login');
   };
@@ -74,7 +73,6 @@ export const Header: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  // Форматируем ФИО
   const getFullName = () => {
     if (!user) return 'Фамилия Имя';
     return `${user.lastName} ${user.name}`;

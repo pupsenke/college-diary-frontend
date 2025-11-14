@@ -93,7 +93,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
       const session: UserSession = JSON.parse(sessionData);
       
-      // Проверяем не истекла ли сессия
       if (Date.now() > session.expiresAt) {
         console.log('Сессия истекла');
         localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -109,12 +108,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  // Очистка сессии
   const clearSession = () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
   };
 
-  // Функция выхода
   const logout = () => {
     setUser(null);
     clearSession();
@@ -178,7 +175,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
     };
 
-    // Слушаем события активности пользователя
+    // события активности пользователя
     const events = ['click', 'keypress', 'scroll', 'mousemove'];
     events.forEach(event => {
       document.addEventListener(event, handleUserActivity, { passive: true });

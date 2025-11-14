@@ -3,7 +3,6 @@ import { useUser, Student } from '../context/UserContext';
 import { apiService } from '../services/studentApiService';
 import './PersonalCabinetStyle.css';
 
-// Выносим интерфейсы за пределы компонента
 interface UserFormData {
   firstName: string;
   lastName: string;
@@ -45,7 +44,6 @@ interface PasswordChangeData {
   confirmPassword: string;
 }
 
-// Основной компонент
 const PersonalCabinetComponent: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -81,7 +79,6 @@ const PersonalCabinetComponent: React.FC = () => {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // Приводим тип пользователя к Student для доступа к idGroup
   const student = user as Student;
 
   // Функция загрузки данных группы с приоритетом API
@@ -95,7 +92,6 @@ const PersonalCabinetComponent: React.FC = () => {
       setError(null);
       setIsUsingCache(false);
 
-      // Сначала пытаемся загрузить с API
       const groupData = await apiService.getGroupData(student.idGroup);
       
       updateGroupState(groupData);
@@ -103,7 +99,6 @@ const PersonalCabinetComponent: React.FC = () => {
     } catch (error) {
       console.error('Ошибка при загрузке данных группы с API:', error);
       
-      // Если ошибка сети, пробуем загрузить из кэша
       try {
         const cacheKey = `group_${student.idGroup}`;
         const cached = localStorage.getItem(`cache_${cacheKey}`);
@@ -146,7 +141,6 @@ const PersonalCabinetComponent: React.FC = () => {
 
   // Функция принудительного обновления данных
   const handleRefresh = async () => {
-    // Инвалидируем кэш перед обновлением
     if (student?.idGroup) {
       const cacheKey = `group_${student.idGroup}`;
       localStorage.removeItem(`cache_${cacheKey}`);
@@ -207,12 +201,6 @@ const PersonalCabinetComponent: React.FC = () => {
         return;
       }
 
-      // Проверка текущего пароля (можно добавить дополнительную проверку через API)
-      // if (passwordData.currentPassword !== user.password) {
-      //   setError('Текущий пароль неверен');
-      //   return;
-      // }
-
       // Вызов метода смены пароля из apiService
       await apiService.updateStudentPassword(
         user.id,
@@ -247,9 +235,7 @@ const PersonalCabinetComponent: React.FC = () => {
     setSuccessMessage(null);
   }, [resetPasswordForm]);
 
-  // Упрощенная функция экспорта в PDF без jspdf-autotable
   const exportToPDF = useCallback(() => {
-    // Создаем HTML контент для печати
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -300,14 +286,12 @@ const PersonalCabinetComponent: React.FC = () => {
       </html>
     `;
 
-    // Открываем новое окно для печати
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
       printWindow.focus();
       
-      // Даем время на загрузку контента перед печатью
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
@@ -717,5 +701,4 @@ const PersonalCabinetComponent: React.FC = () => {
   );
 };
 
-// Экспорт под другим именем чтобы избежать циклических зависимостей
 export const PersonalCabinet = PersonalCabinetComponent;

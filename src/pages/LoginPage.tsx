@@ -51,7 +51,6 @@ export const LoginPage: React.FC = () => {
   useEffect(() => {
     if (isAuthSuccess && user) {
       
-      // Определяем куда перенаправлять на основе типа пользователя
       switch (user.userType) {
         case 'student':
           navigate("/student", { replace: true });
@@ -69,11 +68,10 @@ export const LoginPage: React.FC = () => {
           console.error('Unknown user type');
       }
       
-      setIsAuthSuccess(false); // Сбрасываем флаг
+      setIsAuthSuccess(false);
     }
   }, [isAuthSuccess, user, navigate]);
 
-  // Компонент модального окна для выбора роли
   const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({ 
     isOpen, 
     user, 
@@ -233,7 +231,6 @@ export const LoginPage: React.FC = () => {
             numberGroup: numberGroup
           });
 
-          // Сохраняем базовые данные пользователя из студента
           userBaseData = {
             id: studentData.id,
             name: studentData.name || "",
@@ -273,7 +270,6 @@ export const LoginPage: React.FC = () => {
             };
           }
 
-          // Определяем роли сотрудника на основе должностей
           if (staffData.staffPosition && staffData.staffPosition.length > 0) {
             for (const position of staffData.staffPosition) {
               const positionName = position.name || '';
@@ -434,7 +430,7 @@ export const LoginPage: React.FC = () => {
                 disabled={isLoading}
                 tabIndex={-1}
               >
-              <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
+                <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
               </button>
             </div>
           </div>

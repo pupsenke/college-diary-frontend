@@ -4,7 +4,7 @@ import { cacheService } from '../services/cacheService';
 interface UseCachedDataOptions {
   ttl?: number;
   enabled?: boolean;
-  forceRefresh?: boolean; // опция для принудительного обновления
+  forceRefresh?: boolean;
 }
 
 export function useCachedData<T>(
@@ -58,7 +58,6 @@ export function useCachedData<T>(
         }
       }
 
-      // Загружаем свежие данные с сервера
       console.log(`Fetching fresh data from server for key: ${key}`);
       const freshData = await fetchFn();
       
@@ -66,7 +65,6 @@ export function useCachedData<T>(
         setData(freshData);
         setIsCached(false);
         
-        // Сохраняем в кэш для будущего использования
         cacheService.set(key, freshData, { ttl });
         
         setLoading(false);
@@ -75,7 +73,6 @@ export function useCachedData<T>(
       
     } catch (err) {
       if (mountedRef.current) {
-        // Если ошибка при загрузке с сервера, пробуем взять из кэша как fallback
         const cached = cacheService.get<T>(key, { ttl });
         if (cached) {
           setData(cached);
@@ -93,7 +90,7 @@ export function useCachedData<T>(
 
   const refresh = useCallback(() => {
     console.log(`Manual refresh for key: ${key}`);
-    fetchData(false); // Принудительное обновление без кэша
+    fetchData(false);
   }, [fetchData, key]);
 
   const clearCache = useCallback(() => {

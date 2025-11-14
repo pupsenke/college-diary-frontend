@@ -112,7 +112,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     try {
       if (forceRefresh) {
         setRefreshing(true);
-        // Инвалидируем кэш при принудительном обновлении
         const cacheKey = `attendance_${studentId}`;
         localStorage.removeItem(`cache_${cacheKey}`);
       } else {
@@ -122,10 +121,8 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       setError(null);
       setIsUsingCache(false);
 
-      // Загружаем данные посещаемости с API с принудительным обновлением если нужно
       const data: SubjectAttendance[] = await apiService.getStudentAttendance(studentId);
       
-      // Преобразуем данные в формат компонента
       const transformedData: Attendance[] = data.map(subject => {
         const teachers = subject.nameSubjectTeachersDTO.teachers || [];
         const mainTeacher = teachers[0] || { 
@@ -144,7 +141,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         const validStatuses = validAttendances.map(a => a.status as 'п' | 'у' | 'н');
         
         const presentCount = validStatuses.filter(status => status === 'п').length;
-        const totalCount = validStatuses.length; // Только для выставленных статусов
+        const totalCount = validStatuses.length;
         const percent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
 
         const reasonStatus: AttendanceDetail[] = subject.attendances.map(attendance => ({
@@ -160,8 +157,8 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
           id: subject.nameSubjectTeachersDTO.idSubject,
           subject: subject.nameSubjectTeachersDTO.nameSubject,
           teacher: teacherString,
-          statuses, // Все статусы для отображения
-          quantity: totalCount, // Только выставленные статусы для статистики
+          statuses, 
+          quantity: totalCount, 
           percent: parseFloat(percent.toFixed(1)),
           reasonStatus
         };
@@ -264,33 +261,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     }
   };
 
-  // Функция для добавления комментария
-  const handleAddComment = async () => {
-    if (!selectedAttendance || !newComment.trim()) return;
-    
-    setCommentLoading(true);
-    try {
-      // Здесь будет вызов API для добавления комментария
-      // await apiService.addAttendanceComment(selectedAttendance.idLesson, studentId, newComment);
-      
-      // Временно имитируем успешное добавление
-      setTimeout(() => {
-        setAddCommentMode(false);
-        setNewComment('');
-        setCommentLoading(false);
-        
-        // Обновляем данные
-        if (selectedAttendance.idLesson) {
-          fetchLessonAttendance(selectedAttendance.idLesson);
-        }
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Ошибка добавления комментария:', error);
-      setCommentLoading(false);
-    }
-  };
-
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -313,7 +283,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     let totalPresent = 0;
     let totalExcused = 0;
     let totalAbsent = 0;
-    let totalLessons = 0; // Только уроки с выставленными статусами
+    let totalLessons = 0; 
 
     attendanceData.forEach(subject => {
       // Для статистики учитываем только выставленные статусы
