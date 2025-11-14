@@ -790,13 +790,18 @@ export const teacherApiService = {
     };
   },
 
-  // Метод для получения студентов группы с кэшированием
-  async getGroupStudents(groupId: number, idSt: number, idTeacher: number): Promise<Student[]> {
-    if (!idTeacher) {
-      throw new Error('Teacher ID not found in localStorage');
+  // Метод для получения студентов группы с кэшированием (тестирование)
+  async getGroupStudents(groupId: number, idSt: number, idTeacher?: number): Promise<Student[]> {
+    let teacherId = idTeacher;
+    if (!teacherId) {
+      const storedTeacherId = localStorage.getItem('teacher_id');
+      if (!storedTeacherId) {
+        throw new Error('Teacher ID not found in localStorage');
+      }
+      teacherId = parseInt(storedTeacherId);
     }
 
-    const cacheKey = `group_students_${groupId}_${idSt}_${idTeacher}`;
+    const cacheKey = `group_students_${groupId}_${idSt}_${teacherId}`;
 
     // Попробуем сначала получить из кэша
     const cached = cacheService.get<Student[]>(cacheKey, { 
@@ -809,8 +814,7 @@ export const teacherApiService = {
 
     try {
       
-      // Формируем URL с правильными параметрами как в Postman
-      const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
+      const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${teacherId}`;
       
       const response = await fetch(url);
       
