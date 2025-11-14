@@ -1,46 +1,149 @@
-# Getting Started with Create React App
+## Обзор системы
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Система предоставляет комплексное решение для управления учебным процессом в образовательном учреждении, включая:
+- Личные кабинеты для студентов и преподавателей
+- Мониторинг успеваемости и посещаемости
+- Управление расписанием занятий
+- Работу с документами и заявлениями
+- Аналитику и отчетность
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Функциональные модули
 
-### `npm start`
+### Модуль студента
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### Основные возможности:
+- Панель управления - обзор успеваемости и посещаемости
+- Успеваемость - просмотр оценок по семестрам и предметам
+- Посещаемость - мониторинг присутствия на занятиях
+- Расписание - просмотр учебного расписания
+- Документы - управление личными документами
+- Личный кабинет - редактирование персональных данных
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+#### Детализация функционала:
 
-### `npm test`
+##### Успеваемость
+- Семестровый просмотр - оценки по семестрам
+- Предметный анализ - детальная информация по каждому предмету
+- Аналитика - графики и статистика успеваемости
+- Детали оценок - просмотр комментариев преподавателей, истории изменений
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+##### Посещаемость
+- Статусы посещений: 
+  - "п" - Присутствовал
+  - "у" - Уважительная причина  
+  - "н" - Отсутствовал
+- Визуализация - цветовые индикаторы статусов
+- Статистика - процент посещаемости по предметам
+- Детальная информация - причины пропусков, комментарии преподавателей
 
-### `npm run build`
+##### Документы
+- Загрузка документов - личные файлы и заявления
+- Категоризация - сортировка по типам документов
+- Скачивание - доступ к загруженным материалам
+- Управление доступом - настройки видимости для преподавателей
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Модуль преподавателя
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+#### Основные возможности:
+- Панель управления - обзор преподаваемых предметов и групп
+- Выставление оценок - система оценивания студентов
+- Управление посещаемостью - отметка присутствия/отсутствия
+- Аналитика групп - статистика по успеваемости и посещаемости
+- Расписание - просмотр преподавательского расписания
+- Личный кабинет - редактирование персональных данных
 
-### `npm run eject`
+#### Детализация функционала:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+##### Управление оценками
+- Система оценивания - баллы от 1 до 5
+- Типы работ - различные виды учебной деятельности
+- Комментарии - обратная связь для студентов
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+##### Управление посещаемостью
+- Быстрая отметка - массовое заполнение посещаемости
+- Учет причин пропусков - отметка уважительных причин
+- Статистика групп - аналитика посещаемости по группам
+- Уведомления - оповещения о критической посещаемости
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+---
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Модуль расписания
 
-## Learn More
+#### Общие возможности для студентов и преподавателей:
+- Недельное расписание - просмотр по неделям
+- Типы недель - верхняя/нижняя неделя
+- Детали занятий - время, аудитория, тип занятия
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### Расписание для студентов:
+- Групповое расписание - занятия своей группы
+- - Замена занятий 
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Расписание для преподавателей:
+- Преподавательское расписание - все занятия преподавателя
+- Нагрузка по группам - распределение по учебным группам
+- Замена занятий 
+- График работы
+
+---
+
+## Установка и запуск
+
+### Предварительные требования
+- Node.js 16+
+- npm или yarn
+- Современный браузер с поддержкой ES6+
+
+### Установка
+```bash
+# Клонирование репозитория
+git clone <repository-url>
+cd student-management-system
+
+# Установка зависимостей
+npm install
+
+# Запуск в режиме разработки
+npm start
+
+# Сборка для production
+npm run build
+```
+---
+
+## Технологии
+
+### Frontend
+- **React 18** - основной фреймворк
+- **TypeScript** - типизация
+- **React Router** - маршрутизация
+- **Context API** - управление состоянием
+- **CSS3** - стилизация
+- **Recharts** - построение графиков
+
+### Backend 
+- **Spring Boot** - основной фреймворк
+- **Java 17+** - язык программирования
+- **PostgreSQL** - база данных
+- **JWT** - аутентификация
+
+---
+
+## Структура проекта
+
+```
+src/
+├── st-components/      # Переиспользуемые компоненты студента
+├── th-components/      # Переиспользуемые компоненты студента
+├── pages/              # Страницы приложения
+├── services/           # API сервисы
+├── context/            # React Context
+├── __tests__/          # Тесты программы
+└── assets/             # Статические ресурсы
+└── utils/              # Утилиты
+└── hooks/              # Хуки
+```
+
