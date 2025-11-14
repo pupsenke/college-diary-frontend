@@ -259,6 +259,7 @@ export const apiService = {
     console.log('Пароль успешно обновлен');
   }, 
   
+  
 // Получение данных группы по ID с кэшированием
   async getGroupData(groupId: number): Promise<GroupData> {
     const cacheKey = `group_${groupId}`;
@@ -475,7 +476,7 @@ export const apiService = {
     markNumber: number
   ): Promise<number> {
     
-    const url = `${API_BASE_URL}/changes/add/student/${studentId}/st/${stId}/number/${markNumber}`;
+    const url = `${API_BASE_URL}/changes/add/student/st/${stId}/student/${studentId}/number/${markNumber}`;
     
     console.log('Making POST request to:', url);
     
@@ -1133,6 +1134,30 @@ export const apiService = {
     keysToRemove.forEach(key => {
       cacheService.remove(key);
     });
-  }
+  },
+
+  
   
 }
+export const calculateOverallAttendancePercentage = (attendanceData: SubjectAttendance[]): number => {
+  if (!attendanceData || attendanceData.length === 0) {
+    return 0;
+  }
+
+  let totalPresent = 0;
+  let totalLessons = 0;
+
+  attendanceData.forEach(subject => {
+    // Учитываем только занятия с выставленными статусами (не null)
+    const validAttendances = subject.attendances.filter(a => a.status !== null);
+    
+    validAttendances.forEach(attendance => {
+      totalLessons++;
+      if (attendance.status === 'п') {
+        totalPresent++;
+      }
+    });
+  });
+
+  return totalLessons > 0 ? parseFloat(((totalPresent / totalLessons) * 100).toFixed(1)) : 0;
+};

@@ -2221,3 +2221,9 @@
   font-size: 0.875rem;
   margin: 0;
 }
+
+.pf-chart-card p{
+  color: #a8aaad;
+  font-size: 10px;
+  margin: 0;
+}

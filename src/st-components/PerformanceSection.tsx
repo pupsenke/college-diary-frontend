@@ -1853,20 +1853,20 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         </div>
         <div className="pf-full-width-chart">
           <div className="pf-chart-card">
-            <h3>Средние баллы по предметам</h3>
+            <h3>Средние баллы по предметам <p>(10 предметов)</p></h3>
             <ResponsiveContainer 
               width="100%" 
               height={Math.max(250, gradesData
                 .filter(subject => subject.average > 0)
                 .sort((a, b) => b.average - a.average)
-                .slice(0, 8)
-                .length * 90 + 80)} // Динамическая высота: 40px на предмет + 80px отступы
+                .slice(0, 10)
+                .length * 90 + 80)}
             >
               <BarChart 
                 data={gradesData
                   .filter(subject => subject.average > 0)
                   .sort((a, b) => b.average - a.average)
-                  .slice(0, 8)
+                  .slice(0, 10)
                 }
                 layout="vertical"
                 margin={{ 
@@ -1900,7 +1900,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   {gradesData
                     .filter(subject => subject.average > 0)
                     .sort((a, b) => b.average - a.average)
-                    .slice(0, 8)
+                    .slice(0, 10)
                     .map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
@@ -1995,7 +1995,16 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                  <div className="pf-grades-timeline">
                     {selectedSubjectData?.gradeDetails?.map((detail) => (
                       <div key={detail.id} className="pf-timeline-item">
-                        <div className="pf-timeline-content">
+                        <div className="pf-timeline-content"
+                        onClick={() => handleGradeClick(
+                                selectedSubjectData.subject,
+                                detail.hasValue ? detail.grade : null,
+                                detail.id,
+                                detail.topic, // Передаем актуальный topic
+                                selectedSubjectData.teacher,
+                                detail.stId
+                              )}>
+                          
                           <div className="pf-grade-header">
                             {/* Здесь будет отображаться реальный тип работы */}
                             <span className="pf-grade-topic">{detail.topic}</span>
@@ -2007,14 +2016,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                               style={{ 
                                 backgroundColor: detail.hasValue ? getGradeColor(detail.grade) : '#d1d5db'
                               }}
-                              onClick={() => handleGradeClick(
-                                selectedSubjectData.subject,
-                                detail.hasValue ? detail.grade : null,
-                                detail.id,
-                                detail.topic, // Передаем актуальный topic
-                                selectedSubjectData.teacher,
-                                detail.stId
-                              )}
+                              
                             >
                               {detail.hasValue ? detail.grade : '-'}
                             </span>

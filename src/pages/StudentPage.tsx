@@ -9,7 +9,7 @@ import { useUser, Student } from '../context/UserContext';
 import './StudentStyle.css';
 import { ScheduleSection } from '../st-components/ScheduleSectionST';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiService, GroupData, TeacherData, StudentMark } from '../services/studentApiService';
+import { apiService, GroupData, TeacherData, StudentMark, SubjectAttendance, calculateOverallAttendancePercentage } from '../services/studentApiService';
 
 export const StudentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('attendance');
@@ -25,6 +25,7 @@ export const StudentPage: React.FC = () => {
   const [attendancePercentage, setAttendancePercentage] = useState<number>(0);
   const [averageGrade, setAverageGrade] = useState<number>(0);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
+  const [attendanceData, setAttendanceData] = useState<SubjectAttendance[]>([]);
 
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
@@ -76,23 +77,19 @@ export const StudentPage: React.FC = () => {
             if (gradeValue >= 2 && gradeValue <= 5) {
               totalGrade += gradeValue;
               gradeCount++;
-            } else {
             }
           }
         });
-      } else {
       }
     });
 
     const result = gradeCount > 0 ? parseFloat((totalGrade / gradeCount).toFixed(1)) : 0;
-    ;
-    
     return result;
   };
 
-  // ЗАГЛУШКА ДЛЯ ПОСЕЩАЕМОСТИ
-  const calculateAttendancePercentage = (marks: StudentMark[]): number => {
-    return 85;
+  // ФУНКЦИЯ РАСЧЕТА ПРОЦЕНТА ПОСЕЩАЕМОСТИ (использует те же данные что и AttendanceSection)
+  const calculateAttendancePercentage = (attendanceData: SubjectAttendance[]): number => {
+    return calculateOverallAttendancePercentage(attendanceData);
   };
 
   // Загрузка данных студента
@@ -131,18 +128,28 @@ export const StudentPage: React.FC = () => {
         } else {
           setCuratorData(null);
         }
+
+        // Загружаем данные успеваемости
         try {
           const marksData = await apiService.getStudentMarks(student.id);
           setStudentMarks(marksData || []);
 
           const avgGrade = calculateAverageGrade(marksData || []);
-          
-          const attendancePercent = calculateAttendancePercentage(marksData || []);;
-
           setAverageGrade(avgGrade);
-          setAttendancePercentage(attendancePercent);
         } catch (marksError) {
+          console.error('Ошибка загрузки оценок:', marksError);
           setAverageGrade(0.0);
+        }
+
+        // Загружаем данные посещаемости для расчета процента
+        try {
+          const attendanceDataResponse = await apiService.getStudentAttendance(student.id);
+          setAttendanceData(attendanceDataResponse || []);
+
+          const attendancePercent = calculateAttendancePercentage(attendanceDataResponse || []);
+          setAttendancePercentage(attendancePercent);
+        } catch (attendanceError) {
+          console.error('Ошибка загрузки посещаемости:', attendanceError);
           setAttendancePercentage(0);
         }
 
