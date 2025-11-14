@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { useCache } from '../context/CacheContext';
-import { teacherApiService } from '../services/teacherApiService';
+import { teacherApiService, StaffApiResponse } from '../services/teacherApiService';
 import './DisciplinesSectionStyle.css';
 import { CacheWarning } from '../th-components/CacheWarning';
 
@@ -66,7 +66,6 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
     }
   }, []);
 
-  // Функция для получения дисциплин с кэшированием
   const fetchDisciplines = async (forceRefresh = false) => {
     try {
       setLoading(true);
@@ -79,27 +78,57 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
 
       console.log('Загрузка дисциплин преподавателя...');
       
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
+      // ПРОВЕРКА С ОТЧЕСТВОМ И БЕЗ
+      if (!user?.name || !user?.lastName) {
+        throw new Error('Недостаточно данных пользователя для поиска: требуется имя и фамилия');
       }
 
       // Инвалидируем кэш при принудительном обновлении
       if (forceRefresh) {
-        const teacher = await teacherApiService.findTeacherByName(
-          user.name, 
-          user.lastName, 
-          user.patronymic
-        );
+        let teacher: StaffApiResponse | null = null;
+
+        // ПЕРВАЯ ПОПЫТКА: поиск с отчеством (если оно есть)
+        if (user.patronymic && user.patronymic.trim() !== '') {
+          teacher = await teacherApiService.findTeacherByName(
+            user.name, 
+            user.lastName, 
+            user.patronymic
+          );
+        }
+
+        // ВТОРАЯ ПОПЫТКА: если не нашли с отчеством, ищем только по имени и фамилии
+        if (!teacher) {
+          teacher = await teacherApiService.findTeacherByNameWithoutPatronymic(
+            user.name, 
+            user.lastName
+          );
+        }
+
         if (teacher) {
           teacherApiService.invalidateTeacherCache(teacher.id);
         }
       }
 
-      const teacher = await teacherApiService.findTeacherByName(
-        user.name, 
-        user.lastName, 
-        user.patronymic
-      );
+      let teacher: StaffApiResponse | null = null;
+
+      // ПЕРВАЯ ПОПЫТКА: поиск с отчеством (если оно есть)
+      if (user.patronymic && user.patronymic.trim() !== '') {
+        console.log('Поиск преподавателя с отчеством:', user.name, user.lastName, user.patronymic);
+        teacher = await teacherApiService.findTeacherByName(
+          user.name, 
+          user.lastName, 
+          user.patronymic
+        );
+      }
+
+      // ВТОРАЯ ПОПЫТКА: если не нашли с отчеством, ищем только по имени и фамилии
+      if (!teacher) {
+        console.log('Преподаватель не найден с отчеством, поиск только по имени и фамилии:', user.name, user.lastName);
+        teacher = await teacherApiService.findTeacherByNameWithoutPatronymic(
+          user.name, 
+          user.lastName
+        );
+      }
 
       if (!teacher) {
         throw new Error('Преподаватель не найден');

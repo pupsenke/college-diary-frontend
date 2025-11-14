@@ -690,6 +690,36 @@ export const teacherApiService = {
     return teacher || null;
   },
 
+  // Поиск преподавателя только по имени и фамилии (без отчества)
+  async findTeacherByNameWithoutPatronymic(name: string, lastName: string): Promise<StaffApiResponse | null> {
+    const cacheKey = `teacher_search_nopatronymic_${lastName}_${name}`.toLowerCase();
+    
+    const cached = cacheService.get<StaffApiResponse>(cacheKey, { 
+      ttl: CACHE_TTL.TEACHER_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    const allStaff = await this.getAllStaff();
+    
+    // Ищем преподавателя только по имени и фамилии
+    const teacher = allStaff.find(staff => 
+      staff.name === name && 
+      staff.lastName === lastName
+      // Не проверяем отчество!
+    );
+
+    if (teacher) {
+      cacheService.set(cacheKey, teacher, { 
+        ttl: CACHE_TTL.TEACHER_DATA 
+      });
+    }
+    
+    return teacher || null;
+  },
+
   async updateTeacherData(teacherId: number, data: Partial<StaffApiResponse>) {
     const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
       method: 'PATCH',

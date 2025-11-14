@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { useCache } from '../context/CacheContext';
-import { teacherApiService } from '../services/teacherApiService';
+import { teacherApiService, StaffApiResponse } from '../services/teacherApiService';
 import { TeacherAttendanceSection, AttendanceRecord } from './TeacherAttendanceSection';
 import { TeacherPerformanceSection } from './TeacherPerformanceSection';
 import './GroupsSectionStyle.css';
@@ -129,15 +129,31 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
 
       if (forceRefresh) setRefreshing(true);
 
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
+      // ПРОВЕРКА С ОТЧЕСТВОМ И БЕЗ
+      if (!user?.name || !user?.lastName) {
+        throw new Error('Недостаточно данных пользователя для поиска: требуется имя и фамилия');
       }
 
-      const teacher = await teacherApiService.findTeacherByName(
-        user.name,
-        user.lastName,
-        user.patronymic
-      );
+      let teacher: StaffApiResponse | null = null;
+
+      // ПЕРВАЯ ПОПЫТКА: поиск с отчеством (если оно есть)
+      if (user.patronymic && user.patronymic.trim() !== '') {
+        console.log('Поиск преподавателя с отчеством:', user.name, user.lastName, user.patronymic);
+        teacher = await teacherApiService.findTeacherByName(
+          user.name,
+          user.lastName,
+          user.patronymic
+        );
+      }
+
+      // ВТОРАЯ ПОПЫТКА: если не нашли с отчеством, ищем только по имени и фамилии
+      if (!teacher) {
+        console.log('Преподаватель не найден с отчеством, поиск только по имени и фамилии:', user.name, user.lastName);
+        teacher = await teacherApiService.findTeacherByNameWithoutPatronymic(
+          user.name,
+          user.lastName
+        );
+      }
 
       if (!teacher) throw new Error('Преподаватель не найден');
 

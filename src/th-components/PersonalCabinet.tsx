@@ -114,8 +114,9 @@ export const PersonalCabinet: React.FC<Props> = ({
 
       console.log('Загрузка данных преподавателя...');
       
-      if (!user?.name || !user?.lastName || !user?.patronymic) {
-        throw new Error('Недостаточно данных пользователя для поиска');
+      // ПРОВЕРКА С ОТЧЕСТВОМ И БЕЗ
+      if (!user?.name || !user?.lastName) {
+        throw new Error('Недостаточно данных пользователя для поиска: требуется имя и фамилия');
       }
 
       // Инвалидируем кэш при принудительном обновлении
@@ -123,12 +124,26 @@ export const PersonalCabinet: React.FC<Props> = ({
         teacherApiService.invalidateTeacherCache(teacherData.teacherId);
       }
 
-      // Ищем преподавателя по ФИО
-      const teacher = await teacherApiService.findTeacherByName(
-        user.name, 
-        user.lastName, 
-        user.patronymic
-      );
+      let teacher: StaffApiResponse | null = null;
+
+      // ПЕРВАЯ ПОПЫТКА: поиск с отчеством (если оно есть)
+      if (user.patronymic && user.patronymic.trim() !== '') {
+        console.log('Поиск преподавателя с отчеством:', user.name, user.lastName, user.patronymic);
+        teacher = await teacherApiService.findTeacherByName(
+          user.name, 
+          user.lastName, 
+          user.patronymic
+        );
+      }
+
+      // ВТОРАЯ ПОПЫТКА: если не нашли с отчеством, ищем только по имени и фамилии
+      if (!teacher) {
+        console.log('Преподаватель не найден с отчеством, поиск только по имени и фамилии:', user.name, user.lastName);
+        teacher = await teacherApiService.findTeacherByNameWithoutPatronymic(
+          user.name, 
+          user.lastName
+        );
+      }
 
       if (teacher) {
         console.log('Найден преподаватель с ID:', teacher.id);
@@ -148,7 +163,7 @@ export const PersonalCabinet: React.FC<Props> = ({
           const transformedData: TeacherData = {
             firstName: teacher.name,
             lastName: teacher.lastName,
-            middleName: teacher.patronymic,
+            middleName: teacher.patronymic || '', // Может быть пустой строкой
             email: formattedEmail,
             position: teacher.staffPosition[0]?.name || 'Преподаватель',
             disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
@@ -170,7 +185,7 @@ export const PersonalCabinet: React.FC<Props> = ({
           const transformedData: TeacherData = {
             firstName: teacher.name,
             lastName: teacher.lastName,
-            middleName: teacher.patronymic,
+            middleName: teacher.patronymic || '',
             email: formattedEmail,
             position: teacher.staffPosition[0]?.name || 'Преподаватель',
             disciplines: ['Не удалось загрузить дисциплины'],
@@ -188,7 +203,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         const fallbackData: TeacherData = {
           firstName: user?.name || '',
           lastName: user?.lastName || '',
-          middleName: user?.patronymic || '',
+          middleName: user?.patronymic || '', // Может быть пустой строкой
           email: formattedEmail,
           position: 'Преподаватель',
           disciplines: ['Дисциплины не найдены'],
@@ -223,7 +238,7 @@ export const PersonalCabinet: React.FC<Props> = ({
           const fallbackData: TeacherData = {
             firstName: user?.name || '',
             lastName: user?.lastName || '',
-            middleName: user?.patronymic || '',
+            middleName: user?.patronymic || '', // Может быть пустой строкой
             email: formattedEmail,
             position: 'Преподаватель',
             disciplines: ['Данные загружены из кэша'],
@@ -240,7 +255,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         const fallbackData: TeacherData = {
           firstName: user?.name || '',
           lastName: user?.lastName || '',
-          middleName: user?.patronymic || '',
+          middleName: user?.patronymic || '', // Может быть пустой строкой
           email: formattedEmail,
           position: 'Преподаватель',
           disciplines: ['Ошибка загрузки дисциплин'],
