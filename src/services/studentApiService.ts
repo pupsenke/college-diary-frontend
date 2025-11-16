@@ -1,6 +1,6 @@
 import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080';
 
 export interface GroupData {
   id: number;
@@ -238,7 +238,7 @@ export const apiService = {
       password: newPassword
     };
 
-    const response = await fetch(`${API_BASE_URL}/students/update`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/students/update`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    const response = await fetch(`${API_BASE_URL}/groups/id/${groupId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/groups/id/${groupId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -289,7 +289,7 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${teacherId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -312,7 +312,7 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    const response = await fetch(`${API_BASE_URL}/subjects/id/${subjectId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/subjects/id/${subjectId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -329,7 +329,7 @@ export const apiService = {
 
   // Авторизация студента
   async loginStudent(login: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/students/login/${login}/password/${password}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/students/login/${login}/password/${password}`);
     if (!response.ok) throw new Error('Ошибка авторизации студента');
     const data: StudentData = await response.json();
     
@@ -343,7 +343,7 @@ export const apiService = {
   // Обновление данных студента 
   async updateStudentData(studentId: number, data: Partial<StudentData>) {
     
-    const response = await fetch(`${API_BASE_URL}/students/update`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/students/update`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ export const apiService = {
 
   // Получение детальной информации об оценке
   async getMarkInfo(studentId: number, stId: number, markNumber: number): Promise<MarkInfo> {
-    const response = await fetch(`${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/marks/info/mark/student/${studentId}/st/${stId}/number/${markNumber}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -395,7 +395,7 @@ export const apiService = {
 
   // Получение списка уроков
   async getLessons(): Promise<Lesson[]> {
-    const response = await fetch(`${API_BASE_URL}/lessons`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/lessons`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -419,7 +419,7 @@ export const apiService = {
       });
     }
 
-    const response = await fetch(`${API_BASE_URL}/lessons/add/supplement/id/${lessonId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/lessons/add/supplement/id/${lessonId}`, {
       method: 'POST',
       body: formData,
     });
@@ -432,7 +432,7 @@ export const apiService = {
 
   // Получение детальной информации об оценке (колонке)
   async getMarkColumnInfo(studentId: number, stId: number, markNumber: number): Promise<MarkColumnInfo> {
-    const response = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -448,7 +448,7 @@ export const apiService = {
   async getSupplement(supplementId: number): Promise<Supplement> {
     
     // Получаем все supplements и находим нужный по ID
-    const response = await fetch(`${API_BASE_URL}/supplements`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/supplements`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -475,7 +475,7 @@ export const apiService = {
     markNumber: number
   ): Promise<number> {
     
-    const url = `${API_BASE_URL}/changes/add/student/st/${stId}/student/${studentId}/number/${markNumber}`;
+    const url = `${API_BASE_URL}/api/v1/changes/add/student/st/${stId}/student/${studentId}/number/${markNumber}`;
     
     console.log('Making POST request to:', url);
     
@@ -505,7 +505,7 @@ export const apiService = {
     }
     
     try {
-      const markInfoResponse = await fetch(`${API_BASE_URL}/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
+      const markInfoResponse = await fetch(`${API_BASE_URL}/api/v1/marks/info/column/student/${studentId}/st/${stId}/number/${markNumber}`);
       if (markInfoResponse.ok) {
         const markInfo: MarkInfo = await markInfoResponse.json();
         
@@ -526,7 +526,7 @@ export const apiService = {
   // Удаление supplement
   async deleteSupplement(supplementId: number): Promise<void> {
     
-    const response = await fetch(`${API_BASE_URL}/supplements/delete/id/${supplementId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/supplements/delete/id/${supplementId}`, {
       method: 'DELETE',
     });
 
@@ -540,7 +540,7 @@ export const apiService = {
   async downloadSupplementFile(fileId: number, fileName: string): Promise<void> {
     
     try {
-      const response = await fetch(`${API_BASE_URL}/supplements/files/id/${fileId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/supplements/files/id/${fileId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/octet-stream',
@@ -577,7 +577,7 @@ export const apiService = {
     supplementId?: number
   ): Promise<void> {
     
-    let url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
+    let url = `${API_BASE_URL}/api/v1/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
     
     if (supplementId) {
       url += `&idSupplement=${supplementId}`;
@@ -601,7 +601,7 @@ export const apiService = {
       formData.append('file', file);
     });
 
-    const response = await fetch(`${API_BASE_URL}/supplements/add/files/id/${supplementId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/supplements/add/files/id/${supplementId}`, {
       method: 'POST',
       body: formData,
     });
@@ -625,7 +625,7 @@ export const apiService = {
       });
     }
 
-    const response = await fetch(`${API_BASE_URL}/supplements/add`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/supplements/add`, {
       method: 'POST',
       body: formData,
     });
@@ -647,7 +647,7 @@ export const apiService = {
     comment: string
   ): Promise<void> {
     
-    const url = `${API_BASE_URL}/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
+    const url = `${API_BASE_URL}/api/v1/changes/add/st/${stId}/student/${studentId}/number/${markNumber}?comment=${encodeURIComponent(comment)}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -663,7 +663,7 @@ export const apiService = {
   // Обновление комментария supplement
   async updateSupplementComment(supplementId: number, comment: string): Promise<void> {
     
-    const response = await fetch(`${API_BASE_URL}/supplements/update?id=${supplementId}&comment=${encodeURIComponent(comment)}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/supplements/update?id=${supplementId}&comment=${encodeURIComponent(comment)}`, {
       method: 'PATCH',
     });
 
@@ -681,7 +681,7 @@ export const apiService = {
     if (cached) {
       return cached;
     }
-    const response = await fetch(`${API_BASE_URL}/students/marks/id/${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${studentId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -698,7 +698,7 @@ export const apiService = {
 
   // Получение оценок по предмету
   async getSubjectMarks(studentId: number, subjectId: number): Promise<SubjectMark[]> {
-    const response = await fetch(`${API_BASE_URL}/marks/student/${studentId}/subject/${subjectId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/marks/student/${studentId}/subject/${subjectId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -712,7 +712,7 @@ export const apiService = {
 
   // Получение предметов преподавателя
   async getTeacherSubjects(teacherId: number): Promise<TeacherSubject[]> {
-    const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/st/teacherGroups/${teacherId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -744,7 +744,7 @@ export const apiService = {
       return cached;
     }
 
-    const response = await fetch(`${API_BASE_URL}/attendances/student/${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/attendances/student/${studentId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -773,7 +773,7 @@ export const apiService = {
       return cached;
     }
 
-    const response = await fetch(`${API_BASE_URL}/attendances/lesson/${lessonId}/student/${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/attendances/lesson/${lessonId}/student/${studentId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -818,7 +818,7 @@ export const apiService = {
       return cached;
     }
 
-    const response = await fetch(`${API_BASE_URL}/paths`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/paths`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -902,7 +902,7 @@ export const apiService = {
         throw new Error(`Документ с ID ${id} не найден`);
       }
 
-      const fileResponse = await fetch(`${API_BASE_URL}/paths/id/${id}`, {
+      const fileResponse = await fetch(`${API_BASE_URL}/api/v1/paths/id/${id}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/octet-stream',
@@ -967,7 +967,7 @@ export const apiService = {
       formData.append('type', documentType);
     }
 
-    const response = await fetch(`${API_BASE_URL}/paths/upload`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/paths/upload`, {
       method: 'PUT',
       body: formData,
     });
@@ -981,7 +981,7 @@ export const apiService = {
     this.invalidateDocumentCache(studentId, documentType);
   },
   async getStudentData(studentId: number): Promise<StudentData> {
-    const response = await fetch(`${API_BASE_URL}/students/id/${studentId}`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/students/id/${studentId}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -994,7 +994,7 @@ export const apiService = {
 
   // Удаление документа с инвалидацией кэша
   async deleteDocument(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/paths/delete/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/paths/delete/${id}`, {
       method: 'DELETE',
     });
 
@@ -1010,7 +1010,7 @@ export const apiService = {
   // Получение файла по ID
   async getFileById(fileId: number): Promise<Blob> {
     
-    const response = await fetch(`${API_BASE_URL}/paths/id/${fileId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/paths/id/${fileId}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/octet-stream',

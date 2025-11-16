@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import '../st-components/ScheduleSection.css';
 
+const API_BASE_URL = 'http://localhost:8080';
+
 export interface ScheduleItem {
   id: number;
   dayWeek: string;
@@ -469,7 +471,7 @@ export const ScheduleSection: React.FC = () => {
     try {
       clearTeacherCache(userId);
       console.log('Расписание преподавателя. Принудительное обновление данных преподавателя');
-      const response = await fetch(`http://localhost:8080/api/v1/schedule/teacher/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/schedule/teacher/${userId}`);
       if (!response.ok) {
         throw new Error(`Ошибка загрузки: ${response.status}`);
       }
@@ -502,7 +504,7 @@ export const ScheduleSection: React.FC = () => {
           setLastUpdated(new Date());
         }
         console.log('Расписание преподавателя. Загрузка расписания преподавателя с сервера');
-        const response = await fetch(`http://localhost:8080/api/v1/schedule/teacher/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/schedule/teacher/${userId}`);
         if (!response.ok) {
           throw new Error(`Ошибка загрузки: ${response.status}`);
         }

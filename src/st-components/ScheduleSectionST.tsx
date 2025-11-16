@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useUser, Student } from '../context/UserContext';
 import './ScheduleSection.css';
 
+const API_BASE_URL = 'http://localhost:8080';
+
 type ApiLesson = {
   id: number;
   dayWeek: string;
@@ -625,7 +627,7 @@ export const ScheduleSection: React.FC = () => {
           setScheduleData(transformedData);
           setLastUpdated(new Date());
         }
-        const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`); 
+        const scheduleResponse = await fetch(`${API_BASE_URL}/api/v1/schedule/group/${userGroupId}`);
         if (!scheduleResponse.ok) {
           throw new Error('Ошибка загрузки расписания');
         }
@@ -660,7 +662,7 @@ export const ScheduleSection: React.FC = () => {
       if (cachedMarks) {
         setMarks(cachedMarks);
       }  
-      const marksResponse = await fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`);    
+      const marksResponse = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${user.id}`);
       if (!marksResponse.ok) {
         throw new Error('Ошибка загрузки оценок');
       }    
@@ -686,8 +688,8 @@ export const ScheduleSection: React.FC = () => {
     try {
       clearUserCache(userId);
             const [scheduleResponse, marksResponse] = await Promise.all([
-        fetch(`http://localhost:8080/api/v1/schedule/group/${userGroupId}`),
-        isStudent && user ? fetch(`http://localhost:8080/api/v1/students/marks/id/${user.id}`) : null
+        fetch(`${API_BASE_URL}/api/v1/schedule/group/${userGroupId}`),
+        isStudent && user ? fetch(`${API_BASE_URL}/api/v1/students/marks/id/${user.id}`) : null
       ]);
       if (!scheduleResponse.ok) {
         throw new Error('Ошибка загрузки расписания');

@@ -1314,7 +1314,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   });
 
     useEffect(() => {
-    console.log('🔍 Отладка фильтрации:', {
+    console.log('Отладка фильтрации:', {
       selectedLessonType,
       lessonTypesData: Object.entries(lessonTypesData).map(([date, data]) => ({
         date,

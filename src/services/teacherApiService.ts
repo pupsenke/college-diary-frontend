@@ -1,7 +1,7 @@
 import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://localhost:8080';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
   const controller = new AbortController();
@@ -308,7 +308,7 @@ export const teacherApiService = {
       return cached;
     }
 
-    const response = await fetch(`${API_BASE_URL}/staffs`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/staffs`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ export const teacherApiService = {
       return cached;
     }
 
-    const response = await fetch(`${API_BASE_URL}/staffs/id/${teacherId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${teacherId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/st/teacherGroups/${teacherId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/st/teacherGroups/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -442,7 +442,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -479,7 +479,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/group/${teacherId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/subjects/group/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -515,7 +515,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/groups/number/${groupNumber}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/number/${groupNumber}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -557,7 +557,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/groups/id/${groupId}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/id/${groupId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -597,7 +597,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -633,7 +633,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/staffs/subjects/course/${teacherId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/subjects/course/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -721,7 +721,7 @@ export const teacherApiService = {
   },
 
   async updateTeacherData(teacherId: number, data: Partial<StaffApiResponse>) {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/staffs/update`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -814,7 +814,7 @@ export const teacherApiService = {
 
     try {
       
-      const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${teacherId}`;
+      const url = `${API_BASE_URL}/api/v1/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${teacherId}`;
       
       const response = await fetch(url);
       
@@ -844,7 +844,7 @@ export const teacherApiService = {
   async getGroupStudentsWithoutCache(groupId: number, idSt: number, idTeacher: number): Promise<Student[]> {
     try {
       // Формируем URL с правильными параметрами как в Postman
-      const url = `${API_BASE_URL}/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
+      const url = `${API_BASE_URL}/api/v1/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
       
       const response = await fetch(url);
       
@@ -890,7 +890,7 @@ export const teacherApiService = {
   // Смена пароля - без проверки текущего пароля
   async changePassword(teacherId: number, passwordData: PasswordChangeData): Promise<{ success: boolean }> {
     try {      
-      const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/staffs/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -990,7 +990,7 @@ export const teacherApiService = {
         login: loginData.newLogin.trim()
       };
             
-      const response = await fetchWithTimeout(`${API_BASE_URL}/staffs/update`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/staffs/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1075,7 +1075,7 @@ export const teacherApiService = {
     try {
       
       // Используем правильный endpoint для получения дат
-      const response = await fetch(`${API_BASE_URL}/lessons/date/st/${idSt}/group/${groupId}/teacher/${teacherId}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/lessons/date/st/${idSt}/group/${groupId}/teacher/${teacherId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1119,7 +1119,7 @@ export const teacherApiService = {
     try {
       
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/marks/info/mark/student/${studentId}/st/${idSt}/number/${lessonNumber}`,
+        `${API_BASE_URL}/api/v1/marks/info/mark/student/${studentId}/st/${idSt}/number/${lessonNumber}`,
         {
           method: 'GET',
           headers: {
@@ -1195,7 +1195,7 @@ export const teacherApiService = {
 
     try {
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
+        `${API_BASE_URL}/api/v1/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
         {
           method: 'GET',
           headers: {
@@ -1256,7 +1256,7 @@ export const teacherApiService = {
         idTeacher: parseInt(teacherId)
       };
 
-      const response = await fetchWithTimeout(`${API_BASE_URL}/changes/add/supplement`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/changes/add/supplement`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1304,7 +1304,7 @@ export const teacherApiService = {
         idTypeMark: idTypeMark
       };
 
-      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1342,7 +1342,7 @@ export const teacherApiService = {
   async updateLessonComment(idSupplement: number, comment: string): Promise<{ success: boolean }> {
     try {
       
-      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1409,7 +1409,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/st`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/st`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1446,7 +1446,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/st/teacher/${teacherId}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/st/teacher/${teacherId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1483,7 +1483,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/subjects`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/subjects`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1704,7 +1704,7 @@ export const teacherApiService = {
 
     try {
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
+        `${API_BASE_URL}/api/v1/lessons/info/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
         {
           method: 'GET',
           headers: {
@@ -1734,7 +1734,7 @@ export const teacherApiService = {
   async addDateColumn(addRequest: AddDateColumnRequest): Promise<{ success: boolean }> {
     try {
       
-      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/save/group`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks/save/group`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1778,7 +1778,7 @@ export const teacherApiService = {
   // Удаление столбца с датой
   async deleteDateColumn(deleteRequest: DeleteDateColumnRequest): Promise<{ success: boolean }> {
     try {      
-      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/delete/group`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks/delete/group`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -1836,7 +1836,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/st`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/st`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1878,7 +1878,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/typeMarks/st/${stId}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/typeMarks/st/${stId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1908,7 +1908,7 @@ export const teacherApiService = {
   async updateLessonType(updateRequest: UpdateMarkRequest): Promise<{ success: boolean }> {
     try {
 
-      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks/updateOneMark`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -2030,7 +2030,7 @@ export const teacherApiService = {
   async updateMark(updateRequest: UpdateMarkGradeRequest): Promise<{ success: boolean }> {
     try {
       
-      const response = await fetchWithTimeout(`${API_BASE_URL}/marks/updateOneMark`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks/updateOneMark`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -2068,7 +2068,7 @@ export const teacherApiService = {
   async getStudentChangeHistory(studentId: number, idSt: number, lessonNumber: number): Promise<ChangeHistory[]> {
     try {      
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/changes/mark/st/${idSt}/student/${studentId}/number/${lessonNumber}`,
+        `${API_BASE_URL}/api/v1/changes/mark/st/${idSt}/student/${studentId}/number/${lessonNumber}`,
         {
           method: 'GET',
           headers: {
@@ -2108,7 +2108,7 @@ export const teacherApiService = {
 
       // Сначала создаем запись изменения
       const addResponse = await fetchWithTimeout(
-        `${API_BASE_URL}/changes/add/teacher/st/${request.idSt}/student/${request.idStudent}/number/${request.number}`,
+        `${API_BASE_URL}/api/v1/changes/add/teacher/st/${request.idSt}/student/${request.idStudent}/number/${request.number}`,
         {
           method: 'POST',
           headers: {
@@ -2163,7 +2163,7 @@ export const teacherApiService = {
         formData.append('file', file);
                 
         const response = await fetch(
-          `${API_BASE_URL}/supplements/add/files/id/${idSupplement}`,
+          `${API_BASE_URL}/api/v1/supplements/add/files/id/${idSupplement}`,
           {
             method: 'POST',
             body: formData,
@@ -2225,7 +2225,7 @@ export const teacherApiService = {
         formData.append('file', file);
         
 
-        const response = await fetch(`${API_BASE_URL}/paths/upload`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/paths/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -2306,7 +2306,7 @@ export const teacherApiService = {
   // Получение списка всех файлов
   async getAllFiles(): Promise<any[]> {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/paths`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/paths`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -2328,7 +2328,7 @@ export const teacherApiService = {
   // Получение информации о конкретном файле по ID
   async getFileById(fileId: number): Promise<any> {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/paths/id/${fileId}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/paths/id/${fileId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -2378,7 +2378,7 @@ export const teacherApiService = {
       }
 
       // Используем pathToFile для скачивания
-      const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
+      const downloadUrl = `${API_BASE_URL}/api/v1/paths/id/${fileId}`;
       const actualFileName = fileName || fileInfo.nameFile || `file_${fileId}`;
 
       // Создаем скрытую ссылку для скачивания
@@ -2415,7 +2415,7 @@ export const teacherApiService = {
    */
   async downloadFileByIdWithFetch(fileId: number, fileName?: string): Promise<void> {
     try {      
-      const downloadUrl = `${API_BASE_URL}/paths/id/${fileId}`;
+      const downloadUrl = `${API_BASE_URL}/api/v1/paths/id/${fileId}`;
       
       const response = await fetch(downloadUrl, {
         method: 'GET',
@@ -2479,7 +2479,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/subgroups`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -2562,7 +2562,7 @@ export const teacherApiService = {
   }): Promise<{ success: boolean }> {
     try {
       
-      const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups/delete/students`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/subgroups/delete/students`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -2606,7 +2606,7 @@ export const teacherApiService = {
   }): Promise<{ success: boolean }> {
     try {
       
-      const response = await fetchWithTimeout(`${API_BASE_URL}/subgroups/add/students`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/subgroups/add/students`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2857,7 +2857,7 @@ export const teacherApiService = {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/lessons`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/lessons`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -2906,7 +2906,7 @@ export const teacherApiService = {
       
       
       // ИСПОЛЬЗУЕМ ID ГРУППЫ В ЗАПРОСЕ
-      const url = `${API_BASE_URL}/attendances/group/${groupId}/st/${idSt}/teacher/${teacherId}`;
+      const url = `${API_BASE_URL}/api/v1/attendances/group/${groupId}/st/${idSt}/teacher/${teacherId}`;
       
       const response = await fetchWithTimeout(url, {
         method: 'GET',
@@ -2967,7 +2967,7 @@ export const teacherApiService = {
     }
 
     try {
-      const url = `${API_BASE_URL}/attendances/lesson/${lessonId}/student/${studentId}`;
+      const url = `${API_BASE_URL}/api/v1/attendances/lesson/${lessonId}/student/${studentId}`;
       
       const response = await fetchWithTimeout(url, {
         method: 'GET',
@@ -3013,7 +3013,7 @@ export const teacherApiService = {
    */
   async updateAttendance(updateRequest: UpdateAttendanceRequest): Promise<{ success: boolean }> {
     try {
-      const url = `${API_BASE_URL}/attendances/student/${updateRequest.idStudent}`;
+      const url = `${API_BASE_URL}/api/v1/attendances/student/${updateRequest.idStudent}`;
       
       const response = await fetchWithTimeout(url, {
         method: 'PATCH',
@@ -3074,7 +3074,7 @@ export const teacherApiService = {
   // Получение информации о supplement по ID
   async getSupplementInfo(supplementId: number): Promise<SupplementInfo | null> {
     try {      
-      const response = await fetchWithTimeout(`${API_BASE_URL}/supplements/${supplementId}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/${supplementId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -3122,5 +3122,42 @@ export const teacherApiService = {
       console.error('Error fetching supplement types:', error);
       return typesMap;
     }
-  }
+  },
+
+  // Получение всех расписаний
+  async getAllSchedules(): Promise<any[]> {
+    const cacheKey = 'all_schedules';
+    
+    const cached = cacheService.get<any[]>(cacheKey, { 
+      ttl: CACHE_TTL.LESSON_DATES 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/schedule`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.LESSON_DATES 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching all schedules:', error);
+      return [];
+    }
+  },
 };

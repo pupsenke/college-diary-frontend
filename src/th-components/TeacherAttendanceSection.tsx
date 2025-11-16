@@ -294,7 +294,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
     try {
       setLoadingLessonInfo(true);
 
-      // СПОСОБ 1: Получаем информацию из эндпоинта lessons
+      // СПОСОБ 1: Получаем информацию из эндпоинта lessons через teacherApiService
       const allLessons = await teacherApiService.getAllLessons();
 
       // Ищем занятие по ID
@@ -305,12 +305,11 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         const scheduleId = lesson.idSchedule;
 
         if (scheduleId) {
-          // Получаем информацию из расписания
-          const scheduleResponse = await fetch(`http://localhost:8080/api/v1/schedule`);
-          if (scheduleResponse.ok) {
-            const scheduleData = await scheduleResponse.json();
+          // Получаем информацию из расписания через teacherApiService
+          try {
+            const allSchedules = await teacherApiService.getAllSchedules();
             
-            const scheduleItem = scheduleData.find((item: any) => item.id === scheduleId);
+            const scheduleItem = allSchedules.find((item: any) => item.id === scheduleId);
 
             if (scheduleItem) {
               const lessonInfo = {
@@ -322,6 +321,8 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
               };
               return lessonInfo;
             }
+          } catch (scheduleError) {
+            console.error('Error fetching schedule info:', scheduleError);
           }
         }
 
@@ -339,6 +340,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       return null;
 
     } catch (error) {
+      console.error('Error fetching lesson info:', error);
       return null;
     } finally {
       setLoadingLessonInfo(false);

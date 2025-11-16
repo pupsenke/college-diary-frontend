@@ -222,8 +222,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     return icons[extension || ''] || '📎';
   };
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1';
-
   // Функция для скачивания файла
   const handleDownloadFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
     try {
