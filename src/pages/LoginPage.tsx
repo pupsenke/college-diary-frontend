@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
 import { apiService, GroupData, TeacherData } from '../services/studentApiService';
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 // Интерфейс для данных пользователя с возможными ролями
 interface UserWithRoles {
@@ -250,7 +251,7 @@ export const LoginPage: React.FC = () => {
       }
 
       const staffResponse = await fetch(
-        `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
+        `${API_BASE_URL}/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
 
       if (staffResponse.ok) {

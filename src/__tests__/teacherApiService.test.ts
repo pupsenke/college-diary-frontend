@@ -1,4 +1,5 @@
 import { teacherApiService } from '../services/teacherApiService';
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 global.fetch = jest.fn();
 
@@ -22,7 +23,7 @@ describe('teacherApiService.getTeacherById', () => {
     const data = await teacherApiService.getTeacherById(1);
     expect(data).toEqual(mockTeacher);
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8080/api/v1/staffs/id/1',
+      `${API_BASE_URL}/api/v1/staffs/id/1`,
       expect.objectContaining({
         method: 'GET',
         headers: {

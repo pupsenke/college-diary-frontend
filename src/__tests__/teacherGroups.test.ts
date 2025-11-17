@@ -1,4 +1,5 @@
 import { teacherApiService } from '../services/teacherApiService';
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 global.fetch = jest.fn();
 describe('teacherApiService groups methods', () => {
@@ -25,7 +26,7 @@ describe('teacherApiService groups methods', () => {
       const data = await teacherApiService.getTeacherGroups(1);
       expect(data).toEqual(mockGroups);
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/staffs/subjects/group/1',
+        `${API_BASE_URL}/api/v1/staffs/subjects/group/1`,
         expect.objectContaining({
           method: 'GET',
           headers: {
