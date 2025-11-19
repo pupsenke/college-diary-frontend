@@ -1,5 +1,6 @@
 import { teacherApiService } from '../services/teacherApiService';
 global.fetch = jest.fn();
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 describe('teacherApiService students methods', () => {
   beforeEach(() => {
@@ -22,7 +23,7 @@ describe('teacherApiService students methods', () => {
       expect(data[0].lastName).toBe('Темнева');
       expect(data[1].lastName).toBe('Шкиперова');
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/groups/marks/group?idGroup=1&idSt=2&idTeacher=1'
+        `${API_BASE_URL}/api/v1/groups/marks/group?idGroup=1&idSt=2&idTeacher=1`
       );
     });
 

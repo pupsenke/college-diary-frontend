@@ -424,7 +424,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     </div>
   );
 
-  // Обновленный рендер карточек предметов - ВСЕ данные для первого семестра
+  // рендер карточек предметов
   const renderSubjectCards = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
@@ -496,7 +496,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     );
   };
 
-  // Обновленный рендер таблицы предметов - ВСЕ данные для первого семестра
+  // рендер таблицы предметов 
   const renderSubjectsTable = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
@@ -625,7 +625,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
           <button
             className="at-apply-filter-btn"
             onClick={() => {
-              // Применяем фильтр - пересчитываем данные
               const progressResult = calculateAttendanceProgress();
               if (!progressResult.hasEnoughData) {
                 setError(progressResult.message);
@@ -663,12 +662,10 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       return { data: [], hasEnoughData: false, message: 'Нет данных о посещаемости' };
     }
 
-    // Уникальные даты, отсортированные по возрастанию
     const uniqueDates = Array.from(new Set(allDates)).sort((a, b) => 
       new Date(a).getTime() - new Date(b).getTime()
     );
 
-    // Фильтруем даты по выбранному диапазону
     let filteredDates = uniqueDates;
     
     if (dateRange.start && dateRange.end) {
@@ -1215,8 +1212,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                         </div>
                       </div>
                     )}
-
-                    {/* Информация для неотмеченных статусов */}
                     {selectedAttendance.status === null && (
                       <div className="at-detail-item at-no-status-info">
                         <span className="at-detail-label">Информация</span>

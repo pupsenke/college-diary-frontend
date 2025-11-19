@@ -1,7 +1,7 @@
 import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
   const controller = new AbortController();

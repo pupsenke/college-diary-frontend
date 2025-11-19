@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser, Student } from '../context/UserContext';
 import './ScheduleSection.css';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://80.93.62.33:8080';
 
 type ApiLesson = {
   id: number;
