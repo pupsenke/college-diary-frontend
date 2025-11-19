@@ -1198,74 +1198,160 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         throw new Error('Не удалось определить ID группы');
       }
 
-      const firstStudent = filteredStudents[0];
-      if (!firstStudent) {
-        throw new Error('Не найден студент для обновления');
-      }
+      console.log('Начало сохранения данных занятия:');
+      console.log('- Номер занятия:', showDateModal.lessonNumber);
+      console.log('- Тип занятия:', dateModalData.typeMark);
+      console.log('- Тема занятия:', dateModalData.comment);
 
+      // 1. Получаем ID типа занятия
       const lessonTypeId = teacherApiService.getLessonTypeIdByName(lessonTypes, dateModalData.typeMark);
       
       if (!lessonTypeId) {
-        throw new Error(`Тип занятия "${dateModalData.typeMark}" не найден`);
+        throw new Error(`Тип занятия "${dateModalData.typeMark}" не найден. Доступные типы: ${lessonTypes.map(lt => lt.name).join(', ')}`);
       }
 
-      const updateRequest: UpdateLessonTypeRequest = {
-        idTeacher: idTeacher,
-        idGroup: groupId,
-        idStudent: firstStudent.id,
-        idSt: idSt,
-        number: showDateModal.lessonNumber,
-        idTypeMark: lessonTypeId
-      };
+      console.log('ID типа занятия:', lessonTypeId);
 
-      console.log('Updating lesson type with request:', updateRequest);
+      let idSupplement: number | null = null;
 
-      const result = await teacherApiService.updateLessonType(updateRequest);
-      
-      if (result.success) {
-        if (dateModalData.comment && dateModalData.comment.trim() !== '') {
-          try {
-            const lessonInfo = await teacherApiService.getLessonInfo(firstStudent.id, idSt, showDateModal.lessonNumber);
-            
-            if (lessonInfo && lessonInfo.idSupplement) {
-              await teacherApiService.updateLessonComment(lessonInfo.idSupplement, dateModalData.comment);
-            }
-          } catch (commentError) {
-            console.warn('Не удалось сохранить комментарий:', commentError);
-          }
+      // 2. Проверяем, есть ли уже supplement для этого занятия
+      // Берем первого студента для проверки существующего supplement
+      const firstStudent = filteredStudents[0];
+      if (firstStudent) {
+        const existingLessonInfo = await fetchLessonInfo(firstStudent.id, showDateModal.lessonNumber);
+        if (existingLessonInfo && existingLessonInfo.idSupplement) {
+          idSupplement = existingLessonInfo.idSupplement;
+          console.log('Найден существующий supplement:', idSupplement);
         }
-
-        const lessonType = getLessonTypeFromFullName(dateModalData.typeMark);
-        const dateObj = new Date(showDateModal.date);
-        const day = dateObj.getDate().toString().padStart(2, '0');
-        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-        const displayDate = `${day}.${month} (${showDateModal.lessonNumber})`;
-        
-        // Обновляем данные о типе занятия
-        setLessonTypesData(prev => ({
-          ...prev,
-          [displayDate]: {
-            type: lessonType || '',
-            topic: dateModalData.comment || '',
-            comment: dateModalData.comment || '',
-            fullType: dateModalData.typeMark
-          }
-        }));
-
-        setGradeRecords(prev => 
-          prev.map(record => 
-            record.date === displayDate 
-              ? { ...record, lessonType: lessonType || '' }
-              : record
-          )
-        );
-
-        alert('Данные занятия успешно обновлены');
-        setShowDateModal(null);
-        setDateModalData({ typeMark: '', comment: '' });
       }
+
+      // 3. Если supplement не существует и есть тема занятия - создаем новый
+      if (!idSupplement && dateModalData.comment && dateModalData.comment.trim() !== '') {
+        try {
+          console.log('Создание нового supplement...');
+          
+          if (!firstStudent) {
+            throw new Error('Нет студентов для создания supplement');
+          }
+
+          const supplementResult = await teacherApiService.createSupplement(
+            lessonTypeId,
+            dateModalData.comment.trim(),
+            firstStudent.id,
+            idSt,
+            showDateModal.lessonNumber
+          );
+          
+          if (supplementResult.success && supplementResult.idSupplement) {
+            idSupplement = supplementResult.idSupplement;
+            console.log('Supplement создан с ID:', idSupplement);
+          } else {
+            console.warn('Supplement создан, но ID не получен');
+          }
+        } catch (supplementError) {
+          console.error('Ошибка при создании supplement:', supplementError);
+        }
+      }
+      
+      // 4. Если supplement существует и есть новая тема - обновляем комментарий
+      if (idSupplement && dateModalData.comment && dateModalData.comment.trim() !== '') {
+        try {
+          console.log('Обновление комментария supplement:', idSupplement);
+          await teacherApiService.updateLessonComment(idSupplement, dateModalData.comment.trim());
+          console.log('Комментарий supplement обновлен');
+        } catch (commentError) {
+          console.error('Ошибка при обновлении комментария supplement:', commentError);
+        }
+      }
+
+      // 5. Обновляем тип занятия для всех студентов
+      console.log('Обновление типа занятия для студентов...');
+      
+      const updatePromises = filteredStudents.map(async (student, index) => {
+        try {
+          // Небольшая задержка чтобы не перегружать сервер
+          if (index > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+          const updateRequest: UpdateLessonTypeRequest = {
+            idTeacher: idTeacher,
+            idGroup: groupId,
+            idStudent: student.id,
+            idSt: idSt,
+            number: showDateModal.lessonNumber,
+            idTypeMark: lessonTypeId
+          };
+
+          console.log(`Обновление для студента ${student.id} (${student.lastName}):`, updateRequest);
+          
+          const result = await teacherApiService.updateLessonType(updateRequest);
+          
+          if (result.success) {
+            console.log(`Тип занятия обновлен для студента ${student.id}`);
+          } else {
+            console.warn(`Не удалось обновить тип занятия для студента ${student.id}`);
+          }
+          
+          return result;
+        } catch (error) {
+          console.error(`Ошибка обновления типа занятия для студента ${student.id}:`, error);
+          return { success: false };
+        }
+      });
+
+      // Ждем завершения всех обновлений
+      const results = await Promise.all(updatePromises);
+      const successfulUpdates = results.filter(result => result.success).length;
+      
+      console.log(`Результаты обновления: ${successfulUpdates}/${filteredStudents.length} успешно`);
+
+      // 6. Обновляем UI
+      const lessonType = getLessonTypeFromFullName(dateModalData.typeMark);
+      const dateObj = new Date(showDateModal.date);
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const displayDate = `${day}.${month} (${showDateModal.lessonNumber})`;
+      
+      // Обновляем данные о типе занятия
+      setLessonTypesData(prev => ({
+        ...prev,
+        [displayDate]: {
+          type: lessonType || '',
+          topic: dateModalData.comment || '',
+          comment: dateModalData.comment || '',
+          fullType: dateModalData.typeMark
+        }
+      }));
+
+      // Обновляем записи оценок
+      setGradeRecords(prev => 
+        prev.map(record => 
+          record.date === displayDate 
+            ? { ...record, lessonType: lessonType || '' }
+            : record
+        )
+      );
+
+      // Инвалидируем кэш
+      teacherApiService.invalidateLessonInfoCache();
+      teacherApiService.invalidateStudentCache();
+
+      console.log('Все операции завершены успешно');
+      
+      let successMessage = `Данные занятия успешно обновлены\nТип: ${dateModalData.typeMark}\nТема: ${dateModalData.comment || 'не указана'}\nОбновлено студентов: ${successfulUpdates}/${filteredStudents.length}`;
+      
+      if (idSupplement) {
+        successMessage += `\nSupplement ID: ${idSupplement}`;
+      }
+      
+      alert(successMessage);
+      
+      setShowDateModal(null);
+      setDateModalData({ typeMark: '', comment: '' });
+      
     } catch (error: any) {
-      console.error('Error updating lesson data:', error);
+      console.error('Критическая ошибка при обновлении данных занятия:', error);
       alert(`Ошибка при обновлении данных занятия: ${error.message}`);
     } finally {
       setUpdatingLessonType(false);
