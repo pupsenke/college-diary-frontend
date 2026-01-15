@@ -1336,16 +1336,175 @@ export const teacherApiService = {
   },
 
   /**
+   * Получение ID занятия по номеру занятия, группе, ST и преподавателю
+   * Ищем в данных lessons, а не в lessons info
+   */
+  async getLessonIdByNumber(groupId: number, idSt: number, teacherId: number, lessonNumber: number): Promise<number | null> {
+    try {
+      console.log('Поиск ID занятия:', { groupId, idSt, teacherId, lessonNumber });
+      
+      // Получаем все занятия (lessons), а не lessons info
+      const allLessons = await this.getAllLessons();
+      
+      console.log('Все занятия:', allLessons);
+      
+      const lesson = allLessons.find((lesson: any) => {
+
+        return false; // временно
+      });
+      
+      try {
+        const response = await fetchWithTimeout(
+          `${API_BASE_URL}/api/v1/lessons/date/st/${idSt}/group/${groupId}/teacher/${teacherId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const datesData = await response.json();
+          console.log('Данные дат занятий:', datesData);
+          
+          // Находим занятие с нужным номером
+          const targetLesson = datesData.find((item: any) => item.number === lessonNumber);
+          
+          if (targetLesson && targetLesson.id) {
+            console.log('Найдено занятие по номеру:', targetLesson);
+            return targetLesson.id;
+          }
+        }
+      } catch (dateError) {
+        console.error('Ошибка получения дат занятий:', dateError);
+      }
+
+      console.warn(`Занятие не найдено для номера ${lessonNumber}`);
+      return null;
+    } catch (error) {
+      console.error('Ошибка получения ID занятия:', error);
+      return null;
+    }
+  },
+
+  async createSupplementForLesson(lessonId: number, supplementData: {
+    idTypeMark: number;
+    comment: string;
+  }): Promise<{ success: boolean; idSupplement?: number }> {
+    try {
+      console.log('Создание supplement для занятия:', { lessonId, supplementData });
+
+      // Используем endpoint который работает с занятиями
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/api/v1/lessons/add/supplement/id/${lessonId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(supplementData),
+        }
+      );
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Ошибка создания supplement:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка создания supplement: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Ответ от сервера при создании supplement:', responseData);
+      
+      const idSupplement = responseData.id || responseData.idSupplement;
+      
+      if (idSupplement) {
+        console.log('Supplement успешно создан с ID:', idSupplement);
+      } else {
+        console.warn('Supplement создан, но ID не возвращен');
+      }
+      
+      return { 
+        success: true, 
+        idSupplement: idSupplement
+      };
+    } catch (error) {
+      console.error('Ошибка создания supplement:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Добавление supplement к занятию
+   */
+  async addSupplementToLesson(lessonId: number, supplementData: {
+    idTypeMark: number;
+    comment: string;
+  }): Promise<{ success: boolean; idSupplement?: number }> {
+    try {
+      console.log('🔄 Добавление supplement к занятию:', { lessonId, supplementData });
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/api/v1/lessons/add/supplement/id/${lessonId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(supplementData),
+        }
+      );
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Ошибка добавления supplement:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка добавления supplement к занятию: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      const idSupplement = responseData.id || responseData.idSupplement;
+      
+      
+      // Инвалидируем кэш
+      this.invalidateLessonInfoCache();
+      
+      return { 
+        success: true, 
+        idSupplement: idSupplement
+      };
+    } catch (error) {
+      console.error('Ошибка добавления supplement к занятию:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Обновление комментария/темы занятия
    */
   async updateLessonComment(idSupplement: number, comment: string): Promise<{ success: boolean }> {
     try {
-      
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`, {
+      // Используем правильный endpoint и отправляем данные в теле запроса
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          id: idSupplement,
+          comment: comment
+        }),
       });
       
       if (!response.ok) {
