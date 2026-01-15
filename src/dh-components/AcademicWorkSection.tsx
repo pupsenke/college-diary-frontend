@@ -75,24 +75,24 @@ export const AcademicWorkSection: React.FC = () => {
   };
 
   return (
-    <div className="dh-section dh-academic-section">
-      <div className="dh-section-header">
-        <h1 className="dh-section-title">Учебная работа</h1>
-        <div className="dh-section-controls">
+    <div className="dh-at-section dh-at-academic-section">
+      {/* <div className="dh-at-section-header">
+        <h1 className="dh-at-section-title">Учебная работа</h1>
+        <div className="dh-at-section-controls">
           <button 
-            className={`dh-view-btn ${activeView === 'schedule' ? 'active' : ''}`}
+            className={`dh-at-view-btn ${activeView === 'schedule' ? 'active' : ''}`}
             onClick={() => setActiveView('schedule')}
           >
             Расписание
           </button>
           <button 
-            className={`dh-view-btn ${activeView === 'groups' ? 'active' : ''}`}
+            className={`dh-at-view-btn ${activeView === 'groups' ? 'active' : ''}`}
             onClick={() => setActiveView('groups')}
           >
             Учебные группы
           </button>
           <button 
-            className={`dh-view-btn ${activeView === 'performance' ? 'active' : ''}`}
+            className={`dh-at-view-btn ${activeView === 'performance' ? 'active' : ''}`}
             onClick={() => setActiveView('performance')}
           >
             Успеваемость
@@ -100,45 +100,45 @@ export const AcademicWorkSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="dh-stats-grid">
-        <div className="dh-stat-card">
-          <div className="dh-stat-content">
-            <h3 className="dh-stat-number">{academicStats.totalGroups}</h3>
-            <p className="dh-stat-label">Учебных групп</p>
+      <div className="dh-at-stats-grid">
+        <div className="dh-at-stat-card">
+          <div className="dh-at-stat-content">
+            <h3 className="dh-at-stat-number">{academicStats.totalGroups}</h3>
+            <p className="dh-at-stat-label">Учебных групп</p>
           </div>
         </div>
 
-        <div className="dh-stat-card">
-          <div className="dh-stat-content">
-            <h3 className="dh-stat-number">{academicStats.totalStudents}</h3>
-            <p className="dh-stat-label">Студентов</p>
+        <div className="dh-at-stat-card">
+          <div className="dh-at-stat-content">
+            <h3 className="dh-at-stat-number">{academicStats.totalStudents}</h3>
+            <p className="dh-at-stat-label">Студентов</p>
           </div>
         </div>
 
-        <div className="dh-stat-card">
-          <div className="dh-stat-content">
-            <h3 className="dh-stat-number">{academicStats.averagePerformance}</h3>
-            <p className="dh-stat-label">Средний балл</p>
+        <div className="dh-at-stat-card">
+          <div className="dh-at-stat-content">
+            <h3 className="dh-at-stat-number">{academicStats.averagePerformance}</h3>
+            <p className="dh-at-stat-label">Средний балл</p>
           </div>
         </div>
 
-        <div className="dh-stat-card">
-          <div className="dh-stat-content">
-            <h3 className="dh-stat-number">{academicStats.averageAttendance}%</h3>
-            <p className="dh-stat-label">Посещаемость</p>
+        <div className="dh-at-stat-card">
+          <div className="dh-at-stat-content">
+            <h3 className="dh-at-stat-number">{academicStats.averageAttendance}%</h3>
+            <p className="dh-at-stat-label">Посещаемость</p>
           </div>
         </div>
       </div>
 
       {activeView === 'schedule' && (
-        <div className="dh-schedule-view">
-          <div className="dh-schedule-header">
-            <h3 className="dh-subsection-title">Расписание занятий</h3>
-            <div className="dh-date-controls">
-              <button className="dh-date-btn">
+        <div className="dh-at-schedule-view">
+          <div className="dh-at-schedule-header">
+            <h3 className="dh-at-subsection-title">Расписание занятий</h3>
+            <div className="dh-at-date-controls">
+              <button className="dh-at-date-btn">
                 <p>Назад</p>
               </button>
-              <span className="dh-current-date">
+              <span className="dh-at-current-date">
                 {selectedDate.toLocaleDateString('ru-RU', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -146,26 +146,26 @@ export const AcademicWorkSection: React.FC = () => {
                   day: 'numeric' 
                 })}
               </span>
-              <button className="dh-date-btn">
+              <button className="dh-at-date-btn">
                 <p>Вперед</p>
               </button>
             </div>
           </div>
 
-          <div className="dh-schedule-grid">
+          <div className="dh-at-schedule-grid">
             {schedule.map(item => (
-              <div key={item.id} className="dh-schedule-card">
-                <div className="dh-schedule-time">{item.time}</div>
-                <div className="dh-schedule-content">
-                  <h4 className="dh-schedule-subject">{item.subject}</h4>
-                  <div className="dh-schedule-details">
-                    <span className="dh-schedule-group">{item.group}</span>
-                    <span className="dh-schedule-teacher">{item.teacher}</span>
-                    <span className="dh-schedule-classroom">{item.classroom}</span>
+              <div key={item.id} className="dh-at-schedule-card">
+                <div className="dh-at-schedule-time">{item.time}</div>
+                <div className="dh-at-schedule-content">
+                  <h4 className="dh-at-schedule-subject">{item.subject}</h4>
+                  <div className="dh-at-schedule-details">
+                    <span className="dh-at-schedule-group">{item.group}</span>
+                    <span className="dh-at-schedule-teacher">{item.teacher}</span>
+                    <span className="dh-at-schedule-classroom">{item.classroom}</span>
                   </div>
                 </div>
-                <div className="dh-schedule-actions">
-                  <button className="dh-schedule-action-btn">
+                <div className="dh-at-schedule-actions">
+                  <button className="dh-at-schedule-action-btn">
                     Реадактировать
                   </button>
                 </div>
@@ -176,45 +176,45 @@ export const AcademicWorkSection: React.FC = () => {
       )}
 
       {activeView === 'groups' && (
-        <div className="dh-groups-view">
-          <div className="dh-groups-header">
-            <h3 className="dh-subsection-title">Учебные группы</h3>
-            <button className="dh-add-btn">
+        <div className="dh-at-groups-view">
+          <div className="dh-at-groups-header">
+            <h3 className="dh-at-subsection-title">Учебные группы</h3>
+            <button className="dh-at-add-btn">
               Добавить группу
             </button>
           </div>
 
-          <div className="dh-groups-grid">
+          <div className="dh-at-groups-grid">
             {academicGroups.map(group => (
-              <div key={group.id} className="dh-group-card">
-                <div className="dh-group-header">
-                  <h4 className="dh-group-name">{group.name}</h4>
-                  <span className="dh-group-course">{group.course} курс</span>
+              <div key={group.id} className="dh-at-group-card">
+                <div className="dh-at-group-header">
+                  <h4 className="dh-at-group-name">{group.name}</h4>
+                  <span className="dh-at-group-course">{group.course} курс</span>
                 </div>
                 
-                <div className="dh-group-info">
-                  <div className="dh-group-stat">
-                    <span className="dh-group-stat-value">{group.studentsCount}</span>
-                    <span className="dh-group-stat-label">студентов</span>
+                <div className="dh-at-group-info">
+                  <div className="dh-at-group-stat">
+                    <span className="dh-at-group-stat-value">{group.studentsCount}</span>
+                    <span className="dh-at-group-stat-label">студентов</span>
                   </div>
-                  <div className="dh-group-stat">
-                    <span className="dh-group-stat-value">{group.performance}</span>
-                    <span className="dh-group-stat-label">средний балл</span>
+                  <div className="dh-at-group-stat">
+                    <span className="dh-at-group-stat-value">{group.performance}</span>
+                    <span className="dh-at-group-stat-label">средний балл</span>
                   </div>
-                  <div className="dh-group-stat">
-                    <span className="dh-group-stat-value">{group.attendance}%</span>
-                    <span className="dh-group-stat-label">посещаемость</span>
+                  <div className="dh-at-group-stat">
+                    <span className="dh-at-group-stat-value">{group.attendance}%</span>
+                    <span className="dh-at-group-stat-label">посещаемость</span>
                   </div>
                 </div>
 
-                <div className="dh-group-curator">
-                  <span className="dh-curator-label">Куратор:</span>
-                  <span className="dh-curator-name">{group.curator}</span>
+                <div className="dh-at-group-curator">
+                  <span className="dh-at-curator-label">Куратор:</span>
+                  <span className="dh-at-curator-name">{group.curator}</span>
                 </div>
 
-                <div className="dh-group-actions">
-                  <button className="dh-group-btn primary">Подробнее</button>
-                  <button className="dh-group-btn secondary">Расписание</button>
+                <div className="dh-at-group-actions">
+                  <button className="dh-at-group-btn primary">Подробнее</button>
+                  <button className="dh-at-group-btn secondary">Расписание</button>
                 </div>
               </div>
             ))}
@@ -223,16 +223,16 @@ export const AcademicWorkSection: React.FC = () => {
       )}
 
       {activeView === 'performance' && (
-        <div className="dh-performance-view">
-          <div className="dh-performance-header">
-            <h3 className="dh-subsection-title">Мониторинг успеваемости</h3>
-            <div className="dh-performance-filters">
-              <select className="dh-filter-select">
+        <div className="dh-at-performance-view">
+          <div className="dh-at-performance-header">
+            <h3 className="dh-at-subsection-title">Мониторинг успеваемости</h3>
+            <div className="dh-at-performance-filters">
+              <select className="dh-at-filter-select">
                 <option>Все группы</option>
                 <option>2992</option>
                 <option>2991</option>
               </select>
-              <select className="dh-filter-select">
+              <select className="dh-at-filter-select">
                 <option>Все предметы</option>
                 <option>Программирование</option>
                 <option>Математика</option>
@@ -241,40 +241,40 @@ export const AcademicWorkSection: React.FC = () => {
             </div>
           </div>
 
-          <div className="dh-performance-content">
-            <div className="dh-performance-stats">
-              <div className="dh-performance-card">
+          <div className="dh-at-performance-content">
+            <div className="dh-at-performance-stats">
+              <div className="dh-at-performance-card">
                 <h4>Общая успеваемость</h4>
-                <div className="dh-performance-value">4.1</div>
-                <div className="dh-performance-progress">
-                  <div className="dh-progress-bar">
-                    <div className="dh-progress-fill" style={{width: '82%'}}></div>
+                <div className="dh-at-performance-value">4.1</div>
+                <div className="dh-at-performance-progress">
+                  <div className="dh-at-progress-bar">
+                    <div className="dh-at-progress-fill" style={{width: '82%'}}></div>
                   </div>
                   <span>82% студентов сдают успешно</span>
                 </div>
               </div>
 
-              <div className="dh-performance-card">
+              <div className="dh-at-performance-card">
                 <h4>Академические задолженности</h4>
-                <div className="dh-performance-value">8</div>
-                <div className="dh-performance-subtext">студентов имеют долги</div>
+                <div className="dh-at-performance-value">8</div>
+                <div className="dh-at-performance-subtext">студентов имеют долги</div>
               </div>
 
-              <div className="dh-performance-card">
+              <div className="dh-at-performance-card">
                 <h4>Отличники</h4>
-                <div className="dh-performance-value">24</div>
-                <div className="dh-performance-subtext">студентов учатся на отлично</div>
+                <div className="dh-at-performance-value">24</div>
+                <div className="dh-at-performance-subtext">студентов учатся на отлично</div>
               </div>
             </div>
 
-            <div className="dh-performance-chart">
-              <div className="dh-chart-placeholder">
+            <div className="dh-at-performance-chart">
+              <div className="dh-at-chart-placeholder">
                 <p>График успеваемости по группам</p>
               </div>
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

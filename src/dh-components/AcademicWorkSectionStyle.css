@@ -1,4 +1,4 @@
-.dh-academic-section {
+.dh-at-academic-section {
   background: white;
   border-radius: 20px;
   padding: 30px;
@@ -7,11 +7,11 @@
 }
 
 /* Schedule View */
-.dh-schedule-view {
+.dh-at-schedule-view {
   margin-top: 30px;
 }
 
-.dh-schedule-header {
+.dh-at-schedule-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -20,7 +20,7 @@
   gap: 16px;
 }
 
-.dh-date-controls {
+.dh-at-date-controls {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -29,11 +29,11 @@
   border-radius: 12px;
 }
 
-.dh-date-controls p {
+.dh-at-date-controls p {
     margin: 0;
 }
 
-.dh-date-btn {
+.dh-at-date-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -42,29 +42,29 @@
   transition: all 0.3s ease;
 }
 
-.dh-date-btn:hover {
+.dh-at-date-btn:hover {
   background: rgba(0, 47, 167, 0.1);
 }
 
-.dh-date-btn img {
+.dh-at-date-btn img {
   width: 16px;
   height: 16px;
 }
 
-.dh-current-date {
+.dh-at-current-date {
   font-weight: 600;
   color: #002FA7;
   min-width: 200px;
   text-align: center;
 }
 
-.dh-schedule-grid {
+.dh-at-schedule-grid {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.dh-schedule-card {
+.dh-at-schedule-card {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -75,13 +75,13 @@
   transition: all 0.3s ease;
 }
 
-.dh-schedule-card:hover {
+.dh-at-schedule-card:hover {
   border-color: #002FA7;
   transform: translateX(5px);
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
 }
 
-.dh-schedule-time {
+.dh-at-schedule-time {
   background: #002FA7;
   color: white;
   padding: 8px 12px;
@@ -92,24 +92,24 @@
   text-align: center;
 }
 
-.dh-schedule-content {
+.dh-at-schedule-content {
   flex: 1;
 }
 
-.dh-schedule-subject {
+.dh-at-schedule-subject {
   margin: 0 0 8px 0;
   font-size: 16px;
   font-weight: 600;
   color: #2d3748;
 }
 
-.dh-schedule-details {
+.dh-at-schedule-details {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
 }
 
-.dh-schedule-details span {
+.dh-at-schedule-details span {
   font-size: 14px;
   color: #64748b;
   background: rgba(0, 47, 167, 0.05);
@@ -117,12 +117,12 @@
   border-radius: 6px;
 }
 
-.dh-schedule-actions {
+.dh-at-schedule-actions {
   display: flex;
   gap: 8px;
 }
 
-.dh-schedule-action-btn {
+.dh-at-schedule-action-btn {
   width: 136px;
   height: 36px;
   border: 1px solid #e2e8f0;
@@ -135,22 +135,22 @@
   transition: all 0.3s ease;
 }
 
-.dh-schedule-action-btn:hover {
+.dh-at-schedule-action-btn:hover {
   border-color: #002FA7;
   background: rgba(0, 47, 167, 0.05);
 }
 
-.dh-schedule-action-btn img {
+.dh-at-schedule-action-btn img {
   width: 16px;
   height: 16px;
 }
 
 /* Groups View */
-.dh-groups-view {
+.dh-at-groups-view {
   margin-top: 30px;
 }
 
-.dh-groups-header {
+.dh-at-groups-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -159,13 +159,13 @@
   gap: 16px;
 }
 
-.dh-groups-grid {
+.dh-at-groups-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.dh-group-card {
+.dh-at-group-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
   border-radius: 16px;
@@ -173,27 +173,27 @@
   transition: all 0.3s ease;
 }
 
-.dh-group-card:hover {
+.dh-at-group-card:hover {
   border-color: #002FA7;
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 47, 167, 0.1);
 }
 
-.dh-group-header {
+.dh-at-group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.dh-group-name {
+.dh-at-group-name {
   font-size: 20px;
   font-weight: 700;
   color: #002FA7;
   margin: 0;
 }
 
-.dh-group-course {
+.dh-at-group-course {
   background: rgba(0, 47, 167, 0.1);
   color: #002FA7;
   padding: 4px 12px;
@@ -202,18 +202,18 @@
   font-weight: 600;
 }
 
-.dh-group-info {
+.dh-at-group-info {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
 
-.dh-group-stat {
+.dh-at-group-stat {
   text-align: center;
 }
 
-.dh-group-stat-value {
+.dh-at-group-stat-value {
   display: block;
   font-size: 24px;
   font-weight: 700;
@@ -221,13 +221,13 @@
   margin-bottom: 4px;
 }
 
-.dh-group-stat-label {
+.dh-at-group-stat-label {
   font-size: 12px;
   color: #64748b;
   font-weight: 500;
 }
 
-.dh-group-curator {
+.dh-at-group-curator {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -237,23 +237,23 @@
   margin-bottom: 20px;
 }
 
-.dh-curator-label {
+.dh-at-curator-label {
   font-size: 14px;
   color: #64748b;
 }
 
-.dh-curator-name {
+.dh-at-curator-name {
   font-size: 14px;
   font-weight: 600;
   color: #002FA7;
 }
 
-.dh-group-actions {
+.dh-at-group-actions {
   display: flex;
   gap: 12px;
 }
 
-.dh-group-btn {
+.dh-at-group-btn {
   flex: 1;
   padding: 10px 16px;
   border: none;
@@ -263,30 +263,30 @@
   transition: all 0.3s ease;
 }
 
-.dh-group-btn.primary {
+.dh-at-group-btn.primary {
   background: #002FA7;
   color: white;
 }
 
-.dh-group-btn.primary:hover {
+.dh-at-group-btn.primary:hover {
   background: #1e40af;
 }
 
-.dh-group-btn.secondary {
+.dh-at-group-btn.secondary {
   background: rgba(0, 47, 167, 0.1);
   color: #002FA7;
 }
 
-.dh-group-btn.secondary:hover {
+.dh-at-group-btn.secondary:hover {
   background: rgba(0, 47, 167, 0.2);
 }
 
 /* Performance View */
-.dh-performance-view {
+.dh-at-performance-view {
   margin-top: 30px;
 }
 
-.dh-performance-header {
+.dh-at-performance-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -295,12 +295,12 @@
   gap: 16px;
 }
 
-.dh-performance-filters {
+.dh-at-performance-filters {
   display: flex;
   gap: 12px;
 }
 
-.dh-filter-select {
+.dh-at-filter-select {
   padding: 10px 16px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -310,51 +310,51 @@
   min-width: 150px;
 }
 
-.dh-filter-select:focus {
+.dh-at-filter-select:focus {
   outline: none;
   border-color: #002FA7;
 }
 
-.dh-performance-content {
+.dh-at-performance-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
 }
 
-.dh-performance-stats {
+.dh-at-performance-stats {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.dh-performance-card {
+.dh-at-performance-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 24px;
 }
 
-.dh-performance-card h4 {
+.dh-at-performance-card h4 {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
   color: #374151;
 }
 
-.dh-performance-value {
+.dh-at-performance-value {
   font-size: 32px;
   font-weight: 700;
   color: #002FA7;
   margin-bottom: 12px;
 }
 
-.dh-performance-progress {
+.dh-at-performance-progress {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.dh-progress-bar {
+.dh-at-progress-bar {
   width: 100%;
   height: 8px;
   background: #e5e7eb;
@@ -362,24 +362,24 @@
   overflow: hidden;
 }
 
-.dh-progress-fill {
+.dh-at-progress-fill {
   height: 100%;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.dh-performance-progress span {
+.dh-at-performance-progress span {
   font-size: 12px;
   color: #6b7280;
 }
 
-.dh-performance-subtext {
+.dh-at-performance-subtext {
   font-size: 14px;
   color: #6b7280;
 }
 
-.dh-performance-chart {
+.dh-at-performance-chart {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -389,84 +389,84 @@
   justify-content: center;
 }
 
-.dh-chart-placeholder {
+.dh-at-chart-placeholder {
   text-align: center;
   color: #9ca3af;
 }
 
-.dh-chart-placeholder img {
+.dh-at-chart-placeholder img {
   width: 80px;
   height: 80px;
   margin-bottom: 16px;
   opacity: 0.5;
 }
 
-.dh-chart-placeholder p {
+.dh-at-chart-placeholder p {
   margin: 0;
   font-size: 14px;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .dh-performance-content {
+  .dh-at-performance-content {
     grid-template-columns: 1fr;
   }
   
-  .dh-groups-grid {
+  .dh-at-groups-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .dh-schedule-header,
-  .dh-groups-header,
-  .dh-performance-header {
+  .dh-at-schedule-header,
+  .dh-at-groups-header,
+  .dh-at-performance-header {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .dh-date-controls,
-  .dh-performance-filters {
+  .dh-at-date-controls,
+  .dh-at-performance-filters {
     width: 100%;
     justify-content: center;
   }
   
-  .dh-schedule-card {
+  .dh-at-schedule-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
   
-  .dh-schedule-time {
+  .dh-at-schedule-time {
     align-self: flex-start;
   }
   
-  .dh-group-info {
+  .dh-at-group-info {
     grid-template-columns: 1fr;
     gap: 12px;
   }
   
-  .dh-group-actions {
+  .dh-at-group-actions {
     flex-direction: column;
   }
 }
 
 @media (max-width: 480px) {
-  .dh-groups-grid {
+  .dh-at-groups-grid {
     grid-template-columns: 1fr;
   }
   
-  .dh-schedule-details {
+  .dh-at-schedule-details {
     flex-direction: column;
     gap: 8px;
   }
   
-  .dh-performance-filters {
+  .dh-at-performance-filters {
     flex-direction: column;
     width: 100%;
   }
   
-  .dh-filter-select {
+  .dh-at-filter-select {
     min-width: auto;
   }
 }

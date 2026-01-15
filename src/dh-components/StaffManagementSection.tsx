@@ -93,7 +93,6 @@ export const StaffManagementSection: React.FC = () => {
     });
   };
 
-
   const staffMembers: StaffMember[] = [
     {
       id: 1,
@@ -189,29 +188,29 @@ export const StaffManagementSection: React.FC = () => {
 
   return (
     <>
-      <div className="sm-container">
+      <div className="dh-sm-container">
         {/* Шапка */}
-        <div className="sm-header">
+        <div className="dh-sm-header">
           <div>
-            <h1 className="sm-title">Сотрудники отделения</h1>
-            <p className="sm-subtitle">Информационные технологии • {staffMembers.length} сотрудников</p>
+            <h1 className="dh-sm-title">Сотрудники отделения</h1>
+            <p className="dh-sm-subtitle">Информационные технологии • {staffMembers.length} сотрудников</p>
           </div>
         </div>
 
         {/* Поиск и фильтры */}
-        <div className="sm-controls">
-          <div className="sm-search-section">
-            <div className="sm-search-wrapper">
+        <div className="dh-sm-controls">
+          <div className="dh-sm-search-section">
+            <div className="dh-sm-search-wrapper">
               <input
                 type="text"
-                className="sm-search-input"
+                className="dh-sm-search-input"
                 placeholder="Поиск по ФИО, должности, дисциплине..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button 
-              className={`sm-filter-btn ${showFilters ? 'active' : ''}`}
+              className={`dh-sm-filter-btn ${showFilters ? 'active' : ''}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <span>Фильтры</span>
@@ -220,11 +219,11 @@ export const StaffManagementSection: React.FC = () => {
           </div>
 
           {showFilters && (
-            <div className="sm-filters show">
-              <div className="sm-filters-header">
-                <h3 className="sm-filters-title">Фильтры</h3>
+            <div className="dh-sm-filters show">
+              <div className="dh-sm-filters-header">
+                <h3 className="dh-sm-filters-title">Фильтры</h3>
                 <button 
-                  className="sm-clear-filters"
+                  className="dh-sm-clear-filters"
                   onClick={() => {
                     setSelectedPosition('');
                     setSelectedStatus('');
@@ -233,11 +232,11 @@ export const StaffManagementSection: React.FC = () => {
                   Сбросить всё
                 </button>
               </div>
-              <div className="sm-filters-grid">
-                <div className="sm-filter-group">
-                  <label className="sm-filter-label">Должность</label>
+              <div className="dh-sm-filters-grid">
+                <div className="dh-sm-filter-group">
+                  <label className="dh-sm-filter-label">Должность</label>
                   <select 
-                    className="sm-select"
+                    className="dh-sm-select"
                     value={selectedPosition}
                     onChange={(e) => setSelectedPosition(e.target.value)}
                   >
@@ -247,10 +246,10 @@ export const StaffManagementSection: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="sm-filter-group">
-                  <label className="sm-filter-label">Группа</label>
+                <div className="dh-sm-filter-group">
+                  <label className="dh-sm-filter-label">Группа</label>
                   <select 
-                    className="sm-select"
+                    className="dh-sm-select"
                     // value={selectedStatus}
                     // onChange={(e) => setSelectedStatus(e.target.value)}
                   >
@@ -261,9 +260,9 @@ export const StaffManagementSection: React.FC = () => {
                   </select>
                 </div>
               </div>
-              <div className="sm-apply-filters">
+              <div className="dh-sm-apply-filters">
                 <button 
-                  className="sm-apply-btn"
+                  className="dh-sm-apply-btn"
                   onClick={() => setShowFilters(false)}
                 >
                   Применить фильтры
@@ -274,64 +273,64 @@ export const StaffManagementSection: React.FC = () => {
         </div>
 
         {/* Основной контент */}
-        <div className="sm-main-content">
+        <div className="dh-sm-main-content">
           {filteredStaff.length === 0 ? (
-            <div className="sm-empty-state">
-              <h3 className="sm-empty-title">Сотрудники не найдены</h3>
-              <p className="sm-empty-text">Попробуйте изменить параметры поиска или фильтры</p>
+            <div className="dh-sm-empty-state">
+              <h3 className="dh-sm-empty-title">Сотрудники не найдены</h3>
+              <p className="dh-sm-empty-text">Попробуйте изменить параметры поиска или фильтры</p>
             </div>
           ) : (
-            <div className="sm-staff-grid">
+            <div className="dh-sm-staff-grid">
               {filteredStaff.map(staff => (
                 <div 
                   key={staff.id} 
-                  className="sm-staff-card"
+                  className="dh-sm-staff-card"
                   onClick={() => handleStaffClick(staff.id)}
                 >
-                  <div className="sm-staff-header">
-                    <div className="sm-avatar">
+                  <div className="dh-sm-staff-header">
+                    <div className="dh-sm-avatar">
                       {staff.avatar ? (
-                        <img src={staff.avatar} alt={staff.name} className="sm-avatar-img" />
+                        <img src={staff.avatar} alt={staff.name} className="dh-sm-avatar-img" />
                       ) : (
                         staff.initials
                       )}
                     </div>
-                    <div className="sm-staff-info">
-                      <h3 className="sm-staff-name">{staff.name}</h3>
-                      <p className="sm-staff-position">{staff.position}</p>
-                      <div className="sm-staff-department">
+                    <div className="dh-sm-staff-info">
+                      <h3 className="dh-sm-staff-name">{staff.name}</h3>
+                      <p className="dh-sm-staff-position">{staff.position}</p>
+                      <div className="dh-sm-staff-department">
                         <span>{staff.department}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="sm-staff-body">
-                    <div className="sm-staff-stats">
-                      <div className="sm-stat-item">
-                        <div className="sm-stat-value">{staff.disciplines.length}</div>
-                        <div className="sm-stat-label">дисциплин</div>
+                  <div className="dh-sm-staff-body">
+                    <div className="dh-sm-staff-stats">
+                      <div className="dh-sm-stat-item">
+                        <div className="dh-sm-stat-value">{staff.disciplines.length}</div>
+                        <div className="dh-sm-stat-label">дисциплин</div>
                       </div>
-                      <div className="sm-stat-item">
-                        <div className="sm-stat-value">{staff.groups.length}</div>
-                        <div className="sm-stat-label">групп</div>
+                      <div className="dh-sm-stat-item">
+                        <div className="dh-sm-stat-value">{staff.groups.length}</div>
+                        <div className="dh-sm-stat-label">групп</div>
                       </div>
-                      <div className="sm-stat-item">
-                        <div className="sm-stat-value">{staff.workload}/{staff.maxWorkload}</div>
-                        <div className="sm-stat-label">часов</div>
+                      <div className="dh-sm-stat-item">
+                        <div className="dh-sm-stat-value">{staff.workload}/{staff.maxWorkload}</div>
+                        <div className="dh-sm-stat-label">часов</div>
                       </div>
                     </div>
                     
                 
                     
-                    <div className="sm-staff-details">
-                      <div className="sm-detail-row">
-                        <span className="sm-detail-label">Куратор</span>
-                        <span className="sm-detail-value">
+                    <div className="dh-sm-staff-details">
+                      <div className="dh-sm-detail-row">
+                        <span className="dh-sm-detail-label">Куратор</span>
+                        <span className="dh-sm-detail-value">
                           {staff.curatorGroup ? `Группа ${staff.curatorGroup}` : 'Не назначен'}
                         </span>
                       </div>
-                      <div className="sm-detail-row">
-                        <span className="sm-detail-label">Кабинет</span>
-                        <span className="sm-detail-value">{staff.office}</span>
+                      <div className="dh-sm-detail-row">
+                        <span className="dh-sm-detail-label">Кабинет</span>
+                        <span className="dh-sm-detail-value">{staff.office}</span>
                       </div>
                     </div>
                   </div>
@@ -344,60 +343,60 @@ export const StaffManagementSection: React.FC = () => {
 
       {/* Модальное окно сотрудника */}
       {isModalOpen && selectedStaff && (
-        <div className="sm-modal-overlay" onClick={handleCloseModal}>
-          <div className="sm-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="sm-modal-header">
-              <div className="sm-modal-header-content">
-                <div className="sm-modal-avatar">
+        <div className="dh-sm-modal-overlay" onClick={handleCloseModal}>
+          <div className="dh-sm-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="dh-sm-modal-header">
+              <div className="dh-sm-modal-header-content">
+                <div className="dh-sm-modal-avatar">
                   {selectedStaff.avatar ? (
-                    <img src={selectedStaff.avatar} alt={selectedStaff.name} className="sm-modal-avatar-img" />
+                    <img src={selectedStaff.avatar} alt={selectedStaff.name} className="dh-sm-modal-avatar-img" />
                   ) : (
                     selectedStaff.initials
                   )}
                 </div>
-                <div className="sm-modal-info">
-                  <h2 className="sm-modal-name">{selectedStaff.name}</h2>
-                  <p className="sm-modal-position">{selectedStaff.position}</p>
-                  <div className="sm-modal-tags">
-                    <span className="sm-modal-tag">{selectedStaff.department}</span>
+                <div className="dh-sm-modal-info">
+                  <h2 className="dh-sm-modal-name">{selectedStaff.name}</h2>
+                  <p className="dh-sm-modal-position">{selectedStaff.position}</p>
+                  <div className="dh-sm-modal-tags">
+                    <span className="dh-sm-modal-tag">{selectedStaff.department}</span>
                   </div>
                 </div>
-                <button className="sm-modal-close" onClick={handleCloseModal}>×</button>
+                <button className="dh-sm-modal-close" onClick={handleCloseModal}>×</button>
               </div>
             </div>
-            <div className="sm-modal-body">
+            <div className="dh-sm-modal-body">
               {/* Контактная информация */}
-              <div className="sm-modal-section">
-                <h3 className="sm-section-title">Контактная информация</h3>
-                <div className="sm-contact-grid">
-                  <div className="sm-contact-item">
-                    <div className="sm-contact-label">Email</div>
-                    <div className="sm-contact-value">{selectedStaff.email}</div>
+              <div className="dh-sm-modal-section">
+                <h3 className="dh-sm-section-title">Контактная информация</h3>
+                <div className="dh-sm-contact-grid">
+                  <div className="dh-sm-contact-item">
+                    <div className="dh-sm-contact-label">Email</div>
+                    <div className="dh-sm-contact-value">{selectedStaff.email}</div>
                   </div>
-                  <div className="sm-contact-item">
-                    <div className="sm-contact-label">Телефон</div>
-                    <div className="sm-contact-value">{selectedStaff.phone}</div>
+                  <div className="dh-sm-contact-item">
+                    <div className="dh-sm-contact-label">Телефон</div>
+                    <div className="dh-sm-contact-value">{selectedStaff.phone}</div>
                   </div>
-                  <div className="sm-contact-item">
-                    <div className="sm-contact-label">Кабинет</div>
-                    <div className="sm-contact-value">{selectedStaff.office}</div>
+                  <div className="dh-sm-contact-item">
+                    <div className="dh-sm-contact-label">Кабинет</div>
+                    <div className="dh-sm-contact-value">{selectedStaff.office}</div>
                   </div>
-                  <div className="sm-contact-item">
-                    <div className="sm-contact-label">Рабочие часы</div>
-                    <div className="sm-contact-value">Пн-Пт 9:00-18:00</div>
+                  <div className="dh-sm-contact-item">
+                    <div className="dh-sm-contact-label">Рабочие часы</div>
+                    <div className="dh-sm-contact-value">Пн-Пт 9:00-18:00</div>
                   </div>
                 </div>
               </div>
 
               {/* Расписание занятий */}
-              <div className="sm-modal-section sm-schedule-container">
-                <div className="sm-schedule-header">
-                  <h3 className="sm-section-title">Расписание занятий</h3>
-                  <div className="sm-schedule-tabs">
+              <div className="dh-sm-modal-section dh-sm-schedule-container">
+                <div className="dh-sm-schedule-header">
+                  <h3 className="dh-sm-section-title">Расписание занятий</h3>
+                  <div className="dh-sm-schedule-tabs">
                     {weeks.map((week, index) => (
                       <button
                         key={index}
-                        className={`sm-schedule-tab ${activeWeek === index ? 'active' : ''}`}
+                        className={`dh-sm-schedule-tab ${activeWeek === index ? 'active' : ''}`}
                         onClick={() => setActiveWeek(index)}
                       >
                         {week}
@@ -410,31 +409,31 @@ export const StaffManagementSection: React.FC = () => {
               </div>
 
               {/* Дисциплины */}
-              <div className="sm-modal-section">
-                <h3 className="sm-section-title">Преподаваемые дисциплины</h3>
-                <div className="sm-disciplines-list">
+              <div className="dh-sm-modal-section">
+                <h3 className="dh-sm-section-title">Преподаваемые дисциплины</h3>
+                <div className="dh-sm-disciplines-list">
                   {selectedStaff.disciplines.map((discipline, index) => (
-                    <div key={index} className="sm-discipline-item">
-                      <span className="sm-discipline-name">{discipline}</span>
-                      <span className="sm-discipline-hours">72 часа</span>
+                    <div key={index} className="dh-sm-discipline-item">
+                      <span className="dh-sm-discipline-name">{discipline}</span>
+                      <span className="dh-sm-discipline-hours">72 часа</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Закреплённые группы */}
-              <div className="sm-modal-section">
-                <div className="sm-section-header-small">
-                  <h3 className="sm-section-title">Закреплённые группы</h3>
-                  <button className="sm-view-all-btn">Все группы →</button>
+              <div className="dh-sm-modal-section">
+                <div className="dh-sm-section-header-small">
+                  <h3 className="dh-sm-section-title">Закреплённые группы</h3>
+                  <button className="dh-sm-view-all-btn">Все группы →</button>
                 </div>
-                <div className="sm-groups-grid">
+                <div className="dh-sm-groups-grid">
                   {selectedStaff.groups.map((group, index) => (
-                    <div key={index} className="sm-group-card">
-                      <div className="sm-group-badge">{group}</div>
-                      <div className="sm-group-info">
-                        <div className="sm-group-name">Группа {group}</div>
-                        <div className="sm-group-course">4 курс</div>
+                    <div key={index} className="dh-sm-group-card">
+                      <div className="dh-sm-group-badge">{group}</div>
+                      <div className="dh-sm-group-info">
+                        <div className="dh-sm-group-name">Группа {group}</div>
+                        <div className="dh-sm-group-course">4 курс</div>
                       </div>
                     </div>
                   ))}
@@ -442,23 +441,23 @@ export const StaffManagementSection: React.FC = () => {
               </div>
 
               {/* Нагрузка */}
-              <div className="sm-modal-section">
-                <h3 className="sm-section-title">Нагрузка</h3>
-                <div className="sm-workload">
-                  <div className="sm-workload-info">
-                    <div className="sm-workload-value">
+              <div className="dh-sm-modal-section">
+                <h3 className="dh-sm-section-title">Нагрузка</h3>
+                <div className="dh-sm-workload">
+                  <div className="dh-sm-workload-info">
+                    <div className="dh-sm-workload-value">
                       {selectedStaff.workload}/{selectedStaff.maxWorkload} ч
                     </div>
-                    <div className="sm-workload-label">в неделю</div>
+                    <div className="dh-sm-workload-label">в неделю</div>
                   </div>
-                  <div className="sm-workload-progress">
-                    <div className="sm-progress-bar">
+                  <div className="dh-sm-workload-progress">
+                    <div className="dh-sm-progress-bar">
                       <div 
-                        className="sm-progress-fill" 
+                        className="dh-sm-progress-fill" 
                         style={{ width: `${(selectedStaff.workload / selectedStaff.maxWorkload) * 100}%` }}
                       />
                     </div>
-                    <div className="sm-progress-text">
+                    <div className="dh-sm-progress-text">
                       {Math.round((selectedStaff.workload / selectedStaff.maxWorkload) * 100)}% загрузки
                     </div>
                   </div>
@@ -467,13 +466,13 @@ export const StaffManagementSection: React.FC = () => {
 
               {/* Кураторская группа */}
               {selectedStaff.curatorGroup && (
-                <div className="sm-modal-section">
-                  <h3 className="sm-section-title">Кураторская группа</h3>
-                  <div className="sm-group-card" style={{ maxWidth: '300px' }}>
-                    <div className="sm-group-badge">{selectedStaff.curatorGroup}</div>
-                    <div className="sm-group-info">
-                      <div className="sm-group-name">Группа {selectedStaff.curatorGroup}</div>
-                      <div className="sm-group-course">4 курс • 24 студента</div>
+                <div className="dh-sm-modal-section">
+                  <h3 className="dh-sm-section-title">Кураторская группа</h3>
+                  <div className="dh-sm-group-card" style={{ maxWidth: '300px' }}>
+                    <div className="dh-sm-group-badge">{selectedStaff.curatorGroup}</div>
+                    <div className="dh-sm-group-info">
+                      <div className="dh-sm-group-name">Группа {selectedStaff.curatorGroup}</div>
+                      <div className="dh-sm-group-course">4 курс • 24 студента</div>
                     </div>
                   </div>
                 </div>

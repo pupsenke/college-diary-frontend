@@ -22,81 +22,81 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose }) =>
   };
 
   return (
-    <div className="dh-group-modal">
-      <div className="dh-group-modal-header">
-        <div className="dh-modal-header-content">
-          <div className="dh-group-badge-large">{groupInfo.name}</div>
-          <div className="dh-group-subtitle">{groupInfo.course} курс • {groupInfo.students} студентов</div>
+    <div className="dhm-group-modal">
+      <div className="dhm-group-modal-header">
+        <div className="dhm-modal-header-content">
+          <div className="dhm-group-badge-large">{groupInfo.name}</div>
+          <div className="dhm-group-subtitle">{groupInfo.course} курс • {groupInfo.students} студентов</div>
         </div>
-        <button className="dh-modal-close" onClick={onClose}>×</button>
+        <button className="dhm-modal-close" onClick={onClose}>×</button>
       </div>
 
-      <div className="dh-group-modal-body">
+      <div className="dhm-group-modal-body">
         {/* Основная информация о группе */}
-        <div className="dh-group-main-info">
-          <div className="dh-group-stats">
-            <div className="dh-group-stat-item">
-              <div className="dh-stat-content">
-                <div className="dh-stat-label">Средний балл</div>
-                <div className="dh-stat-value">{groupInfo.performance}</div>
+        <div className="dhm-group-main-info">
+          <div className="dhm-group-stats">
+            <div className="dhm-group-stat-item">
+              <div className="dhm-stat-content">
+                <div className="dhm-stat-label">Средний балл</div>
+                <div className="dhm-stat-value">{groupInfo.performance}</div>
               </div>
             </div>
 
-            <div className="dh-group-stat-item">
-              <div className="dh-stat-content">
-                <div className="dh-stat-label">Посещаемость</div>
-                <div className="dh-stat-value">{groupInfo.attendance}%</div>
+            <div className="dhm-group-stat-item">
+              <div className="dhm-stat-content">
+                <div className="dhm-stat-label">Посещаемость</div>
+                <div className="dhm-stat-value">{groupInfo.attendance}%</div>
               </div>
             </div>
           </div>
 
-          <div className="dh-group-details-grid">
-            <div className="dh-detail-item">
-              <div className="dh-detail-label">Куратор</div>
-              <div className="dh-detail-value">{groupInfo.curator}</div>
+          <div className="dhm-group-details-grid">
+            <div className="dhm-detail-item">
+              <div className="dhm-detail-label">Куратор</div>
+              <div className="dhm-detail-value">{groupInfo.curator}</div>
             </div>
-            <div className="dh-detail-item">
-              <div className="dh-detail-label">Староста</div>
-              <div className="dh-detail-value">{groupInfo.leader}</div>
+            <div className="dhm-detail-item">
+              <div className="dhm-detail-label">Староста</div>
+              <div className="dhm-detail-value">{groupInfo.leader}</div>
             </div>
-            <div className="dh-detail-item">
-              <div className="dh-detail-label">Специальность</div>
-              <div className="dh-detail-value">{groupInfo.speciality}</div>
+            <div className="dhm-detail-item">
+              <div className="dhm-detail-label">Специальность</div>
+              <div className="dhm-detail-value">{groupInfo.speciality}</div>
             </div>
-            <div className="dh-detail-item">
-              <div className="dh-detail-label">Год поступления</div>
-              <div className="dh-detail-value">{groupInfo.year}</div>
+            <div className="dhm-detail-item">
+              <div className="dhm-detail-label">Год поступления</div>
+              <div className="dhm-detail-value">{groupInfo.year}</div>
             </div>
           </div>
         </div>
 
         {/* Список студентов */}
-        <div className="dh-group-section">
-          <div className="dh-section-header-small">
-            <h3 className="dh-section-title">Список студентов</h3>
-            <button className="dh-view-all-btn">
+        <div className="dhm-group-section">
+          <div className="dhm-section-header-small">
+            <h3 className="dhm-section-title">Список студентов</h3>
+            <button className="dhm-view-all-btn">
               Показать всех ({groupInfo.students})
             </button>
           </div>
-          <div className="dh-group-section-content">
-            <div className="dh-students-preview">
-              <div className="dh-student-item">
-                <div className="dh-student-avatar">ША</div>
-                <div className="dh-student-info">
-                  <div className="dh-student-name">Шевякова Алина Ильинична</div>
-                  <div className="dh-student-status">Староста</div>
+          <div className="dhm-group-section-content">
+            <div className="dhm-students-preview">
+              <div className="dhm-student-item">
+                <div className="dhm-student-avatar">ША</div>
+                <div className="dhm-student-info">
+                  <div className="dhm-student-name">Шевякова Алина Ильинична</div>
+                  <div className="dhm-student-status">Староста</div>
                 </div>
               </div>
-              <div className="dh-student-item">
-                <div className="dh-student-avatar">ПИ</div>
-                <div className="dh-student-info">
-                  <div className="dh-student-name">Петров Иван Сергеевич</div>
+              <div className="dhm-student-item">
+                <div className="dhm-student-avatar">ПИ</div>
+                <div className="dhm-student-info">
+                  <div className="dhm-student-name">Петров Иван Сергеевич</div>
                 </div>
               </div>
-              <div className="dh-student-item">
-                <div className="dh-student-avatar">СК</div>
-                <div className="dh-student-info">
-                  <div className="dh-student-name">Сидорова Ксения Андреевна</div>
+              <div className="dhm-student-item">
+                <div className="dhm-student-avatar">СК</div>
+                <div className="dhm-student-info">
+                  <div className="dhm-student-name">Сидорова Ксения Андреевна</div>
                 </div>
               </div>
             </div>
@@ -104,33 +104,34 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose }) =>
         </div>
 
         {/* Расписание */}
-        <div className="dh-group-section">
-          <div className="dh-section-header-small">
-            <h3 className="dh-section-title">Расписание на неделю</h3>
-            <div className="dh-schedule-actions">
-              <button className="dh-schedule-btn">Текущая неделя</button>
-              <button className="dh-schedule-btn">Следующая неделя</button>
+        <div className="dhm-group-section">
+          <div className="dhm-section-header-small">
+            <h3 className="dhm-section-title">Расписание на неделю</h3>
+            <div className="dhm-schedule-actions">
+              <button className="dhm-schedule-btn">Текущая неделя</button>
+              <button className="dhm-schedule-btn">Следующая неделя</button>
             </div>
           </div>
-          <div className="dh-group-section-content">
-            <div className="dh-schedule-preview">
+          <div className="dhm-group-section-content">
+            <div className="dhm-schedule-preview">
               <h3>ЗДЕСЬ БУДЕТ РАСПИСАНИЕ ГРУППЫ</h3>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="dh-group-modal-footer">
-        <button className="dh-modal-btn dh-modal-btn-secondary" onClick={onClose}>
+      <div className="dhm-group-modal-footer">
+        <button className="dhm-modal-btn dhm-modal-btn-secondary" onClick={onClose}>
           Закрыть
         </button>
-        <button className="dh-modal-btn dh-modal-btn-primary">
+        <button className="dhm-modal-btn dhm-modal-btn-primary">
           Редактировать группу
         </button>
-        <button className="dh-modal-btn dh-modal-btn-secondary">
+        <button className="dhm-modal-btn dhm-modal-btn-secondary">
           Экспорт данных
         </button>
       </div>
     </div>
   );
 };
+

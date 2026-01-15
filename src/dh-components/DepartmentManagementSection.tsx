@@ -53,13 +53,13 @@ export const DepartmentManagementSection: React.FC = () => {
 
   return (
     <>
-      <div className="dh-department-container">
+      <div className="dhm-department-container">
         {/* Шапка с названием отделения */}
-        <div className="dh-department-header dh-department-header-white">
-          <div className="dh-header-content">
-            <h1 className="dh-department-title dh-department-title-blue">Отделение информационных технологий</h1>
-            <div className="dh-department-meta">
-              <span className="dh-groups-count dh-groups-count-blue">{departmentInfo.totalGroups} учебных групп</span>
+        <div className="dhm-department-header dhm-department-header-white">
+          <div className="dhm-header-content">
+            <h1 className="dhm-department-title dhm-department-title-blue">Отделение информационных технологий</h1>
+            <div className="dhm-department-meta">
+              <span className="dhm-groups-count dhm-groups-count-blue">{departmentInfo.totalGroups} учебных групп</span>
             </div>
           </div>
         </div>
@@ -67,25 +67,25 @@ export const DepartmentManagementSection: React.FC = () => {
         {/* Основной контент в сетке */}
         <div className="dhm-department-grid">
           {/* Левая колонка - основная информация */}
-          <div className="dh-main-column">
+          <div className="dhm-main-column">
             {/* Блок общей информации */}
-            <div className="dh-info-section">
-              <div className="dh-section-header">
-                <h2 className="dh-section-title">Общая информация</h2>
+            <div className="dhm-info-section">
+              <div className="dhm-section-header">
+                <h2 className="dhm-section-title">Общая информация</h2>
               </div>
-              <div className="dh-info-content">
-                <div className="dh-info-card">
-                  <div className="dh-info-label">Специальности</div>
-                  <div className="dh-specialities-list">
+              <div className="dhm-info-content">
+                <div className="dhm-info-card">
+                  <div className="dhm-info-label">Специальности</div>
+                  <div className="dhm-specialities-list">
                     {departmentInfo.specialities.map((speciality, index) => (
-                      <div key={index} className="dh-speciality-item">
+                      <div key={index} className="dhm-speciality-item">
                         <span>{speciality}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="dh-info-stats">
+                <div className="dhm-info-stats">
                   <div className="dhm-stat-item">
                     <div className="dhm-stat-content">
                       <div className="dhm-stat-number">{departmentInfo.totalStudents}</div>
@@ -104,77 +104,77 @@ export const DepartmentManagementSection: React.FC = () => {
             </div>
 
             {/* Блок ключевых показателей */}
-            <div className="dh-metrics-section">
-              <div className="dh-section-header">
-                <h2 className="dh-section-title">Ключевые показатели</h2>
+            <div className="dhm-metrics-section">
+              <div className="dhm-section-header">
+                <h2 className="dhm-section-title">Ключевые показатели</h2>
               </div>
-              <div className="dh-metrics-grid">
-                <div className="dh-metric-card dh-performance-card">
-                  <div className="dh-metric-header">
-                    <h3 className="dh-metric-title">Средний балл</h3>
+              <div className="dhm-metrics-grid">
+                <div className="dhm-metric-card dhm-performance-card">
+                  <div className="dhm-metric-header">
+                    <h3 className="dhm-metric-title">Средний балл</h3>
                   </div>
-                  <div className="dh-metric-value">{departmentInfo.averagePerformance}</div>
-                  <div className="dh-metric-progress">
-                    <div className="dh-progress-bar">
-                      <div className="dh-progress-fill" style={{ width: '82%' }}></div>
+                  <div className="dhm-metric-value">{departmentInfo.averagePerformance}</div>
+                  <div className="dhm-metric-progress">
+                    <div className="dhm-progress-bar">
+                      <div className="dhm-progress-fill" style={{ width: '82%' }}></div>
                     </div>
-                    <span className="dh-progress-text">82% студентов сдают успешно</span>
+                    <span className="dhm-progress-text">82% студентов сдают успешно</span>
                   </div>
                 </div>
 
-                <div className="dh-metric-card dh-attendance-card">
-                  <div className="dh-metric-header">
-                    <h3 className="dh-metric-title">Посещаемость</h3>
+                <div className="dhm-metric-card dhm-attendance-card">
+                  <div className="dhm-metric-header">
+                    <h3 className="dhm-metric-title">Посещаемость</h3>
                   </div>
-                  <div className="dh-metric-value">{departmentInfo.averageAttendance}%</div>
-                  <div className="dh-metric-progress">
-                    <div className="dh-progress-bar">
-                      <div className="dh-progress-fill" style={{ width: '86%' }}></div>
+                  <div className="dhm-metric-value">{departmentInfo.averageAttendance}%</div>
+                  <div className="dhm-metric-progress">
+                    <div className="dhm-progress-bar">
+                      <div className="dhm-progress-fill" style={{ width: '86%' }}></div>
                     </div>
-                    <span className="dh-progress-text">Высокий уровень посещаемости</span>
+                    <span className="dhm-progress-text">Высокий уровень посещаемости</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Блок учебных групп */}
-            <div className="dh-groups-section">
-              <div className="dh-section-header">
-                <h2 className="dh-section-title">Учебные группы ({academicGroups.length})</h2>
-                <button className="dh-add-group-btn">
+            <div className="dhm-groups-section">
+              <div className="dhm-section-header">
+                <h2 className="dhm-section-title">Учебные группы ({academicGroups.length})</h2>
+                <button className="dhm-add-group-btn">
                   Добавить группу
                 </button>
               </div>
-              <div className="dh-groups-grid">
+              <div className="dhm-groups-grid">
                 {academicGroups.map(group => (
-                  <div key={group.id} className="dh-group-card" onClick={() => handleGroupClick(group.id)}>
-                    <div className="dh-group-header">
-                      <div className="dh-group-badge">{group.name}</div>
-                      <div className="dh-group-course">{group.course} курс</div>
+                  <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
+                    <div className="dhm-group-header">
+                      <div className="dhm-group-badge">{group.name}</div>
+                      <div className="dhm-group-course">{group.course} курс</div>
                     </div>
-                    <div className="dh-group-body">
-                      <div className="dh-group-metrics">
-                        <div className="dh-group-metric">
-                          <div className="dh-metric-value">{group.students}</div>
-                          <div className="dh-metric-label">студентов</div>
+                    <div className="dhm-group-body">
+                      <div className="dhm-group-metrics">
+                        <div className="dhm-group-metric">
+                          <div className="dhm-metric-value">{group.students}</div>
+                          <div className="dhm-metric-label">студентов</div>
                         </div>
-                        <div className="dh-group-metric">
-                          <div className="dh-metric-value">{group.performance}</div>
-                          <div className="dh-metric-label">средний балл</div>
+                        <div className="dhm-group-metric">
+                          <div className="dhm-metric-value">{group.performance}</div>
+                          <div className="dhm-metric-label">средний балл</div>
                         </div>
-                        <div className="dh-group-metric">
-                          <div className="dh-metric-value">{group.attendance}%</div>
-                          <div className="dh-metric-label">посещаемость</div>
+                        <div className="dhm-group-metric">
+                          <div className="dhm-metric-value">{group.attendance}%</div>
+                          <div className="dhm-metric-label">посещаемость</div>
                         </div>
                       </div>
-                      <div className="dh-group-info">
-                        <div className="dh-info-row">
-                          <span className="dh-info-label">Куратор:</span>
-                          <span className="dh-info-value">{group.curator}</span>
+                      <div className="dhm-group-info">
+                        <div className="dhm-info-row">
+                          <span className="dhm-info-label">Куратор:</span>
+                          <span className="dhm-info-value">{group.curator}</span>
                         </div>
-                        <div className="dh-info-row">
-                          <span className="dh-info-label">Староста:</span>
-                          <span className="dh-info-value">{group.leader}</span>
+                        <div className="dhm-info-row">
+                          <span className="dhm-info-label">Староста:</span>
+                          <span className="dhm-info-value">{group.leader}</span>
                         </div>
                       </div>
                     </div>
@@ -185,36 +185,36 @@ export const DepartmentManagementSection: React.FC = () => {
           </div>
 
           {/* Правая колонка - управление структурами */}
-          <div className="dh-side-column">
-            <div className="dh-management-section">
-              <div className="dh-section-header">
-                <h2 className="dh-section-title">Управление структурами</h2>
+          <div className="dhm-side-column">
+            <div className="dhm-management-section">
+              <div className="dhm-section-header">
+                <h2 className="dhm-section-title">Управление структурами</h2>
               </div>
-              <div className="dh-management-actions">
-                <button className="dh-management-btn">
-                  <div className="dh-btn-content">
-                    <div className="dh-btn-title">Добавить группу</div>
-                    <div className="dh-btn-description">Создание новой учебной группы</div>
+              <div className="dhm-management-actions">
+                <button className="dhm-management-btn">
+                  <div className="dhm-btn-content">
+                    <div className="dhm-btn-title">Добавить группу</div>
+                    <div className="dhm-btn-description">Создание новой учебной группы</div>
                   </div>
                 </button>
 
-                <button className="dh-management-btn">
-                  <div className="dh-btn-content">
-                    <div className="dh-btn-title">Редактировать группы</div>
-                    <div className="dh-btn-description">Изменение данных учебных групп</div>
+                <button className="dhm-management-btn">
+                  <div className="dhm-btn-content">
+                    <div className="dhm-btn-title">Редактировать группы</div>
+                    <div className="dhm-btn-description">Изменение данных учебных групп</div>
                   </div>
                 </button>
 
-                <button className="dh-management-btn">
-                  <div className="dh-btn-content">
-                    <div className="dh-btn-title">Закрепить куратора и старосту</div>
-                    <div className="dh-btn-description">Назначение ответственных за группы</div>
+                <button className="dhm-management-btn">
+                  <div className="dhm-btn-content">
+                    <div className="dhm-btn-title">Закрепить куратора и старосту</div>
+                    <div className="dhm-btn-description">Назначение ответственных за группы</div>
                   </div>
                 </button>
 
-                <div className="dh-management-info">
-                  <h3 className="dh-info-title">Быстрые действия</h3>
-                  <p className="dh-info-text">
+                <div className="dhm-management-info">
+                  <h3 className="dhm-info-title">Быстрые действия</h3>
+                  <p className="dhm-info-text">
                     На этой странице доступны все инструменты для управления структурой отделения.
                     Вы можете добавлять группы, назначать кураторов и просматривать ключевые показатели.
                   </p>
@@ -227,8 +227,8 @@ export const DepartmentManagementSection: React.FC = () => {
 
       {/* Модальное окно с информацией о группе */}
       {isModalOpen && selectedGroupId && (
-        <div className="dh-modal-overlay" onClick={handleCloseModal}>
-          <div className="dh-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="dhm-modal-overlay" onClick={handleCloseModal}>
+          <div className="dhm-modal-content" onClick={(e) => e.stopPropagation()}>
             <GroupDetail 
               groupId={selectedGroupId} 
               onClose={handleCloseModal}
@@ -239,3 +239,4 @@ export const DepartmentManagementSection: React.FC = () => {
     </>
   );
 };
+

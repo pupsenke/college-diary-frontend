@@ -27,18 +27,18 @@ export const PersonalCabinetSection: React.FC = () => {
   ];
 
   return (
-    <div className="dh-section dh-personal-section">
-      <div className="dh-section-header">
-        <h1 className="dh-section-title">Личный кабинет</h1>
-        <div className="dh-section-controls">
+    <div className="dh-pc-section dh-pc-personal-section">
+      {/* <div className="dh-pc-section-header">
+        <h1 className="dh-pc-section-title">Личный кабинет</h1>
+        <div className="dh-pc-section-controls">
           <button 
-            className={`dh-view-btn ${activeTab === 'profile' ? 'active' : ''}`}
+            className={`dh-pc-view-btn ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
             Профиль
           </button>
           <button 
-            className={`dh-view-btn ${activeTab === 'security' ? 'active' : ''}`}
+            className={`dh-pc-view-btn ${activeTab === 'security' ? 'active' : ''}`}
             onClick={() => setActiveTab('security')}
           >
             Безопасность
@@ -46,24 +46,24 @@ export const PersonalCabinetSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="dh-personal-content">
+      <div className="dh-pc-personal-content">
         {activeTab === 'profile' && (
-          <div className="dh-profile-tab">
-            <div className="dh-profile-header">
+          <div className="dh-pc-profile-tab">
+            <div className="dh-pc-profile-header">
               <button 
-                className="dh-edit-btn"
+                className="dh-pc-edit-btn"
                 onClick={() => setIsEditing(!isEditing)}
               >
                 {isEditing ? 'Сохранить' : 'Редактировать'}
               </button>
             </div>
 
-            <div className="dh-profile-details">
-              <div className="dh-details-grid">
-                <div className="dh-detail-group">
-                  <h3 className="dh-detail-group-title">Основная информация</h3>
+            <div className="dh-pc-profile-details">
+              <div className="dh-pc-details-grid">
+                <div className="dh-pc-detail-group">
+                  <h3 className="dh-pc-detail-group-title">Основная информация</h3>
                   
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Фамилия</label>
                     {isEditing ? (
                       <input type="text" value={userProfile.lastName} />
@@ -72,7 +72,7 @@ export const PersonalCabinetSection: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Имя</label>
                     {isEditing ? (
                       <input type="text" value={userProfile.firstName} />
@@ -81,7 +81,7 @@ export const PersonalCabinetSection: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Отчество</label>
                     {isEditing ? (
                       <input type="text" value={userProfile.patronymic} />
@@ -90,21 +90,21 @@ export const PersonalCabinetSection: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Должность</label>
                     <p></p>
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Отделение</label>
                     <p>{userProfile.department}</p>
                   </div>
                 </div>
 
-                <div className="dh-detail-group">
-                  <h3 className="dh-detail-group-title">Контактная информация</h3>
+                <div className="dh-pc-detail-group">
+                  <h3 className="dh-pc-detail-group-title">Контактная информация</h3>
                   
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Email</label>
                     {isEditing ? (
                       <input type="email" value={userProfile.email} />
@@ -113,7 +113,7 @@ export const PersonalCabinetSection: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Телефон</label>
                     {isEditing ? (
                       <input type="tel" value={userProfile.phone} />
@@ -122,30 +122,30 @@ export const PersonalCabinetSection: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Рабочий телефон</label>
                     <p>{userProfile.workPhone}</p>
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Кабинет</label>
                     <p>{userProfile.office}</p>
                   </div>
                 </div>
 
-                <div className="dh-detail-group">
-                  <h3 className="dh-detail-group-title">Профессиональная информация</h3>
+                <div className="dh-pc-detail-group">
+                  <h3 className="dh-pc-detail-group-title">Профессиональная информация</h3>
                   
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Дата приема на работу</label>
                     <p>{userProfile.employmentDate}</p>
                   </div>
 
-                  <div className="dh-detail-field">
+                  <div className="dh-pc-detail-field">
                     <label>Квалификация</label>
-                    <div className="dh-qualifications">
+                    <div className="dh-pc-qualifications">
                       {userProfile.qualifications.map((qual, index) => (
-                        <span key={index} className="dh-qualification-tag">
+                        <span key={index} className="dh-pc-qualification-tag">
                           {qual}
                         </span>
                       ))}
@@ -158,28 +158,28 @@ export const PersonalCabinetSection: React.FC = () => {
         )}
 
         {activeTab === 'security' && (
-          <div className="dh-security-tab">
-            <div className="dh-security-section">
-              <h3 className="dh-subsection-title">Смена пароля</h3>
-              <div className="dh-password-form">
-                <div className="dh-form-field">
+          <div className="dh-pc-security-tab">
+            <div className="dh-pc-security-section">
+              <h3 className="dh-pc-subsection-title">Смена пароля</h3>
+              <div className="dh-pc-password-form">
+                <div className="dh-pc-form-field">
                   <label>Текущий пароль</label>
                   <input type="password" placeholder="Введите текущий пароль" />
                 </div>
-                <div className="dh-form-field">
+                <div className="dh-pc-form-field">
                   <label>Новый пароль</label>
                   <input type="password" placeholder="Введите новый пароль" />
                 </div>
-                <div className="dh-form-field">
+                <div className="dh-pc-form-field">
                   <label>Подтвердите новый пароль</label>
                   <input type="password" placeholder="Повторите новый пароль" />
                 </div>
-                <button className="dh-btn-primary">Сменить пароль</button>
+                <button className="dh-pc-btn-primary">Сменить пароль</button>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };
