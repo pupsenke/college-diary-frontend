@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
 import { apiService, GroupData, TeacherData } from '../services/studentApiService';
-const API_BASE_URL = 'http://80.93.62.33:8080';
+import { API_BASE_URL } from '../constants/apiConstant';
 
 // Интерфейс для данных пользователя с возможными ролями
 interface UserWithRoles {

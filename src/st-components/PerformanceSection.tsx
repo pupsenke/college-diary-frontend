@@ -1070,10 +1070,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     <span className="pf-detail-label">Предмет</span>
                     <span className="pf-detail-value">{selectedGrade.subject}</span>
                   </div>
-                  <div className="pf-detail-item">
-                    <span className="pf-detail-label">Преподаватель</span>
-                    <span className="pf-detail-value pf-teacher">{selectedGrade.teacher}</span>
-                  </div>
                 </div>
               </div>
 
@@ -1127,7 +1123,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                             <span className="pf-info-value">{markInfo.dayWeek}</span>
                           </div>
                           <div className="pf-info-item">
-                            <span className="pf-info-label">Пара:</span>
+                            <span className="pf-info-label">Занятие №:</span>
                             <span className="pf-info-value">{markInfo.numPair}</span>
                           </div>
                           <div className="pf-info-item">

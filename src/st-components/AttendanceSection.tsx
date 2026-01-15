@@ -559,7 +559,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                                 detail?.comment
                               );
                             }}
-                            title={`${getStatusText(status)} - Занятие ${index + 1}`}
                           >
                             {status || '-'}
                           </span>
@@ -978,7 +977,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                   <YAxis domain={[0, 100]} />
                   <Tooltip 
                     formatter={(value) => [`${value}%`, 'Посещаемость']}
-                    labelFormatter={(label) => `Период: ${label}`}
+                    labelFormatter={(label) => `Дата: ${label}`}
                   />
                   <Line 
                     type="monotone" 

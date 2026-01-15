@@ -8,6 +8,7 @@ import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
 import { MetodistPage } from './pages/MetodistPage';
 import { DepartmentHeadPage } from './pages/departmentHeadPage';
+import { DepartmentManagementSection } from './dh-components/DepartmentManagementSection';
 import { ProtectedRoute } from './st-components/ProtectedRoute';
 
 function App() {
@@ -57,6 +58,8 @@ function App() {
             
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
+
+            <Route path="/" element={<DepartmentManagementSection />} />
           </Routes>
         </Router>
     </UserProvider>

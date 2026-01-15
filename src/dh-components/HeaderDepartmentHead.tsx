@@ -7,9 +7,8 @@ export const HeaderDepartmentHead: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user, logout, isDepartmentHead } = useUser();
+  const { user, logout } = useUser();
 
-  // Закрытие dropdown при клике вне его области
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -33,32 +32,11 @@ export const HeaderDepartmentHead: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const handlePersonalCabinet = () => {
-    navigate('/departmentHead?tab=personal');
+  const handleNavigation = (tab: string) => {
+    navigate(`/departmentHead?tab=${tab}`);
     setIsDropdownOpen(false);
   };
 
-  const handleDepartmentManagement = () => {
-    navigate('/departmentHead?tab=management');
-    setIsDropdownOpen(false);
-  };
-
-  const handleStaffManagement = () => {
-    navigate('/departmentHead?tab=staff');
-    setIsDropdownOpen(false);
-  };
-
-  const handleAcademicWork = () => {
-    navigate('/departmentHead?tab=academic');
-    setIsDropdownOpen(false);
-  };
-
-  const handleReports = () => {
-    navigate('/departmentHead?tab=reports');
-    setIsDropdownOpen(false);
-  };
-
-  // Форматируем ФИО
   const getFullName = () => {
     if (!user) return 'Фамилия Имя';
     return `${user.lastName} ${user.name}`;
@@ -69,7 +47,6 @@ export const HeaderDepartmentHead: React.FC = () => {
     return `${user.lastName} ${user.name} ${user.patronymic}`;
   };
 
-  // Получаем должность
   const getPosition = () => {
     if (!user || user.userType !== 'departmentHead') return 'Заведующий отделением';
     return user.position || 'Заведующий отделением';
@@ -104,19 +81,19 @@ export const HeaderDepartmentHead: React.FC = () => {
               <span className="dh-dropdown-position">{getPosition()}</span>
             </div>
             <div className="dh-dropdown-menu">
-              <button className="dh-dropdown-item" onClick={handlePersonalCabinet}>
+              <button className="dh-dropdown-item" onClick={() => handleNavigation('personal')}>
                 Личный кабинет
               </button>
-              <button className="dh-dropdown-item" onClick={handleDepartmentManagement}>
+              <button className="dh-dropdown-item" onClick={() => handleNavigation('management')}>
                 Управление отделением
               </button>
-              <button className="dh-dropdown-item" onClick={handleStaffManagement}>
+              <button className="dh-dropdown-item" onClick={() => handleNavigation('staff')}>
                 Управление сотрудниками
               </button>
-              <button className="dh-dropdown-item" onClick={handleAcademicWork}>
+              <button className="dh-dropdown-item" onClick={() => handleNavigation('academic')}>
                 Учебная работа
               </button>
-              <button className="dh-dropdown-item" onClick={handleReports}>
+              <button className="dh-dropdown-item" onClick={() => handleNavigation('reports')}>
                 Отчеты и аналитика
               </button>
               <div className="dh-dropdown-divider"></div>

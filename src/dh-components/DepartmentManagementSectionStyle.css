@@ -1,0 +1,1038 @@
+/* Основные стили */
+.dh-department-container {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  margin: 20px;
+}
+
+/* Шапка отделения */
+/* Переопределение стилей для белой шапки */
+.dh-department-header {
+  background: white;
+  padding: 32px 40px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.dh-department-title {
+  color: #002FA7;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.dh-department-meta {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.dh-academic-year {
+  color: #002FA7;
+  opacity: 0.9;
+  background: rgba(0, 47, 167, 0.1);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 16px;
+}
+
+.dh-groups-count {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.dh-action-button {
+  background: white;
+  border: 1px solid #002FA7;
+  color: #002FA7;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.dh-action-button:hover {
+  background: #f0f7ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+}
+
+.dh-action-button svg {
+  stroke: #002FA7;
+}
+/* Основная сетка */
+.dhm-department-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 32px;
+}
+
+/* Заголовки секций */
+.dh-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dh-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Левая колонка - Основная информация */
+.dh-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Блок общей информации */
+.dh-info-section {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dh-info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-info-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.dh-specialities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dh-speciality-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-speciality-item span {
+  font-size: 14px;
+  color: #1f2937;
+  flex: 1;
+}
+
+.dh-info-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.dhm-stat-item {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dh-stat-icon {
+  width: 48px;
+  height: 48px;
+  background: #e0e7ff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dhm-stat-content {
+  flex: 1;
+}
+
+.dhm-stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #002FA7;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dhm-stat-text {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Блок ключевых показателей */
+.dh-metrics-section {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.dh-metric-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-performance-card {
+  border-top: 4px solid #10b981;
+}
+
+.dh-attendance-card {
+  border-top: 4px solid #3b82f6;
+}
+
+.dh-metric-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dh-metric-icon {
+  width: 40px;
+  height: 40px;
+  background: #ecfdf5;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dh-attendance-card .dh-metric-icon {
+  background: #eff6ff;
+}
+
+.dh-metric-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dh-metric-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.dh-metric-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dh-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #002FA7 0%, #3b82f6 100%);
+  border-radius: 4px;
+}
+
+.dh-progress-text {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Блок учебных групп */
+.dh-groups-section {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-add-group-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.dh-add-group-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.dh-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.dh-group-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-group-card:hover {
+  border-color: #002FA7;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 47, 167, 0.1);
+}
+
+.dh-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dh-group-badge {
+  background: #002FA7;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.dh-group-course {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dh-group-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dh-group-metric {
+  text-align: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dh-metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 4px;
+}
+
+.dh-metric-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dh-info-row:last-child {
+  border-bottom: none;
+}
+
+.dh-info-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-info-value {
+  font-size: 13px;
+  color: #1f2937;
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+}
+
+/* Правая колонка - Управление структурами */
+.dh-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.dh-management-section {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dh-management-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.dh-management-btn:hover {
+  border-color: #002FA7;
+  background: #f0f7ff;
+  transform: translateX(4px);
+}
+
+.dh-btn-icon {
+  width: 40px;
+  height: 40px;
+  background: #e0e7ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dh-btn-content {
+  flex: 1;
+}
+
+.dh-btn-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.dh-btn-description {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dh-management-info {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.dh-info-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.dh-info-text {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Модальное окно */
+.dh-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.dh-modal-content {
+  background: white;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dh-group-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.dh-group-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 32px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 20px 20px 0 0;
+}
+
+.dh-group-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0;
+}
+
+.dh-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dh-modal-close:hover {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+}
+
+.dh-group-modal-body {
+  padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.dh-group-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.dh-group-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-group-info-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dh-group-info-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dh-group-section {
+  margin-bottom: 28px;
+}
+
+.dh-group-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.dh-group-section-content {
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dh-group-section-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.dh-group-modal-footer {
+  padding: 24px 32px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f8fafc;
+  border-radius: 0 0 20px 20px;
+}
+
+.dh-modal-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 14px;
+}
+
+.dh-modal-btn-primary {
+  background: #002FA7;
+  color: white;
+}
+
+.dh-modal-btn-primary:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.dh-modal-btn-secondary {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.dh-modal-btn-secondary:hover {
+  background: rgba(0, 47, 167, 0.05);
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .dhm-department-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dh-department-container {
+    margin: 10px;
+    border-radius: 16px;
+  }
+
+  .dh-department-header {
+    padding: 24px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dh-department-title {
+    font-size: 24px;
+  }
+
+  .dhm-department-grid {
+    padding: 24px;
+  }
+
+  .dh-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dh-metrics-grid,
+  .dh-info-stats,
+  .dh-group-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-groups-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-group-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dh-modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+
+  .dh-group-modal-header,
+  .dh-group-modal-body,
+  .dh-group-modal-footer {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-department-header {
+    padding: 20px;
+  }
+
+  .dh-department-title {
+    font-size: 20px;
+  }
+
+  .dhm-department-grid {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .dh-group-metrics {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dh-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .dh-info-value {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .dh-group-modal-footer {
+    flex-direction: column;
+  }
+
+  .dh-modal-btn {
+    width: 100%;
+  }
+}
+
+
+/* стили для модального окна */
+.dh-modal-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-group-badge-large {
+  background: #002FA7;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 24px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.dh-group-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-group-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.dh-group-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.dh-group-stat-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dh-stat-icon {
+  width: 40px;
+  height: 40px;
+  background: #e0e7ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dhm-stat-content {
+  flex: 1;
+}
+
+.dh-stat-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.dhm-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+}
+
+.dh-group-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.dh-detail-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-detail-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.dh-detail-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.dh-section-header-small {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dh-view-all-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #002FA7;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-view-all-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+}
+
+.dh-students-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.dh-student-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-student-avatar {
+  width: 40px;
+  height: 40px;
+  background: #e0e7ff;
+  color: #002FA7;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dh-student-info {
+  flex: 1;
+}
+
+.dh-student-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.dh-student-status {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.dh-schedule-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dh-schedule-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #002FA7;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-schedule-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+}
+
+.dh-schedule-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.dh-schedule-day {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.dh-day-header {
+  background: #002FA7;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.dh-day-lessons {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-lesson {
+  font-size: 13px;
+  color: #1f2937;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.dh-lesson:last-child {
+  border-bottom: none;
+}

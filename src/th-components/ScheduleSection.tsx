@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import '../st-components/ScheduleSection.css';
-
-const API_BASE_URL = 'http://80.93.62.33:8080';
+import { API_BASE_URL } from '../constants/apiConstant';
 
 export interface ScheduleItem {
   id: number;

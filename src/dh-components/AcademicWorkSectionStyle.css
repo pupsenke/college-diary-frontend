@@ -1,0 +1,472 @@
+.dh-academic-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 47, 167, 0.1);
+}
+
+/* Schedule View */
+.dh-schedule-view {
+  margin-top: 30px;
+}
+
+.dh-schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dh-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 47, 167, 0.05);
+  padding: 8px 16px;
+  border-radius: 12px;
+}
+
+.dh-date-controls p {
+    margin: 0;
+}
+
+.dh-date-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dh-date-btn:hover {
+  background: rgba(0, 47, 167, 0.1);
+}
+
+.dh-date-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.dh-current-date {
+  font-weight: 600;
+  color: #002FA7;
+  min-width: 200px;
+  text-align: center;
+}
+
+.dh-schedule-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dh-schedule-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.dh-schedule-card:hover {
+  border-color: #002FA7;
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+}
+
+.dh-schedule-time {
+  background: #002FA7;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 100px;
+  text-align: center;
+}
+
+.dh-schedule-content {
+  flex: 1;
+}
+
+.dh-schedule-subject {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.dh-schedule-details {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dh-schedule-details span {
+  font-size: 14px;
+  color: #64748b;
+  background: rgba(0, 47, 167, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.dh-schedule-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dh-schedule-action-btn {
+  width: 136px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.dh-schedule-action-btn:hover {
+  border-color: #002FA7;
+  background: rgba(0, 47, 167, 0.05);
+}
+
+.dh-schedule-action-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Groups View */
+.dh-groups-view {
+  margin-top: 30px;
+}
+
+.dh-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dh-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.dh-group-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.dh-group-card:hover {
+  border-color: #002FA7;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.1);
+}
+
+.dh-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dh-group-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0;
+}
+
+.dh-group-course {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dh-group-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dh-group-stat {
+  text-align: center;
+}
+
+.dh-group-stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 4px;
+}
+
+.dh-group-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-group-curator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 20px;
+}
+
+.dh-curator-label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.dh-curator-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dh-group-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dh-group-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dh-group-btn.primary {
+  background: #002FA7;
+  color: white;
+}
+
+.dh-group-btn.primary:hover {
+  background: #1e40af;
+}
+
+.dh-group-btn.secondary {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+}
+
+.dh-group-btn.secondary:hover {
+  background: rgba(0, 47, 167, 0.2);
+}
+
+/* Performance View */
+.dh-performance-view {
+  margin-top: 30px;
+}
+
+.dh-performance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dh-performance-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.dh-filter-select {
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.dh-filter-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.dh-performance-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.dh-performance-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dh-performance-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.dh-performance-card h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.dh-performance-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 12px;
+}
+
+.dh-performance-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dh-progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.dh-performance-progress span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dh-performance-subtext {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.dh-performance-chart {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dh-chart-placeholder {
+  text-align: center;
+  color: #9ca3af;
+}
+
+.dh-chart-placeholder img {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.dh-chart-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .dh-performance-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .dh-groups-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dh-schedule-header,
+  .dh-groups-header,
+  .dh-performance-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dh-date-controls,
+  .dh-performance-filters {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .dh-schedule-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .dh-schedule-time {
+    align-self: flex-start;
+  }
+  
+  .dh-group-info {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .dh-group-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-groups-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dh-schedule-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dh-performance-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .dh-filter-select {
+    min-width: auto;
+  }
+}
