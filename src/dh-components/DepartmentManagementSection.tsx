@@ -5,6 +5,7 @@ import { GroupDetail } from './GroupDetail';
 export const DepartmentManagementSection: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const departmentInfo = {
     name: 'Отделение информационных технологий',
@@ -37,9 +38,28 @@ export const DepartmentManagementSection: React.FC = () => {
       leader: 'Смирнов А.И.',
       performance: 4.0,
       attendance: 85.2,
-      speciality: 'Прикладная информатика'
+      speciality: 'Информационные системы и программирование'
+    },
+    {
+      id: 3,
+      name: '2993',
+      course: 4,
+      students: 28,
+      curator: 'Иванов И.И.',
+      leader: 'Петров П.П.',
+      performance: 4.3,
+      attendance: 88.0,
+      speciality: 'Информационные системы и программирование'
     },
   ];
+
+  // Функция для поиска групп
+  const filteredGroups = academicGroups.filter(group =>
+    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.curator.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.leader.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.speciality.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleGroupClick = (groupId: number) => {
     setSelectedGroupId(groupId);
@@ -49,6 +69,10 @@ export const DepartmentManagementSection: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedGroupId(null);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
   return (
@@ -67,7 +91,7 @@ export const DepartmentManagementSection: React.FC = () => {
         {/* Основной контент в сетке */}
         <div className="dhm-department-grid">
           {/* Левая колонка - основная информация */}
-          <div className="dhm-main-column">
+          <div className="dhm-main-column-full">
             {/* Блок общей информации */}
             <div className="dhm-info-section">
               <div className="dhm-section-header">
@@ -140,85 +164,67 @@ export const DepartmentManagementSection: React.FC = () => {
             {/* Блок учебных групп */}
             <div className="dhm-groups-section">
               <div className="dhm-section-header">
-                <h2 className="dhm-section-title">Учебные группы ({academicGroups.length})</h2>
-                <button className="dhm-add-group-btn">
-                  Добавить группу
-                </button>
+                <h2 className="dhm-section-title">Учебные группы ({filteredGroups.length})</h2>
+                <div className="dhm-groups-actions">
+                  <div className="dhm-search-container">
+                    <input
+                      type="text"
+                      className="dhm-search-input"
+                      placeholder="Поиск по группам, кураторам, старостам..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                    />
+                  </div>
+                  <button className="dhm-add-group-btn">
+                    Добавить группу
+                  </button>
+                </div>
               </div>
               <div className="dhm-groups-grid">
-                {academicGroups.map(group => (
-                  <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
-                    <div className="dhm-group-header">
-                      <div className="dhm-group-badge">{group.name}</div>
-                      <div className="dhm-group-course">{group.course} курс</div>
-                    </div>
-                    <div className="dhm-group-body">
-                      <div className="dhm-group-metrics">
-                        <div className="dhm-group-metric">
-                          <div className="dhm-metric-value">{group.students}</div>
-                          <div className="dhm-metric-label">студентов</div>
+                {filteredGroups.length > 0 ? (
+                  filteredGroups.map(group => (
+                    <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
+                      <div className="dhm-group-header">
+                        <div className="dhm-group-badge">{group.name}</div>
+                        <div className="dhm-group-course">{group.course} курс</div>
+                      </div>
+                      <div className="dhm-group-body">
+                        <div className="dhm-group-metrics">
+                          <div className="dhm-group-metric">
+                            <div className="dhm-metric-value">{group.students}</div>
+                            <div className="dhm-metric-label">студентов</div>
+                          </div>
+                          <div className="dhm-group-metric">
+                            <div className="dhm-metric-value">{group.performance}</div>
+                            <div className="dhm-metric-label">средний балл</div>
+                          </div>
+                          <div className="dhm-group-metric">
+                            <div className="dhm-metric-value">{group.attendance}%</div>
+                            <div className="dhm-metric-label">посещаемость</div>
+                          </div>
                         </div>
-                        <div className="dhm-group-metric">
-                          <div className="dhm-metric-value">{group.performance}</div>
-                          <div className="dhm-metric-label">средний балл</div>
-                        </div>
-                        <div className="dhm-group-metric">
-                          <div className="dhm-metric-value">{group.attendance}%</div>
-                          <div className="dhm-metric-label">посещаемость</div>
+                        <div className="dhm-group-info">
+                          <div className="dhm-info-row">
+                            <span className="dhm-info-label">Куратор:</span>
+                            <span className="dhm-info-value">{group.curator}</span>
+                          </div>
+                          <div className="dhm-info-row">
+                            <span className="dhm-info-label">Староста:</span>
+                            <span className="dhm-info-value">{group.leader}</span>
+                          </div>
+                          <div className="dhm-info-row">
+                            <span className="dhm-info-label">Специальность:</span>
+                            <span className="dhm-info-value">{group.speciality}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="dhm-group-info">
-                        <div className="dhm-info-row">
-                          <span className="dhm-info-label">Куратор:</span>
-                          <span className="dhm-info-value">{group.curator}</span>
-                        </div>
-                        <div className="dhm-info-row">
-                          <span className="dhm-info-label">Староста:</span>
-                          <span className="dhm-info-value">{group.leader}</span>
-                        </div>
-                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="dhm-no-groups">
+                    <p>Группы не найдены. Попробуйте изменить поисковый запрос.</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Правая колонка - управление структурами */}
-          <div className="dhm-side-column">
-            <div className="dhm-management-section">
-              <div className="dhm-section-header">
-                <h2 className="dhm-section-title">Управление структурами</h2>
-              </div>
-              <div className="dhm-management-actions">
-                <button className="dhm-management-btn">
-                  <div className="dhm-btn-content">
-                    <div className="dhm-btn-title">Добавить группу</div>
-                    <div className="dhm-btn-description">Создание новой учебной группы</div>
-                  </div>
-                </button>
-
-                <button className="dhm-management-btn">
-                  <div className="dhm-btn-content">
-                    <div className="dhm-btn-title">Редактировать группы</div>
-                    <div className="dhm-btn-description">Изменение данных учебных групп</div>
-                  </div>
-                </button>
-
-                <button className="dhm-management-btn">
-                  <div className="dhm-btn-content">
-                    <div className="dhm-btn-title">Закрепить куратора и старосту</div>
-                    <div className="dhm-btn-description">Назначение ответственных за группы</div>
-                  </div>
-                </button>
-
-                <div className="dhm-management-info">
-                  <h3 className="dhm-info-title">Быстрые действия</h3>
-                  <p className="dhm-info-text">
-                    На этой странице доступны все инструменты для управления структурой отделения.
-                    Вы можете добавлять группы, назначать кураторов и просматривать ключевые показатели.
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -239,4 +245,3 @@ export const DepartmentManagementSection: React.FC = () => {
     </>
   );
 };
-

@@ -1136,3 +1136,64 @@
     padding: 6px 12px;
   }
 }
+
+/* Стили для кнопки "Все группы" */
+.dh-sm-view-all-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #002FA7;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  margin-bottom: 10px;
+}
+
+.dh-sm-view-all-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.dh-sm-view-all-btn:active {
+  transform: translateY(0);
+}
+
+.dh-sm-view-all-btn:hover::after {
+  transform: translateX(2px);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dh-sm-view-all-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .dh-sm-section-header-small {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .dh-sm-section-header-small .dh-sm-view-all-btn {
+    margin-left: 0;
+    margin-top: -8px;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-sm-view-all-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

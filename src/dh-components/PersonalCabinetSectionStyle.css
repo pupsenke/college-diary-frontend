@@ -1,29 +1,48 @@
-.dh-pc-personal-section {
+/* PersonalCabinetSectionStyle.css */
+
+.dh-pc-section {
   background: white;
   border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 47, 167, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
 }
 
-.dh-pc-personal-content {
-  margin-top: 30px;
+.dh-pc-personal-section {
+  padding: 32px;
 }
 
-/* Profile Tab */
-.dh-pc-profile-header {
+/* Заголовок */
+.dh-pc-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dh-pc-section-title {
+  color: #002FA7;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Профиль */
+.dh-pc-profile-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
   padding-bottom: 30px;
   border-bottom: 2px solid #f1f5f9;
+  margin-top: 30px;
 }
 
 .dh-pc-avatar-section {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
 }
 
 .dh-pc-avatar-large {
@@ -38,6 +57,7 @@
   font-size: 32px;
   font-weight: 700;
   box-shadow: 0 8px 25px rgba(0, 47, 167, 0.3);
+  flex-shrink: 0;
 }
 
 .dh-pc-avatar-info h2 {
@@ -45,6 +65,7 @@
   font-size: 28px;
   font-weight: 700;
   color: #002FA7;
+  line-height: 1.2;
 }
 
 .dh-pc-avatar-info p {
@@ -54,45 +75,62 @@
   font-weight: 500;
 }
 
+/* Кнопки действий в заголовке */
+.dh-pc-header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.dh-pc-edit-btn,
+.dh-pc-password-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: none;
+}
+
 .dh-pc-edit-btn {
+  background: #002FA7;
+  color: white;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
-  background: rgba(0, 47, 167, 0.1);
-  color: #002FA7;
-  border: 1px solid rgba(0, 47, 167, 0.2);
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
 }
 
 .dh-pc-edit-btn:hover {
-  background: rgba(0, 47, 167, 0.2);
-  transform: translateY(-2px);
+  background: #1e40af;
+  transform: translateY(-1px);
 }
 
-.dh-pc-edit-btn img {
-  width: 16px;
-  height: 16px;
+.dh-pc-password-btn {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #e2e8f0;
 }
 
-.dh-pc-profile-details {
-  margin-top: 30px;
+.dh-pc-password-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
 }
 
+/* Детали профиля */
 .dh-pc-details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
 }
 
 .dh-pc-detail-group {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
+  background: #f8fafc;
   border-radius: 16px;
   padding: 24px;
+  border: 1px solid #e2e8f0;
 }
 
 .dh-pc-detail-group-title {
@@ -105,7 +143,7 @@
 }
 
 .dh-pc-detail-field {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .dh-pc-detail-field:last-child {
@@ -114,28 +152,32 @@
 
 .dh-pc-detail-field label {
   display: block;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
   font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 6px;
 }
 
 .dh-pc-detail-field p {
   margin: 0;
-  padding: 12px;
+  padding: 10px 12px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
-  color: #4b5563;
+  color: #1f2937;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
 }
 
 .dh-pc-detail-field input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
+  color: #1f2937;
   transition: all 0.3s ease;
 }
 
@@ -145,59 +187,103 @@
   box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
 }
 
-.dh-pc-qualifications {
+/* Модальное окно смены пароля */
+.dh-pc-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
 }
 
-.dh-pc-qualification-tag {
+.dh-pc-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dh-pc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dh-pc-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0;
+}
+
+.dh-pc-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dh-pc-modal-close:hover {
   background: rgba(0, 47, 167, 0.1);
   color: #002FA7;
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
 }
 
-/* Security Tab */
-.dh-pc-security-tab {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
-.dh-pc-security-section {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 30px;
-}
-
+/* Форма смены пароля в модальном окне */
 .dh-pc-password-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 400px;
+  padding: 32px;
 }
 
 .dh-pc-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .dh-pc-form-field label {
-  font-weight: 600;
-  color: #374151;
+  display: block;
   font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 8px;
 }
 
 .dh-pc-form-field input {
+  width: 100%;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 15px;
+  color: #1f2937;
   transition: all 0.3s ease;
 }
 
@@ -207,265 +293,136 @@
   box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
 }
 
-.dh-pc-security-settings {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.dh-pc-setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: white;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.dh-pc-setting-item:hover {
-  border-color: #002FA7;
-  transform: translateX(5px);
-}
-
-.dh-pc-setting-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.dh-pc-setting-info p {
-  margin: 0;
-  font-size: 14px;
-  color: #64748b;
-}
-
-/* Switch Toggle */
-.dh-pc-switch {
-  position: relative;
-  display: inline-block;
-  width: 52px;
-  height: 28px;
-}
-
-.dh-pc-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.dh-pc-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.dh-pc-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .dh-pc-slider {
-  background-color: #002FA7;
-}
-
-input:checked + .dh-pc-slider:before {
-  transform: translateX(24px);
-}
-
-/* Activity Tab */
-.dh-pc-activity-tab {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.dh-pc-activity-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.dh-pc-activity-stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-}
-
-.dh-pc-activity-stat-card:hover {
-  border-color: #002FA7;
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.1);
-}
-
-.dh-pc-activity-stat-icon {
-  width: 60px;
-  height: 60px;
-  background: rgba(0, 47, 167, 0.1);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.dh-pc-activity-stat-icon img {
-  width: 30px;
-  height: 30px;
-}
-
-.dh-pc-activity-stat-content h3 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #002FA7;
-  margin: 0 0 4px 0;
-  line-height: 1;
-}
-
-.dh-pc-activity-stat-content p {
-  margin: 0;
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.dh-pc-recent-activity {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 30px;
-}
-
-.dh-pc-activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.dh-pc-activity-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 16px;
-  background: white;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.dh-pc-activity-item:hover {
-  border-color: #002FA7;
-  transform: translateX(5px);
-}
-
-.dh-pc-activity-icon {
-  position: relative;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.dh-pc-activity-dot {
-  width: 12px;
-  height: 12px;
-  background: #002FA7;
-  border-radius: 50%;
-  margin-top: 6px;
-}
-
-.dh-pc-activity-content {
-  flex: 1;
-}
-
-.dh-pc-activity-action {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #2d3748;
-}
-
-.dh-pc-activity-time {
-  font-size: 14px;
+.dh-pc-form-field input::placeholder {
   color: #94a3b8;
 }
 
-.dh-pc-activity-chart {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+/* Кнопки в модальном окне */
+.dh-pc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.dh-pc-btn-primary,
+.dh-pc-btn-secondary {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: none;
+}
+
+.dh-pc-btn-primary {
+  background: #002FA7;
+  color: white;
+}
+
+.dh-pc-btn-primary:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.dh-pc-btn-secondary {
+  background: white;
+  color: #002FA7;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 30px;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .dh-pc-details-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .dh-pc-activity-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.dh-pc-btn-secondary:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
 }
 
+/* Адаптивность */
 @media (max-width: 768px) {
+  .dh-pc-personal-section {
+    padding: 24px;
+  }
+
+  .dh-pc-section-title {
+    font-size: 24px;
+  }
+
   .dh-pc-profile-header {
     flex-direction: column;
-    gap: 20px;
-    text-align: center;
-  }
-  
-  .dh-pc-avatar-section {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .dh-pc-setting-item {
-    flex-direction: column;
-    gap: 16px;
     align-items: flex-start;
+    gap: 24px;
   }
-  
-  .dh-pc-activity-stats {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 480px) {
+  .dh-pc-header-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .dh-pc-edit-btn,
+  .dh-pc-password-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .dh-pc-details-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
-  
-  .dh-pc-detail-group {
-    padding: 20px;
-  }
-  
+
   .dh-pc-avatar-large {
     width: 80px;
     height: 80px;
     font-size: 24px;
   }
-  
+
   .dh-pc-avatar-info h2 {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .dh-pc-avatar-info p {
+    font-size: 16px;
+  }
+
+  .dh-pc-modal-content {
+    margin: 10px;
+  }
+
+  .dh-pc-password-form {
+    padding: 20px;
+  }
+
+  .dh-pc-modal-actions {
+    flex-direction: column;
+  }
+
+  .dh-pc-btn-primary,
+  .dh-pc-btn-secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-pc-section-title {
+    font-size: 20px;
+  }
+
+  .dh-pc-personal-section {
+    padding: 20px;
+  }
+
+  .dh-pc-avatar-large {
+    width: 60px;
+    height: 60px;
+    font-size: 18px;
+  }
+
+  .dh-pc-detail-group {
+    padding: 20px;
+  }
+
+  .dh-pc-detail-field p,
+  .dh-pc-detail-field input {
+    font-size: 14px;
+    padding: 8px 10px;
   }
 }

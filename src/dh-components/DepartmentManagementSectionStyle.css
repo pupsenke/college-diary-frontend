@@ -9,7 +9,6 @@
 }
 
 /* Шапка отделения */
-/* Переопределение стилей для белой шапки */
 .dhm-department-header {
   background: white;
   padding: 32px 40px;
@@ -70,12 +69,21 @@
 .dhm-action-button svg {
   stroke: #002FA7;
 }
-/* Основная сетка */
+
+/* Основная сетка - теперь только одна колонка */
 .dhm-department-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
   padding: 32px;
+}
+
+/* Полноразмерная главная колонка */
+.dhm-main-column-full {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
 }
 
 /* Заголовки секций */
@@ -91,13 +99,6 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0;
-}
-
-/* Левая колонка - Основная информация */
-.dhm-main-column {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
 }
 
 /* Блок общей информации */
@@ -291,6 +292,14 @@
   border: 1px solid #e2e8f0;
 }
 
+/* Контейнер для действий с группами (поиск + кнопка) */
+.dhm-groups-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .dhm-add-group-btn {
   background: #002FA7;
   color: white;
@@ -303,6 +312,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .dhm-add-group-btn:hover {
@@ -310,10 +320,50 @@
   transform: translateY(-1px);
 }
 
+/* Контейнер для поиска */
+.dhm-search-container {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.dhm-search-input {
+  width: 100%;
+  padding: 10px 40px 10px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #1f2937;
+}
+
+.dhm-search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.dhm-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.dhm-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  font-size: 16px;
+}
+
 .dhm-groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .dhm-group-card {
@@ -407,6 +457,7 @@
   font-size: 13px;
   color: #64748b;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .dhm-info-value {
@@ -415,96 +466,28 @@
   font-weight: 600;
   text-align: right;
   max-width: 60%;
+  word-break: break-word;
 }
 
-/* Правая колонка - Управление структурами */
-.dhm-side-column {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.dhm-management-section {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-}
-
-.dhm-management-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.dhm-management-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.dhm-management-btn:hover {
-  border-color: #002FA7;
-  background: #f0f7ff;
-  transform: translateX(4px);
-}
-
-.dhm-btn-icon {
-  width: 40px;
-  height: 40px;
-  background: #e0e7ff;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.dhm-btn-content {
-  flex: 1;
-}
-
-.dhm-btn-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
-}
-
-.dhm-btn-description {
-  font-size: 12px;
+/* Стиль для пустого результата поиска */
+.dhm-no-groups {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 24px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
   color: #64748b;
-  line-height: 1.4;
-}
-
-.dhm-management-info {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  margin-top: 8px;
-}
-
-.dhm-info-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 8px 0;
 }
 
-.dhm-info-text {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.5;
+.dhm-no-groups p {
   margin: 0;
+}
+
+/* Скрываем правую колонку */
+.dhm-side-column {
+  display: none;
 }
 
 /* Модальное окно */
@@ -695,105 +678,6 @@
 
 .dhm-modal-btn-secondary:hover {
   background: rgba(0, 47, 167, 0.05);
-}
-
-/* Адаптивность */
-@media (max-width: 1200px) {
-  .dhm-department-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-}
-
-@media (max-width: 768px) {
-  .dhm-department-container {
-    margin: 10px;
-    border-radius: 16px;
-  }
-
-  .dhm-department-header {
-    padding: 24px;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .dhm-department-title {
-    font-size: 24px;
-  }
-
-  .dhm-department-grid {
-    padding: 24px;
-  }
-
-  .dhm-section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .dhm-metrics-grid,
-  .dhm-info-stats,
-  .dhm-group-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dhm-groups-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dhm-group-metrics {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .dhm-modal-content {
-    margin: 10px;
-    max-height: 90vh;
-  }
-
-  .dhm-group-modal-header,
-  .dhm-group-modal-body,
-  .dhm-group-modal-footer {
-    padding: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .dhm-department-header {
-    padding: 20px;
-  }
-
-  .dhm-department-title {
-    font-size: 20px;
-  }
-
-  .dhm-department-grid {
-    padding: 20px;
-    gap: 20px;
-  }
-
-  .dhm-group-metrics {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .dhm-info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .dhm-info-value {
-    max-width: 100%;
-    text-align: left;
-  }
-
-  .dhm-group-modal-footer {
-    flex-direction: column;
-  }
-
-  .dhm-modal-btn {
-    width: 100%;
-  }
 }
 
 /* стили для модального окна */
@@ -1034,4 +918,121 @@
 
 .dhm-lesson:last-child {
   border-bottom: none;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .dhm-department-grid {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dhm-department-container {
+    margin: 10px;
+    border-radius: 16px;
+  }
+
+  .dhm-department-header {
+    padding: 24px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dhm-department-title {
+    font-size: 24px;
+  }
+
+  .dhm-department-grid {
+    padding: 24px;
+  }
+
+  .dhm-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dhm-metrics-grid,
+  .dhm-info-stats,
+  .dhm-group-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dhm-groups-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dhm-group-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dhm-modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+
+  .dhm-group-modal-header,
+  .dhm-group-modal-body,
+  .dhm-group-modal-footer {
+    padding: 20px;
+  }
+
+  .dhm-groups-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .dhm-search-container {
+    max-width: 100%;
+  }
+
+  .dhm-add-group-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhm-department-header {
+    padding: 20px;
+  }
+
+  .dhm-department-title {
+    font-size: 20px;
+  }
+
+  .dhm-department-grid {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .dhm-group-metrics {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dhm-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .dhm-info-value {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .dhm-group-modal-footer {
+    flex-direction: column;
+  }
+
+  .dhm-modal-btn {
+    width: 100%;
+  }
+
+  .dhm-schedule-preview {
+    grid-template-columns: 1fr;
+  }
 }
