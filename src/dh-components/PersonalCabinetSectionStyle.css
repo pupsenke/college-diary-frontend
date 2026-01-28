@@ -29,14 +29,29 @@
   margin: 0;
 }
 
-/* Профиль */
-.dh-pc-profile-footer {
+/* Основной макет */
+.dh-pc-main-content {
   display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  padding-bottom: 30px;
-  border-bottom: 2px solid #f1f5f9;
-  margin-top: 30px;
+  gap: 32px;
+}
+
+.dh-pc-content-left {
+  flex: 1;
+  min-width: 0; /* Для корректного сжатия */
+}
+
+.dh-pc-content-right {
+  width: 400px;
+  flex-shrink: 0;
+}
+
+/* Профиль */
+.dh-pc-profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .dh-pc-avatar-section {
@@ -75,55 +90,9 @@
   font-weight: 500;
 }
 
-/* Кнопки действий в заголовке */
-.dh-pc-header-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.dh-pc-edit-btn,
-.dh-pc-password-btn {
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  border: none;
-}
-
-.dh-pc-edit-btn {
-  background: #002FA7;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dh-pc-edit-btn:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
-}
-
-.dh-pc-password-btn {
-  background: white;
-  color: #002FA7;
-  border: 1px solid #e2e8f0;
-}
-
-.dh-pc-password-btn:hover {
-  background: #f0f7ff;
-  border-color: #002FA7;
-  transform: translateY(-1px);
-}
-
 /* Детали профиля */
-.dh-pc-details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
+.dh-pc-profile-details {
+  margin-bottom: 32px;
 }
 
 .dh-pc-detail-group {
@@ -143,7 +112,8 @@
 }
 
 .dh-pc-detail-field {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  position: relative;
 }
 
 .dh-pc-detail-field:last-child {
@@ -169,22 +139,239 @@
   min-height: 42px;
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
 }
 
-.dh-pc-detail-field input {
+/* Стили для нередактируемых полей */
+.dh-pc-detail-field p.dh-pc-field-non-editable {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  border-style: dashed;
+}
+
+/* Стили для редактируемых полей */
+.dh-pc-detail-field input.dh-pc-field-editable {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
+  background-color: #ffffff;
   border-radius: 8px;
   font-size: 16px;
   color: #1f2937;
   transition: all 0.3s ease;
 }
 
-.dh-pc-detail-field input:focus {
+.dh-pc-detail-field input.dh-pc-field-editable:focus {
   outline: none;
+  border-color: #bcbcbc;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Футер с кнопками */
+.dh-pc-profile-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  
+}
+
+.dh-pc-header-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dh-pc-edit-btn,
+.dh-pc-password-btn,
+.dh-pc-save-btn,
+.dh-pc-cancel-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: none;
+  min-width: 180px;
+  text-align: center;
+}
+
+.dh-pc-edit-btn,
+.dh-pc-save-btn {
+  background: #002FA7;
+  color: white;
+}
+
+.dh-pc-edit-btn:hover,
+.dh-pc-save-btn:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.2);
+}
+
+.dh-pc-password-btn,
+.dh-pc-cancel-btn {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-pc-password-btn:hover,
+.dh-pc-cancel-btn:hover {
+  background: #f0f7ff;
   border-color: #002FA7;
-  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+}
+
+.dh-pc-cancel-btn {
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.dh-pc-cancel-btn:hover {
+  background: #f8fafc;
+  border-color: #64748b;
+  color: #1f2937;
+}
+
+/* Панель быстрых действий */
+.dh-pc-quick-actions-panel {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  height: fit-content;
+}
+
+.dh-pc-quick-actions-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dh-pc-quick-actions-subtitle {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.dh-pc-quick-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.dh-pc-quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dh-pc-quick-action-card:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+}
+
+.dh-pc-quick-action-icon {
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 47, 167, 0.1);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.dh-pc-quick-action-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dh-pc-quick-action-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dh-pc-quick-action-description {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dh-pc-quick-action-arrow {
+  color: #94a3b8;
+  font-size: 20px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.3s ease;
+}
+
+.dh-pc-quick-action-card:hover .dh-pc-quick-action-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: #002FA7;
+}
+
+/* Карточка статистики */
+.dh-pc-stats-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-pc-stats-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dh-pc-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dh-pc-stat-item {
+  text-align: center;
+  padding: 12px 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dh-pc-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 4px;
+}
+
+.dh-pc-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Модальное окно смены пароля */
@@ -260,7 +447,7 @@
   color: #002FA7;
 }
 
-/* Форма смены пароля в модальном окне */
+/* Форма смены пароля */
 .dh-pc-password-form {
   padding: 32px;
 }
@@ -337,7 +524,74 @@
   border-color: #002FA7;
 }
 
+/* Стиль для неавторизованного пользователя */
+.dh-pc-not-authorized {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.dh-pc-not-authorized h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #002FA7;
+}
+
+.dh-pc-not-authorized p {
+  font-size: 16px;
+}
+
+/* Стили для состояния загрузки */
+.dh-pc-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Стили для ошибок валидации */
+.dh-pc-error-text {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+
+.dh-pc-detail-field input.pc-error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.dh-pc-detail-field input.pc-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Отключенное состояние для кнопок */
+.dh-pc-edit-btn:disabled,
+.dh-pc-password-btn:disabled,
+.dh-pc-save-btn:disabled,
+.dh-pc-cancel-btn:disabled,
+.dh-pc-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* Адаптивность */
+@media (max-width: 1024px) {
+  .dh-pc-main-content {
+    flex-direction: column;
+  }
+  
+  .dh-pc-content-right {
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .dh-pc-personal-section {
     padding: 24px;
@@ -345,28 +599,6 @@
 
   .dh-pc-section-title {
     font-size: 24px;
-  }
-
-  .dh-pc-profile-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
-  }
-
-  .dh-pc-header-actions {
-    width: 100%;
-    align-items: stretch;
-  }
-
-  .dh-pc-edit-btn,
-  .dh-pc-password-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .dh-pc-details-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
   }
 
   .dh-pc-avatar-large {
@@ -381,6 +613,22 @@
 
   .dh-pc-avatar-info p {
     font-size: 16px;
+  }
+
+  .dh-pc-detail-group {
+    padding: 20px;
+  }
+
+  .dh-pc-header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .dh-pc-edit-btn,
+  .dh-pc-password-btn,
+  .dh-pc-save-btn,
+  .dh-pc-cancel-btn {
+    width: 100%;
   }
 
   .dh-pc-modal-content {
@@ -399,6 +647,10 @@
   .dh-pc-btn-secondary {
     width: 100%;
   }
+
+  .dh-pc-quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -416,13 +668,27 @@
     font-size: 18px;
   }
 
-  .dh-pc-detail-group {
-    padding: 20px;
+  .dh-pc-avatar-section {
+    gap: 16px;
   }
 
   .dh-pc-detail-field p,
   .dh-pc-detail-field input {
     font-size: 14px;
     padding: 8px 10px;
+  }
+
+  .dh-pc-quick-action-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .dh-pc-quick-action-content {
+    text-align: center;
+  }
+
+  .dh-pc-quick-action-arrow {
+    display: none;
   }
 }

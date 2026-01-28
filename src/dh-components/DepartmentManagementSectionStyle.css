@@ -96,8 +96,8 @@
 
 .dhm-section-title {
   font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #002FA7;
   margin: 0;
 }
 
@@ -231,15 +231,6 @@
   margin-bottom: 20px;
 }
 
-.dhm-metric-icon {
-  width: 40px;
-  height: 40px;
-  background: #ecfdf5;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .dhm-attendance-card .dhm-metric-icon {
   background: #eff6ff;
@@ -247,8 +238,8 @@
 
 .dhm-metric-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 500;
+  color: #002FA7;
   margin: 0;
 }
 
@@ -330,7 +321,7 @@
 
 .dhm-search-input {
   width: 100%;
-  padding: 10px 40px 10px 16px;
+  padding: 10px 16px 10px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;

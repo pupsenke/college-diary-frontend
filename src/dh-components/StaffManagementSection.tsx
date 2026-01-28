@@ -22,7 +22,6 @@ interface StaffMember {
   position: string;
   avatar: string | null;
   initials: string;
-  department: string;
   disciplines: string[];
   groups: string[];
   workload: number;
@@ -100,7 +99,6 @@ export const StaffManagementSection: React.FC = () => {
       position: 'Заведующий отделения',
       avatar: null,
       initials: 'ГА',
-      department: 'Информационные технологии',
       disciplines: ['Менеджмент', 'Экономика'],
       groups: ['2992', '2991', '2993'],
       workload: 18,
@@ -117,7 +115,6 @@ export const StaffManagementSection: React.FC = () => {
       position: 'Преподаватель',
       avatar: null,
       initials: 'НВ',
-      department: 'Информационные технологии',
       disciplines: ['Базы данных', 'ТРПО'],
       groups: ['2991', '2994'],
       workload: 16,
@@ -133,8 +130,7 @@ export const StaffManagementSection: React.FC = () => {
       name: 'Цымбалюк Лариса Николаевна',
       position: 'Преподаватель',
       avatar: null,
-      initials: 'ЦЛ',
-      department: 'Информационные технологии',
+      initials: 'ЛН',
       disciplines: ['Проектирование ИС', 'ОПБД'],
       groups: ['2992'],
       workload: 12,
@@ -298,9 +294,6 @@ export const StaffManagementSection: React.FC = () => {
                     <div className="dh-sm-staff-info">
                       <h3 className="dh-sm-staff-name">{staff.name}</h3>
                       <p className="dh-sm-staff-position">{staff.position}</p>
-                      <div className="dh-sm-staff-department">
-                        <span>{staff.department}</span>
-                      </div>
                     </div>
                   </div>
                   <div className="dh-sm-staff-body">
@@ -357,9 +350,6 @@ export const StaffManagementSection: React.FC = () => {
                 <div className="dh-sm-modal-info">
                   <h2 className="dh-sm-modal-name">{selectedStaff.name}</h2>
                   <p className="dh-sm-modal-position">{selectedStaff.position}</p>
-                  <div className="dh-sm-modal-tags">
-                    <span className="dh-sm-modal-tag">{selectedStaff.department}</span>
-                  </div>
                 </div>
                 <button className="dh-sm-modal-close" onClick={handleCloseModal}>×</button>
               </div>
@@ -449,17 +439,6 @@ export const StaffManagementSection: React.FC = () => {
                       {selectedStaff.workload}/{selectedStaff.maxWorkload} ч
                     </div>
                     <div className="dh-sm-workload-label">в неделю</div>
-                  </div>
-                  <div className="dh-sm-workload-progress">
-                    <div className="dh-sm-progress-bar">
-                      <div 
-                        className="dh-sm-progress-fill" 
-                        style={{ width: `${(selectedStaff.workload / selectedStaff.maxWorkload) * 100}%` }}
-                      />
-                    </div>
-                    <div className="dh-sm-progress-text">
-                      {Math.round((selectedStaff.workload / selectedStaff.maxWorkload) * 100)}% загрузки
-                    </div>
                   </div>
                 </div>
               </div>

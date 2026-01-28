@@ -81,22 +81,22 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose }) =>
           <div className="dhm-group-section-content">
             <div className="dhm-students-preview">
               <div className="dhm-student-item">
-                <div className="dhm-student-avatar">ША</div>
+                <div className="dhm-student-avatar">АИ</div>
                 <div className="dhm-student-info">
                   <div className="dhm-student-name">Шевякова Алина Ильинична</div>
                   <div className="dhm-student-status">Староста</div>
                 </div>
               </div>
               <div className="dhm-student-item">
-                <div className="dhm-student-avatar">ПИ</div>
+                <div className="dhm-student-avatar">ВА</div>
                 <div className="dhm-student-info">
-                  <div className="dhm-student-name">Петров Иван Сергеевич</div>
+                  <div className="dhm-student-name">Шкиперова Валерия Анатольевна</div>
                 </div>
               </div>
               <div className="dhm-student-item">
-                <div className="dhm-student-avatar">СК</div>
+                <div className="dhm-student-avatar">АР</div>
                 <div className="dhm-student-info">
-                  <div className="dhm-student-name">Сидорова Ксения Андреевна</div>
+                  <div className="dhm-student-name">Темнева Альбина Руслановна</div>
                 </div>
               </div>
             </div>

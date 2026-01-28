@@ -9,7 +9,8 @@ export const DepartmentManagementSection: React.FC = () => {
 
   const departmentInfo = {
     name: 'Отделение информационных технологий',
-    specialities: ['09.02.07 Информационные системы и программирование'],
+    specialities: ['09.02.07 Информационные системы и программирование (Программист)', 
+      '09.02.07 Информационные системы и программирование (Разработчик веб и мультимедийных приложений)'],
     totalGroups: 8,
     totalStudents: 192,
     totalTeachers: 24,
@@ -27,7 +28,7 @@ export const DepartmentManagementSection: React.FC = () => {
       leader: 'Шевякова А.И.',
       performance: 4.2,
       attendance: 87.5,
-      speciality: 'Информационные системы и программирование'
+      speciality: 'Информационные системы и программирование (Программист)'
     },
     {
       id: 2,
@@ -38,7 +39,7 @@ export const DepartmentManagementSection: React.FC = () => {
       leader: 'Смирнов А.И.',
       performance: 4.0,
       attendance: 85.2,
-      speciality: 'Информационные системы и программирование'
+      speciality: 'Информационные системы и программирование (Программист)'
     },
     {
       id: 3,
@@ -49,7 +50,7 @@ export const DepartmentManagementSection: React.FC = () => {
       leader: 'Петров П.П.',
       performance: 4.3,
       attendance: 88.0,
-      speciality: 'Информационные системы и программирование'
+      speciality: 'Информационные системы и программирование (Разработчик веб и мультимедийных приложений)'
     },
   ];
 
@@ -175,9 +176,6 @@ export const DepartmentManagementSection: React.FC = () => {
                       onChange={handleSearchChange}
                     />
                   </div>
-                  <button className="dhm-add-group-btn">
-                    Добавить группу
-                  </button>
                 </div>
               </div>
               <div className="dhm-groups-grid">
