@@ -10,6 +10,7 @@ import { MetodistPage } from './pages/MetodistPage';
 import { DepartmentHeadPage } from './pages/departmentHeadPage';
 import { DepartmentManagementSection } from './dh-components/DepartmentManagementSection';
 import { ProtectedRoute } from './st-components/ProtectedRoute';
+import { ForgotPassword } from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -55,6 +56,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />

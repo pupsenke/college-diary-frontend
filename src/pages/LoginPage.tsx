@@ -434,6 +434,16 @@ export const LoginPage: React.FC = () => {
                 <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
               </button>
             </div>
+            <div className="forgot-password-container">
+              <button 
+                type="button"
+                className="forgot-password-link"
+                onClick={handleForgotPassword}
+                disabled={isLoading}
+              >
+                Забыли пароль?
+              </button>
+            </div>
           </div>
 
           <button
