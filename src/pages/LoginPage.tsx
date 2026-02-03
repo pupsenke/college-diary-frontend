@@ -20,11 +20,13 @@ interface UserWithRoles {
   nameGenitive?: string | null;
   patronymicGenitive?: string | null;
   roles: Array<{
-    type: 'student' | 'teacher' | 'metodist' | 'departmentHead';
+    type: 'student' | 'teacher' | 'metodist' | 'departmentHead' | 'social';
     position?: string;
     staffPosition?: any[];
     idGroup?: number;
     numberGroup?: number;
+    department?: string;
+    office?: string;
   }>;
 }
 
@@ -65,6 +67,9 @@ export const LoginPage: React.FC = () => {
         case 'departmentHead':
           navigate("/departmentHead", { replace: true });
           break;
+        case 'social':
+          navigate("/social", { replace: true });
+          break;
         default:
           console.error('Unknown user type');
       }
@@ -91,6 +96,8 @@ export const LoginPage: React.FC = () => {
           return `Методист`;
         case 'departmentHead':
           return `Заведующий отделением`;
+        case 'social':
+          return `Социальный педагог`;
         default:
           return role.type;
       }
@@ -106,6 +113,8 @@ export const LoginPage: React.FC = () => {
           return 'Доступ к методическим функциям';
         case 'departmentHead':
           return 'Доступ к управлению отделением';
+        case 'social':
+          return 'Доступ к функциям социального педагога';
         default:
           return '';
       }
@@ -180,11 +189,14 @@ export const LoginPage: React.FC = () => {
       case 'teacher':
       case 'metodist':
       case 'departmentHead':
+      case 'social':
         userData = {
           ...baseUserData,
           position: selectedRole.position || "",
           staffPosition: selectedRole.staffPosition || [],
-          userType: selectedRole.type
+          userType: selectedRole.type,
+          department: selectedRole.department,
+          office: selectedRole.office
         } as Staff;
         break;
     }
@@ -276,12 +288,16 @@ export const LoginPage: React.FC = () => {
               const positionName = position.name || '';
               const lowerPosition = positionName.toLowerCase();
               
-              let roleType: 'teacher' | 'metodist' | 'departmentHead' = 'teacher';
+              let roleType: 'teacher' | 'metodist' | 'departmentHead' | 'social' = 'teacher';
               
               if (lowerPosition.includes('методист')) {
                 roleType = 'metodist';
-              } else if (lowerPosition.includes('зав. отделением')) {
+              } else if (lowerPosition.includes('зав. отделением') || 
+                         lowerPosition.includes('заведующий отделением')) {
                 roleType = 'departmentHead';
+              } else if (lowerPosition.includes('социальный педагог') || 
+                         lowerPosition.includes('соц. педагог')) {
+                roleType = 'social';
               } else if (lowerPosition.includes('преподаватель')) {
                 roleType = 'teacher';
               }
@@ -340,7 +356,9 @@ export const LoginPage: React.FC = () => {
               ...baseUserData,
               position: selectedRole.position || "",
               staffPosition: selectedRole.staffPosition || [],
-              userType: selectedRole.type
+              userType: selectedRole.type,
+              department: selectedRole.department,
+              office: selectedRole.office
             } as Staff;
           }
 

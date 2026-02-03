@@ -1,4 +1,3 @@
-// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
@@ -8,7 +7,7 @@ import { StudentPage } from './pages/StudentPage';
 import { TeacherPage } from './pages/TeacherPage';
 import { MetodistPage } from './pages/MetodistPage';
 import { DepartmentHeadPage } from './pages/departmentHeadPage';
-import { DepartmentManagementSection } from './dh-components/DepartmentManagementSection';
+import { SocialPage } from './pages/SocialPage';
 import { ProtectedRoute } from './st-components/ProtectedRoute';
 import { ForgotPassword } from './pages/ForgotPassword';
 
@@ -57,12 +56,19 @@ function App() {
               } 
             />
 
+            <Route 
+              path="/social/*" 
+              element={
+                <ProtectedRoute requiredUserType="social">
+                  <SocialPage />
+                </ProtectedRoute>
+              } 
+            />
+
             <Route path="/forgot-password" element={<ForgotPassword />} />
             
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
-
-            <Route path="/" element={<DepartmentManagementSection />} />
           </Routes>
         </Router>
     </UserProvider>
