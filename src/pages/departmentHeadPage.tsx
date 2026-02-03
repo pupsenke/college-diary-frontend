@@ -43,8 +43,8 @@ export const DepartmentHeadPage: React.FC = () => {
     const titles = {
       management: 'Отделение',
       staff: 'Сотрудники',
-      academic: 'Учебная работа',
-      reports: 'Отчеты',
+      academic: 'Сводные ведомости',
+      reports: 'Документы и отчеты',
       personal: 'Личный кабинет'
     };
     return titles[tabName as keyof typeof titles] || 'Отделение';

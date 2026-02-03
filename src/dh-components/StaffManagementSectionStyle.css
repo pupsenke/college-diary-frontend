@@ -1,5 +1,3 @@
-/* StaffManagementSectionStyle.css */
-
 /* Основной контейнер */
 .dh-sm-container {
   background: white;
@@ -13,7 +11,7 @@
 /* Шапка отделения */
 .dh-sm-header {
   background: white;
-  padding: 32px 40px;
+  padding:  32px 0 0 40px;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;

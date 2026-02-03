@@ -5,9 +5,17 @@
   box-sizing: border-box;
 }
 
-.dh-container {
+/* Темная тема (по умолчанию) */
+body.dh-theme-dark .dh-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  position: relative;
+}
+
+/* Светлая тема */
+body.dh-theme-light .dh-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
   position: relative;
 }
 
@@ -874,7 +882,6 @@
 .dh-modal-close:hover {
   background: rgba(0, 0, 0, 0.05);
 }
-
 
 .dh-modal-footer {
   display: flex;

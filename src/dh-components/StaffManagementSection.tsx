@@ -189,7 +189,6 @@ export const StaffManagementSection: React.FC = () => {
         <div className="dh-sm-header">
           <div>
             <h1 className="dh-sm-title">Сотрудники отделения</h1>
-            <p className="dh-sm-subtitle">Информационные технологии • {staffMembers.length} сотрудников</p>
           </div>
         </div>
 

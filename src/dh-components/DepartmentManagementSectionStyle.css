@@ -11,7 +11,7 @@
 /* Шапка отделения */
 .dhm-department-header {
   background: white;
-  padding: 32px 40px;
+  padding: 32px 0 0 40px;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
@@ -1026,4 +1026,402 @@
   .dhm-schedule-preview {
     grid-template-columns: 1fr;
   }
+}
+
+.dhm-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.dhm-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dhm-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px;
+}
+
+.dhm-error-message {
+  color: #e74c3c;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.dhm-retry-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.dhm-retry-button:hover {
+  background-color: #2980b9;
+}
+
+
+
+
+
+.dhm-group-modal {
+  width: 800px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.dhm-group-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.dhm-group-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.dhm-group-stat-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.dhm-stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.dhm-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.dhm-group-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.dhm-detail-item {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dhm-detail-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.dhm-detail-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.dhm-detail-email {
+  font-size: 12px;
+  color: #3498db;
+  margin-top: 5px;
+}
+
+.dhm-student-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
+}
+
+.dhm-student-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dhm-student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #3498db;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.dhm-student-info {
+  flex: 1;
+}
+
+.dhm-student-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.dhm-student-email {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.dhm-student-phone {
+  font-size: 12px;
+  color: #666;
+}
+
+.dhm-student-status {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.dhm-more-students {
+  text-align: center;
+  padding: 15px;
+  color: #666;
+  font-size: 14px;
+}
+
+.dhm-no-students {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.dhm-schedule-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dhm-schedule-placeholder h3 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.dhm-schedule-placeholder p {
+  color: #666;
+  font-size: 14px;
+}
+
+.dhm-student-count {
+  font-size: 14px;
+  color: #666;
+}
+
+.dhm-modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dhm-modal-btn:disabled:hover {
+  background-color: inherit;
+}
+
+
+
+
+
+
+
+
+.dhm-student-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dhm-view-all-btn {
+  padding: 8px 16px;
+  background-color: rgba(227, 232, 253, 0.429);
+  color: #002FA7;
+  border: 1px solid #bbc6fb;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dhm-view-all-btn:hover {
+  background-color: #7fa3ff4d;
+}
+
+.dhm-student-search-container {
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dhm-student-search-container .dhm-search-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dhm-search-student-count {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.dhm-all-students {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.dhm-student-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.dhm-student-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dhm-student-item:last-child {
+  border-bottom: none;
+}
+
+.dhm-student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0e2ecf 0%, #416aff9c 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-right: 15px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.dhm-student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dhm-student-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.dhm-student-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dhm-student-email,
+.dhm-student-phone {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dhm-contact-label {
+  color: #888;
+  font-weight: 500;
+  min-width: 40px;
+}
+
+.dhm-more-students {
+  text-align: center;
+  padding: 15px;
+  color: #666;
+  font-size: 14px;
+  border-top: 1px dashed #ddd;
+  background-color: #f9f9f9;
+  border-radius: 0 0 8px 8px;
+}
+
+.dhm-no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.dhm-no-students {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Стили для скроллбара в списке студентов */
+.dhm-all-students::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dhm-all-students::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dhm-all-students::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dhm-all-students::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

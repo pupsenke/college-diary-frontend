@@ -21,6 +21,80 @@ interface ChangePasswordData {
   userId: number;
 }
 
+interface Group {
+  id: number;
+  numberGroup: number;
+  admissionYear: number;
+  idCurator: number;
+  course: number;
+  formEducation: string;
+  profile: string;
+  specialty: string;
+}
+
+interface Staff {
+  id: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  login: string;
+  email: string;
+  staffPosition: Array<{
+    id: number;
+    name: string;
+  }>;
+}
+
+interface Student {
+  id: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  lastNameGenitive: string | null;
+  nameGenitive: string | null;
+  patronymicGenitive: string | null;
+  idGroup: number;
+  login: string;
+  password: string;
+  telephone: string | null;
+  birthDate: string | null;
+  address: string | null;
+  email: string | null;
+  code: string | null;
+}
+
+// Интерфейс для GroupDetail компонента
+export interface StudentInfo {
+  id: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  lastNameGenitive: string | null;
+  nameGenitive: string | null;
+  patronymicGenitive: string | null;
+  email: string | null;
+  telephone: string | null;
+}
+
+export interface GroupInfo {
+  id: number;
+  name: string;
+  numberGroup: number;
+  admissionYear: number;
+  course: number;
+  formEducation: string;
+  profile: string;
+  specialty: string;
+  curatorId: number;
+}
+
+export interface CuratorInfo {
+  lastName: string;
+  name: string;
+  patronymic: string;
+  email: string;
+}
+
 export const headApiService = {
   // Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
@@ -76,4 +150,101 @@ export const headApiService = {
     }
   },
 
+  // Получение всех групп с фильтрацией по профилю
+  async getGroups(profileFilter?: string): Promise<Group[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения групп: ${response.status}`);
+      }
+      const groups: Group[] = await response.json();
+      
+      // Фильтрация по профилю, если указан
+      if (profileFilter) {
+        return groups.filter(group => 
+          group.profile.toLowerCase().includes(profileFilter.toLowerCase())
+        );
+      }
+      
+      return groups;
+    } catch (error) {
+      console.error('Ошибка при получении групп:', error);
+      throw error;
+    }
+  },
+
+  // Получение данных куратора
+  async getCurator(curatorId: number): Promise<Staff> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${curatorId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения куратора: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении куратора:', error);
+      throw error;
+    }
+  },
+
+  // Получение студентов группы - исправленный метод
+  async getGroupStudents(groupId: number): Promise<StudentInfo[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/students/group/${groupId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения студентов: ${response.status}`);
+      }
+      const students: Student[] = await response.json();
+      
+      // Преобразуем Student[] в StudentInfo[]
+      return students.map(student => ({
+        id: student.id,
+        lastName: student.lastName,
+        name: student.name,
+        patronymic: student.patronymic,
+        lastNameGenitive: student.lastNameGenitive,
+        nameGenitive: student.nameGenitive,
+        patronymicGenitive: student.patronymicGenitive,
+        email: student.email,
+        telephone: student.telephone
+      }));
+    } catch (error) {
+      console.error('Ошибка при получении студентов:', error);
+      throw error;
+    }
+  },
+
+  // Получение информации об отделении
+  async getDepartmentInfo() {
+    try {
+      // Получаем все группы для статистики
+      const groups = await this.getGroups();
+      
+      // Фильтруем группы по нужному профилю
+      const filteredGroups = groups.filter(group => 
+        group.profile === "Информационные системы и программирование"
+      );
+      
+      // Получаем всех студентов для подсчета
+      let totalStudents = 0;
+      for (const group of filteredGroups) {
+        const students = await this.getGroupStudents(group.id);
+        totalStudents += students.length;
+      }
+      
+      return {
+        totalGroups: filteredGroups.length,
+        totalStudents: totalStudents,
+        // Остальные данные пока статические
+        name: 'Отделение информационных технологий',
+        specialities: ['09.02.07 Информационные системы и программирование'],
+        totalTeachers: 24,
+        averagePerformance: 4.1,
+        averageAttendance: 86.0
+      };
+    } catch (error) {
+      console.error('Ошибка при получении информации об отделении:', error);
+      throw error;
+    }
+  }
 };

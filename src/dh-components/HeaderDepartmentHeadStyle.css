@@ -329,3 +329,137 @@
     font-size: 12px;
   }
 }
+
+/* Стили для переключателя темы */
+.dh-header-theme-area {
+  display: flex;
+  align-items: center;
+}
+
+.dh-theme-toggle {
+  background: #d3dbff5d;
+  border: 1.5px solid rgba(99, 153, 254, 0.3);
+  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
+  border-radius: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.dh-theme-toggle:hover {
+  background: #c5d0ff85;
+  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.dh-theme-toggle:active {
+  transform: translateY(0);
+}
+
+.dh-theme-toggle-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dh-theme-icon {
+  font-size: 18px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.dh-sun-icon {
+  color: #002FA7; /* Золотой цвет для солнца */
+}
+
+.dh-moon-icon {
+  color: #002FA7; /* Серебристый цвет для луны */
+}
+
+.dh-header-main {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between; /* Это важно! */
+  align-items: center;
+  padding: 8px 24px;
+  margin-bottom: 18px;
+  min-height: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.dh-header-logo-area {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dh-header-right-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto; 
+}
+
+
+/* Адаптивные стили для переключателя темы */
+@media (max-width: 768px) {
+  .dh-header-theme-area {
+    margin-right: 16px;
+  }
+  
+  .dh-theme-toggle {
+    padding: 8px 12px;
+  }
+  
+  .dh-theme-text {
+    display: none;
+  }
+  
+  .dh-theme-toggle-inner {
+    gap: 0;
+  }
+  
+  .dh-header-nav-area {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    margin-top: 12px;
+  }
+  
+  .dh-header-main {
+    flex-wrap: wrap;
+  }
+  
+  .dh-header-right-area {
+    order: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-header-theme-area {
+    margin-right: 12px;
+  }
+  
+  .dh-theme-toggle {
+    padding: 6px 10px;
+  }
+  
+  .dh-theme-icon {
+    font-size: 16px;
+  }
+}
