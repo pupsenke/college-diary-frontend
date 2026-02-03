@@ -5,6 +5,40 @@
   box-sizing: border-box;
 }
 
+/* Темная тема (по умолчанию) */
+body.dh-theme-dark .teacher-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  position: relative;
+}
+
+/* Светлая тема */
+body.dh-theme-light .teacher-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
+/* Светлая тема - заголовки страниц для преподавателя */
+body.dh-theme-light .content-title {
+  color: #002FA7; /* Синий цвет для заголовка в светлой теме */
+}
+
+body.dh-theme-light .content-subtitle {
+  color: #002FA7; /* Синий цвет для подзаголовка в светлой теме */
+  font-weight: 500; 
+}
+
+/* Для темной темы сохраняем белый цвет */
+body.dh-theme-dark .content-title {
+  color: white;
+}
+
+body.dh-theme-dark .content-subtitle {
+  color: white;
+}
+
+
 .teacher-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);

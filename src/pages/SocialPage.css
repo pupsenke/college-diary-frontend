@@ -1,5 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
+/* Темная тема (по умолчанию) */
+body.dh-theme-dark .social-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  position: relative;
+}
+
+/* Светлая тема */
+body.dh-theme-light .social-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
+/* Светлая тема - заголовки страниц */
+body.dh-theme-light .social-content-title {
+  color: #002FA7; /* Синий цвет для заголовка в светлой теме */
+}
+
+body.dh-theme-light .social-content-subtitle {
+  color: #002FA7; /* Синий цвет для подзаголовка в светлой теме */
+  font-weight: 500; 
+}
+
+/* Для темной темы сохраняем белый цвет */
+body.dh-theme-dark .social-content-title {
+  color: white;
+}
+
+body.dh-theme-dark .social-content-subtitle {
+  color: white;
+}
+
 * {
   font-family: 'Montserrat', sans-serif !important;
   box-sizing: border-box;
