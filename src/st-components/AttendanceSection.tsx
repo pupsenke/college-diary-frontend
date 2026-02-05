@@ -41,7 +41,18 @@ interface AttendanceSectionProps {
 }
 
 interface SubjectAttendance {
-  nameSubjectTeachersDTO: {
+  stteachersDTO?: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
+  nameSubjectTeachersDTO?: {
     idSt: number;
     idSubject: number;
     nameSubject: string;
@@ -123,48 +134,102 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
 
       const data: SubjectAttendance[] = await apiService.getStudentAttendance(studentId);
       
-      const transformedData: Attendance[] = data.map(subject => {
-        const teachers = subject.nameSubjectTeachersDTO.teachers || [];
-        const mainTeacher = teachers[0] || { 
-          lastnameTeacher: 'Неизвестно', 
-          nameTeacher: 'Н', 
-          patronymicTeacher: 'П' 
-        };
+      // Логирование для отладки
+      console.log('Полученные данные от API:', data);
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('Некорректные данные от API:', data);
+        setError('Получены некорректные данные о посещаемости');
+        setAttendanceData([]);
+        return;
+      }
+
+      const transformedData: Attendance[] = data
+      .filter(subject => subject) // Фильтруем пустые
+      .map((subject, index) => {
+        // Получаем данные о предмете и преподавателях (используем новую структуру или старую)
+        const subjectDTO = subject.stteachersDTO || subject.nameSubjectTeachersDTO;
         
-        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        if (!subjectDTO) {
+          console.warn('Отсутствуют данные о предмете:', subject);
+          // Вместо возврата null возвращаем минимальный объект Attendance
+          const fallbackId = Date.now() + index;
+          return {
+            id: fallbackId,
+            subject: `Предмет ${index + 1}`,
+            teacher: 'Не указан',
+            statuses: [],
+            quantity: 0,
+            percent: 0,
+            reasonStatus: []
+          };
+        }
         
-        // Включаем ВСЕ статусы для отображения (включая null)
-        const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances.map(a => a.status);
+        const teachers = subjectDTO.teachers || [];
         
-        // Для статистики учитываем только выставленные статусы (не null)
-        const validAttendances = subject.attendances.filter(a => a.status !== null);
+        // Определяем преподавателя
+        let teacherString = 'Не указан';
+        if (teachers.length > 0) {
+          const mainTeacher = teachers[0];
+          const lastName = mainTeacher.lastnameTeacher || '';
+          const firstName = mainTeacher.nameTeacher || '';
+          const patronymic = mainTeacher.patronymicTeacher || '';
+          
+          if (lastName && firstName) {
+            const firstInitial = firstName.charAt(0);
+            const patronymicInitial = patronymic ? patronymic.charAt(0) + '.' : '';
+            teacherString = `${lastName} ${firstInitial}.${patronymicInitial}`.trim();
+          } else {
+            teacherString = lastName || 'Не указан';
+          }
+        }
+        
+        // Получаем имя предмета
+        const subjectName = subjectDTO.nameSubject || `Предмет ${index + 1}`;
+        
+        // Получаем ID предмета
+        const subjectId = subjectDTO.idSubject || index;
+        
+        // Включаем ВСЕ статусы для отображения
+        const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances?.map(a => a?.status) || [];
+        
+        // Для статистики учитываем только выставленные статусы
+        const validAttendances = subject.attendances?.filter(a => a?.status !== null) || [];
         const validStatuses = validAttendances.map(a => a.status as 'п' | 'у' | 'н');
         
         const presentCount = validStatuses.filter(status => status === 'п').length;
         const totalCount = validStatuses.length;
         const percent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
 
-        const reasonStatus: AttendanceDetail[] = subject.attendances.map(attendance => ({
-          idLesson: attendance.idLesson,
-          date: attendance.date,
-          topic: `Занятие ${attendance.idLesson}`,
-          status: attendance.status,
+        const reasonStatus: AttendanceDetail[] = (subject.attendances || []).map((attendance, idx) => ({
+          idLesson: attendance?.idLesson || idx + 1,
+          date: attendance?.date || new Date().toISOString().split('T')[0],
+          topic: `Занятие ${attendance?.idLesson || idx + 1}`,
+          status: attendance?.status || null,
           teacher: teacherString,
-          comment: attendance.comment || undefined
+          comment: attendance?.comment || undefined
         }));
 
         return {
-          id: subject.nameSubjectTeachersDTO.idSubject,
-          subject: subject.nameSubjectTeachersDTO.nameSubject,
+          id: subjectId,
+          subject: subjectName,
           teacher: teacherString,
           statuses, 
           quantity: totalCount, 
           percent: parseFloat(percent.toFixed(1)),
           reasonStatus
         };
-      });
+      })
+        .filter((attendance): attendance is NonNullable<typeof attendance> => 
+  attendance !== null
+);
 
-      setAttendanceData(transformedData);
+        const sortedData = [...transformedData].sort((a, b) => 
+      a.subject.localeCompare(b.subject, 'ru')
+    );
+
+      console.log('Преобразованные данные:', sortedData);
+      setAttendanceData(sortedData);
       
     } catch (error) {
       console.error('Ошибка при загрузке данных с API:', error);
@@ -430,11 +495,21 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       return renderNoDataState();
     }
 
+    if (attendanceData.length === 0) {
+      return (
+        <div className="at-no-data-state">
+          <div className="at-empty-state">
+            <p>Нет данных о посещаемости</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="at-subjects-grid">
         {attendanceData.map((subject) => (
           <div 
-            key={subject.id} 
+            key={`subject-card-${subject.id}-${subject.subject.replace(/\s+/g, '-')}`}
             className="at-subject-card"
             onClick={() => handleSubjectClick(subject.subject)}
             style={{ cursor: 'pointer' }}
@@ -451,7 +526,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                 const detail = subject.reasonStatus?.[index];
                 return (
                   <div
-                    key={index}
+                    key={`status-preview-${subject.id}-${index}-${detail?.idLesson || 'no-id'}`}
                     className="at-preview-status"
                     style={{ backgroundColor: getStatusColor(status) }}
                     onClick={(e) => {
@@ -474,7 +549,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
               {subject.statuses.length > 8 && (
                 <div className="at-more-statuses">+{subject.statuses.length - 8}</div>
               )}
-              {(!subject.statuses) && (
+              {subject.statuses.length === 0 && (
                 <div className="at-no-statuses">Нет данных о посещаемости</div>
               )}
             </div>
@@ -502,6 +577,16 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       return renderNoDataState();
     }
 
+    if (attendanceData.length === 0) {
+      return (
+        <div className="at-no-data-state">
+          <div className="at-empty-state">
+            <p>Нет данных о посещаемости</p>
+          </div>
+        </div>
+      );
+    }
+
     const calculateAbsencesStats = (statuses: ('п' | 'у' | 'н' | null)[]) => {
       const validStatuses = statuses.filter(status => status !== null) as ('п' | 'у' | 'н')[];
       const stats = calculateSubjectStats(validStatuses);
@@ -525,11 +610,11 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
             </tr>
           </thead>
           <tbody>
-            {attendanceData.map((subject) => {
+            {attendanceData.map((subject, rowIndex) => {
               const stats = calculateAbsencesStats(subject.statuses);
               return (
                 <tr 
-                  key={subject.id}
+                  key={`table-row-${subject.id}-${rowIndex}`}
                   className="at-subject-row"
                   onClick={() => handleSubjectClick(subject.subject)}
                   style={{ cursor: 'pointer' }}
@@ -537,6 +622,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                   <td className="at-subject-cell">
                     <div className="at-subject-info">
                       <span className="at-subject-name">{subject.subject}</span>
+                      <span className="at-subject-teacher">{subject.teacher}</span>
                     </div>
                   </td>
                   <td className="at-attendance-cell">
@@ -545,11 +631,11 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                         const detail = subject.reasonStatus?.[index];
                         return (
                           <span
-                            key={index}
+                            key={`stack-item-${subject.id}-${index}-${detail?.idLesson || 'no-id'}`}
                             className="at-stack-status"
                             style={{ backgroundColor: getStatusColor(status) }}
                             onClick={(e) => {
-                              e.stopPropagation(); // Останавливаем всплытие
+                              e.stopPropagation();
                               handleAttendanceClick(
                                 subject.subject,
                                 status,
@@ -1092,7 +1178,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
 
                   <div className="at-attendance-timeline">
                     {selectedSubjectData.reasonStatus?.map((detail, index) => (
-                      <div key={detail.idLesson} className="at-timeline-item">
+                      <div key={`detail-${detail.idLesson}-${index}`} className="at-timeline-item">
                         <div className="at-timeline-content"
                         onClick={() => handleAttendanceClick(
                                 selectedSubjectData.subject,

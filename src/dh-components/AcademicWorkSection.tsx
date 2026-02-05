@@ -462,7 +462,7 @@ export const AcademicWorkSection: React.FC = () => {
             
             <div className="dh-at-group-footer">
               <button className="dh-at-view-button">
-                Просмотреть ведомость →
+                Просмотреть ведомость
               </button>
             </div>
           </div>

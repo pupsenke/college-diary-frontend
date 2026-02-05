@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Header } from '../st-components/HeaderStudent';
+import { StudentHeader } from '../st-components/HeaderStudent';
 import { useUser } from '../context/UserContext';
 import './MetodistStyle.css';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +28,7 @@ export const MetodistPage: React.FC = () => {
       </div>
 
       <div className="metodist-content">
-        <Header />
+        <StudentHeader />
 
         <div className="metodist-main">
           <main className="metodist-content-area">

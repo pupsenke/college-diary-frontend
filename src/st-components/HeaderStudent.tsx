@@ -29,7 +29,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ currentTheme, onToggle }) => 
   );
 };
 
-export const Header: React.FC = () => {
+export const StudentHeader: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [groupNumber, setGroupNumber] = useState<string>('-');
   const [loadingGroup, setLoadingGroup] = useState(false);

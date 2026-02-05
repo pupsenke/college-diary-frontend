@@ -646,19 +646,40 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Преобразование данных из API
   const transformStudentMarksToGrades = useCallback((semesterType: 'first' | 'second'): Grade[] => {
-    if (!studentMarks) return [];
+    if (!studentMarks || studentMarks.length === 0) {
+      console.log('Нет данных studentMarks для преобразования');
+      return [];
+    }
+
+    console.log('Преобразование studentMarks в grades:', studentMarks);
 
     return studentMarks
-      .filter(studentMark => studentMark && studentMark.nameSubjectTeachersDTO)
+      .filter(studentMark => {
+        // Проверяем оба возможных поля
+        const hasSubjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
+        console.log(`Фильтрация: hasSubjectData = ${hasSubjectData}`);
+        return hasSubjectData;
+      })
       .map((studentMark) => {
-        const subjectId = studentMark.nameSubjectTeachersDTO?.idSubject;
+        // Используем stteachersDTO если nameSubjectTeachersDTO отсутствует
+        const subjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
         
-        if (!subjectId) return null;
+        if (!subjectData) {
+          console.log('Нет данных о предмете');
+          return null;
+        }
+
+        const subjectId = subjectData.idSubject;
+        
+        if (!subjectId) {
+          console.log('Нет subjectId');
+          return null;
+        }
 
         const gradeDetails: GradeDetail[] = [];
         const validGrades: number[] = [];
         
-        const teachers = studentMark.nameSubjectTeachersDTO?.teachers || [];
+        const teachers = subjectData.teachers || [];
         const mainTeacher = teachers[0] || { 
           lastnameTeacher: 'Неизвестно', 
           nameTeacher: 'Н', 
@@ -668,10 +689,14 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
         
         if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
-          studentMark.marksBySt.forEach((mark) => {
+          console.log(`marksBySt найдены: ${studentMark.marksBySt.length} оценок`);
+          
+          studentMark.marksBySt.forEach((mark, index) => {
+            console.log(`Обработка оценки ${index}:`, mark);
+            
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
-                const stId = studentMark.nameSubjectTeachersDTO.idSt;
+                const stId = subjectData.idSt;
                 const markKey = `${stId}_${mark.number}`;
                 const realDate = marksWithDates[markKey];
                 
@@ -684,43 +709,44 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   id: mark.number,
                   date: lessonDate,
                   topic: markType,
-                  grade: mark.value || 0,
+                  grade: mark.value || 0, 
                   teacher: teacherString,
                   type: 'Работа',
-                  hasValue: mark.value !== null && mark.value !== undefined,
+                  hasValue: mark.value !== null && mark.value !== undefined, 
                   stId: stId,
                   realDate: realDate
                 });
 
-                if (mark.value !== null && mark.value !== undefined) {
+                if (mark.value !== null && mark.value !== undefined && mark.value > 0) {
                   validGrades.push(mark.value);
+                  console.log(`Добавлена оценка ${mark.value} для предмета ${subjectData.nameSubject}`);
                 }
               }
             }
           });
+        } else {
+          console.log(`marksBySt отсутствуют или не массив для предмета ${subjectData.nameSubject}`);
         }
 
-        gradeDetails.sort((a, b) => {
-          // Сортируем по реальным датам если есть
-          if (a.realDate && b.realDate) {
-            return new Date(a.realDate).getTime() - new Date(b.realDate).getTime();
-          }
-          return a.id - b.id;
-        });
+        // Сортируем по номеру работы
+        gradeDetails.sort((a, b) => a.id - b.id);
 
         const average = validGrades.length > 0 
           ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
           : 0;
 
-        return {
+        const result = {
           id: subjectId,
-          subject: studentMark.nameSubjectTeachersDTO.nameSubject || 'Неизвестный предмет',
+          subject: subjectData.nameSubject || 'Неизвестный предмет',
           grades: validGrades,
           average: parseFloat(average.toFixed(1)),
           examGrade: studentMark.certification,
           gradeDetails: gradeDetails,
           teacher: teacherString
         };
+
+        console.log('Преобразованный предмет:', result);
+        return result;
       })
       .filter(grade => grade !== null) as Grade[];
   }, [studentMarks, markTypes, marksWithDates]);
@@ -1657,6 +1683,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 <td className="pf-subject-cell">
                   <div className="pf-subject-info">
                     <span className="pf-subject-name">{subject.subject}</span>
+                    <span className="pf-subject-teacher">{subject.teacher}</span>
                   </div>
                 </td>
                 <td className="pf-grades-cell">

@@ -4,6 +4,33 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
+body.st-theme-light .h-dropdown-user-info .h-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  opacity: 1;
+  z-index: -1;
+}
+
+body.st-theme-light .h-dropdown-fullname {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d2e82;
+  margin-bottom: 4px;
+}
+
+body.st-theme-light .h-dropdown-group {
+  display: block;
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 400;
+}
+
+
 .h-header-main {
   width: 100%;
   background: #fff;
@@ -152,6 +179,16 @@
   position: relative;
   overflow: hidden;
 }
+
+
+
+
+
+
+
+
+
+
 
 .h-dropdown-user-info .h-user-gradient-bg {
   position: absolute;

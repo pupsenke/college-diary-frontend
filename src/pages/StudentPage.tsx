@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../st-components/HeaderStudent';
+import { StudentHeader } from '../st-components/HeaderStudent';
 import { AttendanceSection } from '../st-components/AttendanceSection';
 import { PerformanceSection } from '../st-components/PerformanceSection';
 import { PersonalCabinet } from '../st-components/PersonalCabinet';
@@ -325,7 +325,7 @@ export const StudentPage: React.FC = () => {
       </div>
 
       <div className="st-content">
-        <Header />
+        <StudentHeader />
 
         <div className={`st-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           <aside className={`st-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>

@@ -75,7 +75,7 @@
 /* Кнопка обновления */
 .pf-refresh-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   color: #374151;
   padding: 12px 24px;
   border-radius: 16px;
@@ -2226,4 +2226,22 @@
   color: #a8aaad;
   font-size: 10px;
   margin: 0;
+}
+
+.pf-subject-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-subject-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.pf-subject-teacher {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
 }

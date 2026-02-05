@@ -147,10 +147,10 @@
 /* Кнопка обновления документов */
 .ds-refresh-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   color: #374151;
   padding: 12px 24px;
-  border-radius: 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
@@ -280,9 +280,10 @@
   text-align: center;
   padding: 60px 20px;
   color: #64748b;
-  background: white;
+  background: rgba(238, 238, 238, 0.188);
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #64748b4b;
 }
 
 .ds-empty-state p {
@@ -529,18 +530,17 @@
 
 /* Кнопка создания документа */
 .ds-create-main-btn {
-  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
-  border: 2px solid rgba(66, 92, 177, 0.508);
-  color: white;
   padding: 12px 24px;
-  border-radius: 16px;
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.2);
-  white-space: nowrap;
-  height: fit-content;
+  font-size: 14px;
+  border: none;
+  min-width: 180px;
+  text-align: center;
+  background: #002FA7;
+  color: white;
 }
 
 .ds-create-main-btn:hover:not(:disabled) {
@@ -551,7 +551,7 @@
 
 .ds-create-main-btn:disabled {
   background: #9ca3af;
-  border: 2px solid rgba(180, 180, 180, 0.642);
+  border: 1px solid rgba(180, 180, 180, 0.642);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;

@@ -4,6 +4,34 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
+body.dh-theme-light .dh-dropdown-user-info .dh-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  opacity: 1;
+  z-index: -1;
+}
+
+body.dh-theme-light .dh-dropdown-fullname {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d2e82;
+  margin-bottom: 4px;
+}
+
+body.dh-theme-light .dh-dropdown-position {
+  display: block;
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 400;
+}
+
+
+
 .dh-header-main {
   width: 100%;
   background: #fff;
@@ -379,11 +407,11 @@
 }
 
 .dh-sun-icon {
-  color: #002FA7; /* Золотой цвет для солнца */
+  color: #002FA7; 
 }
 
 .dh-moon-icon {
-  color: #002FA7; /* Серебристый цвет для луны */
+  color: #002FA7;
 }
 
 .dh-header-main {

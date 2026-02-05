@@ -486,48 +486,16 @@ const PersonalCabinetComponent: React.FC = () => {
           <div className="pc-info-group">
             <h3>Основная информация</h3>
             <div className="pc-info-item">
-              <label>Фамилия *</label>
-              {isEditing && isStudent ? (
-                <input
-                  type="text"
-                  value={userData.lastName}
-                  onChange={(e) => handleChange('lastName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите фамилию"
-                  required
-                />
-              ) : (
-                <span>{userData.lastName || 'Не указано'}</span>
-              )}
+              <label>Фамилия</label>
+              <span className="pc-readonly">{userData.lastName || 'Не указано'}</span>
             </div>
             <div className="pc-info-item">
-              <label>Имя *</label>
-              {isEditing && isStudent ? (
-                <input
-                  type="text"
-                  value={userData.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите имя"
-                  required
-                />
-              ) : (
-                <span>{userData.firstName || 'Не указано'}</span>
-              )}
+              <label>Имя</label>
+              <span className="pc-readonly">{userData.firstName || 'Не указано'}</span>
             </div>
             <div className="pc-info-item">
               <label>Отчество</label>
-              {isEditing && isStudent ? (
-                <input
-                  type="text"
-                  value={userData.middleName}
-                  onChange={(e) => handleChange('middleName', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите отчество"
-                />
-              ) : (
-                <span>{userData.middleName || 'Не указано'}</span>
-              )}
+              <span className="pc-readonly">{userData.middleName || 'Не указано'}</span>
             </div>
             <div className="pc-info-item">
               <label>Дата рождения</label>
