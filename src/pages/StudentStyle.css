@@ -5,10 +5,30 @@
   box-sizing: border-box;
 }
 
-.st-container {
+/* Темная тема (по умолчанию) */
+body.st-theme-dark .st-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   position: relative;
+}
+
+/* Светлая тема */
+body.st-theme-light .st-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
+body.st-theme-light .st-title-icon {
+   color: #002FA7;
+}
+
+body.st-theme-light .st-content-title {
+   color: #002FA7;
+}
+
+body.st-theme-light .st-content-subtitle {
+   color: #002FA7;
 }
 
 .st-content {
@@ -645,4 +665,34 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Стили для иконок заголовка */
+.st-title-icon {
+  width: 36px;
+  height: 36px;
+  margin-left: 4px;
+  margin-right: 4px;
+  filter: brightness(1);
+}
+
+.st-theme-dark .st-title-icon {
+  filter: brightness(0) invert(1);
+}
+
+.st-theme-light .st-title-icon {
+  filter: none;
+}
+
+.st-content-title-wrapper .st-title-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.st-theme-dark .st-content-title-wrapper .st-title-icon {
+  filter: brightness(0) invert(1);
+}
+
+.st-theme-light .st-content-title-wrapper .st-title-icon {
+  filter: none;
 }
