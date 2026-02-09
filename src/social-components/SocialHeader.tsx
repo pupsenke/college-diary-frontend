@@ -129,7 +129,6 @@ export const SocialHeader: React.FC = () => {
           <ThemeToggle currentTheme={theme} onToggle={toggleTheme} />
         </div>
 
-        {/* ВСЯ область профиля и дропдауна должна быть внутри одного ref */}
         <div className="dh-header-profile-area" ref={dropdownRef}>
           <div className="dh-profile-card" onClick={toggleDropdown}>
             <div className="dh-profile-info">
@@ -139,7 +138,6 @@ export const SocialHeader: React.FC = () => {
             <span className={`dh-profile-arrow ${isDropdownOpen ? 'dh-rotated' : ''}`}>▼</span>
           </div>
           
-          {/* Дропдаун теперь внутри того же div с ref */}
           {isDropdownOpen && (
             <div className="th-profile-dropdown">
               <div className="th-dropdown-user-info">

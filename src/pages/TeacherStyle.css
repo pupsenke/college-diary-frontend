@@ -39,6 +39,32 @@ body.dh-theme-dark .content-subtitle {
 }
 
 
+body.dh-theme-light .th-dropdown-user-info .th-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  opacity: 1;
+  z-index: -1;
+}
+
+body.dh-theme-light .th-dropdown-fullname{
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d2e82;
+  margin-bottom: 4px;
+}
+
+body.dh-theme-light .th-dropdown-department{
+  display: block;
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 400;
+}
+
 .teacher-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
