@@ -421,9 +421,12 @@ export const PersonalCabinet: React.FC = () => {
 
       {/* Модальное окно смены пароля */}
       {showPasswordModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowPasswordModal(false)}>
-          <div className="pc-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="lk-modal-overlay" onClick={() => setShowPasswordModal(false)}>
+          <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
+                <div className="lk-modal-icon">
+                  <img src="/social-icons/editing_icon.svg" alt="Смена пароля" />
+                </div>
               <h3>Смена пароля</h3>
               <button 
                 className="pc-modal-close"
@@ -487,9 +490,12 @@ export const PersonalCabinet: React.FC = () => {
 
       {/* Модальное окно редактирования профиля */}
       {showProfileModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowProfileModal(false)}>
-          <div className="pc-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="lk-modal-overlay" onClick={() => setShowProfileModal(false)}>
+          <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
+                <div className="lk-modal-icon">
+                  <img src="/social-icons/editing_icon.svg" alt="Редактирование профиля" />
+                </div>
               <h3>Редактирование профиля</h3>
               <button 
                 className="pc-modal-close"
@@ -500,36 +506,6 @@ export const PersonalCabinet: React.FC = () => {
             </div>
 
             <div className="pc-modal-content">
-              <div className="pc-form-group">
-                <label>Фамилия</label>
-                <input
-                  type="text"
-                  value={profileData.lastName}
-                  onChange={(e) => handleProfileDataChange('lastName', e.target.value)}
-                  className="pc-input"
-                />
-              </div>
-              
-              <div className="pc-form-group">
-                <label>Имя</label>
-                <input
-                  type="text"
-                  value={profileData.firstName}
-                  onChange={(e) => handleProfileDataChange('firstName', e.target.value)}
-                  className="pc-input"
-                />
-              </div>
-              
-              <div className="pc-form-group">
-                <label>Отчество</label>
-                <input
-                  type="text"
-                  value={profileData.middleName}
-                  onChange={(e) => handleProfileDataChange('middleName', e.target.value)}
-                  className="pc-input"
-                />
-              </div>
-              
               <div className="pc-form-group">
                 <label>Email</label>
                 <input

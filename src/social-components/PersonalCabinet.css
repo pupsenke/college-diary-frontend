@@ -288,7 +288,7 @@
 }
 
 /* Стили для модальных окон */
-.pc-modal-overlay {
+.lk-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -302,13 +302,13 @@
   backdrop-filter: blur(4px);
 }
 
-.pc-modal {
+.lk-modal {
   background: white;
   border-radius: 12px;
   padding: 0;
   width: 90%;
-  max-width: 450px;
-  max-height: 90vh;
+  max-width: 550px;
+  height: auto;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: modal-appear 0.2s ease-out;
@@ -327,8 +327,9 @@
 
 .pc-modal-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 16px; 
   padding: 24px 24px 20px;
   border-bottom: 1px solid #e5e7eb;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
@@ -336,11 +337,29 @@
   color: white;
 }
 
+.lk-modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lk-modal-icon img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
 .pc-modal-header h3 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: white;
+  text-align: left;
+  flex: 1;
 }
 
 .pc-modal-close {
