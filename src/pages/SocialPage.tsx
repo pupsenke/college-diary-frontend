@@ -3,6 +3,7 @@ import { SocialHeader } from '../social-components/SocialHeader';
 import { PersonalCabinet } from '../social-components/PersonalCabinet';
 import { GroupsSection } from '../social-components/SocialGroupsSection';
 import { ReportsSection } from '../social-components/ReportsSection';
+import { DocumentsSection } from '../social-components/DocumentsSection';
 import { useUser } from '../context/UserContext';
 import './SocialPage.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,10 +15,17 @@ export const SocialPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Получаем текущий день недели для подсветки
+  const getCurrentDay = () => {
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const today = new Date().getDay();
+    return days[today];
+  };
+
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['personal', 'groups', 'reports'].includes(tab)) {
+    if (tab && ['personal', 'groups', 'reports', 'documents'].includes(tab)) {
       setActiveTab(tab);
     } else {
       setActiveTab('personal');
@@ -59,19 +67,22 @@ export const SocialPage: React.FC = () => {
         return <GroupsSection />;
       case 'reports':
         return <ReportsSection />;
+      case 'documents':
+        return <DocumentsSection />;
       case 'personal':
       default:
         return <PersonalCabinet />;
     }
   };
 
-  // исправить иконки в менюшке
   const getTabIcon = (tabName: string) => {
     switch (tabName) {
       case 'groups':
         return <img src="th-icons/groups_icon.svg" alt="Группы" className="social-nav-svg-icon" />;
       case 'reports':
-        return <img src="th-icons/schedule_icon.svg" alt="Отчеты" className="social-nav-svg-icon" />;
+        return <img src="social-icons/reports_icon.svg" alt="Отчеты" className="social-nav-svg-icon" />;
+      case 'documents':
+        return <img src="social-icons/documents_icon.svg" alt="Документы" className="social-nav-svg-icon" />;
       case 'personal':
         return <img src="th-icons/paccount_icon.svg" alt="Личный кабинет" className="social-nav-svg-icon" />;
       default:
@@ -85,6 +96,8 @@ export const SocialPage: React.FC = () => {
         return 'Группы';
       case 'reports':
         return 'Отчеты';
+      case 'documents':
+        return 'Документы';
       case 'personal':
         return 'Личный кабинет';
       default:
@@ -98,6 +111,8 @@ export const SocialPage: React.FC = () => {
         return 'Просмотр социальных портретов учебных групп';
       case 'reports':
         return 'Создание и управление отчетами';
+      case 'documents':
+        return 'Информация о необходимых документах для различных категорий социальной поддержки';
       case 'personal':
         return 'Профиль социального педагога';
       default:
@@ -108,20 +123,6 @@ export const SocialPage: React.FC = () => {
   const handleSidebarToggle = () => {
     setSidebarCollapsed(prev => !prev);
   };
-
-  // Быстрые действия для социального педагога
-  const quickActions = [
-    { 
-      icon: '📊', 
-      text: 'Создать отчет', 
-      onClick: () => handleTabChange('reports') 
-    },
-    { 
-      icon: '📤', 
-      text: 'Экспорт данных', 
-      onClick: () => console.log('Экспорт данных') 
-    },
-  ];
 
   if (!user) {
     return (
@@ -147,14 +148,14 @@ export const SocialPage: React.FC = () => {
         <div className={`social-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           <aside className={`social-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
             <button
-              className="social-sidebar-toggle"
+              className="s-sidebar-toggle"
               onClick={handleSidebarToggle}
               aria-label={sidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
             >
               <img 
                 src="th-icons/arrow_icon.svg" 
                 alt="" 
-                className={`social-nav-toggle-icon ${sidebarCollapsed ? 'rotated' : ''}`} 
+                className={`nav-toggle-icon ${sidebarCollapsed ? 'rotated' : ''}`} 
               />
             </button>
 
@@ -171,39 +172,34 @@ export const SocialPage: React.FC = () => {
             </div>
 
             <nav className="social-sidebar-nav">
-              {['personal', 'groups', 'reports'].map((tab) => (
+              {['personal', 'groups', 'reports', 'documents'].map((tab) => (
                 <button
                   key={tab}
                   className={`social-nav-item ${activeTab === tab ? 'active' : ''}`}
                   onClick={() => handleTabChange(tab)}
                   data-tooltip={sidebarCollapsed ? getTabTitle(tab) : ''}
                 >
-                  <span className="nav-icon">{getTabIcon(tab)}</span>
+                  <span className="social-nav-icon">{getTabIcon(tab)}</span>
                   <span className="social-nav-text">{getTabTitle(tab)}</span>
                   {activeTab === tab && !sidebarCollapsed && <div className="social-nav-indicator"></div>}
                 </button>
               ))}
             </nav>
 
-            <div className="social-quick-actions">
-              <h4 className="social-quick-actions-title">Быстрый доступ</h4>
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  className="social-quick-action-btn"
-                  onClick={action.onClick}
-                >
-                  <span className="social-quick-action-icon">{action.icon}</span>
-                  <span className="social-quick-action-text">{action.text}</span>
-                </button>
-              ))}
-            </div>
-
             <div className="social-sidebar-footer">
-              <div className="social-system-info">
-                <span>Данные обновлены</span>
+              <div className="social-schedule-mini">
+                <div className="social-schedule-row">
+                  <span className="social-schedule-row-label">
+                    <span className={`social-schedule-day ${getCurrentDay() === 'Понедельник' || getCurrentDay() === 'Вторник' || getCurrentDay() === 'Четверг' || getCurrentDay() === 'Пятница' ? 'today' : ''}`}>пн-вт чт-пт</span>
+                    <span className={`social-schedule-day ${getCurrentDay() === 'Среда' ? 'today' : ''}`}>ср</span>
+                  </span>
+                  <span className="social-schedule-row-divider">|</span>
+                  <span className="social-schedule-row-rooms">
+                    <span className={`social-schedule-room-mini ${getCurrentDay() === 'Понедельник' || getCurrentDay() === 'Вторник' || getCurrentDay() === 'Четверг' || getCurrentDay() === 'Пятница' ? 'today' : ''}`}>405</span>
+                    <span className={`social-schedule-room-mini ${getCurrentDay() === 'Среда' ? 'today' : ''}`}>216А</span>
+                  </span>
+                </div>
               </div>
-              <div className="social-version">v2.2.0</div>
             </div>
           </aside>
 

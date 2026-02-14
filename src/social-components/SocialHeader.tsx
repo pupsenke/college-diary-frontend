@@ -147,12 +147,10 @@ export const SocialHeader: React.FC = () => {
               </div>
               <div className="th-dropdown-menu">
                 <button className="th-dropdown-item" onClick={handleReports}>
-                  <img src="th-icons/report_icon.svg" alt="Отчеты" className="dropdown-icon" />
                   Отчеты
                 </button>
                 <div className="th-dropdown-divider"></div>
                 <button className="th-dropdown-item th-logout" onClick={handleLogout}>
-                  <img src="th-icons/logout_icon.svg" alt="Выход" className="dropdown-icon" />
                   Выйти
                 </button>
               </div>

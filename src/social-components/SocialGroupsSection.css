@@ -59,6 +59,23 @@
   box-shadow: none;
 }
 
+.sg-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.sg-section-header h4 {
+  margin: 0;
+  color: #002FA7;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Информационная иконка */
 .info-icon-btn {
   position: relative;
@@ -549,20 +566,21 @@
   border: 1px solid #e2e8f0;
 }
 
-.sg-section-header {
+.sg-stats-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
 }
 
-.sg-section-header h3 {
+.sg-stats-header h4 {
   margin: 0;
   color: #002FA7;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sg-groups-count {
@@ -574,6 +592,12 @@
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.sg-groups-count:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .sg-groups-count img {
@@ -586,6 +610,11 @@
 .sg-groups-count span {
   color: #002FA7;
   font-weight: 600;
+}
+
+.sg-groups-count strong {
+  font-weight: 700;
+  color: #002FA7;
 }
 
 /* Состояния загрузки и ошибок */
@@ -1671,14 +1700,31 @@
   padding-bottom: 0;
 }
 
-.sg-section-header {
+.sg-groups-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.sg-groups-header h4 {
+  margin: 0;
+  color: #002FA7;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sg-stats-section-header {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin-bottom: 16px;
 }
 
-.sg-section-header h4 {
+.sg-stats-section-header h4 {
   margin: 0;
   color: #002FA7;
   font-size: 18px;
@@ -2073,8 +2119,19 @@
   }
   
   .sg-section-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .sg-section-header h3 {
+    font-size: 18px;
+  }
+  
+  .sg-groups-count {
+    padding: 6px 12px;
+    font-size: 13px;
   }
   
   .sg-group-card {

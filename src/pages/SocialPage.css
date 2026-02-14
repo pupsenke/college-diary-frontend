@@ -16,12 +16,12 @@ body.dh-theme-light .social-container {
 
 /* Светлая тема - заголовки страниц */
 body.dh-theme-light .social-content-title {
-  color: #002FA7; /* Синий цвет для заголовка в светлой теме */
+  color: #002FA7;
 }
 
 body.dh-theme-light .social-content-subtitle {
-  color: #002FA7; /* Синий цвет для подзаголовка в светлой теме */
-  font-weight: 500; 
+  color: #002FA7;
+  font-weight: 500;
 }
 
 /* Для темной темы сохраняем белый цвет */
@@ -58,7 +58,6 @@ body.dh-theme-light .th-dropdown-department{
   color: #002FA7;
   font-weight: 400;
 }
-
 
 * {
   font-family: 'Montserrat', sans-serif !important;
@@ -161,7 +160,7 @@ body.dh-theme-light .th-dropdown-department{
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  height: 650px;
+  height: 580px;
   position: relative;
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 47, 167, 0.1);
@@ -171,13 +170,29 @@ body.dh-theme-light .th-dropdown-department{
   width: 80px;
   padding: 24px 16px;
   align-items: center;
-  height: 650px;
-  z-index: 2;
+  display: flex;
+  justify-content: flex-start;
+  height: 560px;
+  z-index: 1001 !important;
+}
+
+/* Модальные окна групп - ниже сайдбара */
+.pc-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(50, 64, 124, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .social-sidebar.collapsed .social-sidebar-header,
 .social-sidebar.collapsed .social-nav-text,
-.social-sidebar.collapsed .social-quick-actions,
 .social-sidebar.collapsed .social-sidebar-footer,
 .social-sidebar.collapsed .social-nav-indicator {
   display: none;
@@ -186,11 +201,12 @@ body.dh-theme-light .th-dropdown-department{
 .social-sidebar.collapsed .social-sidebar-nav {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   gap: 24px;
   width: 100%;
-  margin-top: 40px;
+  height: 100%;
+  margin-top: 0;
 }
 
 .social-sidebar.collapsed .social-nav-item {
@@ -202,17 +218,23 @@ body.dh-theme-light .th-dropdown-department{
   border-radius: 12px;
   display: flex;
   position: relative;
+  margin: 0;
 }
 
 .social-sidebar.collapsed .social-nav-icon {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .social-sidebar.collapsed .social-nav-svg-icon {
   width: 34px;
   height: 34px;
+  display: block;
+  margin: auto;
 }
 
 .social-sidebar.collapsed .social-nav-item::after {
@@ -220,10 +242,9 @@ body.dh-theme-light .th-dropdown-department{
   position: absolute;
   left: 100%;
   top: 50%;
-  transform: translateX(-80%);
+  transform: translateY(-50%);
   background: #002fa7c2;
   color: white;
-  margin-top: 25px;
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -239,15 +260,18 @@ body.dh-theme-light .th-dropdown-department{
   opacity: 1;
 }
 
+.t-sidebar.collapsed .sidebar-toggle {
+  transform: rotate(180deg);
+}
+
 /* Кнопка сворачивания */
-.social-sidebar-toggle {
+.s-sidebar-toggle {
   position: absolute;
   top: 16px;
   right: -12px;
   width: 24px;
   height: 24px;
-  background: #002FA7;
-  border: 2px solid white;
+  border: 2px solid;
   border-radius: 50%;
   color: white;
   font-size: 12px;
@@ -259,42 +283,38 @@ body.dh-theme-light .th-dropdown-department{
   z-index: 2;
 }
 
-.social-sidebar-toggle:hover {
+.s-sidebar-toggle:hover {
+
   transform: scale(1.1);
-  background-color: white;
-  border-color: #002FA7;
+  background-color: white;  
 }
 
-.social-sidebar.collapsed .social-sidebar-toggle {
+
+.social-sidebar.collapsed .s-sidebar-toggle {
   transform: rotate(180deg);
 }
 
-/* Контент боковой панели */
+
+/* Контент боковой панели - как у преподавателя */
 .social-sidebar-header {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  margin-top: 14px;
 }
 
 .social-user-fullname-small {
   color: #002FA7;
   font-size: 20px;
   font-weight: 600;
-  margin: 0 0 12px 0;
+  margin: 0 0 20px 0;
   line-height: 1.3;
-}
-
-.social-user-info .social-user-name {
-  color: #002FA7;
-  font-size: 12px;
-  font-weight: 500;
-  margin: 4px 0;
 }
 
 .social-user-info .social-user-role {
   color: #002FA7;
   font-size: 14px;
   font-weight: 500;
-  margin: 10px 0 10px 0;
+  margin: 10px 0;
 }
 
 .social-user-department {
@@ -304,7 +324,7 @@ body.dh-theme-light .th-dropdown-department{
   margin: 4px 0 20px 0;
 }
 
-/* Навигация */
+/* Навигация - как у преподавателя */
 .social-sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -359,92 +379,6 @@ body.dh-theme-light .th-dropdown-department{
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-}
-
-.social-nav-toggle-icon {
-  width: 28px;
-  height: 28px;
-  z-index: 1;
-}
-
-/* Быстрые действия */
-.social-quick-actions {
-  margin-bottom: 25px;
-  padding: 16px;
-  background: #f8f9ff;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 47, 167, 0.1);
-}
-
-.social-quick-actions-title {
-  color: #002FA7;
-  font-size: 12px;
-  font-weight: 400;
-  margin-bottom: 12px;
-  padding-left: 4px;
-}
-
-.social-quick-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 15px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  text-align: left;
-  color: #002FA7;
-  font-weight: 500;
-}
-
-.social-quick-action-btn:hover {
-  background: rgba(0, 47, 167, 0.1);
-}
-
-.social-quick-action-icon {
-  font-size: 16px;
-  width: 24px;
-  text-align: center;
-}
-
-.social-quick-action-text {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-/* Футер сайдбара */
-.social-sidebar-footer {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid rgba(0, 47, 167, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.social-system-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #666;
-  font-size: 12px;
-}
-
-.social-system-icon {
-  color: #43e97b;
-  font-size: 14px;
-}
-
-.social-version {
-  color: #666;
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(0, 47, 167, 0.1);
-  padding: 3px 8px;
-  border-radius: 12px;
 }
 
 /* Основная область контента */
@@ -671,3 +605,72 @@ body.dh-theme-light .th-dropdown-department{
   }
 }
 
+/* Блок расписания - МИНИМАЛИСТИЧНЫЙ */
+.social-sidebar-footer {
+  padding-top: 0;
+  width: 100%;
+}
+
+.social-schedule-mini {
+  background: linear-gradient(135deg, #002FA7, #5986f7);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 47, 167, 0.2);
+  width: 100%;
+}
+
+.social-schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.social-schedule-row-label {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.social-schedule-day {
+  font-weight: 500;
+  color: white;
+  opacity: 0.8;
+  font-size: 11px;
+  text-transform: lowercase;
+}
+
+.social-schedule-day.today {
+  font-weight: 800;
+  opacity: 1;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.social-schedule-row-divider {
+  color: white;
+  opacity: 0.3;
+  margin: 0 4px;
+  font-weight: 300;
+}
+
+.social-schedule-row-rooms {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.social-schedule-room-mini {
+  font-weight: 600;
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+.social-schedule-room-mini.today {
+  background: white;
+  color: #002FA7;
+  font-weight: 700;
+}

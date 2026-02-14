@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import './ReportsSection.css';
 
 interface ReportData {
@@ -6,266 +6,353 @@ interface ReportData {
   name: string;
   type: string;
   date: string;
-  status: 'Утвержден' | 'Ожидает' | 'Отклонен';
-  author: string;
+}
+
+interface ReportFilters {
+  reportType: string;
+  category?: string;
+  group?: string;
+  course?: string;
+  specialty?: string;
+  dateFrom: string;
+  dateTo: string;
+  format: 'pdf' | 'doc';
 }
 
 export const ReportsSection: React.FC = () => {
   // Состояния
-  const [reports, setReports] = useState<ReportData[]>([
-    { id: 1, name: "Отчет по детям-сиротам", type: "По категории", date: "15.03.2024", status: "Утвержден", author: "Сергеева П.А." },
-    { id: 2, name: "Социальный портрет группы 2992", type: "По группе", date: "10.03.2024", status: "Утвержден", author: "Сергеева П.А." },
-    { id: 3, name: "Сводный отчет за 1 семестр", type: "Сводный", date: "28.02.2024", status: "Утвержден", author: "Сергеева П.А." },
-    { id: 4, name: "Студенты группы риска", type: "По категории", date: "20.02.2024", status: "Ожидает", author: "Сергеева П.А." },
-    { id: 5, name: "Отчет по посещаемости", type: "Сводный", date: "15.02.2024", status: "Утвержден", author: "Сергеева П.А." },
-    { id: 6, name: "Дети из многодетных семей", type: "По категории", date: "05.02.2024", status: "Утвержден", author: "Сергеева П.А." },
+  const [reports] = useState<ReportData[]>([
+    { id: 1, name: "Отчет по детям-сиротам", type: "По категории", date: "14.02.2026" },
+    { id: 2, name: "Социальный портрет группы 2992", type: "По группе", date: "10.02.2026" },
+    { id: 3, name: "Сводный отчет за 1 семестр", type: "Сводный отчет", date: "18.01.2026" }
   ]);
 
-  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<string | null>(null);
+  
+  // Фильтры и поиск
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  const [reportFilters, setReportFilters] = useState<ReportFilters>({
+    reportType: '',
+    dateFrom: '',
+    dateTo: '',
+    format: 'pdf'
+  });
 
-  // Статистика
-  const stats = {
-    totalReports: 24,
-    pendingReports: 3,
-    thisMonth: 5,
-    approvedReports: 18
+  // Данные для фильтров
+  const socialCategories = [
+    "Дети-сироты",
+    "Дети из многодетных семей",
+    "Инвалиды и лица с ОВЗ",
+    "Малообеспеченные семьи",
+    "Мигранты и беженцы",
+    "Студенты в трудной жизненной ситуации",
+    "Студенты группы риска",
+    "Одаренные дети"
+  ];
+
+  // Группы по курсам
+  const groupsByCourse: Record<string, string[]> = {
+    "1": ["1911", "1912", "1913"],
+    "2": ["2911", "2912", "2913"],
+    "3": ["3911", "3912", "3913"],
+    "4": ["4911", "4912", "4913"]
   };
 
+  const specialties = [
+    "Информационные системы и программирование",
+    "Программирование в компьютерных системах",
+    "Сетевое и системное администрирование"
+  ];
+  
+  const reportTypes = ["По категории", "По группе", "Сводный отчет"];
+
   // Типы отчетов для быстрого создания
-  const reportTypes = [
+  const reportTypeCards = [
     { 
-      icon: 'fas fa-tags', 
+      icon: '/social-icons/all_categories_icon.svg',
       title: 'По категории', 
       description: 'Отчет по студентам определенной социальной категории',
       gradient: 'linear-gradient(135deg, #002FA7 0%, #5986f7 100%)'
     },
     { 
-      icon: 'fas fa-users', 
+      icon: '/social-icons/responsible_icon.svg',
       title: 'По группе', 
       description: 'Детальный отчет по учебной группе',
       gradient: 'linear-gradient(135deg, #002FA7 0%, #5986f7 100%)'
     },
     { 
-      icon: 'fas fa-chart-bar', 
+      icon: '/social-icons/consolidated_icon.svg',
       title: 'Сводный отчет', 
       description: 'Общая статистика по всем группам',
       gradient: 'linear-gradient(135deg, #002FA7 0%, #5986f7 100%)'
     },
   ];
 
-  // Шаблоны отчетов
-  const templates = [
-    { icon: 'fas fa-tags', title: 'По категории', description: 'Стандартный отчет по социальной категории' },
-    { icon: 'fas fa-users', title: 'По группе', description: 'Детальный отчет по учебной группе' },
-    { icon: 'fas fa-chart-bar', title: 'Сводный отчет', description: 'Общая статистика по всем группам' },
-    { icon: 'fas fa-calendar-check', title: 'Посещаемость', description: 'Отчет по посещаемости студентов' },
-    { icon: 'fas fa-graduation-cap', title: 'Успеваемость', description: 'Отчет по успеваемости студентов' },
-    { icon: 'fas fa-exclamation-triangle', title: 'Группа риска', description: 'Отчет по студентам группы риска' },
-  ];
+  // Фильтрация и сортировка отчетов
+  const filteredReports = useMemo(() => {
+    let result = [...reports];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(report =>
+        report.name.toLowerCase().includes(term) ||
+        report.type.toLowerCase().includes(term)
+      );
+    }
+
+    if (typeFilter !== 'all') {
+      result = result.filter(report => report.type === typeFilter);
+    }
+
+    result.sort((a, b) => {
+      let valueA, valueB;
+      
+      switch(sortBy) {
+        case 'name':
+          valueA = a.name;
+          valueB = b.name;
+          break;
+        case 'type':
+          valueA = a.type;
+          valueB = b.type;
+          break;
+        case 'date':
+        default:
+          const [dA, mA, yA] = a.date.split('.');
+          const [dB, mB, yB] = b.date.split('.');
+          valueA = new Date(`${yA}-${mA}-${dA}`).getTime();
+          valueB = new Date(`${yB}-${mB}-${dB}`).getTime();
+          break;
+      }
+
+      if (sortOrder === 'asc') {
+        return valueA > valueB ? 1 : -1;
+      } else {
+        return valueA < valueB ? 1 : -1;
+      }
+    });
+
+    return result;
+  }, [reports, searchTerm, typeFilter, sortBy, sortOrder]);
 
   // Обработчики
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // В реальном приложении здесь был бы запрос к API
-    }, 1000);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const handleCreateReport = () => {
+  const handleCreateReport = (template?: string) => {
+    if (template) {
+      setCurrentTemplate(template);
+      setReportFilters({
+        ...reportFilters,
+        reportType: template
+      });
+    }
     setShowCreateModal(true);
   };
 
-  const handleUseTemplate = (template: string) => {
-    setCurrentTemplate(template);
-    setShowTemplatesModal(false);
-    setShowCreateModal(true);
+  const handleFilterChange = (field: keyof ReportFilters, value: string) => {
+    setReportFilters(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleViewReport = (id: number) => {
-    setShowPreviewModal(true);
+  const handleDownload = (reportId: number, format: 'pdf' | 'doc') => {
+    console.log(`Скачивание отчета #${reportId} в формате ${format}`);
   };
 
-  const handleEditReport = (id: number) => {
-    alert(`Редактирование отчета #${id}`);
+  const handleCreateSubmit = () => {
+    console.log('Создание отчета с параметрами:', reportFilters);
+    setShowCreateModal(false);
+    setCurrentTemplate(null);
+    setReportFilters({
+      reportType: '',
+      dateFrom: '',
+      dateTo: '',
+      format: 'pdf'
+    });
   };
 
-  const handleExportReport = (id: number) => {
-    alert(`Экспорт отчета #${id}`);
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
-  // Рендер статуса отчета
-  const renderStatus = (status: ReportData['status']) => {
-    const statusConfig = {
-      'Утвержден': { bg: 'rgba(0, 47, 167, 0.1)', color: '#002FA7', border: '1px solid rgba(0, 47, 167, 0.2)' },
-      'Ожидает': { bg: 'rgba(255, 167, 38, 0.1)', color: '#ffa726', border: '1px solid rgba(255, 167, 38, 0.2)' },
-      'Отклонен': { bg: 'rgba(220, 38, 38, 0.1)', color: '#dc2626', border: '1px solid rgba(220, 38, 38, 0.2)' }
-    };
+  const InfoIcon = () => (
+    <div className="info-icon-btn" tabIndex={0}>
+      <button className="header-btn" type="button">
+        <span className="info-icon-text">i</span>
+        <span>Информация</span>
+      </button>
+      <div className="info-tooltip small">
+        <div className="info-tooltip-content">
+          <div className="info-header">
+            <div className="info-title">
+              <h3>Отчеты</h3>
+              <p>Здесь вы можете создавать и скачивать отчеты по социальной работе.</p>
+            </div>
+          </div>
+          <div className="info-section">
+            <h4>Основные возможности</h4>
+            <div className="features-grid">
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Создание отчетов по категориям и группам</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Скачивание отчетов в PDF и Word форматах</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Готовые шаблоны для быстрого создания</span>
+              </div>
+            </div>
+          </div>
+          <div className="info-section">
+            <h4>Как использовать</h4>
+            <div className="usage-steps">
+              <div className="step">
+                <span className="step-number">1</span>
+                <span>Выберите шаблон отчета из карточек</span>
+              </div>
+              <div className="step">
+                <span className="step-number">2</span>
+                <span>Заполните параметры отчета в модальном окне</span>
+              </div>
+              <div className="step">
+                <span className="step-number">3</span>
+                <span>Скачайте готовый отчет в нужном формате</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-    const config = statusConfig[status];
-    return (
-      <span style={{
-        padding: '4px 10px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: 600,
-        background: config.bg,
-        color: config.color,
-        border: config.border
-      }}>
-        {status}
-      </span>
-    );
+  const RefreshButton = () => (
+    <button 
+      className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
+      onClick={handleRefresh}
+      disabled={refreshing}
+    >
+      <img 
+        src="/st-icons/upload_icon.svg" 
+        className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
+        alt="Обновить"
+      />
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
+    </button>
+  );
+
+  // Рендер дополнительных полей
+  const renderAdditionalFields = () => {
+    const reportType = currentTemplate || reportFilters.reportType;
+
+    switch (reportType) {
+      case 'По категории':
+        return (
+          <div className="pc-form-group">
+            <label>Социальная категория</label>
+            <select 
+              className="pc-select-enhanced"
+              value={reportFilters.category || ''}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
+            >
+              <option value="">Выберите категорию</option>
+              {socialCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        );
+      
+      case 'По группе':
+        return (
+          <>
+            <div className="pc-form-group">
+              <label>Курс</label>
+              <select 
+                className="pc-select-enhanced"
+                value={reportFilters.course || ''}
+                onChange={(e) => {
+                  handleFilterChange('course', e.target.value);
+                  handleFilterChange('group', '');
+                }}
+              >
+                <option value="">Выберите курс</option>
+                <option value="1">1 курс</option>
+                <option value="2">2 курс</option>
+                <option value="3">3 курс</option>
+                <option value="4">4 курс</option>
+              </select>
+            </div>
+            
+            {reportFilters.course && (
+              <div className="pc-form-group">
+                <label>Учебная группа</label>
+                <select 
+                  className="pc-select-enhanced"
+                  value={reportFilters.group || ''}
+                  onChange={(e) => handleFilterChange('group', e.target.value)}
+                >
+                  <option value="">Выберите группу</option>
+                  {groupsByCourse[reportFilters.course]?.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        );
+      
+      case 'Сводный отчет':
+        return (
+          <div className="pc-form-group">
+            <label>Специальность</label>
+            <select 
+              className="pc-select-enhanced"
+              value={reportFilters.specialty || ''}
+              onChange={(e) => handleFilterChange('specialty', e.target.value)}
+            >
+              <option value="">Все специальности</option>
+              {specialties.map(spec => (
+                <option key={spec} value={spec}>{spec}</option>
+              ))}
+            </select>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="reports-section">
-      {/* Заголовок */}
-      <div className="reports-header">
-        <div className="reports-title">
-          <h2><i className="fas fa-chart-pie"></i> Отчеты</h2>
-          <p>Создание и управление отчетами по социальной работе</p>
+      {/* Заголовок с кнопками */}
+      <div className="reports-cabinet-header">
+        <InfoIcon />
+        <div className="reports-header-actions">
+          <RefreshButton />
         </div>
-        
-        <div className="reports-actions">
-          <button className="btn-primary" onClick={handleCreateReport}>
-            <i className="fas fa-plus"></i>
-            Создать отчет
-          </button>
-          <button className="btn-secondary" onClick={() => setShowTemplatesModal(true)}>
-            <i className="fas fa-layer-group"></i>
-            Шаблоны
-          </button>
-        </div>
-      </div>
-
-      {/* Статистика */}
-      <div className="reports-stats-cards">
-        <div className="reports-stat-card">
-          <div className="reports-stat-icon">
-            <i className="fas fa-file-alt"></i>
-          </div>
-          <div className="reports-stat-info">
-            <h3>{stats.totalReports}</h3>
-            <p>Всего отчетов</p>
-          </div>
-        </div>
-        
-        <div className="reports-stat-card">
-          <div className="reports-stat-icon">
-            <i className="fas fa-clock"></i>
-          </div>
-          <div className="reports-stat-info">
-            <h3>{stats.pendingReports}</h3>
-            <p>Ожидают обработки</p>
-          </div>
-        </div>
-        
-        <div className="reports-stat-card">
-          <div className="reports-stat-icon">
-            <i className="fas fa-calendar-check"></i>
-          </div>
-          <div className="reports-stat-info">
-            <h3>{stats.thisMonth}</h3>
-            <p>За этот месяц</p>
-          </div>
-        </div>
-        
-        <div className="reports-stat-card">
-          <div className="reports-stat-icon">
-            <i className="fas fa-check-circle"></i>
-          </div>
-          <div className="reports-stat-info">
-            <h3>{stats.approvedReports}</h3>
-            <p>Утверждено</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Таблица отчетов */}
-      <div className="reports-table-container">
-        <div className="section-header" style={{ padding: '20px 24px', background: '#f8f9ff' }}>
-          <h3><i className="fas fa-history"></i> Недавние отчеты</h3>
-          <button 
-            className="btn-secondary" 
-            onClick={handleRefresh} 
-            disabled={loading}
-            style={{ padding: '10px 15px' }}
-          >
-            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
-          </button>
-        </div>
-        
-        <table className="reports-table">
-          <thead>
-            <tr>
-              <th>Название отчета</th>
-              <th>Тип</th>
-              <th>Дата создания</th>
-              <th>Статус</th>
-              <th>Автор</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map(report => (
-              <tr key={report.id}>
-                <td><strong>{report.name}</strong></td>
-                <td>
-                  <span style={{ 
-                    padding: '4px 10px', 
-                    background: '#f8f9ff', 
-                    borderRadius: '12px', 
-                    fontSize: '12px',
-                    color: '#002FA7'
-                  }}>
-                    {report.type}
-                  </span>
-                </td>
-                <td>{report.date}</td>
-                <td>{renderStatus(report.status)}</td>
-                <td>{report.author}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      className="btn-secondary" 
-                      style={{ padding: '5px 10px', fontSize: '12px' }}
-                      onClick={() => handleViewReport(report.id)}
-                    >
-                      <i className="fas fa-eye"></i>
-                    </button>
-                    <button 
-                      className="btn-secondary" 
-                      style={{ padding: '5px 10px', fontSize: '12px' }}
-                      onClick={() => handleEditReport(report.id)}
-                    >
-                      <i className="fas fa-edit"></i>
-                    </button>
-                    <button 
-                      className="btn-secondary" 
-                      style={{ padding: '5px 10px', fontSize: '12px' }}
-                      onClick={() => handleExportReport(report.id)}
-                    >
-                      <i className="fas fa-download"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {/* Быстрое создание отчетов */}
       <div className="reports-quick-create">
-        {reportTypes.map((type, index) => (
-          <div key={index} className="report-type-card" onClick={() => handleUseTemplate(type.title)}>
+        {reportTypeCards.map((type, index) => (
+          <div 
+            key={index} 
+            className="report-type-card"
+            onClick={() => handleCreateReport(type.title)}
+          >
             <div className="report-type-icon" style={{ background: type.gradient }}>
-              <i className={type.icon}></i>
+              <img src={type.icon} alt={type.title} className="report-type-svg-icon" />
             </div>
             <h4>{type.title}</h4>
             <p>{type.description}</p>
@@ -273,223 +360,271 @@ export const ReportsSection: React.FC = () => {
         ))}
       </div>
 
+      {/* Панель управления */}
+      <div className="reports-control-panel">
+        <div className="reports-controls-top-row">
+          <div className="reports-search-box">
+            <input
+              type="text"
+              placeholder="Поиск по названию или типу"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="reports-search-input"
+            />
+            <div className="reports-search-icon">
+              <img src="/social-icons/search_icon.svg" alt="Поиск" />
+            </div>
+            {searchTerm && (
+              <button className="reports-search-clear" onClick={() => setSearchTerm('')}>
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="reports-controls-middle-row">
+          <div className="reports-filters-grid">
+            <div className="reports-filter-group">
+              <label className="reports-filter-label">Тип отчета</label>
+              <select 
+                className="reports-filter-select"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <option value="all">Все типы</option>
+                {reportTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="reports-controls-bottom-row">
+          <div className="reports-sort-controls">
+            <div className="reports-sort-group">
+              <label className="reports-sort-label">Сортировка:</label>
+              <select 
+                className="reports-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="date">По дате</option>
+                <option value="name">По названию</option>
+                <option value="type">По типу</option>
+              </select>
+              <button 
+                className="reports-sort-order-btn"
+                onClick={toggleSortOrder}
+                title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
+              >
+                <img 
+                  src={sortOrder === 'asc' ? "/social-icons/sort_asc_icon.svg" : "/social-icons/sort_desc_icon.svg"} 
+                  alt="Сортировка"
+                  className="reports-sort-order-icon"
+                />
+                <span>{sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Таблица отчетов */}
+      <div className="recent-reports-section">
+        <div className="recent-reports-header">
+          <h3>Недавние отчеты</h3>
+          <div className="reports-count">
+            <img src="/social-icons/documents_icon.svg" alt="Фильтр" />
+            <span>Показано: <strong>{filteredReports.length}</strong> из <strong>{reports.length}</strong></span>
+          </div>
+        </div>
+        
+        <div className="recent-reports-table-container">
+          <table className="reports-table">
+            <thead>
+              <tr>
+                <th className="reports-number-column">№</th>
+                <th className="reports-name-column">Название отчета</th>
+                <th className="reports-type-column"></th>
+                <th className="reports-date-column"></th>
+                <th className="reports-actions-column"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReports.length > 0 ? (
+                filteredReports.map((report, index) => (
+                  <tr key={report.id} className="reports-row">
+                    <td className="reports-number-cell">{index + 1}.</td>
+                    <td className="reports-name-cell">
+                      <div className="reports-name-wrapper">
+                        <span className="reports-name">{report.name}</span>
+                      </div>
+                    </td>
+                    <td className="reports-type-cell">
+                      <span className="reports-type-badge">{report.type}</span>
+                    </td>
+                    <td className="reports-date-cell">
+                      <span className="reports-date">{report.date}</span>
+                    </td>
+                    <td className="reports-actions-cell">
+                      <div className="reports-actions">
+                        <button 
+                          className="reports-action-btn pdf-btn"
+                          onClick={() => handleDownload(report.id, 'pdf')}
+                          title="Скачать PDF"
+                        >
+                          PDF
+                        </button>
+                        <button 
+                          className="reports-action-btn word-btn"
+                          onClick={() => handleDownload(report.id, 'doc')}
+                          title="Скачать Word"
+                        >
+                          Word
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="reports-empty-cell">
+                    Отчеты не найдены
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Модальное окно создания отчета */}
       {showCreateModal && (
         <div className="reports-modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="reports-modal" onClick={(e) => e.stopPropagation()}>
             <div className="reports-modal-header">
-              <h3><i className="fas fa-file-export"></i> Создание нового отчета</h3>
-              <button className="reports-modal-close" onClick={() => setShowCreateModal(false)}>
-                &times;
+              <div className="reports-modal-header-content">
+                <div className="reports-modal-icon">
+                  <img src="/social-icons/creation_icon.svg" alt="Создать отчет" />
+                </div>
+                <div>
+                  <h3>Создание нового отчета</h3>
+                  <p className="reports-modal-subtitle">
+                    {currentTemplate || 'Заполните параметры отчета'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                className="reports-modal-close"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCurrentTemplate(null);
+                  setReportFilters({
+                    reportType: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    format: 'pdf'
+                  });
+                }}
+              >
+                ✕
               </button>
             </div>
-            
-            <div className="reports-modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="reports-form-group">
-                  <label>Тип отчета</label>
-                  <select className="reports-form-select">
-                    <option value="">Выберите тип отчета</option>
-                    <option value="category">По социальной категории</option>
-                    <option value="group">По учебной группе</option>
-                    <option value="summary">Сводный отчет</option>
-                    <option value="custom">Произвольный отчет</option>
-                  </select>
+
+            <div className="reports-modal-content"> 
+              {renderAdditionalFields()}
+              
+              {/* Период - две колонки */}
+              <div className="pc-form-row">
+                <div className="pc-form-group pc-form-group-half">
+                  <label>Период с</label>
+                  <input
+                    type="date"
+                    className="pc-input-enhanced"
+                    value={reportFilters.dateFrom}
+                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                  />
                 </div>
-                
-                <div className="reports-form-group">
-                  <label>Название отчета</label>
+                <div className="pc-form-group pc-form-group-half">
+                  <label>Период по</label>
+                  <input
+                    type="date"
+                    className="pc-input-enhanced"
+                    value={reportFilters.dateTo}
+                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Формат экспорта */}
+              <div className="pc-form-group">
+                <label>Формат экспорта</label>
+                <div className="format-toggle">
                   <input 
-                    type="text" 
-                    className="reports-form-input" 
-                    placeholder="Введите название отчета"
-                    defaultValue={currentTemplate ? `Отчет: ${currentTemplate}` : ''}
+                    type="radio" 
+                    name="format" 
+                    id="format-pdf"
+                    value="pdf" 
+                    checked={reportFilters.format === 'pdf'}
+                    onChange={(e) => handleFilterChange('format', e.target.value as 'pdf' | 'doc')}
                   />
-                </div>
-                
-                <div className="reports-form-group">
-                  <label>Описание</label>
-                  <textarea 
-                    className="reports-form-textarea" 
-                    placeholder="Введите описание отчета" 
-                    rows={3}
+                  <input 
+                    type="radio" 
+                    name="format" 
+                    id="format-doc"
+                    value="doc" 
+                    checked={reportFilters.format === 'doc'}
+                    onChange={(e) => handleFilterChange('format', e.target.value as 'pdf' | 'doc')}
                   />
-                </div>
-                
-                <div className="reports-form-group">
-                  <label>Формат экспорта</label>
-                  <div className="reports-radio-group">
-                    <label className="reports-radio-label">
-                      <input type="radio" name="format" value="pdf" defaultChecked />
-                      <span>PDF</span>
+                  
+                  <div className="format-toggle-slider">
+                    <label 
+                      htmlFor="format-pdf" 
+                      className={`format-option ${reportFilters.format === 'pdf' ? 'active' : ''}`}
+                    >
+                      PDF
                     </label>
-                    <label className="reports-radio-label">
-                      <input type="radio" name="format" value="excel" />
-                      <span>Excel</span>
+                    <label 
+                      htmlFor="format-doc" 
+                      className={`format-option ${reportFilters.format === 'doc' ? 'active' : ''}`}
+                    >
+                      Word
                     </label>
-                    <label className="reports-radio-label">
-                      <input type="radio" name="format" value="word" />
-                      <span>Word</span>
-                    </label>
+                    <div 
+                      className="format-toggle-highlight"
+                      style={{
+                        left: reportFilters.format === 'pdf' ? '4px' : 'calc(50% + 2px)',
+                        width: 'calc(50% - 8px)'
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="reports-modal-footer">
-              <button className="btn-secondary" onClick={() => setShowCreateModal(false)}>
+
+            <div className="reports-modal-actions">
+              <button
+                className="reports-btn-secondary"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCurrentTemplate(null);
+                  setReportFilters({
+                    reportType: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    format: 'pdf'
+                  });
+                }}
+              >
                 Отмена
               </button>
-              <button className="btn-primary">
-                <i className="fas fa-download"></i> Создать отчет
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно шаблонов */}
-      {showTemplatesModal && (
-        <div className="reports-modal-overlay" onClick={() => setShowTemplatesModal(false)}>
-          <div className="reports-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="reports-modal-header">
-              <h3><i className="fas fa-layer-group"></i> Шаблоны отчетов</h3>
-              <button className="reports-modal-close" onClick={() => setShowTemplatesModal(false)}>
-                &times;
-              </button>
-            </div>
-            
-            <div className="reports-modal-body">
-              <div className="reports-templates-grid">
-                {templates.map((template, index) => (
-                  <div 
-                    key={index} 
-                    className="report-template-card"
-                    onClick={() => handleUseTemplate(template.title)}
-                  >
-                    <div className="report-type-icon" style={{ background: 'linear-gradient(135deg, #002FA7 0%, #5986f7 100%)' }}>
-                      <i className={template.icon}></i>
-                    </div>
-                    <h4>{template.title}</h4>
-                    <p>{template.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="reports-modal-footer">
-              <button className="btn-secondary" onClick={() => setShowTemplatesModal(false)}>
-                Закрыть
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно предпросмотра */}
-      {showPreviewModal && (
-        <div className="reports-modal-overlay" onClick={() => setShowPreviewModal(false)}>
-          <div className="reports-modal" style={{ maxWidth: '1000px', height: '90vh' }} onClick={(e) => e.stopPropagation()}>
-            <div className="reports-modal-header">
-              <h3><i className="fas fa-eye"></i> Предпросмотр отчета</h3>
-              <button className="reports-modal-close" onClick={() => setShowPreviewModal(false)}>
-                &times;
-              </button>
-            </div>
-            
-            <div className="reports-modal-body" style={{ height: 'calc(100% - 120px)', overflowY: 'auto' }}>
-              <div className="report-preview">
-                <div className="report-preview-header">
-                  <h1 className="report-preview-title">Отчет по социальной работе</h1>
-                  <p className="report-preview-subtitle">Статистика и анализ • {new Date().toLocaleDateString('ru-RU')}</p>
-                  <div className="report-preview-metadata">
-                    <div>Дата создания: {new Date().toLocaleDateString('ru-RU')}</div>
-                    <div>Автор: Сергеева П.А.</div>
-                    <div>Политехнический колледж</div>
-                  </div>
-                </div>
-                
-                <div className="report-preview-section">
-                  <h3>Общая статистика</h3>
-                  <div className="report-preview-stats">
-                    <div className="report-preview-stat-item">
-                      <div className="report-preview-stat-value">450</div>
-                      <div className="report-preview-stat-label">Всего студентов</div>
-                    </div>
-                    <div className="report-preview-stat-item">
-                      <div className="report-preview-stat-value">12</div>
-                      <div className="report-preview-stat-label">Учебных групп</div>
-                    </div>
-                    <div className="report-preview-stat-item">
-                      <div className="report-preview-stat-value">72%</div>
-                      <div className="report-preview-stat-label">Социальный охват</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="report-preview-section">
-                  <h3>Распределение по категориям</h3>
-                  <table className="report-preview-table">
-                    <thead>
-                      <tr>
-                        <th>Социальная категория</th>
-                        <th>Количество студентов</th>
-                        <th>Процент от общего числа</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Дети-сироты</td>
-                        <td>24</td>
-                        <td>5.3%</td>
-                      </tr>
-                      <tr>
-                        <td>Дети из многодетных семей</td>
-                        <td>68</td>
-                        <td>15.1%</td>
-                      </tr>
-                      <tr>
-                        <td>Инвалиды и лица с ОВЗ</td>
-                        <td>18</td>
-                        <td>4.0%</td>
-                      </tr>
-                      <tr>
-                        <td>Малообеспеченные семьи</td>
-                        <td>95</td>
-                        <td>21.1%</td>
-                      </tr>
-                      <tr>
-                        <td>Студенты группы риска</td>
-                        <td>45</td>
-                        <td>10.0%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="report-preview-section">
-                  <h3>Выводы и рекомендации</h3>
-                  <p>На основании анализа социального состава студентов колледжа можно сделать следующие выводы:</p>
-                  <ul style={{ marginTop: '10px', paddingLeft: '20px', color: '#666' }}>
-                    <li>Наибольшую долю составляют студенты из малообеспеченных семей (21.1%)</li>
-                    <li>Требуется усилить работу с детьми-сиротами и студентами группы риска</li>
-                    <li>Необходимо разработать дополнительные меры социальной поддержки</li>
-                    <li>Рекомендуется увеличить количество индивидуальных консультаций</li>
-                  </ul>
-                </div>
-                
-                <div className="report-preview-footer">
-                  Отчет сгенерирован автоматически системой социального педагога
-                </div>
-              </div>
-            </div>
-            
-            <div className="reports-modal-footer">
-              <button className="btn-secondary" onClick={() => setShowPreviewModal(false)}>
-                Закрыть
-              </button>
-              <button className="btn-primary">
-                <i className="fas fa-download"></i> Скачать отчет
+              <button
+                className="reports-confirm-btn"
+                onClick={handleCreateSubmit}
+                disabled={!reportFilters.reportType}
+              >
+                Создать отчет
               </button>
             </div>
           </div>

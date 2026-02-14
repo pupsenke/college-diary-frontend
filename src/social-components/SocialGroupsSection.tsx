@@ -21,6 +21,7 @@ interface StudentData {
   name: string;
   gender: 'М' | 'Ж';
   birthDate: string;
+  education: 'Бюджетная' | 'Платная';
   address: string;
   phone: string;
   categories: string[];
@@ -68,8 +69,8 @@ export const GroupsSection: React.FC = () => {
       studentsCount: 32,
       performance: 86,
       attendance: 92,
-      headman: "Смирнов А.П.",
-      curator: "Петрова И.С.",
+      headman: "Шевякова А.И.",
+      curator: "Голубева Г.А.",
       categories: {
         "Дети-сироты": 2,
         "Дети из многодетных семей": 5,
@@ -89,8 +90,8 @@ export const GroupsSection: React.FC = () => {
       studentsCount: 30,
       performance: 82,
       attendance: 90,
-      headman: "Козлов М.И.",
-      curator: "Сидоров А.В.",
+      headman: "Соколов И.К.",
+      curator: "Сазонова Н.В.",
       categories: {
         "Дети-сироты": 1,
         "Дети из многодетных семей": 4,
@@ -107,8 +108,8 @@ export const GroupsSection: React.FC = () => {
   // Данные студентов
   const [studentsData] = useState<Record<number, StudentData[]>>({
     1: [
-      { id: 1, name: "Смирнов Алексей Петрович", gender: "М", birthDate: "15.03.2003", address: "г. Москва, ул. Ленина, д. 15", phone: "+7 (999) 123-45-67", categories: ["Дети из многодетных семей", "Одаренные дети"], risk: "low", notes: "Отличник, активный в общественной жизни" },
-      { id: 2, name: "Иванова Мария Сергеевна", gender: "Ж", birthDate: "22.07.2002", address: "г. Москва, пр. Мира, д. 42", phone: "+7 (999) 234-56-78", categories: ["Малообеспеченные семьи"], risk: "medium", notes: "Требуется материальная помощь" }
+      { id: 1, name: "Смирнов Алексей Петрович", gender: "М", birthDate: "15.03.2003", education:"Бюджетная", address: "г. Великий Новгород, ул. Мира, д. 15", phone: "+7 (999) 123-45-67", categories: ["Дети из многодетных семей", "Одаренные дети"], risk: "low", notes: "Отличник, активный в общественной жизни" },
+      { id: 2, name: "Иванова Мария Сергеевна", gender: "Ж", birthDate: "22.07.2002", education:"Платная", address: "г. Великий Новгород, пр. Кочетова, д. 42", phone: "+7 (999) 234-56-78", categories: ["Малообеспеченные семьи"], risk: "medium", notes: "Требуется материальная помощь" }
     ]
   });
 
@@ -1164,7 +1165,6 @@ export const GroupsSection: React.FC = () => {
                         : 'Список студентов с информацией о социальных категориях'}
                     </span>
                   </div>
-                  {/* Убираем старый селект фильтрации */}
                 </div>
 
                 {filteredStudents.length === 0 ? (
@@ -1252,6 +1252,10 @@ export const GroupsSection: React.FC = () => {
                             {isExpanded && (
                               <div className="sg-student-details-compact">
                                 <div className="sg-details-grid">
+                                  <div className="sg-detail-row">
+                                    <span className="sg-detail-label">Основа обучения:</span>
+                                    <span className="sg-detail-value">{student.education}</span>
+                                  </div>
                                   <div className="sg-detail-row">
                                     <span className="sg-detail-label">Адрес:</span>
                                     <span className="sg-detail-value">{student.address}</span>
@@ -1469,8 +1473,8 @@ export const GroupsSection: React.FC = () => {
 
       {/* Контент с группами */}
       <div className="sg-content-section">
-        <div className="sg-section-header">
-          <h3>Учебные группы</h3>
+        <div className="sg-groups-header">
+          <h4>Учебные группы</h4>
           <div className="sg-groups-count">
             <img src="/social-icons/filter_icon.svg" alt="Фильтр" />
             <span>Показано: <strong>{filteredGroups.length}</strong> из <strong>{groups.length}</strong></span>
