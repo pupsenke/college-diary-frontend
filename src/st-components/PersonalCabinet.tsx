@@ -588,13 +588,6 @@ const PersonalCabinetComponent: React.FC = () => {
             </div>
           )}
         </div>
-
-        {isEditing && (
-          <div className="pc-edit-notice">
-            <p>Поля, отмеченные *, обязательны для заполнения</p>
-          </div>
-        )}
-
         {isStudent && !isEditing && (
           <div className="pc-additional-actions">
             <button className="pc-action-btn" onClick={handlePasswordModalOpen}>

@@ -738,7 +738,7 @@
   z-index: 1000;
   padding: 20px;
   animation: pf-modal-fade-in 0.3s ease;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
 }
 
 @keyframes pf-modal-fade-in {
@@ -778,9 +778,9 @@
 .pf-popup-close {
   background: rgba(0, 47, 167, 0.1);
   border: none;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
+  border-radius: 4px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -793,7 +793,6 @@
 
 .pf-popup-close:hover {
   background: rgba(0, 47, 167, 0.2);
-  transform: rotate(90deg);
 }
 
 .pf-popup-content {
@@ -1325,10 +1324,10 @@
   background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
   color: white;
   border: none;
-  padding: 18px 32px;
+  padding: 16px 42px;
   border-radius: 15px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 6px 20px rgba(0, 47, 167, 0.3);
@@ -1407,14 +1406,14 @@
 }
 
 .pf-upload-file-btn {
-  padding: 18px 25px;
+  padding: 14px 25px;
   background: rgba(0, 47, 167, 0.08);
-  border: 2px solid rgba(0, 47, 167, 0.3);
+  border: 1px solid rgba(0, 47, 167, 0.3);
   border-radius: 15px;
   color: #002FA7;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1440,8 +1439,8 @@
 .pf-uploaded-files h5 {
   margin: 0 0 20px 0;
   color: #002FA7;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1460,9 +1459,7 @@
 }
 
 .pf-uploaded-file:hover {
-  background: #edf2f7;
   border-color: #cbd5e0;
-  transform: translateX(5px);
 }
 
 .pf-uploaded-file:last-child {
@@ -1498,13 +1495,13 @@
 }
 
 .pf-cancel-comment-btn {
-  padding: 16px 32px;
+  padding: 10px 42px;
   background: #f7fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   color: #718096;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 400;
   transition: all 0.3s ease;
   font-size: 1rem;
 }
@@ -1517,13 +1514,13 @@
 }
 
 .pf-submit-comment-btn {
-  padding: 16px 32px;
+  padding: 10px 42px;
   background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
   border: none;
   border-radius: 12px;
   color: white;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 400;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
   font-size: 1rem;
@@ -1610,15 +1607,16 @@
 .pf-edit-comment-form {
   margin-top: 15px;
   padding: 15px;
-  background-color: #f8fafc;
+  background-color: #ffffff;
   border-radius: 8px;
   border-left: 4px solid #3b82f6;
 }
 
 .pf-edit-comment-form h4 {
   margin: 0 0 10px 0;
-  color: #1e293b;
-  font-size: 14px;
+  color: #1f3456;
+  font-weight: 500;
+  font-size: 16px;
 }
 
 /* Стили для меню комментария */
@@ -2147,7 +2145,7 @@
 /* Адаптация для новых графиков */
 .pf-charts-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   margin-top: 20px;
 }
@@ -2158,6 +2156,7 @@
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   border: 1px solid #e2e8f0;
+  max-width: 100%;
 }
 
 .pf-chart-card h3 {
@@ -2169,9 +2168,7 @@
 
 /* Для мобильных устройств */
 @media (max-width: 768px) {
-  .pf-charts-grid {
-    grid-template-columns: 1fr;
-  }
+
 }
 
 .pf-full-width-chart {
@@ -2244,4 +2241,66 @@
   font-size: 0.9rem;
   color: #64748b;
   font-weight: 500;
+}
+
+
+
+
+
+/* стили для горизонтального расположения */
+.pf-analytics-top-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  align-items: stretch;
+}
+
+.pf-chart-half {
+  flex: 2;
+  min-width: 0; /* Предотвращает переполнение */
+}
+
+.pf-stats-vertical {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 0;
+}
+
+.pf-stats-vertical .pf-stat-card {
+  margin: 0;
+  padding: 20px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .pf-analytics-top-row {
+    flex-direction: column;
+  }
+  
+  .pf-chart-half,
+  .pf-stats-vertical {
+    width: 100%;
+  }
+  
+  .pf-stats-vertical {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .pf-stats-vertical .pf-stat-card {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pf-stats-vertical {
+    flex-direction: column;
+  }
+  
+  .pf-stats-vertical .pf-stat-card {
+    width: 100%;
+  }
 }

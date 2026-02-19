@@ -247,7 +247,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     try {
       const info = await apiService.getMarkInfo(studentId, stId, markNumber);
       
-      // Если typeMark все еще отсутствует, попробуем получить информацию о колонке
       if (!info.typeMark) {
         try {
           const columnInfo = await apiService.getMarkColumnInfo(studentId, stId, markNumber);
@@ -384,19 +383,16 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           selectedGrade.stId, 
           selectedGrade.number
         );
-        console.log('Supplement создан с ID:', supplementId);
       } catch (apiError) {
-        console.warn('API error, using fallback:', apiError);
+        console.warn('Ошибка:', apiError);
 
         supplementId = Date.now();
-        setError('Режим тестирования: комментарий не будет сохранен на сервере');
       }
       
       setNewSupplementId(supplementId);
       
     } catch (error) {
       console.error('Ошибка создания комментария:', error);
-      setError('Не удалось начать добавление комментария');
       setAddCommentMode(false);
       setNewSupplementId(null);
     }
@@ -647,32 +643,24 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   // Преобразование данных из API
   const transformStudentMarksToGrades = useCallback((semesterType: 'first' | 'second'): Grade[] => {
     if (!studentMarks || studentMarks.length === 0) {
-      console.log('Нет данных studentMarks для преобразования');
       return [];
     }
 
-    console.log('Преобразование studentMarks в grades:', studentMarks);
-
     return studentMarks
       .filter(studentMark => {
-        // Проверяем оба возможных поля
         const hasSubjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
-        console.log(`Фильтрация: hasSubjectData = ${hasSubjectData}`);
         return hasSubjectData;
       })
       .map((studentMark) => {
-        // Используем stteachersDTO если nameSubjectTeachersDTO отсутствует
         const subjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
         
         if (!subjectData) {
-          console.log('Нет данных о предмете');
           return null;
         }
 
         const subjectId = subjectData.idSubject;
         
         if (!subjectId) {
-          console.log('Нет subjectId');
           return null;
         }
 
@@ -686,13 +674,23 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           patronymicTeacher: 'П' 
         };
         
-        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        // ИСПРАВЛЕННАЯ ЧАСТЬ: формирование строки с преподавателем
+        let teacherString = mainTeacher.lastnameTeacher || 'Неизвестно';
+        
+        if (mainTeacher.nameTeacher && mainTeacher.nameTeacher !== 'Н' && mainTeacher.nameTeacher.trim() !== '') {
+          teacherString += ` ${mainTeacher.nameTeacher.charAt(0)}.`;
+          
+          // Добавляем инициал отчества ТОЛЬКО если оно существует и не пустое
+          if (mainTeacher.patronymicTeacher && 
+              mainTeacher.patronymicTeacher !== 'П' && 
+              mainTeacher.patronymicTeacher.trim() !== '') {
+            teacherString += `${mainTeacher.patronymicTeacher.charAt(0)}.`;
+          }
+        }
         
         if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
-          console.log(`marksBySt найдены: ${studentMark.marksBySt.length} оценок`);
           
           studentMark.marksBySt.forEach((mark, index) => {
-            console.log(`Обработка оценки ${index}:`, mark);
             
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
@@ -719,7 +717,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
                 if (mark.value !== null && mark.value !== undefined && mark.value > 0) {
                   validGrades.push(mark.value);
-                  console.log(`Добавлена оценка ${mark.value} для предмета ${subjectData.nameSubject}`);
                 }
               }
             }
@@ -745,10 +742,13 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           teacher: teacherString
         };
 
-        console.log('Преобразованный предмет:', result);
         return result;
       })
-      .filter(grade => grade !== null) as Grade[];
+      .filter(grade => grade !== null)
+      .sort((a, b) => {  // Сортировка по алфавиту
+        if (!a || !b) return 0;
+        return (a.subject || '').localeCompare(b.subject || '', 'ru');
+      }) as Grade[];
   }, [studentMarks, markTypes, marksWithDates]);
 
   useEffect(() => {
@@ -1752,34 +1752,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         </div>
       );
     }
+
+    const gradeTypesData = calculateGradeTypesData();
+
     return (
       <div className="pf-analytics-container">
-        <div className="pf-stats-cards">
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.overallAverage}</div>
-              <div className="pf-stat-label">Средний балл</div>
-            </div>
-          </div>
-
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
-              <div className="pf-stat-label">Оценок 4+</div>
-            </div>
-          </div>
-
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.totalGrades}</div>
-              <div className="pf-stat-label">Всего оценок</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pf-charts-grid">
-          {/* Распределение оценок - оставляем */}
-          <div className="pf-chart-card">
+        {/* Верхний блок с графиком и статистикой */}
+        <div className="pf-analytics-top-row">
+          {/* График распределения оценок слева */}
+          <div className="pf-chart-card pf-chart-half">
             <h3>Распределение оценок</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={performanceData}>
@@ -1798,39 +1779,40 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             </ResponsiveContainer>
           </div>
 
-          {/* Новый график: Количество оценок по типам */}
-          <div className="pf-chart-card">
-            <h3>Типы оценок</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={calculateGradeTypesData()}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  {calculateGradeTypesData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          {/* Карточки статистики справа */}
+          <div className="pf-stats-cards pf-stats-vertical">
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.overallAverage}</div>
+                <div className="pf-stat-label">Средний балл</div>
+              </div>
+            </div>
+
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
+                <div className="pf-stat-label">Оценок 4+</div>
+              </div>
+            </div>
+
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.totalGrades}</div>
+                <div className="pf-stat-label">Всего оценок</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="pf-full-width-chart">
+
+        {/* Нижний ряд с графиками */}
+        <div className="pf-charts-grid">
+          {/* График средних баллов */}
           <div className="pf-chart-card">
-            <h3>Средние баллы по предметам <p>(10 предметов)</p></h3>
+            <h3>Средние баллы по предметам</h3>
             <ResponsiveContainer 
               width="100%" 
               height={Math.max(250, gradesData
                 .filter(subject => subject.average > 0)
-                .sort((a, b) => b.average - a.average)
                 .slice(0, 10)
                 .length * 90 + 80)}
             >

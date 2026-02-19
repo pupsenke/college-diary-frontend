@@ -95,6 +95,16 @@ export interface CuratorInfo {
   email: string;
 }
 
+export interface FullStudentInfo extends StudentInfo {
+  birthDate: string | null;
+  address: string | null;
+  login: string;
+  password?: string;
+  idGroup: number;
+  code: string | null;
+}
+
+
 export const headApiService = {
   // Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
@@ -244,6 +254,91 @@ export const headApiService = {
       };
     } catch (error) {
       console.error('Ошибка при получении информации об отделении:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ДАННЫХ СТУДЕНТА ПО ID
+  async getStudentById(studentId: number): Promise<FullStudentInfo> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/students/id/${studentId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения данных студента: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении данных студента:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ОЦЕНОК СТУДЕНТА
+  async getStudentMarks(studentId: number): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${studentId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения оценок студента: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении оценок студента:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ПОСЕЩАЕМОСТИ СТУДЕНТА
+  async getStudentAttendance(studentId: number): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/attendances/student/${studentId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения посещаемости студента: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении посещаемости студента:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ДОКУМЕНТОВ СТУДЕНТА
+  async getStudentDocuments(studentId: number): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/paths`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения документов: ${response.status}`);
+      }
+      const allDocuments = await response.json();
+      return allDocuments.filter((doc: any) => doc.idStudent === studentId || doc.studentId === studentId);
+    } catch (error) {
+      console.error('Ошибка при получении документов студента:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ГРУППЕ (уже есть, но добавлю для полноты)
+  async getGroupById(groupId: number): Promise<Group> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/id/${groupId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения данных группы: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении данных группы:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ ДАННЫХ ПРЕПОДАВАТЕЛЯ
+  async getTeacherById(teacherId: number): Promise<Staff> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${teacherId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения данных преподавателя: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении данных преподавателя:', error);
       throw error;
     }
   }

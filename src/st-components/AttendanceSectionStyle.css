@@ -1,3 +1,10 @@
+/* Запрет прокрутки body */
+body.at-modal-open {
+  overflow: hidden;
+  position: fixed; /* Для некоторых браузеров */
+  width: 100%; /* Предотвращает сдвиг контента */
+}
+
 /* Основные стили */
 .at-attendance-section {
   min-height: 100vh;
@@ -760,14 +767,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(50, 64, 124, 0.3);
-  backdrop-filter: blur(2px);
+  background-color: rgba(50, 64, 124, 0.3);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: at-fadeIn 0.2s ease;
-  backdrop-filter: blur(8px);
 }
 
 .at-popup {
@@ -819,7 +825,6 @@
 
 .at-popup-close:hover {
   background: rgba(0, 47, 167, 0.2);
-  transform: rotate(90deg);
 }
 
 

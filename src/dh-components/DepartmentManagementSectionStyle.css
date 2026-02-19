@@ -217,11 +217,11 @@
 }
 
 .dhm-performance-card {
-  border-top: 4px solid #10b981;
+  border-top: 4px solid #002fa7b1;
 }
 
 .dhm-attendance-card {
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid #002fa7b1;
 }
 
 .dhm-metric-header {
@@ -322,12 +322,13 @@
 .dhm-search-input {
   width: 100%;
   padding: 10px 16px 10px 16px;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
   background: white;
   color: #1f2937;
+  font-weight: 200;
 }
 
 .dhm-search-input:focus {
@@ -488,7 +489,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(50, 64, 124, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -801,6 +802,7 @@
 .dhm-students-preview {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
   width: 100%;
 }
@@ -813,6 +815,7 @@
   background: white;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  width: 98%;
 }
 
 .dhm-student-avatar {
@@ -1219,6 +1222,7 @@
 
 .dhm-more-students {
   text-align: center;
+  width: 100%;
   padding: 15px;
   color: #666;
   font-size: 14px;
@@ -1324,7 +1328,6 @@
   align-items: center;
   padding: 12px 15px;
   border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s;
 }
 
 .dhm-student-item:hover {
@@ -1409,7 +1412,7 @@
 
 /* Стили для скроллбара в списке студентов */
 .dhm-all-students::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 .dhm-all-students::-webkit-scrollbar-track {
@@ -1424,4 +1427,100 @@
 
 .dhm-all-students::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+
+
+/* Стили для кликабельного элемента студента */
+.dhm-student-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0 -12px;
+}
+
+.dhm-student-clickable:hover {
+  background-color: #f0f9ff;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.dhm-student-clickable:hover .dhm-student-avatar {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+}
+
+/* Анимация при клике */
+.dhm-student-clickable:active {
+  transform: scale(0.98);
+}
+
+/* Стили для модального окна профиля студента */
+.sp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(50, 64, 124, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2100;
+  animation: sp-fadeIn 0.2s ease;
+}
+
+.sp-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: sp-slideUp 0.3s ease;
+}
+
+@keyframes sp-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sp-slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Стили для подсказки при наведении */
+.dhm-student-item {
+  position: relative;
+}
+
+.dhm-student-clickable::after {
+  content: 'Просмотр профиля';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.1);
+  padding: 4px 12px;
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.dhm-student-clickable:hover::after {
+  opacity: 1;
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .dhm-student-clickable::after {
+    display: none;
+  }
 }

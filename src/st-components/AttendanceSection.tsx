@@ -134,25 +134,19 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
 
       const data: SubjectAttendance[] = await apiService.getStudentAttendance(studentId);
       
-      // Логирование для отладки
-      console.log('Полученные данные от API:', data);
-      
       if (!data || !Array.isArray(data)) {
         console.error('Некорректные данные от API:', data);
-        setError('Получены некорректные данные о посещаемости');
         setAttendanceData([]);
         return;
       }
 
       const transformedData: Attendance[] = data
-      .filter(subject => subject) // Фильтруем пустые
+      .filter(subject => subject)
       .map((subject, index) => {
-        // Получаем данные о предмете и преподавателях (используем новую структуру или старую)
         const subjectDTO = subject.stteachersDTO || subject.nameSubjectTeachersDTO;
         
         if (!subjectDTO) {
           console.warn('Отсутствуют данные о предмете:', subject);
-          // Вместо возврата null возвращаем минимальный объект Attendance
           const fallbackId = Date.now() + index;
           return {
             id: fallbackId,
@@ -167,7 +161,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         
         const teachers = subjectDTO.teachers || [];
         
-        // Определяем преподавателя
         let teacherString = 'Не указан';
         if (teachers.length > 0) {
           const mainTeacher = teachers[0];
@@ -184,16 +177,11 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
           }
         }
         
-        // Получаем имя предмета
         const subjectName = subjectDTO.nameSubject || `Предмет ${index + 1}`;
-        
-        // Получаем ID предмета
         const subjectId = subjectDTO.idSubject || index;
-        
-        // Включаем ВСЕ статусы для отображения
+
         const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances?.map(a => a?.status) || [];
         
-        // Для статистики учитываем только выставленные статусы
         const validAttendances = subject.attendances?.filter(a => a?.status !== null) || [];
         const validStatuses = validAttendances.map(a => a.status as 'п' | 'у' | 'н');
         
@@ -220,20 +208,16 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
           reasonStatus
         };
       })
-        .filter((attendance): attendance is NonNullable<typeof attendance> => 
-  attendance !== null
+        .filter((attendance): attendance is NonNullable<typeof attendance> => attendance !== null
 );
 
-        const sortedData = [...transformedData].sort((a, b) => 
-      a.subject.localeCompare(b.subject, 'ru')
+        const sortedData = [...transformedData].sort((a, b) => a.subject.localeCompare(b.subject, 'ru')
     );
 
-      console.log('Преобразованные данные:', sortedData);
       setAttendanceData(sortedData);
       
     } catch (error) {
       console.error('Ошибка при загрузке данных с API:', error);
-      setError('Не удалось загрузить данные о посещаемости');
       setAttendanceData([]);
     } finally {
       setLoading(false);
@@ -294,6 +278,20 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       setSemesters(getSemestersByCourse(1));
     }
   };
+
+  useEffect(() => {
+    // Добавляем/удаляем класс при открытии/закрытии модалки
+    if (selectedAttendance) {
+      document.body.classList.add('at-modal-open');
+    } else {
+      document.body.classList.remove('at-modal-open');
+    }
+
+    // Очистка при размонтировании
+    return () => {
+      document.body.classList.remove('at-modal-open');
+    };
+  }, [selectedAttendance]);
 
 
   useEffect(() => {

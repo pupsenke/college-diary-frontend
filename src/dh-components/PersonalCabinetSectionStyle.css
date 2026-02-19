@@ -1,5 +1,3 @@
-/* PersonalCabinetSectionStyle.css */
-
 .dh-pc-section {
   background: white;
   border-radius: 20px;
@@ -173,7 +171,6 @@
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid #e2e8f0;
-  
 }
 
 .dh-pc-header-actions {
@@ -381,13 +378,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(50, 64, 124, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   padding: 20px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(5px);
 }
 
 .dh-pc-modal-content {

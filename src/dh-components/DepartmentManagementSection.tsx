@@ -204,14 +204,7 @@ export const DepartmentManagementSection: React.FC = () => {
                       <div className="dhm-stat-number">{departmentInfo.totalGroups}</div>
                       <div className="dhm-stat-text">учебных групп</div>
                     </div>
-                  </div>
-                  
-                  <div className="dhm-stat-item">
-                    <div className="dhm-stat-content">
-                      <div className="dhm-stat-number">{departmentInfo.totalTeachers}</div>
-                      <div className="dhm-stat-text">преподавателей</div>
-                    </div>
-                  </div>
+                  </div>     
                 </div>
               </div>
             </div>
@@ -259,7 +252,7 @@ export const DepartmentManagementSection: React.FC = () => {
                     <input
                       type="text"
                       className="dhm-search-input"
-                      placeholder="Поиск по группам, кураторам, старостам..."
+                      placeholder="Поиск по группам"
                       value={searchTerm}
                       onChange={handleSearchChange}
                     />
