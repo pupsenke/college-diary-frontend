@@ -369,20 +369,20 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Выберите нужную группу из списка</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Для работы с посещаемостью нажмите "Выставить посещаемость"</span>
               </div>
-              <div className="step">
-                <span className="step-number">3</span>
+              <div className="steps">
+                <span className="steps-number">3</span>
                 <span>Для работы с оценками нажмите "Выставить оценки"</span>
               </div>
-              <div className="step">
-                <span className="step-number">4</span>
+              <div className="steps">
+                <span className="steps-number">4</span>
                 <span>Используйте фильтры или поиск по группам</span>
               </div>
             </div>
