@@ -1342,7 +1342,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0e2ecf 0%, #416aff9c 100%);
+  background: #002FA7;
   color: white;
   display: flex;
   align-items: center;
@@ -1443,11 +1443,11 @@
 .dhm-student-clickable:hover {
   background-color: #f0f9ff;
   transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 2px 8px rgba(173, 173, 173, 0.1);
 }
 
 .dhm-student-clickable:hover .dhm-student-avatar {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background: #1e40af;
   color: white;
 }
 

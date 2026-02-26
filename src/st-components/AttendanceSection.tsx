@@ -1210,7 +1210,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
               ) : (
                 <div className="at-no-subject-selected">
                   <div className="at-empty-state">
-                    <h3>Выберите предмет</h3>
                     <p>Для просмотра детальной информации выберите предмет из списка</p>
                   </div>
                 </div>

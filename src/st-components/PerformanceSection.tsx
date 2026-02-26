@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './PerformanceSectionStyle.css';
 import { apiService, StudentMark, MarkInfo, Lesson, Supplement, MarkChange, Document } from '../services/studentApiService'; 
 import { useUser, Student } from '../context/UserContext';
+import { GradeAccordionItem } from './GradeAccordion';
 
 import {
   BarChart,
@@ -29,7 +30,7 @@ interface SemesterInfo {
   value: 'first' | 'second';
 }
 
-interface GradeDetail {
+export interface GradeDetail {
   id: number;
   date: string;
   topic: string;
@@ -206,20 +207,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Функция для получения иконки файла
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const icons: { [key: string]: string } = {
-      'pdf': '📄',
-      'doc': '📝',
-      'docx': '📝',
-      'xls': '📊',
-      'xlsx': '📊',
-      'jpg': '🖼️',
-      'jpeg': '🖼️',
-      'png': '🖼️',
-      'zip': '📦',
-      'rar': '📦'
-    };
-    return icons[extension || ''] || '📎';
+    return <img src="/st-icons/file_icon.svg" alt="file icon" className="pf-comment-icon" />;
   };
 
   // Функция для скачивания файла
@@ -437,6 +425,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
   };
 
+  // Функция для сохранения комментария
   const handleSaveComment = async () => {
     if (!newSupplementId || !selectedGrade?.stId) {
       setError('Не удалось создать комментарий');
@@ -449,7 +438,20 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       }
       
       if (uploadingFiles.length > 0) {
-        await apiService.uploadSupplementFiles(newSupplementId, uploadingFiles);
+        
+        // последовательно
+        for (let i = 0; i < uploadingFiles.length; i++) {
+          const file = uploadingFiles[i];
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            await apiService.uploadSupplementFiles(newSupplementId, [file]);
+            
+            console.log(`Файл ${file.name} успешно загружен`);
+          } catch (fileError) {
+            console.error(`Ошибка загрузки файла ${file.name}:`, fileError);
+          }
+        }
       }
       
       if (selectedGrade.stId) {
@@ -466,6 +468,44 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } catch (error) {
       console.error('Ошибка сохранения комментария:', error);
       setError('Не удалось сохранить комментарий');
+    }
+  };
+
+  // Функция для обновления комментария
+  const handleUpdateComment = async (changeId: number, supplementId: number | null) => {
+    if (!selectedGrade?.stId) return;
+    
+    try {
+      if (supplementId) {
+        if (newComment.trim()) {
+          await apiService.updateSupplementComment(supplementId, newComment);
+        }
+        
+        if (uploadingFiles.length > 0) {
+          
+          for (let i = 0; i < uploadingFiles.length; i++) {
+            const file = uploadingFiles[i];
+            try {
+              await apiService.uploadSupplementFiles(supplementId, [file]);
+              console.log(`Файл ${file.name} успешно загружен`);
+            } catch (fileError) {
+              console.error(`Ошибка загрузки файла ${file.name}:`, fileError);
+            }
+          }
+          
+          console.log('Загрузка всех файлов завершена');
+        }
+      }
+      
+      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      
+      setEditingComment(null);
+      setNewComment('');
+      setUploadingFiles([]);
+
+    } catch (error) {
+      console.error('Ошибка обновления комментария:', error);
+      setError('Не удалось обновить комментарий');
     }
   };
 
@@ -489,31 +529,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } catch (error) {
       console.error('Ошибка удаления supplement:', error);
       setError('Не удалось отменить добавление комментария');
-    }
-  };
-
-// Функция для обновления комментария
-  const handleUpdateComment = async (changeId: number, supplementId: number | null) => {
-    if (!selectedGrade?.stId) return;
-    
-    try {
-      if (supplementId) {
-        await apiService.updateSupplementComment(supplementId, newComment);
-      }
-      
-      if (uploadingFiles.length > 0 && supplementId) {
-        await apiService.uploadSupplementFiles(supplementId, uploadingFiles);
-      }
-      
-      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
-      
-      setEditingComment(null);
-      setNewComment('');
-      setUploadingFiles([]);
-
-    } catch (error) {
-      console.error('Ошибка обновления комментария:', error);
-      setError('Не удалось обновить комментарий');
     }
   };
 
@@ -1186,7 +1201,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                       <button 
                                         className="pf-download-file-btn"
                                         onClick={() => handleDownloadFile(file.id, file.name)}
-                                        title="Скачать"
                                       >
                                         Скачать
                                       </button>
@@ -1367,7 +1381,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
-                                                  title="Скачать"
                                                 >
                                                   Скачать
                                                 </button>
@@ -1388,7 +1401,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
-                                                  title="Скачать"
                                                 >
                                                   Скачать
                                                 </button>
@@ -1946,44 +1958,25 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     </div>
                   </div>
 
-                 <div className="pf-grades-timeline">
+                  <div className="pf-grades-accordion">
                     {selectedSubjectData?.gradeDetails?.map((detail) => (
-                      <div key={detail.id} className="pf-timeline-item">
-                        <div className="pf-timeline-content"
-                        onClick={() => handleGradeClick(
-                                selectedSubjectData.subject,
-                                detail.hasValue ? detail.grade : null,
-                                detail.id,
-                                detail.topic, // Передаем актуальный topic
-                                selectedSubjectData.teacher,
-                                detail.stId
-                              )}>
-                          
-                          <div className="pf-grade-header">
-                            {/* Здесь будет отображаться реальный тип работы */}
-                            <span className="pf-grade-topic">{detail.topic}</span>
-                            <span className="pf-grade-date">{detail.date}</span>
-                          </div>
-                          <div className="pf-grade-details">
-                            <span 
-                              className={`pf-grade-value ${!detail.hasValue ? 'pf-no-data' : ''}`}
-                              style={{ 
-                                backgroundColor: detail.hasValue ? getGradeColor(detail.grade) : '#d1d5db'
-                              }}
-                              
-                            >
-                              {detail.hasValue ? detail.grade : '-'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <GradeAccordionItem
+                        key={detail.id}
+                        detail={detail}
+                        subject={selectedSubjectData.subject}
+                        teacher={selectedSubjectData.teacher}
+                        studentId={studentId}
+                        onGradeClick={handleGradeClick}
+                        onDownloadFile={handleDownloadFile}
+                        getFileIcon={getFileIcon}
+                        getGradeColor={getGradeColor}
+                      />
                     ))}
                   </div>
                 </div>
               ) : (
                 <div className="pf-no-subject-selected">
                   <div className="pf-empty-state">
-                    <h3>Выберите предмет</h3>
                     <p>Для просмотра детальной информации выберите предмет из списка</p>
                   </div>
                 </div>
@@ -1991,7 +1984,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             </div>
           </div>
         )}
-
         {activeTab === 'analytics' && renderAnalytics()}
       </div>
 
