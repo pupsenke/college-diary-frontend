@@ -162,7 +162,7 @@ export const getCurrentWeekType = (): 'upper' | 'lower' => {
   const diffTime = today.getTime() - startOfAcademicYear.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   const weekNumber = Math.floor(diffDays / 7) + 1; 
-  // Согласно календарю: нечетные недели - верхние, четные - нижние
+  // нечетные недели - верхние, четные - нижние
   return weekNumber % 2 === 1 ? 'upper' : 'lower';
 };
 
