@@ -346,7 +346,18 @@ export const PersonalCabinetSection: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <button 
+                    
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Панель быстрых действий справа */}
+        <div className="dh-pc-content-right">
+          <div className="dh-pc-quick-actions-panel">
+            <button 
                       className="dh-pc-edit-btn"
                       onClick={() => setIsEditing(true)}
                       disabled={isLoading}
@@ -360,37 +371,6 @@ export const PersonalCabinetSection: React.FC = () => {
                     >
                       Сменить пароль
                     </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Панель быстрых действий справа */}
-        <div className="dh-pc-content-right">
-          <div className="dh-pc-quick-actions-panel">
-            <h3 className="dh-pc-quick-actions-title">Быстрые действия</h3>
-            <p className="dh-pc-quick-actions-subtitle">Перейдите к нужному разделу</p>
-            
-            <div className="dh-pc-quick-actions-grid">
-              {quickActions.map((action) => (
-                <div 
-                  key={action.id}
-                  className="dh-pc-quick-action-card"
-                  onClick={() => handleQuickActionClick(action)}
-                >
-                  <div className="dh-pc-quick-action-icon">
-                    {action.icon}
-                  </div>
-                  <div className="dh-pc-quick-action-content">
-                    <h4 className="dh-pc-quick-action-title">{action.title}</h4>
-                    <p className="dh-pc-quick-action-description">{action.description}</p>
-                  </div>
-                  <div className="dh-pc-quick-action-arrow">→</div>
-                </div>
-              ))}
-            </div>
 
             <div className="dh-pc-stats-card">
               <h4 className="dh-pc-stats-title">Статистика отделения</h4>

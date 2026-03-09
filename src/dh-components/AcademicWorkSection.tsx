@@ -435,7 +435,6 @@ export const AcademicWorkSection: React.FC = () => {
     <div className="dh-at-section dh-at-academic-section">
       <div className="dh-at-section-header">
         <h1 className="dh-at-section-title">Сводные ведомости групп</h1>
-        <p className="dh-at-section-subtitle">Просмотр и редактирование аттестационных ведомостей групп отделения</p>
       </div>
 
       <div className="dh-at-groups-grid">

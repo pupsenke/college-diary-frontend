@@ -18,7 +18,7 @@ export const DepartmentHeadPage: React.FC = () => {
 
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['management', 'staff', 'academic', 'reports', 'personal'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['management', 'academic', 'reports', 'personal'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -31,7 +31,6 @@ export const DepartmentHeadPage: React.FC = () => {
   const getTabIcon = (tabName: string) => {
     const icons = {
       management: '/dh-icons/management_icon.svg',
-      staff: '/dh-icons/staff_icon.svg',
       academic: '/dh-icons/academic_icon.svg',
       reports: '/dh-icons/reports_icon.svg',
       personal: '/dh-icons/personal_icon.svg'
@@ -42,7 +41,6 @@ export const DepartmentHeadPage: React.FC = () => {
   const getTabTitle = (tabName: string) => {
     const titles = {
       management: 'Отделение',
-      staff: 'Сотрудники',
       academic: 'Сводные ведомости',
       reports: 'Документы и отчеты',
       personal: 'Личный кабинет'
@@ -58,8 +56,6 @@ export const DepartmentHeadPage: React.FC = () => {
     switch (activeTab) {
       case 'management':
         return <DepartmentManagementSection />;
-      case 'staff':
-        return <StaffManagementSection />;
       case 'academic':
         return <AcademicWorkSection />;
       case 'reports':
@@ -106,7 +102,7 @@ export const DepartmentHeadPage: React.FC = () => {
             </div>
 
             <nav className="dh-sidebar-nav">
-              {['management', 'staff', 'academic', 'reports', 'personal'].map((tab) => (
+              {['management', 'academic', 'reports', 'personal'].map((tab) => (
                 <button
                   key={tab}
                   className={`dh-nav-item ${activeTab === tab ? 'active' : ''}`}
