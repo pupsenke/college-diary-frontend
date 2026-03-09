@@ -1,8 +1,8 @@
 /* Запрет прокрутки body */
 body.at-modal-open {
   overflow: hidden;
-  position: fixed; /* Для некоторых браузеров */
-  width: 100%; /* Предотвращает сдвиг контента */
+  position: fixed;
+  width: 100%;
 }
 
 /* Основные стили */
@@ -297,7 +297,9 @@ body.at-modal-open {
   align-items: center;
 }
 
-.at-preview-status {
+.at-preview-status,
+.at-stack-status,
+.at-attendance-value {
   width: 35px;
   height: 35px;
   border-radius: 10px;
@@ -312,9 +314,21 @@ body.at-modal-open {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.at-preview-status:hover {
+.at-preview-status:hover,
+.at-stack-status:hover,
+.at-attendance-value:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  position: relative;
+}
+
+/* Для неотмеченных статусов */
+.at-stack-status[style*="background-color: #d1d5db"]:hover,
+.at-preview-status[style*="background-color: #d1d5db"]:hover,
+.at-attendance-value[style*="background-color: #d1d5db"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .at-more-statuses {
@@ -324,6 +338,12 @@ body.at-modal-open {
   border-radius: 10px;
   font-size: 0.8em;
   font-weight: 500;
+}
+
+.at-no-statuses {
+  color: #94a3b8;
+  font-size: 0.9em;
+  font-style: italic;
 }
 
 /* Футер карточки */
@@ -395,21 +415,15 @@ body.at-modal-open {
 }
 
 .at-subject-name {
-  font-weight: 700;
+  font-weight: 600;
   color: #1e293b;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .at-subject-teacher {
   font-size: 0.9rem;
   color: #64748b;
   font-weight: 500;
-}
-
-
-.at-subject-cell .at-subject-name {
-  font-weight: 600;
-  color: #2d3748;
 }
 
 .at-attendance-cell {
@@ -420,24 +434,6 @@ body.at-modal-open {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.at-stack-status {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 0.85em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.at-stack-status:hover {
-  transform: scale(1.1);
 }
 
 .at-absences-cell {
@@ -587,6 +583,76 @@ body.at-modal-open {
   text-align: center;
 }
 
+.at-chart-header {
+  margin-bottom: 20px;
+}
+
+/* Фильтр периодов */
+.at-period-filter {
+  margin-bottom: 20px;
+}
+
+.at-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.at-date-input {
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  min-width: 140px;
+}
+
+.at-date-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.at-date-separator {
+  color: #718096;
+  font-weight: 500;
+}
+
+.at-apply-filter-btn {
+  padding: 8px 16px;
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.at-apply-filter-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.at-reset-filter-btn {
+  padding: 8px 16px;
+  background: #c7cad1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.at-reset-filter-btn:hover {
+  background: rgb(142, 146, 152);
+  transform: translateY(-1px);
+}
+
 /* Детали предмета */
 .at-subject-detail-container {
   background: white;
@@ -667,47 +733,12 @@ body.at-modal-open {
   margin-bottom: 25px;
 }
 
-.at-timeline-marker {
-  position: absolute;
-  left: -30px;
-  top: 5px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #002FA7;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.3);
-}
-
 .at-timeline-content {
   background: white;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   border: 1px solid #f1f5f9;
-}
-
-.at-attendance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.at-attendance-topic {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 1.1em;
-}
-
-.at-attendance-date {
-  color: #718096;
-  font-size: 0.9em;
-  background: #f7fafc;
-  padding: 4px 10px;
-  border-radius: 8px;
 }
 
 .at-attendance-details {
@@ -718,50 +749,42 @@ body.at-modal-open {
   margin-bottom: 10px;
 }
 
-.at-attendance-value {
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
+.at-attendance-date {
+  color: #718096;
   font-size: 0.9em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.at-attendance-value:hover {
-  transform: scale(1.05);
+  background: #f7fafc;
+  padding: 4px 10px;
+  border-radius: 8px;
 }
 
 /* Состояние без выбранного предмета */
-.at-no-subject-selected {
+.at-no-subject-selected,
+.at-no-data-state {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 300px;
+  min-height: 400px;
+  width: 100%;
 }
 
 .at-empty-state {
   text-align: center;
-  color: #718096;
+  padding: 2rem;
+  max-width: 400px;
 }
 
 .at-empty-state h3 {
-  margin: 0 0 10px 0;
-  color: #4a5568;
-  font-size: 1.5em;
+  color: #64748b;
+  margin-bottom: 0.5rem;
 }
 
 .at-empty-state p {
-  margin: 0;
+  color: #94a3b8;
+  margin-bottom: 1rem;
   font-size: 1.1em;
 }
 
-/* Попап с информацией о посещаемости */
+/* Попап */
 .at-popup-overlay {
   position: fixed;
   top: 0;
@@ -788,9 +811,22 @@ body.at-modal-open {
   border: 1px solid #e2e8f0;
 }
 
+.at-popup-large {
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: at-scaleIn 0.3s ease;
+}
+
 @keyframes at-modal-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes at-scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .at-popup-header {
@@ -828,271 +864,14 @@ body.at-modal-open {
   background: rgba(0, 47, 167, 0.2);
 }
 
-
-.at-attendance-info-minimal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-}
-
-.at-status-circle-minimal {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid;
-  transition: all 0.3s ease;
-}
-
-.at-status-symbol-minimal {
-  font-size: 1.8em;
-  font-weight: 700;
-  color: white;
-}
-
-.at-attendance-details-minimal {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.at-detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f8fafc;
-}
-
-.at-detail-item:last-child {
-  border-bottom: none;
-}
-
-.at-detail-label {
-  color: #64748b;
-  font-size: 0.85em;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.at-detail-value {
-  color: #1e293b;
-  font-weight: 500;
-  font-size: 1em;
-}
-
-.at-detail-value.at-status-text {
-  font-weight: 400;
-}
-
-.at-detail-value.at-teacher {
-  color: #002FA7;
-  font-weight: 600;
-}
-
-.at-loading-small {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  color: #718096;
-  text-align: center;
-}
-
-.at-loading-small .at-loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid rgba(0, 47, 167, 0.2);
-  border-left: 3px solid #002FA7;
-  border-radius: 50%;
-  animation: at-spin 1s linear infinite;
-  margin-bottom: 10px;
-}
-
-.at-loading-small p {
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.at-insufficient-data {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  text-align: center;
-  padding: 40px 20px;
-  color: #6b7280;
-}
-
-.at-insufficient-data h4 {
-  margin: 0 0 10px 0;
-  color: #868b95;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-/* Стили для информации о неотмеченных статусах */
-.at-no-status-info {
-  margin-top: 10px;
-  padding-top: 20px;
-  border-top: 2px solid rgba(0, 47, 167, 0.1);
-}
-
-.at-detail-value.at-no-status-text {
-  background: rgba(107, 114, 128, 0.1);
-  padding: 16px 20px;
-  border-radius: 12px;
-  border-left: 4px solid #6b7280;
-  font-weight: 500;
-  line-height: 1.5;
-  color: #6b7280;
-  font-style: italic;
-  font-size: 1rem;
-}
-
-/* Улучшенные стили для статусов в таблице и сетке */
-.at-stack-status,
-.at-preview-status {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.at-stack-status:hover,
-.at-preview-status:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-  position: relative;
-}
-
-/* Для неотмеченных статусов - менее выраженный ховер */
-.at-stack-status[style*="background-color: #d1d5db"]:hover,
-.at-preview-status[style*="background-color: #d1d5db"]:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .at-nav {
-    flex-direction: column;
-    padding: 0 20px;
-  }
-  
-  .at-content {
-    padding: 0 20px 20px;
-  }
-  
-  .at-controls-section {
-    flex-direction: column;
-    gap: 15px;
-    padding: 0 20px;
-  }
-  
-  .at-subjects-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .at-charts-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .at-chart-card.at-large {
-    padding: 20px;
-  }
-  
-  .at-stats-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .at-attendance-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .at-popup {
-    max-width: 90%;
-    margin: 20px;
-  }
-  
-  .at-popup-header {
-    padding: 20px;
-  }
-  
-  .at-popup-content {
-    padding: 30px 20px;
-  }
-  
-  .at-attendance-info-minimal {
-    gap: 20px;
-  }
-  
-  .at-status-circle-minimal {
-    width: 70px;
-    height: 70px;
-  }
-  
-  .at-status-symbol-minimal {
-    font-size: 1.6em;
-  }
-}
-
-@media (max-width: 480px) {
-  .at-stats-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .at-subject-meta {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .at-semester-buttons {
-    flex-direction: column;
-  }
-  
-  .at-charts-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .at-chart-card.at-large {
-    padding: 15px;
-  }
-  
-  .at-popup {
-    max-width: 95%;
-  }
-}
-
-
-/* попап как в успеваемости */
-.at-popup-large {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  animation: at-scaleIn 0.3s ease;
-}
-
-@keyframes at-scaleIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Основная информация */
-.at-attendance-info-detailed {
+.at-popup-content {
   padding: 30px 40px;
+  overflow-y: auto;
+}
+
+/* Детальная информация в попапе */
+.at-attendance-info-detailed {
+  padding: 0;
 }
 
 .at-attendance-main-info {
@@ -1163,7 +942,7 @@ body.at-modal-open {
   font-weight: 600;
 }
 
-/* Стили для причины пропуска */
+/* Причина пропуска */
 .at-reason-item {
   margin-top: 10px;
   padding-top: 20px;
@@ -1185,7 +964,8 @@ body.at-modal-open {
   font-size: 1rem;
 }
 
-.at-detail-value.at-no-reason {
+.at-detail-value.at-no-reason,
+.at-detail-value.at-no-status-text {
   background: rgba(107, 114, 128, 0.1);
   padding: 16px 20px;
   border-radius: 12px;
@@ -1195,6 +975,12 @@ body.at-modal-open {
   color: #6b7280;
   font-style: italic;
   font-size: 1rem;
+}
+
+.at-no-status-info {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(0, 47, 167, 0.1);
 }
 
 /* Состояния загрузки */
@@ -1223,17 +1009,83 @@ body.at-modal-open {
   margin: 0;
 }
 
-@keyframes at-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Недостаточно данных */
+.at-insufficient-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.at-insufficient-data h4 {
+  margin: 0 0 10px 0;
+  color: #868b95;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.at-data-warning-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
 /* Адаптивность */
 @media (max-width: 768px) {
+  .at-nav {
+    flex-direction: column;
+    padding: 0 20px;
+  }
+  
+  .at-nav-btn {
+    width: 100%;
+  }
+  
+  .at-content {
+    padding: 0 20px 20px;
+  }
+  
+  .at-controls-section {
+    flex-direction: column;
+    gap: 15px;
+    padding: 0 20px;
+    margin-left: 0;
+  }
+  
+  .at-controls-section-left {
+    margin-right: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .at-subjects-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .at-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .at-chart-card.at-large {
+    padding: 20px;
+  }
+  
+  .at-stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .at-popup-content {
+    padding: 20px;
+  }
+  
   .at-attendance-main-info {
     flex-direction: column;
     text-align: center;
     gap: 25px;
+    padding: 20px;
   }
   
   .at-status-circle-large {
@@ -1243,88 +1095,7 @@ body.at-modal-open {
   .at-attendance-basic-details {
     text-align: left;
   }
-}
-
-
-/* Стили для фильтра периодов */
-.at-period-filter {
-  margin-bottom: 20px;
-}
-
-.at-date-inputs {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.at-date-input {
-  padding: 8px 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  min-width: 140px;
-}
-
-.at-date-input:focus {
-  outline: none;
-  border-color: #002FA7;
-  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
-}
-
-.at-date-separator {
-  color: #718096;
-  font-weight: 500;
-}
-
-.at-apply-filter-btn {
-  padding: 8px 16px;
-  background: #002FA7;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.at-apply-filter-btn:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
-}
-
-.at-reset-filter-btn {
-  padding: 8px 16px;
-  background: #c7cad1;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.at-reset-filter-btn:hover {
-  background: rgb(142, 146, 152);
-  transform: translateY(-1px);
-}
-
-/* Информация о периоде */
-.at-period-info {
-  margin-top: 10px;
-  padding: 10px;
-  background: rgba(0, 47, 167, 0.05);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: #002FA7;
-  text-align: center;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
+  
   .at-date-inputs {
     flex-direction: column;
     align-items: stretch;
@@ -1340,33 +1111,21 @@ body.at-modal-open {
   }
 }
 
-
-.at-no-data-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  width: 100%;
-}
-
-.at-empty-state {
-  text-align: center;
-  padding: 2rem;
-  max-width: 400px;
-}
-
-.at-empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.at-empty-state h3 {
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.at-empty-state p {
-  color: #94a3b8;
-  margin-bottom: 1rem;
+@media (max-width: 480px) {
+  .at-stats-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .at-subject-meta {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .at-semester-buttons {
+    flex-direction: column;
+  }
+  
+  .at-popup {
+    max-width: 95%;
+  }
 }

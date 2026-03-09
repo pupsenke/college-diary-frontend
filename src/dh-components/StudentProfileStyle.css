@@ -1,3 +1,6 @@
+/* StudentProfileStyle.css */
+
+/* Модальное окно */
 .sp-modal-overlay {
   position: fixed;
   top: 0;
@@ -10,6 +13,7 @@
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  animation: sp-fadeIn 0.2s ease;
 }
 
 .sp-modal-content {
@@ -50,6 +54,7 @@
   color: #374151;
 }
 
+/* Профиль */
 .sp-profile-container {
   padding: 0 24px 24px;
 }
@@ -104,6 +109,7 @@
   color: #475569;
 }
 
+/* Табы */
 .sp-tabs {
   display: flex;
   gap: 8px;
@@ -140,6 +146,7 @@
   min-height: 300px;
 }
 
+/* Информационная вкладка */
 .sp-info-tab {
   display: flex;
   flex-direction: column;
@@ -173,6 +180,7 @@
   font-weight: 500;
 }
 
+/* Карточки статистики */
 .sp-stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -199,6 +207,7 @@
   color: #002FA7;
 }
 
+/* Общие стили для вкладок */
 .sp-marks-tab,
 .sp-attendance-tab,
 .sp-documents-tab {
@@ -213,23 +222,27 @@
   gap: 20px;
 }
 
-.sp-subject-card {
+/* Карточка предмета */
+.sp-subject-card,
+.sp-attendance-subject {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 20px;
 }
 
-.sp-subject-header {
+.sp-subject-header,
+.sp-attendance-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.sp-subject-header h3 {
+.sp-subject-header h3,
+.sp-attendance-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: #1e293b;
@@ -241,6 +254,13 @@
   color: #64748b;
 }
 
+.sp-attendance-percentage {
+  font-size: 20px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+/* Сетка оценок */
 .sp-marks-grid {
   display: flex;
   flex-wrap: wrap;
@@ -273,33 +293,7 @@
   font-weight: 500;
 }
 
-.sp-attendance-subject {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.sp-attendance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 12px;
-}
-
-.sp-attendance-header h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
-.sp-attendance-percentage {
-  font-size: 20px;
-  font-weight: 600;
-  color: #002FA7;
-}
-
+/* Статистика посещаемости */
 .sp-attendance-stats {
   display: flex;
   gap: 16px;
@@ -332,6 +326,7 @@
   color: #475569;
 }
 
+/* Документы */
 .sp-document-item {
   display: flex;
   align-items: center;
@@ -387,19 +382,15 @@
   color: white;
 }
 
-.sp-empty-state {
+/* Пустые состояния и загрузка */
+.sp-empty-state,
+.sp-tab-loading {
   padding: 48px;
   text-align: center;
   color: #64748b;
   background-color: #f8fafc;
   border-radius: 12px;
   border: 1px dashed #cbd5e1;
-}
-
-.sp-tab-loading {
-  padding: 48px;
-  text-align: center;
-  color: #64748b;
 }
 
 .sp-loading,
@@ -439,6 +430,7 @@
   background-color: #1e40af;
 }
 
+/* Анимации */
 @keyframes sp-fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -482,7 +474,8 @@
     grid-template-columns: 1fr;
   }
   
-  .sp-subject-header {
+  .sp-subject-header,
+  .sp-attendance-header {
     flex-direction: column;
     align-items: flex-start;
   }

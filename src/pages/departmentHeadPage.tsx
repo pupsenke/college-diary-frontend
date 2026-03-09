@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { HeaderDepartmentHead } from '../dh-components/HeaderDepartmentHead';
 import { DepartmentManagementSection } from '../dh-components/DepartmentManagementSection';
-import { StaffManagementSection } from '../dh-components/StaffManagementSection';
 import { AcademicWorkSection } from '../dh-components/AcademicWorkSection';
 import { ReportsSection } from '../dh-components/ReportsSection';
 import { PersonalCabinetSection } from '../dh-components/PersonalCabinetSection';

@@ -1,4 +1,3 @@
-
 /* Основные стили */
 .document-section {
   background: transparent;
@@ -51,7 +50,10 @@
   font-size: 14px;
 }
 
-.ds-select {
+/* Общие стили для инпутов, селектов и текстэреа */
+.ds-select,
+.ds-input,
+.ds-textarea {
   padding: 12px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
@@ -63,13 +65,43 @@
   font-family: inherit;
 }
 
-.ds-select:focus {
+.ds-select:focus,
+.ds-input:focus,
+.ds-textarea:focus {
   outline: none;
   border-color: #5986f7;
   box-shadow: 0 0 0 4px rgba(89, 134, 247, 0.15);
+  transform: translateY(-1px);
 }
 
-/* Сообщения об ошибках */
+.ds-select:disabled,
+.ds-input.disabled,
+.ds-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.ds-input:required:not(.disabled):not(:disabled) {
+  border-left: 4px solid #5986f7;
+}
+
+.ds-input:invalid:not(:focus):not(.disabled):not(:disabled) {
+  border-color: #fca5a5;
+}
+
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.ds-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Сообщения об ошибках и информации */
 .ds-error-message {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border: 1px solid #fca5a5;
@@ -79,6 +111,44 @@
   margin-bottom: 24px;
   font-weight: 500;
   border-left: 4px solid #ef4444;
+}
+
+.ds-cache-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #10b981;
+  margin-top: 5px;
+}
+
+.ds-offline-indicator {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #92400e;
+}
+
+.ds-offline-text {
+  font-size: 12px;
+  color: #92400e;
+}
+
+.ds-pending-documents {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1e40af;
 }
 
 /* Контент */
@@ -107,8 +177,8 @@
 }
 
 @keyframes ds-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .ds-loading p {
@@ -116,7 +186,7 @@
   margin: 0;
 }
 
-/* Кнопка обновления документов */
+/* Кнопка обновления */
 .ds-refresh-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
@@ -162,9 +232,41 @@
   animation: ds-spin 1s linear infinite;
 }
 
-@keyframes ds-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Кнопки создания документа */
+.ds-create-main-btn,
+.ds-create-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.ds-create-main-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  min-width: 180px;
+}
+
+.ds-create-btn {
+  padding: 12px 32px;
+  border-radius: 12px;
+}
+
+.ds-create-main-btn:hover:not(:disabled),
+.ds-create-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.5);
+}
+
+.ds-create-main-btn:disabled,
+.ds-create-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Таблица документов */
@@ -209,8 +311,8 @@
   align-items: center;
 }
 
-.ds-download-btn {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+.ds-download-btn,
+.ds-delete-btn {
   color: white;
   border: none;
   padding: 8px 16px;
@@ -219,7 +321,11 @@
   font-weight: 500;
   font-size: 12px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ds-download-btn {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
 }
 
 .ds-download-btn:hover {
@@ -230,21 +336,19 @@
 
 .ds-delete-btn {
   background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 12px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 .ds-delete-btn:hover {
   background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.ds-download-btn:disabled,
+.ds-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Состояние пустого списка */
@@ -424,52 +528,14 @@
   font-weight: 600;
 }
 
+.ds-form-field:focus-within label {
+  color: #002FA7;
+}
+
 .ds-form-field label::after {
   content: " *";
   color: #ef4444;
   font-weight: bold;
-}
-
-.ds-input,
-.ds-textarea,
-.ds-select {
-  padding: 12px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #1e293b;
-  background: white;
-  transition: all 0.3s ease;
-  font-family: inherit;
-}
-
-.ds-input:focus,
-.ds-textarea:focus,
-.ds-select:focus {
-  outline: none;
-  border-color: #5986f7;
-  box-shadow: 0 0 0 4px rgba(89, 134, 247, 0.15);
-  transform: translateY(-1px);
-}
-
-.ds-input.disabled,
-.ds-select:disabled {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #64748b;
-  cursor: not-allowed;
-  border-color: #d1d5db;
-}
-
-.ds-textarea {
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-}
-
-.ds-input::placeholder,
-.ds-textarea::placeholder {
-  color: #9ca3af;
 }
 
 /* Футер модального окна */
@@ -500,44 +566,24 @@
   transform: translateY(-1px);
 }
 
-/* Кнопка создания документа */
-.ds-create-main-btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  border: none;
-  min-width: 180px;
-  text-align: center;
-  background: #002FA7;
-  color: white;
+.ds-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.ds-create-main-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.4);
-}
-
-.ds-create-btn {
-  background: #002FA7;
+.ds-sync-button {
+  background: #3b82f6;
   color: white;
   border: none;
-  padding: 12px 32px;
-  border-radius: 12px;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 12px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 47, 167, 0.3);
-  position: relative;
-  overflow: hidden;
 }
 
-.ds-create-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 47, 167, 0.5);
+.ds-sync-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* Адаптивность */
@@ -636,90 +682,22 @@
   }
 }
 
-
-
-.ds-cache-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #10b981;
-  margin-top: 5px;
-}
-
-/* Дополнительные улучшения */
-.ds-form-field:focus-within label {
-  color: #002FA7;
-}
-
-.ds-input:required:not(.disabled) {
-  border-left: 4px solid #5986f7;
-}
-
-.ds-input:invalid:not(:focus):not(.disabled) {
-  border-color: #fca5a5;
-}
-
-
-
 /* Улучшенная доступность */
 @media (prefers-reduced-motion: reduce) {
   .ds-create-main-btn,
+  .ds-create-btn,
   .ds-download-btn,
   .ds-delete-btn,
   .ds-modal-close,
   .ds-cancel-btn,
-  .ds-create-btn,
+  .ds-refresh-btn,
   .ds-input,
   .ds-textarea,
   .ds-select,
   .ds-form-section,
-  .ds-modal-container {
+  .ds-modal-container,
+  .ds-modal-overlay {
     transition: none;
     animation: none;
   }
-}
-
-.ds-offline-indicator {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 4px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #92400e;
-}
-
-.ds-offline-text {
-  font-size: 12px;
-  color: #92400e;
-}
-
-.ds-pending-documents {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
-  border-radius: 4px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #1e40af;
-}
-
-.ds-sync-button {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  padding: 2px 8px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.ds-sync-button:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
 }

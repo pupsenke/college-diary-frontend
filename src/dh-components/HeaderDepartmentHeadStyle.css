@@ -4,34 +4,7 @@
   font-family: 'Montserrat', sans-serif !important;
 }
 
-body.dh-theme-light .dh-dropdown-user-info .dh-user-gradient-bg {
-  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  opacity: 1;
-  z-index: -1;
-}
-
-body.dh-theme-light .dh-dropdown-fullname {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0d2e82;
-  margin-bottom: 4px;
-}
-
-body.dh-theme-light .dh-dropdown-position {
-  display: block;
-  font-size: 13px;
-  color: #002FA7;
-  font-weight: 400;
-}
-
-
-
+/* Основные стили хедера */
 .dh-header-main {
   width: 100%;
   background: #fff;
@@ -55,6 +28,7 @@ body.dh-theme-light .dh-dropdown-position {
 .dh-header-logo-area {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .dh-logo-mark {
@@ -67,7 +41,6 @@ body.dh-theme-light .dh-dropdown-position {
   color: #002FA7;
   font-size: 19px;
   font-weight: 700;
-  margin-bottom: 0px;
   margin-left: 8px;
 }
 
@@ -75,46 +48,20 @@ body.dh-theme-light .dh-dropdown-position {
   color: #002FA7;
   font-size: 13px;
   font-weight: 400;
-  margin-top: 0px;
   margin-left: 8px;
 }
 
-.dh-header-nav-area {
+/* Правая часть хедера */
+.dh-header-right-area {
   display: flex;
   align-items: center;
-  flex: 1;
-  justify-content: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
-.dh-department-nav {
+.dh-header-theme-area {
   display: flex;
-  gap: 8px;
-  background: #f7fafc;
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.dh-nav-item {
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #4a5568;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.dh-nav-item:hover {
-  background: #edf2f7;
-  color: #2d3748;
-}
-
-.dh-nav-item:active {
-  background: #e2e8f0;
+  align-items: center;
 }
 
 .dh-header-profile-area {
@@ -123,6 +70,7 @@ body.dh-theme-light .dh-dropdown-position {
   position: relative;
 }
 
+/* Карточка профиля */
 .dh-profile-card {
   display: flex;
   align-items: center;
@@ -172,6 +120,49 @@ body.dh-theme-light .dh-dropdown-position {
   transform: rotate(180deg);
 }
 
+/* Переключатель темы */
+.dh-theme-toggle {
+  background: #d3dbff5d;
+  border: 1.5px solid rgba(99, 153, 254, 0.3);
+  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
+  border-radius: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.dh-theme-toggle:hover {
+  background: #c5d0ff85;
+  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.dh-theme-toggle:active {
+  transform: translateY(0);
+}
+
+.dh-theme-toggle-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dh-theme-icon {
+  font-size: 18px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #002FA7;
+}
+
 /* Выпадающее меню */
 .dh-profile-dropdown {
   position: absolute;
@@ -213,7 +204,6 @@ body.dh-theme-light .dh-dropdown-position {
   right: 0;
   height: 100%;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-  opacity: 1;
   z-index: -1;
 }
 
@@ -271,7 +261,59 @@ body.dh-theme-light .dh-dropdown-position {
   margin: 8px 0;
 }
 
-/* Адаптация для мобильных */
+/* Навигация отделения */
+.dh-header-nav-area {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+}
+
+.dh-department-nav {
+  display: flex;
+  gap: 8px;
+  background: #f7fafc;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-nav-item {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dh-nav-item:hover {
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.dh-nav-item:active {
+  background: #e2e8f0;
+}
+
+/* Светлая тема */
+body.dh-theme-light .dh-dropdown-user-info .dh-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+}
+
+body.dh-theme-light .dh-dropdown-fullname {
+  color: #0d2e82;
+}
+
+body.dh-theme-light .dh-dropdown-position {
+  color: #002FA7;
+}
+
+/* Адаптивность */
 @media (max-width: 1024px) {
   .dh-header-main {
     flex-wrap: wrap;
@@ -290,8 +332,37 @@ body.dh-theme-light .dh-dropdown-position {
   }
   
   .dh-nav-item {
-    white-space: nowrap;
     flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .dh-header-theme-area {
+    margin-right: 16px;
+  }
+  
+  .dh-theme-toggle {
+    padding: 8px 12px;
+  }
+  
+  .dh-theme-toggle-inner {
+    gap: 0;
+  }
+  
+  .dh-header-nav-area {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    margin-top: 12px;
+  }
+  
+  .dh-header-main {
+    flex-wrap: wrap;
+  }
+  
+  .dh-header-right-area {
+    order: 2;
   }
 }
 
@@ -330,6 +401,18 @@ body.dh-theme-light .dh-dropdown-position {
 }
 
 @media (max-width: 480px) {
+  .dh-header-theme-area {
+    margin-right: 12px;
+  }
+  
+  .dh-theme-toggle {
+    padding: 6px 10px;
+  }
+  
+  .dh-theme-icon {
+    font-size: 16px;
+  }
+  
   .dh-logo-mark {
     flex-direction: column;
     text-align: center;
@@ -355,139 +438,5 @@ body.dh-theme-light .dh-dropdown-position {
   
   .dh-dropdown-position {
     font-size: 12px;
-  }
-}
-
-/* Стили для переключателя темы */
-.dh-header-theme-area {
-  display: flex;
-  align-items: center;
-}
-
-.dh-theme-toggle {
-  background: #d3dbff5d;
-  border: 1.5px solid rgba(99, 153, 254, 0.3);
-  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
-  border-radius: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  backdrop-filter: blur(10px);
-}
-
-.dh-theme-toggle:hover {
-  background: #c5d0ff85;
-  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-.dh-theme-toggle:active {
-  transform: translateY(0);
-}
-
-.dh-theme-toggle-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dh-theme-icon {
-  font-size: 18px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.dh-sun-icon {
-  color: #002FA7; 
-}
-
-.dh-moon-icon {
-  color: #002FA7;
-}
-
-.dh-header-main {
-  width: 100%;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
-  display: flex;
-  justify-content: space-between; /* Это важно! */
-  align-items: center;
-  padding: 8px 24px;
-  margin-bottom: 18px;
-  min-height: 70px;
-  box-sizing: border-box;
-  position: relative;
-}
-
-.dh-header-logo-area {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.dh-header-right-area {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto; 
-}
-
-
-/* Адаптивные стили для переключателя темы */
-@media (max-width: 768px) {
-  .dh-header-theme-area {
-    margin-right: 16px;
-  }
-  
-  .dh-theme-toggle {
-    padding: 8px 12px;
-  }
-  
-  .dh-theme-text {
-    display: none;
-  }
-  
-  .dh-theme-toggle-inner {
-    gap: 0;
-  }
-  
-  .dh-header-nav-area {
-    position: static;
-    transform: none;
-    order: 3;
-    width: 100%;
-    margin-top: 12px;
-  }
-  
-  .dh-header-main {
-    flex-wrap: wrap;
-  }
-  
-  .dh-header-right-area {
-    order: 2;
-  }
-}
-
-@media (max-width: 480px) {
-  .dh-header-theme-area {
-    margin-right: 12px;
-  }
-  
-  .dh-theme-toggle {
-    padding: 6px 10px;
-  }
-  
-  .dh-theme-icon {
-    font-size: 16px;
   }
 }

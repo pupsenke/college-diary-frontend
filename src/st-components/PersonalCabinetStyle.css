@@ -1,3 +1,4 @@
+/* Основные стили */
 .personal-cabinet {
   background: transparent;
   padding: 0;
@@ -11,6 +12,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+  padding: 0 8px;
 }
 
 .pc-header-left {
@@ -77,10 +79,12 @@
   to { transform: rotate(360deg); }
 }
 
+/* Общие стили для кнопок */
 .pc-edit-btn,
-.pc-password-btn,
 .pc-save-btn,
-.pc-cancel-btn {
+.pc-cancel-btn,
+.pc-action-btn,
+.pc-confirm-btn {
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 500;
@@ -88,38 +92,28 @@
   transition: all 0.3s ease;
   font-size: 14px;
   border: none;
-  min-width: 180px;
-  height: 40px;
   text-align: center;
 }
 
 .pc-edit-btn,
-.pc-save-btn {
+.pc-save-btn,
+.pc-confirm-btn {
   background: #002FA7;
   color: white;
 }
 
 .pc-edit-btn:hover,
-.pc-save-btn:hover {
+.pc-save-btn:hover,
+.pc-confirm-btn:hover:not(:disabled) {
   background: #1e40af;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.2);
 }
 
-.pc-action-buttons {
-  display: flex;
-  gap: 12px;
-}
-
 .pc-save-btn {
   background: #10b981;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  min-width: 180px;
+  height: 40px;
 }
 
 .pc-save-btn:hover {
@@ -129,22 +123,62 @@
 .pc-cancel-btn {
   background: #ef4444;
   color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  min-width: 180px;
+  height: 40px;
 }
 
 .pc-cancel-btn:hover {
   background: #dc2626;
 }
 
-.pc-content {
-  padding:  8px 0;
+.pc-action-buttons {
+  display: flex;
+  gap: 12px;
 }
 
+.pc-action-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 10px 16px;
+}
+
+.pc-action-btn:hover {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.pc-confirm-btn {
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pc-confirm-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Контент */
+.pc-content {
+  padding: 8px 0;
+}
+
+/* Сообщения */
+.pc-success-message {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #10b981;
+  color: #065f46;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-weight: 500;
+  border-left: 4px solid #10b981;
+}
+
+/* Информационная сетка */
 .pc-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -191,134 +225,38 @@
   font-weight: 500;
 }
 
-.pc-input {
+/* Поля ввода */
+.pc-input,
+.pc-textarea {
   padding: 8px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 15px;
   color: #1e293b;
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
-.pc-input:focus {
+.pc-input:focus,
+.pc-textarea:focus {
   outline: none;
   border-color: #5986f7;
   box-shadow: 0 0 0 3px rgba(89, 134, 247, 0.1);
 }
 
-.pc-additional-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 24px;
+.pc-input::placeholder,
+.pc-textarea::placeholder {
+  color: #9ca3af;
 }
 
-.pc-action-btn {
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.pc-action-btn:hover {
-  background: #e2e8f0;
-  color: #002FA7;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .pc-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .pc-info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pc-action-buttons {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  .pc-additional-actions {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 480px) {
-  .pc-content {
-    padding: 16px;
-  }
-  
-  .pc-info-group {
-    padding: 16px;
-  }
-  
-  .pc-action-buttons {
-    flex-direction: column;
-  }
-  
-  .pc-edit-btn,
-  .pc-save-btn,
-  .pc-cancel-btn {
-    width: 100%;
-  }
-}
-
-.pc-loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.pc-textarea {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-}
-
-.pc-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.pc-readonly {
+.pc-input:disabled {
+  background-color: #f9fafb;
   color: #6b7280;
+  cursor: not-allowed;
 }
 
-.pc-edit-notice {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
-  padding: 12px 16px;
-  margin-top: 20px;
-  color: #0369a1;
-  font-size: 14px;
-}
-
-/* Улучшенные стили для полей ввода */
 .pc-input:required {
   border-left: 3px solid #3b82f6;
 }
@@ -327,19 +265,25 @@
   border-color: #ef4444;
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .pc-info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pc-action-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
+.pc-textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
-/* Стили для модального окна смены пароля */
+.pc-readonly {
+  color: #6b7280;
+}
+
+/* Дополнительные действия */
+.pc-additional-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 24px;
+}
+
+/* Модальное окно */
 .pc-modal-overlay {
   position: fixed;
   top: 0;
@@ -352,6 +296,12 @@
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  animation: pc-fadeIn 0.2s ease;
+}
+
+@keyframes pc-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .pc-modal {
@@ -362,11 +312,11 @@
   max-width: 450px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modal-appear 0.2s ease-out;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: pc-modal-appear 0.2s ease-out;
 }
 
-@keyframes modal-appear {
+@keyframes pc-modal-appear {
   from {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
@@ -437,33 +387,6 @@
   color: #ef4444;
 }
 
-.pc-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  background-color: white;
-  box-sizing: border-box;
-}
-
-.pc-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.pc-input::placeholder {
-  color: #9ca3af;
-}
-
-.pc-input:disabled {
-  background-color: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-
 .pc-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -472,43 +395,33 @@
   border-top: 1px solid #f3f4f6;
 }
 
-.pc-confirm-btn {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
+/* Загрузка */
+.pc-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Дополнительные элементы */
+.pc-edit-notice {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 20px;
+  color: #0369a1;
   font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 140px;
-  position: relative;
-  overflow: hidden;
 }
 
-.pc-confirm-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.pc-confirm-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.pc-confirm-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.pc-confirm-btn:disabled:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-/* Стили для валидации пароля */
 .pc-password-strength {
   margin-top: 8px;
   font-size: 12px;
@@ -542,6 +455,27 @@
 }
 
 /* Адаптивность */
+@media (max-width: 768px) {
+  .pc-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .pc-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pc-action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .pc-additional-actions {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 640px) {
   .pc-modal {
     width: 95%;
@@ -567,3 +501,22 @@
   }
 }
 
+@media (max-width: 480px) {
+  .pc-content {
+    padding: 16px;
+  }
+  
+  .pc-info-group {
+    padding: 16px;
+  }
+  
+  .pc-action-buttons {
+    flex-direction: column;
+  }
+  
+  .pc-edit-btn,
+  .pc-save-btn,
+  .pc-cancel-btn {
+    width: 100%;
+  }
+}
