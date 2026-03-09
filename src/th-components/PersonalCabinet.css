@@ -163,6 +163,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 /* Общие стили для обеих кнопок */
@@ -257,6 +258,15 @@
   box-sizing: border-box;
 }
 
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .info-tooltip.small {
+    width: calc(100% - 32px);
+    left: 16px;
+    right: 16px;
+  }
+}
+
 .info-tooltip-content {
   color: #374151;
   font-size: 14px;
@@ -288,6 +298,43 @@
   border-top: 2px solid #e0e7ff;
 }
 
+.usage-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.steps-number {
+  width: 24px;
+  height: 24px;
+  background: #002FA7;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 47, 167, 0.2);
+}
+
+.steps span:last-child {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
 @media (max-width: 480px) {
   .info-tooltip {
     width: 95vw;
@@ -310,6 +357,8 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+
 
 /* Стили для модальных окон */
 .pc-modal-overlay {

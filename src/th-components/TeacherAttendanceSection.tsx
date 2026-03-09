@@ -140,20 +140,20 @@ const InfoIcon = (): React.ReactElement => (
         <div className="info-section">
           <h4>Как использовать</h4>
           <div className="usage-steps">
-            <div className="step">
-              <span className="step-number">1</span>
+            <div className="steps">
+              <span className="steps-number">1</span>
               <span>Нажмите на ячейку с посещаемостью</span>
             </div>
-            <div className="step">
-              <span className="step-number">2</span>
+            <div className="steps">
+              <span className="steps-number">2</span>
               <span>Введите статус: <code>п</code>, <code>у</code> или <code>н</code></span>
             </div>
-            <div className="step">
-              <span className="step-number">3</span>
+            <div className="steps">
+              <span className="steps-number">3</span>
               <span>Для статуса <code>у</code> укажите причину отсутствия</span>
             </div>
-            <div className="step">
-              <span className="step-number">4</span>
+            <div className="steps">
+              <span className="steps-number">4</span>
               <span>Нажмите "Сохранить"</span>
             </div>
           </div>

@@ -424,20 +424,20 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Нажмите на ячейку с оценкой</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Введите оценку из списка допустимых</span>
               </div>
-              <div className="step">
-                <span className="step-number">3</span>
+              <div className="steps">
+                <span className="steps-number">3</span>
                 <span>Для комментария нажмите кнопку 💬</span>
               </div>
-              <div className="step">
-                <span className="step-number">4</span>
+              <div className="steps">
+                <span className="steps-number">4</span>
                 <span>Нажмите "Сохранить комментарий"</span>
               </div>
             </div>

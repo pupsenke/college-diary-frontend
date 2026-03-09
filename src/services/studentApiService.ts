@@ -43,7 +43,13 @@ export interface StudentData {
 
 // Интерфейсы для успеваемости
 export interface StudentMark {
-  nameSubjectTeachersDTO: {
+  marksBySt: Array<{
+    number: number | null;
+    value: number | null;
+  }> | null;
+  certification: number | null;
+  // Вот ключевое изменение - правильное имя поля
+  nameSubjectTeachersDTO?: {
     idSt: number;
     idSubject: number;
     nameSubject: string;
@@ -54,11 +60,18 @@ export interface StudentMark {
       patronymicTeacher: string;
     }>;
   };
-  marksBySt: Array<{
-    number: number | null;
-    value: number | null;
-  }> | null;
-  certification: number | null; 
+  // Добавляем поле для совместимости с API
+  stteachersDTO?: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
 }
 
 export interface Grade {

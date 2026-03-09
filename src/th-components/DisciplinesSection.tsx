@@ -240,12 +240,12 @@ export const DisciplinesSection: React.FC<Props> = ({ onDisciplineSelect, select
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Например, выберите курс для фильтрации дисциплин</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Нажмите на карточку дисциплины для перехода к группам</span>
               </div>
             </div>

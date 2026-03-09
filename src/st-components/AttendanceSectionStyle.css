@@ -1,3 +1,10 @@
+/* Запрет прокрутки body */
+body.at-modal-open {
+  overflow: hidden;
+  position: fixed; /* Для некоторых браузеров */
+  width: 100%; /* Предотвращает сдвиг контента */
+}
+
 /* Основные стили */
 .at-attendance-section {
   min-height: 100vh;
@@ -71,7 +78,7 @@
 /* Кнопка обновления */
 .at-refresh-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   color: #374151;
   padding: 12px 24px;
   border-radius: 16px;
@@ -381,6 +388,25 @@
   text-align: left;
 }
 
+.at-subject-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.at-subject-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.at-subject-teacher {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+
 .at-subject-cell .at-subject-name {
   font-weight: 600;
   color: #2d3748;
@@ -689,6 +715,7 @@
   align-items: center;
   gap: 10px;
   justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .at-attendance-value {
@@ -741,14 +768,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(50, 64, 124, 0.3);
-  backdrop-filter: blur(2px);
+  background-color: rgba(50, 64, 124, 0.3);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: at-fadeIn 0.2s ease;
-  backdrop-filter: blur(8px);
 }
 
 .at-popup {
@@ -800,7 +826,6 @@
 
 .at-popup-close:hover {
   background: rgba(0, 47, 167, 0.2);
-  transform: rotate(90deg);
 }
 
 

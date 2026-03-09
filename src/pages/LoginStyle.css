@@ -379,135 +379,326 @@
 }
 
 
-/* Стили для модального окна выбора роли */
+/* Улучшенные стили для модального окна выбора роли */
 .lp-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(50, 64, 124, 0.3);
+  background: rgba(0, 47, 167, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   padding: 20px;
+  animation: fadeInOverlay 0.2s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .lp-modal-content {
   background: white;
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 70vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  animation: modalAppear 0.3s ease-out;
+  box-shadow: 0 12px 28px rgba(0, 47, 167, 0.2);
+  border: 1px solid rgba(0, 47, 167, 0.1);
+  animation: slideInModal 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
 }
 
-@keyframes modalAppear {
+@keyframes slideInModal {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: translateY(-15px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .lp-modal-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 47, 167, 0.1);
 }
 
 .lp-modal-header h3 {
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
   color: #002FA7;
-  font-size: 1.2rem;
+  font-size: 20px;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .lp-modal-header p {
   margin: 0;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .lp-roles-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .lp-role-card {
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
   padding: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f8f9fa;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f8f9ff;
+  position: relative;
+  overflow: hidden;
 }
 
 .lp-role-card:hover {
-  border-color: #002FA7;
-  background: #e3f2fd;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(58, 98, 199, 0.2);
+  border-color: #5986f7;
+  background: #f0f4ff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 47, 167, 0.1);
 }
 
 .lp-role-card:active {
   transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 47, 167, 0.1);
+}
+
+.lp-role-card::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid #002FA7;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.lp-role-card:hover::after {
+  opacity: 0.5;
+}
+
+.lp-role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
 }
 
 .lp-role-header h4 {
-  margin: 0 0 8px 0;
-  color: #2c3e50;
-  font-size: 1.1rem;
+  margin: 0;
+  color: #1a237e;
+  font-size: 16px;
   font-weight: 600;
+  flex: 1;
+}
+
+.lp-role-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #002FA7;
+  background: rgba(0, 47, 167, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .lp-role-description {
   margin: 0;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  color: #666;
+  font-size: 13px;
   line-height: 1.4;
+  padding-right: 20px;
 }
 
 .lp-modal-footer {
   display: flex;
   justify-content: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 47, 167, 0.1);
 }
 
 .lp-cancel-button {
-  background: #95a5a6;
-  color: white;
-  border: none;
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
   padding: 10px 24px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 100px;
 }
 
 .lp-cancel-button:hover {
-  background: #7f8c8d;
+  background: #f8f9ff;
+  box-shadow: 0 2px 6px rgba(0, 47, 167, 0.1);
 }
 
+.lp-cancel-button:active {
+  background: #f0f4ff;
+  transform: translateY(1px);
+}
 
+/* Стили для скроллбара */
+.lp-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lp-modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.lp-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 47, 167, 0.3);
+  border-radius: 3px;
+}
+
+.lp-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 47, 167, 0.5);
+}
 
 /* Адаптивность */
 @media (max-width: 768px) {
+  .lp-modal-overlay {
+    padding: 16px;
+  }
+  
   .lp-modal-content {
     padding: 20px;
-    margin: 20px;
+    max-height: 75vh;
+  }
+  
+  .lp-modal-header h3 {
+    font-size: 18px;
+  }
+  
+  .lp-modal-header p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lp-modal-overlay {
+    padding: 12px;
+  }
+  
+  .lp-modal-content {
+    padding: 16px;
   }
   
   .lp-role-card {
-    padding: 12px;
+    padding: 14px;
+  }
+  
+  .lp-role-header h4 {
+    font-size: 15px;
+  }
+  
+  .lp-role-description {
+    font-size: 12px;
+  }
+  
+  .lp-cancel-button {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+}
+
+/* Дополнительные стили для ролей */
+.lp-role-info {
+  font-size: 12px;
+  color: #002FA7;
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding: 4px 8px;
+  background: rgba(0, 47, 167, 0.08);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.lp-role-features {
+  margin-top: 8px;
+}
+
+.lp-role-feature {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.lp-feature-bullet {
+  color: #002FA7;
+  font-weight: bold;
+  margin-right: 8px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+/* Увеличение отступов для лучшего отображения списка */
+.lp-role-card {
+  padding: 20px;
+}
+
+.lp-role-header {
+  margin-bottom: 12px;
+}
+
+/* Изменение фона при наведении */
+.lp-role-card:hover .lp-role-feature {
+  color: #444;
+}
+
+.lp-role-card:hover .lp-feature-bullet {
+  color: #1e40af;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+  .lp-role-feature {
+    font-size: 11px;
+  }
+  
+  .lp-role-info {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lp-role-feature {
+    font-size: 10px;
+  }
+  
+  .lp-role-info {
+    font-size: 10px;
+  }
+  
+  .lp-role-card {
+    padding: 16px;
   }
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './PerformanceSectionStyle.css';
 import { apiService, StudentMark, MarkInfo, Lesson, Supplement, MarkChange, Document } from '../services/studentApiService'; 
 import { useUser, Student } from '../context/UserContext';
+import { GradeAccordionItem } from './GradeAccordion';
 
 import {
   BarChart,
@@ -29,7 +30,7 @@ interface SemesterInfo {
   value: 'first' | 'second';
 }
 
-interface GradeDetail {
+export interface GradeDetail {
   id: number;
   date: string;
   topic: string;
@@ -206,20 +207,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Функция для получения иконки файла
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const icons: { [key: string]: string } = {
-      'pdf': '📄',
-      'doc': '📝',
-      'docx': '📝',
-      'xls': '📊',
-      'xlsx': '📊',
-      'jpg': '🖼️',
-      'jpeg': '🖼️',
-      'png': '🖼️',
-      'zip': '📦',
-      'rar': '📦'
-    };
-    return icons[extension || ''] || '📎';
+    return <img src="/st-icons/file_icon.svg" alt="file icon" className="pf-comment-icon" />;
   };
 
   // Функция для скачивания файла
@@ -247,7 +235,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     try {
       const info = await apiService.getMarkInfo(studentId, stId, markNumber);
       
-      // Если typeMark все еще отсутствует, попробуем получить информацию о колонке
       if (!info.typeMark) {
         try {
           const columnInfo = await apiService.getMarkColumnInfo(studentId, stId, markNumber);
@@ -384,19 +371,16 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
           selectedGrade.stId, 
           selectedGrade.number
         );
-        console.log('Supplement создан с ID:', supplementId);
       } catch (apiError) {
-        console.warn('API error, using fallback:', apiError);
+        console.warn('Ошибка:', apiError);
 
         supplementId = Date.now();
-        setError('Режим тестирования: комментарий не будет сохранен на сервере');
       }
       
       setNewSupplementId(supplementId);
       
     } catch (error) {
       console.error('Ошибка создания комментария:', error);
-      setError('Не удалось начать добавление комментария');
       setAddCommentMode(false);
       setNewSupplementId(null);
     }
@@ -441,6 +425,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     }
   };
 
+  // Функция для сохранения комментария
   const handleSaveComment = async () => {
     if (!newSupplementId || !selectedGrade?.stId) {
       setError('Не удалось создать комментарий');
@@ -453,7 +438,20 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
       }
       
       if (uploadingFiles.length > 0) {
-        await apiService.uploadSupplementFiles(newSupplementId, uploadingFiles);
+        
+        // последовательно
+        for (let i = 0; i < uploadingFiles.length; i++) {
+          const file = uploadingFiles[i];
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            await apiService.uploadSupplementFiles(newSupplementId, [file]);
+            
+            console.log(`Файл ${file.name} успешно загружен`);
+          } catch (fileError) {
+            console.error(`Ошибка загрузки файла ${file.name}:`, fileError);
+          }
+        }
       }
       
       if (selectedGrade.stId) {
@@ -470,6 +468,44 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } catch (error) {
       console.error('Ошибка сохранения комментария:', error);
       setError('Не удалось сохранить комментарий');
+    }
+  };
+
+  // Функция для обновления комментария
+  const handleUpdateComment = async (changeId: number, supplementId: number | null) => {
+    if (!selectedGrade?.stId) return;
+    
+    try {
+      if (supplementId) {
+        if (newComment.trim()) {
+          await apiService.updateSupplementComment(supplementId, newComment);
+        }
+        
+        if (uploadingFiles.length > 0) {
+          
+          for (let i = 0; i < uploadingFiles.length; i++) {
+            const file = uploadingFiles[i];
+            try {
+              await apiService.uploadSupplementFiles(supplementId, [file]);
+              console.log(`Файл ${file.name} успешно загружен`);
+            } catch (fileError) {
+              console.error(`Ошибка загрузки файла ${file.name}:`, fileError);
+            }
+          }
+          
+          console.log('Загрузка всех файлов завершена');
+        }
+      }
+      
+      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
+      
+      setEditingComment(null);
+      setNewComment('');
+      setUploadingFiles([]);
+
+    } catch (error) {
+      console.error('Ошибка обновления комментария:', error);
+      setError('Не удалось обновить комментарий');
     }
   };
 
@@ -493,31 +529,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
     } catch (error) {
       console.error('Ошибка удаления supplement:', error);
       setError('Не удалось отменить добавление комментария');
-    }
-  };
-
-// Функция для обновления комментария
-  const handleUpdateComment = async (changeId: number, supplementId: number | null) => {
-    if (!selectedGrade?.stId) return;
-    
-    try {
-      if (supplementId) {
-        await apiService.updateSupplementComment(supplementId, newComment);
-      }
-      
-      if (uploadingFiles.length > 0 && supplementId) {
-        await apiService.uploadSupplementFiles(supplementId, uploadingFiles);
-      }
-      
-      await loadMarkInfo(selectedGrade.stId, selectedGrade.number);
-      
-      setEditingComment(null);
-      setNewComment('');
-      setUploadingFiles([]);
-
-    } catch (error) {
-      console.error('Ошибка обновления комментария:', error);
-      setError('Не удалось обновить комментарий');
     }
   };
 
@@ -646,32 +657,59 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
 
   // Преобразование данных из API
   const transformStudentMarksToGrades = useCallback((semesterType: 'first' | 'second'): Grade[] => {
-    if (!studentMarks) return [];
+    if (!studentMarks || studentMarks.length === 0) {
+      return [];
+    }
 
     return studentMarks
-      .filter(studentMark => studentMark && studentMark.nameSubjectTeachersDTO)
+      .filter(studentMark => {
+        const hasSubjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
+        return hasSubjectData;
+      })
       .map((studentMark) => {
-        const subjectId = studentMark.nameSubjectTeachersDTO?.idSubject;
+        const subjectData = studentMark.nameSubjectTeachersDTO || studentMark.stteachersDTO;
         
-        if (!subjectId) return null;
+        if (!subjectData) {
+          return null;
+        }
+
+        const subjectId = subjectData.idSubject;
+        
+        if (!subjectId) {
+          return null;
+        }
 
         const gradeDetails: GradeDetail[] = [];
         const validGrades: number[] = [];
         
-        const teachers = studentMark.nameSubjectTeachersDTO?.teachers || [];
+        const teachers = subjectData.teachers || [];
         const mainTeacher = teachers[0] || { 
           lastnameTeacher: 'Неизвестно', 
           nameTeacher: 'Н', 
           patronymicTeacher: 'П' 
         };
         
-        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        // ИСПРАВЛЕННАЯ ЧАСТЬ: формирование строки с преподавателем
+        let teacherString = mainTeacher.lastnameTeacher || 'Неизвестно';
+        
+        if (mainTeacher.nameTeacher && mainTeacher.nameTeacher !== 'Н' && mainTeacher.nameTeacher.trim() !== '') {
+          teacherString += ` ${mainTeacher.nameTeacher.charAt(0)}.`;
+          
+          // Добавляем инициал отчества ТОЛЬКО если оно существует и не пустое
+          if (mainTeacher.patronymicTeacher && 
+              mainTeacher.patronymicTeacher !== 'П' && 
+              mainTeacher.patronymicTeacher.trim() !== '') {
+            teacherString += `${mainTeacher.patronymicTeacher.charAt(0)}.`;
+          }
+        }
         
         if (studentMark.marksBySt && Array.isArray(studentMark.marksBySt)) {
-          studentMark.marksBySt.forEach((mark) => {
+          
+          studentMark.marksBySt.forEach((mark, index) => {
+            
             if (mark && mark.number !== null && mark.number !== undefined) {
               if (getSemesterByWorkNumber(mark.number) === semesterType) {
-                const stId = studentMark.nameSubjectTeachersDTO.idSt;
+                const stId = subjectData.idSt;
                 const markKey = `${stId}_${mark.number}`;
                 const realDate = marksWithDates[markKey];
                 
@@ -684,45 +722,48 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                   id: mark.number,
                   date: lessonDate,
                   topic: markType,
-                  grade: mark.value || 0,
+                  grade: mark.value || 0, 
                   teacher: teacherString,
                   type: 'Работа',
-                  hasValue: mark.value !== null && mark.value !== undefined,
+                  hasValue: mark.value !== null && mark.value !== undefined, 
                   stId: stId,
                   realDate: realDate
                 });
 
-                if (mark.value !== null && mark.value !== undefined) {
+                if (mark.value !== null && mark.value !== undefined && mark.value > 0) {
                   validGrades.push(mark.value);
                 }
               }
             }
           });
+        } else {
+          console.log(`marksBySt отсутствуют или не массив для предмета ${subjectData.nameSubject}`);
         }
 
-        gradeDetails.sort((a, b) => {
-          // Сортируем по реальным датам если есть
-          if (a.realDate && b.realDate) {
-            return new Date(a.realDate).getTime() - new Date(b.realDate).getTime();
-          }
-          return a.id - b.id;
-        });
+        // Сортируем по номеру работы
+        gradeDetails.sort((a, b) => a.id - b.id);
 
         const average = validGrades.length > 0 
           ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length 
           : 0;
 
-        return {
+        const result = {
           id: subjectId,
-          subject: studentMark.nameSubjectTeachersDTO.nameSubject || 'Неизвестный предмет',
+          subject: subjectData.nameSubject || 'Неизвестный предмет',
           grades: validGrades,
           average: parseFloat(average.toFixed(1)),
           examGrade: studentMark.certification,
           gradeDetails: gradeDetails,
           teacher: teacherString
         };
+
+        return result;
       })
-      .filter(grade => grade !== null) as Grade[];
+      .filter(grade => grade !== null)
+      .sort((a, b) => {  // Сортировка по алфавиту
+        if (!a || !b) return 0;
+        return (a.subject || '').localeCompare(b.subject || '', 'ru');
+      }) as Grade[];
   }, [studentMarks, markTypes, marksWithDates]);
 
   useEffect(() => {
@@ -1160,7 +1201,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                       <button 
                                         className="pf-download-file-btn"
                                         onClick={() => handleDownloadFile(file.id, file.name)}
-                                        title="Скачать"
                                       >
                                         Скачать
                                       </button>
@@ -1341,7 +1381,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
-                                                  title="Скачать"
                                                 >
                                                   Скачать
                                                 </button>
@@ -1362,7 +1401,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                                                 <button 
                                                   className="pf-download-file-btn"
                                                   onClick={() => handleDownloadFile(file.id, file.name)}
-                                                  title="Скачать"
                                                 >
                                                   Скачать
                                                 </button>
@@ -1657,6 +1695,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                 <td className="pf-subject-cell">
                   <div className="pf-subject-info">
                     <span className="pf-subject-name">{subject.subject}</span>
+                    <span className="pf-subject-teacher">{subject.teacher}</span>
                   </div>
                 </td>
                 <td className="pf-grades-cell">
@@ -1725,34 +1764,15 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
         </div>
       );
     }
+
+    const gradeTypesData = calculateGradeTypesData();
+
     return (
       <div className="pf-analytics-container">
-        <div className="pf-stats-cards">
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.overallAverage}</div>
-              <div className="pf-stat-label">Средний балл</div>
-            </div>
-          </div>
-
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
-              <div className="pf-stat-label">Оценок 4+</div>
-            </div>
-          </div>
-
-          <div className="pf-stat-card">
-            <div className="pf-stat-content">
-              <div className="pf-stat-value">{statistics.totalGrades}</div>
-              <div className="pf-stat-label">Всего оценок</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pf-charts-grid">
-          {/* Распределение оценок - оставляем */}
-          <div className="pf-chart-card">
+        {/* Верхний блок с графиком и статистикой */}
+        <div className="pf-analytics-top-row">
+          {/* График распределения оценок слева */}
+          <div className="pf-chart-card pf-chart-half">
             <h3>Распределение оценок</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={performanceData}>
@@ -1771,39 +1791,40 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             </ResponsiveContainer>
           </div>
 
-          {/* Новый график: Количество оценок по типам */}
-          <div className="pf-chart-card">
-            <h3>Типы оценок</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={calculateGradeTypesData()}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  {calculateGradeTypesData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          {/* Карточки статистики справа */}
+          <div className="pf-stats-cards pf-stats-vertical">
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.overallAverage}</div>
+                <div className="pf-stat-label">Средний балл</div>
+              </div>
+            </div>
+
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.excellentPercentage}%</div>
+                <div className="pf-stat-label">Оценок 4+</div>
+              </div>
+            </div>
+
+            <div className="pf-stat-card">
+              <div className="pf-stat-content">
+                <div className="pf-stat-value">{statistics.totalGrades}</div>
+                <div className="pf-stat-label">Всего оценок</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="pf-full-width-chart">
+
+        {/* Нижний ряд с графиками */}
+        <div className="pf-charts-grid">
+          {/* График средних баллов */}
           <div className="pf-chart-card">
-            <h3>Средние баллы по предметам <p>(10 предметов)</p></h3>
+            <h3>Средние баллы по предметам</h3>
             <ResponsiveContainer 
               width="100%" 
               height={Math.max(250, gradesData
                 .filter(subject => subject.average > 0)
-                .sort((a, b) => b.average - a.average)
                 .slice(0, 10)
                 .length * 90 + 80)}
             >
@@ -1937,44 +1958,25 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
                     </div>
                   </div>
 
-                 <div className="pf-grades-timeline">
+                  <div className="pf-grades-accordion">
                     {selectedSubjectData?.gradeDetails?.map((detail) => (
-                      <div key={detail.id} className="pf-timeline-item">
-                        <div className="pf-timeline-content"
-                        onClick={() => handleGradeClick(
-                                selectedSubjectData.subject,
-                                detail.hasValue ? detail.grade : null,
-                                detail.id,
-                                detail.topic, // Передаем актуальный topic
-                                selectedSubjectData.teacher,
-                                detail.stId
-                              )}>
-                          
-                          <div className="pf-grade-header">
-                            {/* Здесь будет отображаться реальный тип работы */}
-                            <span className="pf-grade-topic">{detail.topic}</span>
-                            <span className="pf-grade-date">{detail.date}</span>
-                          </div>
-                          <div className="pf-grade-details">
-                            <span 
-                              className={`pf-grade-value ${!detail.hasValue ? 'pf-no-data' : ''}`}
-                              style={{ 
-                                backgroundColor: detail.hasValue ? getGradeColor(detail.grade) : '#d1d5db'
-                              }}
-                              
-                            >
-                              {detail.hasValue ? detail.grade : '-'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <GradeAccordionItem
+                        key={detail.id}
+                        detail={detail}
+                        subject={selectedSubjectData.subject}
+                        teacher={selectedSubjectData.teacher}
+                        studentId={studentId}
+                        onGradeClick={handleGradeClick}
+                        onDownloadFile={handleDownloadFile}
+                        getFileIcon={getFileIcon}
+                        getGradeColor={getGradeColor}
+                      />
                     ))}
                   </div>
                 </div>
               ) : (
                 <div className="pf-no-subject-selected">
                   <div className="pf-empty-state">
-                    <h3>Выберите предмет</h3>
                     <p>Для просмотра детальной информации выберите предмет из списка</p>
                   </div>
                 </div>
@@ -1982,7 +1984,6 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
             </div>
           </div>
         )}
-
         {activeTab === 'analytics' && renderAnalytics()}
       </div>
 

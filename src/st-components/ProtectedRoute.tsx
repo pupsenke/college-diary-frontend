@@ -4,14 +4,14 @@ import { useUser } from '../context/UserContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredUserType?: 'student' | 'teacher' | 'metodist' | 'departmentHead';
+  requiredUserType?: 'student' | 'teacher' | 'metodist' | 'departmentHead' | 'social';
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredUserType 
 }) => {
-  const { user, isLoading, isStudent, isTeacher, isMetodist, isDepartmentHead } = useUser();
+  const { user, isLoading, isStudent, isTeacher, isMetodist, isDepartmentHead, isSocial } = useUser();
 
   console.log('ProtectedRoute debug:', {
     user,
@@ -20,6 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     isTeacher,
     isMetodist,
     isDepartmentHead,
+    isSocial,
     requiredUserType
   });
 
@@ -41,7 +42,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       (requiredUserType === 'student' && isStudent) ||
       (requiredUserType === 'teacher' && isTeacher) ||
       (requiredUserType === 'metodist' && isMetodist) ||
-      (requiredUserType === 'departmentHead' && isDepartmentHead);;
+      (requiredUserType === 'departmentHead' && isDepartmentHead) ||
+      (requiredUserType === 'social' && isSocial);
 
     if (!hasAccess) {
       return <Navigate to="/unauthorized" replace />;

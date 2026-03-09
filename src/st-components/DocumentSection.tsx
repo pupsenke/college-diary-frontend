@@ -866,8 +866,6 @@ export const DocumentsSection: React.FC = () => {
               <strong>Тип документа:</strong> {selectedDocumentType}
             </div>
 
-            {error && <div className="ds-error-message">{error}</div>}
-
             <div className="ds-form-sections">
               <div className="ds-form-section">
                 <h4>Общая информация</h4>

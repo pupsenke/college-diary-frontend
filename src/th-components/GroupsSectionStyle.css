@@ -1,10 +1,12 @@
 .gs-groups-section {
   padding: 0;
   background: transparent;
-  min-height: 500px;
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  overflow-y: hidden;
+  height: auto;
+  min-height: auto
 }
 
 .gs-groups-header {

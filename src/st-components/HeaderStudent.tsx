@@ -4,13 +4,67 @@ import { useUser } from '../context/UserContext';
 import { apiService } from '../services/studentApiService';
 import './HeaderStudentStyle.css';
 
-export const Header: React.FC = () => {
+interface ThemeToggleProps {
+  currentTheme: 'light' | 'dark';
+  onToggle: () => void;
+}
+
+const ThemeToggle: React.FC<ThemeToggleProps> = ({ currentTheme, onToggle }) => {
+  return (
+    <button 
+      className="h-theme-toggle"
+      onClick={onToggle}
+      aria-label={currentTheme === 'dark' ? 'Переключить на светлую тему' : 'Переключить на темную тему'}
+    >
+      <div className="h-theme-toggle-inner">
+        <div className={`h-theme-icon ${currentTheme === 'dark' ? 'h-moon-icon' : 'h-sun-icon'}`}>
+          {currentTheme === 'dark' ? (
+            <img src="/sun_icon.svg" alt="Светлая тема" width="20" height="20" />
+          ) : (
+            <img src="/moon_icon.svg" alt="Темная тема" width="20" height="20" />
+          )}
+        </div>
+      </div>
+    </button>
+  );
+};
+
+export const StudentHeader: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [groupNumber, setGroupNumber] = useState<string>('-');
   const [loadingGroup, setLoadingGroup] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user, isStudent } = useUser();
+  const { user, isStudent, logout } = useUser();
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  // Загрузка темы из localStorage при монтировании
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('st-theme') as 'light' | 'dark';
+    if (savedTheme) {
+      setTheme(savedTheme);
+      applyTheme(savedTheme);
+    }
+  }, []);
+
+  // Применение темы к body
+  const applyTheme = (newTheme: 'light' | 'dark') => {
+    if (newTheme === 'light') {
+      document.body.classList.add('st-theme-light');
+      document.body.classList.remove('st-theme-dark');
+    } else {
+      document.body.classList.add('st-theme-dark');
+      document.body.classList.remove('st-theme-light');
+    }
+  };
+
+  // Переключение темы
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('st-theme', newTheme);
+    applyTheme(newTheme);
+  };
 
   // Закрытие dropdown при клике вне его области
   useEffect(() => {
@@ -59,7 +113,7 @@ export const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 
@@ -96,29 +150,32 @@ export const Header: React.FC = () => {
           <img src='blue_icon.svg' alt="" className='h-image'/>
           <div>
             <div className="h-logo-title">Цифровой дневник</div>
-            <div className="h-logo-subtitle">Политехнический колледж Новгу</div>
+            <div className="h-logo-subtitle">Политехнический колледж НовГУ</div>
           </div>
         </div>
       </div>
-      <div className="h-header-profile-area" ref={dropdownRef}>
-        <div className="h-profile-card" onClick={toggleDropdown}>
-          <div className="h-profile-info">
-            <span className="h-profile-name">{getFullName()}</span>
-            <span className="h-profile-role">
-              {isStudent ? 'Студент' : user?.userType === 'teacher' ? 'Преподаватель' : 'Методист'}
-            </span>
-          </div>
-          <span className={`h-profile-arrow ${isDropdownOpen ? 'h-rotated' : ''}`}>▼</span>
+
+      {/* Правая часть - кнопка темы и профиль */}
+      <div className="h-header-right-area">
+        <div className="h-header-theme-area">
+          <ThemeToggle currentTheme={theme} onToggle={toggleTheme} />
         </div>
+
+        <div className="h-header-profile-area" ref={dropdownRef}>
+          <div className="h-profile-card" onClick={toggleDropdown}>
+            <div className="h-profile-info">
+              <span className="h-profile-name">{getFullName()}</span>
+              <span className="h-profile-role">Студент</span>
+            </div>
+            <span className={`h-profile-arrow ${isDropdownOpen ? 'h-rotated' : ''}`}>▼</span>
+          </div>
         
         {isDropdownOpen && (
           <div className="h-profile-dropdown">
             <div className="h-dropdown-user-info">
               <div className="h-user-gradient-bg"></div>
               <span className="h-dropdown-fullname">{getFullNameWithPatronymic()}</span>
-              {isStudent && (
-                <span className="h-dropdown-group">Группа: {getGroupNumber()}</span>
-              )}
+              <span className="h-dropdown-group">Группа: {getGroupNumber()}</span>
             </div>
             <div className="h-dropdown-menu">
               <button className="h-dropdown-item" onClick={handlePersonalCabinet}>
@@ -134,6 +191,7 @@ export const Header: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </header>
   );

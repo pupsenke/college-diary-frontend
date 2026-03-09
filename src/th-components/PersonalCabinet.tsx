@@ -493,20 +493,20 @@ export const PersonalCabinet: React.FC<Props> = ({
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Для изменения данных нажмите кнопку "Сменить ..."</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Внесите необходимые изменения в форму</span>
               </div>
-              <div className="step">
-                <span className="step-number">3</span>
+              <div className="steps">
+                <span className="steps-number">3</span>
                 <span>Сохраните изменения или отмените редактирование</span>
               </div>
-              <div className="step">
-                <span className="step-number">4</span>
+              <div className="steps">
+                <span className="steps-number">4</span>
                 <span>Для перехода к дисциплине нажмите на её название</span>
               </div>
             </div>
