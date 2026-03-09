@@ -6,13 +6,13 @@
   box-sizing: border-box;
 }
 
-.metodist-container {
+.md-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   position: relative;
 }
 
-.metodist-content {
+.md-content {
   position: relative;
   z-index: 1;
   padding: 20px;
@@ -21,22 +21,109 @@
   margin: auto;
 }
 
-.metodist-main {
+.md-white-background {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   width: 100%;
-  margin-top: 20px;
+  max-width: 1900px;
+  margin: 20px auto;
+  min-height: 400px;
 }
 
-.metodist-content-area {
+.md-main {
+  padding: 30px;
+}
+
+.md-content-area {
+  width: 100%;
+}
+
+.md-section-title {
+  margin: 0;
+  color: #002FA7;
+}
+
+.md-section-subtitle {
+  margin-top: 5px;
+  margin-bottom: 40px;
+  color: #002FA7;
+}
+
+.md-button-icon-container {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.2);
+  transition: all 0.3s ease;
+}
+
+.md-button-icon {
+  width: 30px;
+  height: 30px;
+  filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
+}
+
+/* кнопки */
+.md-buttons-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.md-button {
+  flex: 1;
+  width: 270px;
+  height: 200px;
+  background: white;
+  border: 2px solid rgba(0, 47, 167, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  z-index: 3;
-  position: relative;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.md-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 47, 167, 0.15);
+  border-color: rgba(0, 47, 167, 0.3);
+}
+
+.md-button:hover .md-button-icon {
+  transform: scale(1.1);
+}
+
+.md-button-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #002FA7;
+  line-height: 1.3;
+}
+
+.md-button-desc {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #002FA7;
+  line-height: 1.4;
 }
 
 /* анимированный фон */
-.metodist-background-animation {
+.md-background-animation {
   position: fixed;
   top: 0;
   left: 0;
@@ -45,22 +132,48 @@
   z-index: 1;
 }
 
-.metodist-shape {
+.md-shape {
   position: absolute;
   opacity: 0.1;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
-  animation: metodist-float 20s infinite linear;
+  animation: md-float 20s infinite linear;
 }
 
-.metodist-shape-1 { width: 200px; height: 200px; top: 10%; left: 10%; }
-.metodist-shape-2 { width: 150px; height: 150px; top: 60%; right: 10%; animation-delay: -5s; }
-.metodist-shape-3 { width: 100px; height: 100px; bottom: 20%; left: 20%; animation-delay: -10s; }
+.md-shape-1 { width: 200px; height: 200px; top: 10%; left: 10%; }
+.md-shape-2 { width: 150px; height: 150px; top: 60%; right: 10%; animation-delay: -5s; }
+.md-shape-3 { width: 100px; height: 100px; bottom: 20%; left: 20%; animation-delay: -10s; }
 
-@keyframes metodist-float {
+@keyframes md-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25% { transform: translateY(-20px) rotate(90deg); }
   50% { transform: translateY(0) rotate(180deg); }
   75% { transform: translateY(20px) rotate(270deg); }
 }
 
+/* адаптив */
+@media (max-width: 768px) {
+  .md-button-icon-container {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 10px;
+  }
+  
+  .md-button-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .md-button-icon-container {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  
+  .md-button-icon {
+    width: 18px;
+    height: 18px;
+  }
+}

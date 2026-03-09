@@ -11,6 +11,12 @@ import { DepartmentHeadPage } from './pages/departmentHeadPage';
 import { DepartmentManagementSection } from './dh-components/DepartmentManagementSection';
 import { ProtectedRoute } from './st-components/ProtectedRoute';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { EditSchedulePage } from './md-components/EditScheduleSection';
+import { ViewSectionPage } from './md-components/ViewSection';
+import { ChangesSchedulePage } from './md-components/ChangesScheduleSection';
+import { ViewScheduleSection } from './md-components/ViewScheduleSection';
+
+
 
 function App() {
   return (
@@ -40,13 +46,19 @@ function App() {
             />
             
             <Route 
-              path="/metodist/*" 
+              path="/metodist" 
               element={
                 <ProtectedRoute requiredUserType="metodist">
                   <MetodistPage />
                 </ProtectedRoute>
-              } 
-            />
+              }
+            >
+              <Route index element={null} />
+              <Route path="edit-schedule" element={<EditSchedulePage />} />
+              <Route path="view-groups" element={<ViewSectionPage />} />
+              <Route path="view-groups/view-schedule" element={<ViewScheduleSection />} />
+              <Route path="changes" element={<ChangesSchedulePage />} />
+            </Route>
 
             <Route 
               path="/departmentHead/*" 
