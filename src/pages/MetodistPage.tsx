@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import React from 'react';
-import { Header } from '../md-components/HeaderMetodist';
-=======
 import React, { useState } from 'react';
-import { StudentHeader } from '../st-components/HeaderStudent';
->>>>>>> 605adea9f54f7f2a26a3c030c1e8fe21856a3ef1
+import { Header } from '../md-components/HeaderMetodist';
 import { useUser } from '../context/UserContext';
 import './MetodistStyle.css';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
@@ -46,7 +41,6 @@ export const MetodistPage: React.FC = () => {
         <div className="md-shape md-shape-3"></div>
       </div>
 
-<<<<<<< HEAD
       <div className="md-content">
         <Header />
         {isHomePage ? (
@@ -104,16 +98,6 @@ export const MetodistPage: React.FC = () => {
         ) : (
           <Outlet />
         )}
-=======
-      <div className="metodist-content">
-        <StudentHeader />
-
-        <div className="metodist-main">
-          <main className="metodist-content-area">
-
-          </main>
-        </div>
->>>>>>> 605adea9f54f7f2a26a3c030c1e8fe21856a3ef1
       </div>
     </div>
   );
