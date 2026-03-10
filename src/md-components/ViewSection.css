@@ -186,7 +186,7 @@
   cursor: pointer;
   padding: 8px;
   border-radius: 7px;
-  border-color: #002FA7;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,7 +197,7 @@
 
 .action-btn:hover {
   background-color: #002FA7;
-  border-color: #002FA7;
+  border: none;
   box-shadow: 0 8px 16px rgba(0, 47, 167, 0.25);
 }
 
