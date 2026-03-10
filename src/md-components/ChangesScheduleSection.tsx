@@ -91,6 +91,7 @@ export const ChangesSchedulePage: React.FC = () => {
   const [filteredPairs, setFilteredPairs] = useState<SchedulePair[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [weekType, setWeekType] = useState<string>('');
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
   
   // состояния для выбранных значений при замене
   const [selectedNewTeacher, setSelectedNewTeacher] = useState<{ [key: number]: number }>({});
@@ -99,59 +100,33 @@ export const ChangesSchedulePage: React.FC = () => {
   
   const dbRooms = ['120', '123', '124', '127', '221', '226'];
 
-  // загрузка групп
   useEffect(() => {
-    const loadGroups = async () => {
+    const loadInitialData = async () => {
+      setInitialLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/groups`);
-        if (!res.ok) throw new Error(`Ошибка загрузки групп: ${res.status}`);
-        const data: ApiGroup[] = await res.json();
-        setGroups(data);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadGroups();
-  }, []);
+        // загрузка групп
+        const groupsRes = await fetch(`${API_BASE_URL}/api/v1/groups`);
+        if (!groupsRes.ok) throw new Error(`Ошибка загрузки групп: ${groupsRes.status}`);
+        const groupsData: ApiGroup[] = await groupsRes.json();
+        setGroups(groupsData);
 
-  // загрузка предметов
-  useEffect(() => {
-    const loadSubjects = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/subjects`);
-        if (!res.ok) throw new Error(`Ошибка загрузки предметов: ${res.status}`);
-        const data: ApiSubject[] = await res.json();
-        setSubjects(data);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadSubjects();
-  }, []);
+        // загрузка предметов
+        const subjectsRes = await fetch(`${API_BASE_URL}/api/v1/subjects`);
+        if (!subjectsRes.ok) throw new Error(`Ошибка загрузки предметов: ${subjectsRes.status}`);
+        const subjectsData: ApiSubject[] = await subjectsRes.json();
+        setSubjects(subjectsData);
 
-  // загрузка связей преподавателей с предметами
-  useEffect(() => {
-    const loadSubjectTeachers = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/st`);
-        if (!res.ok) throw new Error(`Ошибка загрузки данных st: ${res.status}`);
-        const data: ApiSubjectTeacher[] = await res.json();
-        setSubjectTeachers(data);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadSubjectTeachers();
-  }, []);
+        // загрузка связей преподавателей с предметами
+        const stRes = await fetch(`${API_BASE_URL}/api/v1/st`);
+        if (!stRes.ok) throw new Error(`Ошибка загрузки данных st: ${stRes.status}`);
+        const stData: ApiSubjectTeacher[] = await stRes.json();
+        setSubjectTeachers(stData);
 
-  // загрузка преподавателей
-  useEffect(() => {
-    const loadTeachers = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/staffs`);
-        if (!res.ok) throw new Error(`Ошибка загрузки преподавателей: ${res.status}`);
-        const data: ApiStaff[] = await res.json();
-        const onlyTeachers = data
+        // загрузка преподавателей
+        const teachersRes = await fetch(`${API_BASE_URL}/api/v1/staffs`);
+        if (!teachersRes.ok) throw new Error(`Ошибка загрузки преподавателей: ${teachersRes.status}`);
+        const teachersData: ApiStaff[] = await teachersRes.json();
+        const onlyTeachers = teachersData
           .filter(st => st.staffPosition?.some(pos => pos.id === 9))
           .map(st => ({
             id: st.id,
@@ -159,26 +134,20 @@ export const ChangesSchedulePage: React.FC = () => {
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
         setTeachers(onlyTeachers);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadTeachers();
-  }, []);
 
-  // загрузка расписания
-  useEffect(() => {
-    const loadSchedule = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/schedule`);
-        if (!res.ok) throw new Error(`Ошибка загрузки расписания: ${res.status}`);
-        const data: ApiSchedule[] = await res.json();
-        setSchedule(data);
-      } catch (e: any) {
-        console.error(e);
+        // загрузка расписания
+        const scheduleRes = await fetch(`${API_BASE_URL}/api/v1/schedule`);
+        if (!scheduleRes.ok) throw new Error(`Ошибка загрузки расписания: ${scheduleRes.status}`);
+        const scheduleData: ApiSchedule[] = await scheduleRes.json();
+        setSchedule(scheduleData);
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+      } finally {
+        setInitialLoading(false);
       }
     };
-    loadSchedule();
+
+    loadInitialData();
   }, []);
 
   // загрузка данных о предметах преподавателя
@@ -288,6 +257,10 @@ export const ChangesSchedulePage: React.FC = () => {
     setLoading(false);
   }, [selectedTeacher, selectedDate, schedule, groups, teachers, teacherGroups, subjectTeachers, filterType, startPair, endPair]);
 
+  const handleBackToMain = () => {
+    navigate('/metodist');
+  };
+
   const handleSetNotWillBe = (pairId: number) => {
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
     const newSelected = { ...selectedNewTeacher };
@@ -305,6 +278,14 @@ export const ChangesSchedulePage: React.FC = () => {
   const handleViewDocuments = () => {
     navigate('/metodist/changes/replacement-documents');
   };
+
+  const handleAddPair = () => {
+    navigate('/metodist/changes/add-pair');
+  };
+
+  if (initialLoading) {
+    return <div className="cs-loading">Загрузка данных...</div>;
+  }
 
   return (
     <div className="cs-container">
@@ -365,7 +346,17 @@ export const ChangesSchedulePage: React.FC = () => {
           </div>
         )}
 
-        <div className="cs-filter-group" style={{ marginLeft: 'auto' }}>
+        <div className="cs-filter-group" style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'row', gap: '10px' }}>
+          <button 
+            className="back-button"
+            onClick={handleBackToMain}>
+            Назад
+          </button>
+          <button 
+            className="cs-btn cs-btn-add"
+            onClick={handleAddPair}>
+            Добавить пару
+          </button>
           <button 
             className="cs-btn cs-btn-view"
             onClick={handleViewDocuments}>
@@ -486,6 +477,261 @@ export const ChangesSchedulePage: React.FC = () => {
           </div>
         )
       )}
+    </div>
+  );
+};
+
+// страница для добавления пары
+export const AddPairPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [groups, setGroups] = useState<ApiGroup[]>([]);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [subjects, setSubjects] = useState<ApiSubject[]>([]);
+  const [schedule, setSchedule] = useState<ApiSchedule[]>([]);
+  
+  const [selectedGroup, setSelectedGroup] = useState<number | ''>('');
+  const [selectedPair, setSelectedPair] = useState<number | ''>('');
+  const [selectedTeacher, setSelectedTeacher] = useState<number | ''>('');
+  const [selectedSubject, setSelectedSubject] = useState<number | ''>('');
+  const [selectedRoom, setSelectedRoom] = useState<string>('');
+  const [selectedSubgroup, setSelectedSubgroup] = useState<number | ''>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [weekType, setWeekType] = useState<string>('');
+  
+  const dbRooms = ['120', '123', '124', '127', '221', '226'];
+  const subgroups = [1, 2];
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // загрузка групп
+        const groupsRes = await fetch(`${API_BASE_URL}/api/v1/groups`);
+        const groupsData: ApiGroup[] = await groupsRes.json();
+        setGroups(groupsData);
+
+        // загрузка преподавателей
+        const teachersRes = await fetch(`${API_BASE_URL}/api/v1/staffs`);
+        const teachersData: ApiStaff[] = await teachersRes.json();
+        const onlyTeachers = teachersData
+          .filter(st => st.staffPosition?.some(pos => pos.id === 9))
+          .map(st => ({
+            id: st.id,
+            name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim()
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setTeachers(onlyTeachers);
+
+        // загрузка предметов
+        const subjectsRes = await fetch(`${API_BASE_URL}/api/v1/subjects`);
+        const subjectsData: ApiSubject[] = await subjectsRes.json();
+        setSubjects(subjectsData);
+
+        // загрузка расписания
+        const scheduleRes = await fetch(`${API_BASE_URL}/api/v1/schedule`);
+        const scheduleData: ApiSchedule[] = await scheduleRes.json();
+        setSchedule(scheduleData);
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // определение типа недели
+  useEffect(() => {
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+      const type = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
+      setWeekType(type);
+    }
+  }, [selectedDate]);
+
+  const getDayWeekForApi = (date: Date): string => {
+    const daysOfWeek = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    return daysOfWeek[date.getDay()];
+  };
+
+  // функция для получения свободных пар
+  const getAvailablePairs = (): { numPair: number, time: string }[] => {
+    if (!selectedGroup || !selectedDate) return [];
+    
+    const date = new Date(selectedDate);
+    const dayWeekForApi = getDayWeekForApi(date);
+    const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const typeWeek = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
+    
+    // получение занятых парв для выбранной группы в этот день
+    const occupiedPairs = schedule
+      .filter(item => 
+        item.idGroup === selectedGroup &&
+        item.dayWeek === dayWeekForApi &&
+        (item.typeWeek === 'Общая' || item.typeWeek === typeWeek) &&
+        !item.replacement
+      )
+      .map(item => item.numPair);
+    
+    const allPairs = [
+      { numPair: 1, time: '8:30 - 10:10' },
+      { numPair: 2, time: '10:20 - 12:00' },
+      { numPair: 3, time: '12:45 - 14:25' },
+      { numPair: 4, time: '14:35 - 16:15' },
+      { numPair: 5, time: '16:25 - 18:05' },
+      { numPair: 6, time: '18:45 - 20:05' }
+    ];
+    
+    // только свободные пары
+    return allPairs.filter(pair => !occupiedPairs.includes(pair.numPair));
+  };
+
+  const availablePairs = getAvailablePairs();
+
+  const handleSave = () => {
+    // будет логика сохранения новой пары
+    alert('Новая пара добавлена (сохранение еще не реализовано)');
+    navigate('/metodist/changes');
+  };
+
+  const handleCancel = () => {
+    navigate('/metodist/changes');
+  };
+
+  return (
+    <div className="add-pair-container">
+      <div className="add-pair-header-block">
+        <div className="add-pair-date-info">
+          <div className="date-info-item">
+            <span className="date-info-label">Дата:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="date-info-input"
+              placeholder="дд.мм.гггг"/>
+          </div>
+        </div>
+        
+        <div className="add-pair-nav">
+          <button className="back-button" onClick={handleCancel}>
+            Назад
+          </button>
+        </div>
+      </div>
+
+      <div className="add-pair-form-block">
+        <div className="add-pair-form">
+          <div className="form-section">
+            <h3>Основная информация</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Группа <span className="required">*</span></label>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => {
+                    setSelectedGroup(Number(e.target.value));
+                    setSelectedPair(''); }}
+                  className="form-control">
+                  <option value="">Выберите группу</option>
+                  {groups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.numberGroup} - {group.specialty} ({group.course} курс)
+                    </option>))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Номер пары <span className="required">*</span></label>
+                <select
+                  value={selectedPair}
+                  onChange={(e) => setSelectedPair(Number(e.target.value))}
+                  className="form-control"
+                  disabled={!selectedGroup}>
+                  <option value="">Выберите пару</option>
+                  {availablePairs.map(pair => (
+                    <option key={pair.numPair} value={pair.numPair}>
+                      {pair.numPair} пара ({pair.time})
+                    </option>))}
+                </select>
+                {selectedGroup && availablePairs.length === 0 && (
+                  <div className="form-hint warning">
+                    Нет свободных пар на выбранную дату
+                  </div>)}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Подгруппа</label>
+                <select
+                  value={selectedSubgroup}
+                  onChange={(e) => setSelectedSubgroup(e.target.value ? Number(e.target.value) : '')}
+                  className="form-control">
+                  <option value="">Нет</option>
+                  {subgroups.map(num => (
+                    <option key={num} value={num}>{num} подгруппа</option>))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3>Детали занятия</h3>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>Преподаватель <span className="required">*</span></label>
+                <select
+                  value={selectedTeacher}
+                  onChange={(e) => setSelectedTeacher(Number(e.target.value))}
+                  className="form-control">
+                  <option value="">Выберите преподавателя</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>{teacher.name}</option>))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Предмет <span className="required">*</span></label>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(Number(e.target.value))}
+                  className="form-control">
+                  <option value="">Выберите предмет</option>
+                  {subjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>{subject.subjectName}</option>))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Аудитория <span className="required">*</span></label>
+                <select
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  className="form-control">
+                  <option value="">Выберите аудиторию</option>
+                  {dbRooms.map(room => (
+                    <option key={room} value={room}>{room}</option>))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={handleCancel}>
+              Отмена
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSave}
+              disabled={!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom}>
+              Сохранить пару
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -38,26 +38,28 @@
 }
 
 .back-button {
-  background: #f8f9fa;
+  padding: 8px 16px;
+  background: white;
   color: #002FA7;
-  border: 2px solid #e0e0e0;
-  padding: 10px 20px;
-  border-radius: 8px;
+  border: 1px solid #002FA7;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 450;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  width: 90px;
-  height: 40px;
+  justify-content: center;
+  gap: 6px;
+  width: 100px;
+  height: 38px;
+  transition: all 0.2s ease;
 }
 
+
 .back-button:hover {
-  background: #002FA7;
-  color: white;
-  border-color: #002FA7;
+  background: #f0f3ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 47, 167, 0.1);
 }
 
 .group-selection {

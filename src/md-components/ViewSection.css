@@ -19,38 +19,6 @@
   gap: 16px;
 }
 
-.back-button {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #002FA7 0%, #2958d4 100%);
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  width: 100px;
-  gap: 8px;
-  box-shadow: 0 10px 20px rgba(0, 47, 167, 0.25);
-  transition: transform 0.15s ease;
-}
-
-.back-button::before {
-  content: "←";
-  font-size: 16px;
-}
-
-.back-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 26px rgba(0, 47, 167, 0.32);
-}
-
-.back-button:active {
-  transform: translateY(0);
-  box-shadow: 0 8px 18px rgba(0, 47, 167, 0.2);
-}
-
 .view-section-main {
   padding: 0 8px;
 }
