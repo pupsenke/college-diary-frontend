@@ -53,8 +53,8 @@
   width: 100px;
   height: 38px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
-
 
 .back-button:hover {
   background: #f0f3ff;
@@ -63,32 +63,35 @@
 }
 
 .group-selection {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .group-selection label {
-  display: block;
-  margin-bottom: 8px;
   color: #002FA7;
   font-weight: 600;
+  white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .group-select {
-  width: 100%;
-  max-width: 300px;
-  padding: 10px 15px;
-  border: 2px solid #e0e0e0;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #002FA7;
   border-radius: 8px;
-  font-size: 16px;
-  color: #333;
+  font-size: 14px;
+  color: #002FA7;
   background: white;
   cursor: pointer;
   transition: border-color 0.3s;
+  height: 38px;
 }
 
 .group-select:focus {
   outline: none;
-  border-color: #002FA7;
+  border: 2px solid #002FA7;
   color: #002FA7;
 }
 

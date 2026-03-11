@@ -10,7 +10,7 @@
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.11.0",
     "docx": "^9.5.1",
-    "docxtemplater": "^3.66.7",
+    "docxtemplater": "^3.68.3",
     "file-saver": "^2.0.5",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
