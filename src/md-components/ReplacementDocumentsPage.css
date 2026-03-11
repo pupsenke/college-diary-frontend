@@ -1,0 +1,228 @@
+.rd-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* верхний блок */
+.rd-header-block {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.download-main-btn {
+  padding: 8px 16px;
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 38px;
+}
+
+.download-main-btn:hover {
+  background: #001f7a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 47, 167, 0.2);
+}
+
+.download-main-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* нижний блок */
+.rd-content-block {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rd-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 16px;
+}
+
+.rd-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  min-height: 500px;
+}
+
+.rd-sidebar {
+  background: #f8faff;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.rd-sidebar h3 {
+  font-size: 16px;
+  color: #002FA7;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e5ec;
+}
+
+.rd-date-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rd-date-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rd-date-item:hover {
+  background: #eef2f6;
+}
+
+.rd-date-item.active {
+  background: #e0e5f0;
+  font-weight: 500;
+}
+
+.rd-date-text {
+  flex: 1;
+  font-size: 14px;
+  color: #002FA7;
+}
+
+.rd-delete-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+}
+
+.rd-delete-btn:hover {
+  background: #ffebee;
+  color: #dc3545;
+}
+
+.rd-main {
+  overflow-x: auto;
+}
+
+.rd-document-header {
+  margin-bottom: 24px;
+}
+
+.rd-document-header h2 {
+  font-size: 18px;
+  color: #002FA7;
+  margin: 0;
+}
+
+.rd-group {
+  margin-bottom: 32px;
+}
+
+.rd-group h3 {
+  font-size: 16px;
+  color: #002FA7;
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0e5ec;
+}
+
+.rd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rd-table th {
+  background: #f8faff;
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #002FA7;
+  border: 1px solid #e0e5ec;
+}
+
+.rd-table td {
+  padding: 8px;
+  border: 1px solid #e0e5ec;
+  vertical-align: middle;
+}
+
+.rd-table tr:hover {
+  background: #fafbff;
+}
+
+.rd-record-delete {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+}
+
+.rd-record-delete:hover {
+  background: #ffebee;
+  color: #dc3545;
+}
+
+@media (max-width: 1024px) {
+  .rd-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .rd-container {
+    padding: 16px;
+  }
+  
+  .rd-header-block {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .back-button,
+  .download-main-btn {
+    width: 100%;
+  }
+}

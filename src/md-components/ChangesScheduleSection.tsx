@@ -74,6 +74,23 @@ interface SchedulePair {
   typeWeek: string;
 }
 
+interface ReplacementRecord {
+  id: string;
+  date: string; 
+  displayDate: string;
+  groupNumber: number;
+  pairNumber: number;
+  subgroup: number | null;
+  subject: string;
+  teacher: string;
+  room: string;
+  type: 'notWillBe' | 'replacement';
+  newSubject?: string;
+  newTeacher?: string;
+  newRoom?: string;
+  createdAt: string;
+}
+
 export const ChangesSchedulePage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -257,11 +274,47 @@ export const ChangesSchedulePage: React.FC = () => {
     setLoading(false);
   }, [selectedTeacher, selectedDate, schedule, groups, teachers, teacherGroups, subjectTeachers, filterType, startPair, endPair]);
 
+  // Функция для сохранения замены
+  const saveReplacementToStorage = (pair: SchedulePair, type: 'notWillBe' | 'replacement', replacementData?: any) => {
+    if (!selectedDate) return;
+
+    const storageKey = 'scheduleReplacements';
+    const existingData = localStorage.getItem(storageKey);
+    const replacements: ReplacementRecord[] = existingData ? JSON.parse(existingData) : [];
+
+    const newReplacement: ReplacementRecord = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      date: selectedDate,
+      displayDate: new Date(selectedDate).toLocaleDateString('ru-RU'),
+      groupNumber: pair.groupNumber,
+      pairNumber: pair.pairNumber,
+      subgroup: pair.subgroup,
+      subject: pair.subjectName,
+      teacher: pair.teacherName,
+      room: pair.room,
+      type: type,
+      createdAt: new Date().toISOString()
+    };
+
+    if (type === 'replacement' && replacementData) {
+      newReplacement.newSubject = replacementData.newSubject;
+      newReplacement.newTeacher = replacementData.newTeacher;
+      newReplacement.newRoom = replacementData.newRoom;
+    }
+
+    replacements.push(newReplacement);
+    localStorage.setItem(storageKey, JSON.stringify(replacements));
+  };
+
   const handleBackToMain = () => {
     navigate('/metodist');
   };
 
   const handleSetNotWillBe = (pairId: number) => {
+    const pair = filteredPairs.find(p => p.id === pairId);
+    if (pair) {
+      saveReplacementToStorage(pair, 'notWillBe');
+    }
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
     const newSelected = { ...selectedNewTeacher };
     delete newSelected[pairId];
@@ -269,6 +322,21 @@ export const ChangesSchedulePage: React.FC = () => {
   };
 
   const handleSaveReplacement = (pairId: number) => {
+    const pair = filteredPairs.find(p => p.id === pairId);
+    if (pair) {
+      const newSubject = selectedNewSubject[pairId];
+      const newTeacher = selectedNewTeacher[pairId];
+      const newRoom = selectedNewRoom[pairId];
+
+      const subjectName = subjects.find(s => s.id === newSubject)?.subjectName || '';
+      const teacherName = teachers.find(t => t.id === newTeacher)?.name || '';
+
+      saveReplacementToStorage(pair, 'replacement', {
+        newSubject: subjectName,
+        newTeacher: teacherName,
+        newRoom: newRoom
+      });
+    }
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
     const newSelected = { ...selectedNewTeacher };
     delete newSelected[pairId];
@@ -588,8 +656,42 @@ export const AddPairPage: React.FC = () => {
   const availablePairs = getAvailablePairs();
 
   const handleSave = () => {
-    // будет логика сохранения новой пары
-    alert('Новая пара добавлена (сохранение еще не реализовано)');
+    if (!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom || !selectedDate) {
+      alert('Заполните все обязательные поля');
+      return;
+    }
+
+    const group = groups.find(g => g.id === selectedGroup);
+    const teacher = teachers.find(t => t.id === selectedTeacher);
+    const subject = subjects.find(s => s.id === selectedSubject);
+
+    if (!group || !teacher || !subject) return;
+
+    const storageKey = 'scheduleReplacements';
+    const existingData = localStorage.getItem(storageKey);
+    const replacements: ReplacementRecord[] = existingData ? JSON.parse(existingData) : [];
+
+    const newReplacement: ReplacementRecord = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      date: selectedDate,
+      displayDate: new Date(selectedDate).toLocaleDateString('ru-RU'),
+      groupNumber: group.numberGroup,
+      pairNumber: selectedPair,
+      subgroup: selectedSubgroup || null,
+      subject: '',
+      teacher: '',
+      room: '—',
+      type: 'replacement',
+      newSubject: subject.subjectName,
+      newTeacher: teacher.name,
+      newRoom: selectedRoom,
+      createdAt: new Date().toISOString()
+    };
+
+    replacements.push(newReplacement);
+    localStorage.setItem(storageKey, JSON.stringify(replacements));
+
+    alert('Новое занятие добавлено и сохранено в документы');
     navigate('/metodist/changes');
   };
 

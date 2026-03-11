@@ -55,7 +55,6 @@
   transition: all 0.2s ease;
 }
 
-
 .back-button:hover {
   background: #f0f3ff;
   transform: translateY(-1px);
