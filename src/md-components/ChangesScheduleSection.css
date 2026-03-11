@@ -4,6 +4,29 @@
   margin: 0 auto;
 }
 
+/* стили для блока фильтров */
+.cs-filters {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+}
+
+.cs-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.cs-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+
 .cs-filters {
   background: white;
   border-radius: 12px;

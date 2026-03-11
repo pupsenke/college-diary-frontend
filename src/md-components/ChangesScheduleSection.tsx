@@ -358,63 +358,7 @@ export const ChangesSchedulePage: React.FC = () => {
   return (
     <div className="cs-container">
       <div className="cs-filters">
-        <div className="cs-filter-group">
-          <label>Дата:</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="cs-input"/>
-        </div>
-
-        <div className="cs-filter-group">
-          <label>Преподаватель:</label>
-          <select
-            value={selectedTeacher}
-            onChange={(e) => setSelectedTeacher(Number(e.target.value))}
-            className="cs-select"
-            style={{ minWidth: '250px' }}>
-            <option value="">Выберите преподавателя</option>
-            {teachers.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="cs-filter-group">
-          <label>Тип фильтрации:</label>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as 'allDay' | 'pairRange')}
-            className="cs-select">
-            <option value="allDay">Весь день</option>
-            <option value="pairRange">Диапазон пар</option>
-          </select>
-        </div>
-
-        {filterType === 'pairRange' && (
-          <div className="cs-filter-group cs-pair-range">
-            <select
-              value={startPair}
-              onChange={(e) => setStartPair(Number(e.target.value))}
-              className="cs-select">
-              {[1,2,3,4,5,6].map(n => (
-                <option key={n} value={n}>{n} пара</option>
-              ))}
-            </select>
-            <span>—</span>
-            <select
-              value={endPair}
-              onChange={(e) => setEndPair(Number(e.target.value))}
-              className="cs-select">
-              {[1,2,3,4,5,6].map(n => (
-                <option key={n} value={n}>{n} пара</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="cs-filter-group" style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'row', gap: '10px' }}>
+        <div className="cs-actions-row">
           <button 
             className="back-button"
             onClick={handleBackToMain}>
@@ -430,6 +374,65 @@ export const ChangesSchedulePage: React.FC = () => {
             onClick={handleViewDocuments}>
             Просмотр документов
           </button>
+        </div>
+
+        {/* фильтры */}
+        <div className="cs-filters-row">
+          <div className="cs-filter-group">
+            <label>Дата:</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="cs-input"/>
+          </div>
+
+          <div className="cs-filter-group">
+            <label>Преподаватель:</label>
+            <select
+              value={selectedTeacher}
+              onChange={(e) => setSelectedTeacher(Number(e.target.value))}
+              className="cs-select"
+              style={{ minWidth: '250px' }}>
+              <option value="">Выберите преподавателя</option>
+              {teachers.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="cs-filter-group">
+            <label>Тип фильтрации:</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as 'allDay' | 'pairRange')}
+              className="cs-select">
+              <option value="allDay">Весь день</option>
+              <option value="pairRange">Диапазон пар</option>
+            </select>
+          </div>
+
+          {filterType === 'pairRange' && (
+            <div className="cs-filter-group cs-pair-range">
+              <select
+                value={startPair}
+                onChange={(e) => setStartPair(Number(e.target.value))}
+                className="cs-select">
+                {[1,2,3,4,5,6].map(n => (
+                  <option key={n} value={n}>{n} пара</option>
+                ))}
+              </select>
+              <span>—</span>
+              <select
+                value={endPair}
+                onChange={(e) => setEndPair(Number(e.target.value))}
+                className="cs-select">
+                {[1,2,3,4,5,6].map(n => (
+                  <option key={n} value={n}>{n} пара</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -657,7 +660,6 @@ export const AddPairPage: React.FC = () => {
 
   const handleSave = () => {
     if (!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom || !selectedDate) {
-      alert('Заполните все обязательные поля');
       return;
     }
 
@@ -678,8 +680,8 @@ export const AddPairPage: React.FC = () => {
       groupNumber: group.numberGroup,
       pairNumber: selectedPair,
       subgroup: selectedSubgroup || null,
-      subject: '',
-      teacher: '',
+      subject: '—',
+      teacher: '—',
       room: '—',
       type: 'replacement',
       newSubject: subject.subjectName,
@@ -691,7 +693,6 @@ export const AddPairPage: React.FC = () => {
     replacements.push(newReplacement);
     localStorage.setItem(storageKey, JSON.stringify(replacements));
 
-    alert('Новое занятие добавлено и сохранено в документы');
     navigate('/metodist/changes');
   };
 
