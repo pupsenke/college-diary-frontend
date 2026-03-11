@@ -12,8 +12,9 @@ import { ProtectedRoute } from './st-components/ProtectedRoute';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { EditSchedulePage } from './md-components/EditScheduleSection';
 import { ViewSectionPage } from './md-components/ViewSection';
-import { ChangesSchedulePage } from './md-components/ChangesScheduleSection';
+import { ChangesSchedulePage, AddPairPage } from './md-components/ChangesScheduleSection';
 import { ViewScheduleSection } from './md-components/ViewScheduleSection';
+import { ReplacementDocumentsPage } from './md-components/ReplacementDocumentsPage';
 
 
 
@@ -57,6 +58,8 @@ function App() {
               <Route path="view-groups" element={<ViewSectionPage />} />
               <Route path="view-groups/view-schedule" element={<ViewScheduleSection />} />
               <Route path="changes" element={<ChangesSchedulePage />} />
+              <Route path="/metodist/changes/replacement-documents" element={<ReplacementDocumentsPage />} />
+              <Route path="changes/add-pair" element={<AddPairPage />} />
             </Route>
 
             <Route 
