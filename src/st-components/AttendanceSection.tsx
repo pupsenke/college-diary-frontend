@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './AttendanceSectionStyle.css';
 import { apiService } from '../services/studentApiService'; 
+import { HeadStudentAttendanceSection } from './HeadStudentAttendanceSection';
 import {
   BarChart,
   Bar,
@@ -84,8 +85,18 @@ interface SemesterInfo {
   value: 'first' | 'second';
 }
 
+interface AttendanceSectionProps {
+  studentId: number;
+  isHeadman?: boolean; 
+  groupNumber?: string; 
+  onManageAttendance?: () => void; 
+}
+
 export const AttendanceSection: React.FC<AttendanceSectionProps> = ({ 
-  studentId 
+  studentId,
+  isHeadman = true,
+  groupNumber,
+  onManageAttendance
 }) => {
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'analytics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
@@ -117,6 +128,14 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     start: '',
     end: ''
   });
+  const [showHeadmanAttendance, setShowHeadmanAttendance] = useState(false);
+  const [selectedSubjectForHeadman, setSelectedSubjectForHeadman] = useState<{
+    groupNumber: string;
+    idSt: number;
+    teacherId: number;
+    subject: string;
+  } | null>(null);
+  const [userGroupNumber, setUserGroupNumber] = useState<string | undefined>(groupNumber);
 
   // Функция загрузки данных с приоритетом API
   const fetchAttendanceData = async (forceRefresh = false) => {
@@ -324,6 +343,53 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     }
   };
 
+ // Функция для открытия страницы управления посещаемостью (для старосты)
+  const handleManageAttendance = () => {
+    if (onManageAttendance) {
+      onManageAttendance();
+    } else {
+      if (userGroupNumber) {
+        setShowHeadmanAttendance(true);
+      } else {
+        alert('Не указан номер группы');
+      }
+    }
+  };
+
+  // функция для закрытия страницы управления
+  const handleCloseHeadmanAttendance = () => {
+    setShowHeadmanAttendance(false);
+  };
+
+  // Добавьте функцию для получения номера группы
+  const fetchGroupNumber = async () => {
+    try {
+      // Если groupNumber уже передан через props, используем его
+      if (groupNumber) {
+        setUserGroupNumber(groupNumber);
+        return;
+      }
+      
+      // Иначе получаем данные студента и извлекаем номер группы
+      const studentData = await apiService.getStudentData(studentId);
+      if (studentData?.idGroup) {
+        const groupData = await apiService.getGroupData(studentData.idGroup);
+        // Предполагаем, что в groupData есть поле numberGroup
+        const groupNum = groupData.numberGroup?.toString();
+        if (groupNum) {
+          setUserGroupNumber(groupNum);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка получения номера группы:', error);
+    }
+  };
+
+  // Вызовите функцию в useEffect
+  useEffect(() => {
+    fetchGroupNumber();
+  }, [studentId, groupNumber]);
+
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -442,6 +508,17 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       />
     </button>
   );
+
+  // Компонент кнопки для старосты
+  const HeadmanButton = () => isHeadman ? (
+    <button 
+      className="at-headman-btn"
+      onClick={handleManageAttendance}
+      title="Управление посещаемостью группы"
+    >
+      <span>Выставить посещаемость</span>
+    </button>
+  ) : null;
 
   const SemesterSelector = () => (
     <div className="at-semester-selector">
@@ -1095,6 +1172,17 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     );
   }
 
+  // Если открыта страница управления посещаемостью, показываем её
+  if (showHeadmanAttendance && userGroupNumber) {
+    return (
+      <HeadStudentAttendanceSection
+        groupNumber={userGroupNumber}
+        studentId={studentId}
+        onBack={handleCloseHeadmanAttendance}
+      />
+    );
+  }
+
   return (
     <div className="at-attendance-section">
       {/* Статусная информация */}
@@ -1136,6 +1224,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         <SemesterSelector />
         <div className="at-controls-section-left">
           <ViewToggle />
+          {isHeadman && <HeadmanButton />}
           <RefreshButton />
         </div>
       </div>

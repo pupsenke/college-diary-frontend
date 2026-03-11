@@ -48,7 +48,7 @@
 }
 
 .pc-refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #f8fafc;
   border-color: #cbd5e1;
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);

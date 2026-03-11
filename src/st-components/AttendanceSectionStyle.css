@@ -94,7 +94,7 @@ body.at-modal-open {
 }
 
 .at-refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #f8fafc;
   border-color: #cbd5e1;
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
@@ -1127,5 +1127,56 @@ body.at-modal-open {
   
   .at-popup {
     max-width: 95%;
+  }
+}
+
+
+
+
+
+
+
+/* Кнопка для старосты */
+.at-headman-btn {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  color: #374151;
+  padding: 14px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.at-headman-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.at-headman-btn:active {
+  transform: translateY(0);
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .at-headman-btn span {
+    display: none;
+  }
+  
+  .at-headman-btn {
+    padding: 8px;
+  }
+  
+  .at-headman-icon {
+    width: 20px;
+    height: 20px;
   }
 }

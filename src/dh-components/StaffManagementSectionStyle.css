@@ -1,0 +1,1196 @@
+/* Основной контейнер */
+.dh-sm-container {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+/* Шапка отделения */
+.dh-sm-header {
+  background: white;
+  padding:  32px 0 0 40px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.dh-sm-title {
+  color: #002FA7;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.dh-sm-subtitle {
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Контролы поиска и фильтрации */
+.dh-sm-controls {
+  padding: 24px 40px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dh-sm-search-section {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.dh-sm-search-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.dh-sm-search-input {
+  width: 100%;
+  padding: 14px 48px 14px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1f2937;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.dh-sm-search-icon {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.dh-sm-filter-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #002FA7;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  height: 48px;
+}
+
+.dh-sm-filter-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
+}
+
+.dh-sm-filter-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+/* Фильтры */
+.dh-sm-filters {
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: none;
+}
+
+.dh-sm-filters.show {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dh-sm-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dh-sm-filters-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dh-sm-clear-filters {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-clear-filters:hover {
+  color: #002FA7;
+  background: rgba(0, 47, 167, 0.05);
+}
+
+.dh-sm-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.dh-sm-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-sm-filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.dh-sm-select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.dh-sm-apply-filters {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dh-sm-apply-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-apply-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+/* Основной контент */
+.dh-sm-main-content {
+  padding: 32px 40px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Карточки сотрудников */
+.dh-sm-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.dh-sm-staff-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dh-sm-staff-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 47, 167, 0.12);
+  border-color: #002FA7;
+}
+
+.dh-sm-staff-header {
+  background: #f8fafc;
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dh-sm-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #e0e7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  flex-shrink: 0;
+}
+
+.dh-sm-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.dh-sm-staff-info {
+  flex: 1;
+}
+
+.dh-sm-staff-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.dh-sm-staff-position {
+  font-size: 14px;
+  color: #002FA7;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+}
+
+.dh-sm-staff-department {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dh-sm-staff-body {
+  padding: 20px;
+}
+
+.dh-sm-staff-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dh-sm-stat-item {
+  text-align: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dh-sm-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 2px;
+}
+
+.dh-sm-stat-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dh-sm-staff-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-sm-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dh-sm-detail-row:last-child {
+  border-bottom: none;
+}
+
+.dh-sm-detail-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-sm-detail-value {
+  font-size: 13px;
+  color: #1f2937;
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+}
+
+.dh-sm-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dh-sm-status-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.dh-sm-status-vacation {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dh-sm-status-remote {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Пагинация */
+.dh-sm-pagination {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.dh-sm-page-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-page-btn:hover:not(:disabled) {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f7ff;
+}
+
+.dh-sm-page-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.dh-sm-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Модальное окно сотрудника */
+.dh-sm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.dh-sm-modal-content {
+  background: white;
+  border-radius: 20px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dh-sm-modal-header {
+  padding: 28px 32px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 20px 20px 0 0;
+}
+
+.dh-sm-modal-header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.dh-sm-modal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: #e0e7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #002FA7;
+  flex-shrink: 0;
+}
+
+.dh-sm-modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.dh-sm-modal-info {
+  flex: 1;
+}
+
+.dh-sm-modal-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 12px 0 8px 0;
+}
+
+.dh-sm-modal-position {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 500;
+  margin: 12px 0 0 0;
+}
+
+.dh-sm-modal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dh-sm-modal-tag {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dh-sm-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-modal-close:hover {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+}
+
+.dh-sm-modal-body {
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.dh-sm-modal-section {
+  grid-column: 1 / -1;
+  margin-bottom: 32px;
+}
+
+.dh-sm-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Контактная информация */
+.dh-sm-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.dh-sm-contact-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-sm-contact-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dh-sm-contact-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Дисциплины */
+.dh-sm-disciplines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dh-sm-discipline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-discipline-item:hover {
+  border-color: #002FA7;
+  background: #f0f7ff;
+}
+
+.dh-sm-discipline-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.dh-sm-discipline-hours {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+/* Группы */
+.dh-sm-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.dh-sm-group-card {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.dh-sm-group-card:hover {
+  border-color: #002FA7;
+  background: #f0f7ff;
+}
+
+.dh-sm-group-badge {
+  width: 40px;
+  height: 40px;
+  background: #002FA7;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dh-sm-group-info {
+  flex: 1;
+}
+
+.dh-sm-group-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.dh-sm-group-course {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Нагрузка */
+.dh-sm-workload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.dh-sm-workload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dh-sm-workload-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #002FA7;
+}
+
+.dh-sm-workload-label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.dh-sm-workload-progress {
+  width: 200px;
+}
+
+.dh-sm-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.dh-sm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #002FA7 0%, #3b82f6 100%);
+  border-radius: 4px;
+}
+
+.dh-sm-progress-text {
+  font-size: 12px;
+  color: #64748b;
+  text-align: right;
+}
+
+/* Пустой результат */
+.dh-sm-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.dh-sm-empty-icon {
+  font-size: 64px;
+  color: #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.dh-sm-empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 8px 0;
+}
+
+.dh-sm-empty-text {
+  font-size: 16px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .dh-sm-staff-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .dh-sm-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dh-sm-container {
+    margin: 10px;
+    border-radius: 16px;
+  }
+
+  .dh-sm-header {
+    padding: 24px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dh-sm-title {
+    font-size: 24px;
+  }
+
+  .dh-sm-controls,
+  .dh-sm-main-content {
+    padding: 24px;
+  }
+
+  .dh-sm-search-section {
+    flex-direction: column;
+  }
+
+  .dh-sm-search-wrapper {
+    width: 100%;
+  }
+
+  .dh-sm-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-sm-staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-sm-modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+
+  .dh-sm-modal-header,
+  .dh-sm-modal-body {
+    padding: 20px;
+  }
+
+  .dh-sm-modal-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .dh-sm-modal-tags {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-sm-header {
+    padding: 20px;
+  }
+
+  .dh-sm-title {
+    font-size: 20px;
+  }
+
+  .dh-sm-controls,
+  .dh-sm-main-content {
+    padding: 20px;
+  }
+
+  .dh-sm-staff-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-sm-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .dh-sm-detail-value {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .dh-sm-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-sm-workload {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .dh-sm-workload-progress {
+    width: 100%;
+  }
+}
+
+/* Дополнительные стили для расписания */
+.dh-sm-schedule-container {
+  grid-column: 1 / -1;
+}
+
+.dh-sm-schedule-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.dh-sm-schedule-tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.dh-sm-schedule-tab:hover {
+  background: #f8fafc;
+  color: #002FA7;
+}
+
+.dh-sm-schedule-tab.active {
+  background: #002FA7;
+  color: white;
+}
+
+.dh-sm-schedule-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 1px;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dh-sm-time-slots {
+  background: #f8fafc;
+}
+
+.dh-sm-time-slot {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  background: white;
+}
+
+.dh-sm-days-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.dh-sm-day-column {
+  background: #f8fafc;
+}
+
+.dh-sm-day-header {
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.dh-sm-day-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+  margin-bottom: 2px;
+}
+
+.dh-sm-day-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dh-sm-day-content {
+  min-height: 400px;
+}
+
+.dh-sm-lesson-cell {
+  height: 80px;
+  padding: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.dh-sm-lesson-item {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  background: white;
+  border-radius: 6px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.dh-sm-lesson-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  border-color: #002FA7;
+}
+
+.dh-sm-lesson-time {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.dh-sm-lesson-subject {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.dh-sm-lesson-group {
+  font-size: 11px;
+  color: #002FA7;
+  font-weight: 500;
+}
+
+.dh-sm-lesson-room {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 10px;
+  color: white;
+  background: #002FA7;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dh-sm-schedule-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #e2e8f0;
+}
+
+.dh-sm-empty-icon {
+  font-size: 48px;
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.dh-sm-empty-text {
+  font-size: 14px;
+  color: #94a3b8;
+  text-align: center;
+  max-width: 300px;
+  margin: 0;
+}
+
+/* Адаптивность для расписания */
+@media (max-width: 768px) {
+  .dh-sm-schedule-grid {
+    grid-template-columns: 60px 1fr;
+  }
+  
+  .dh-sm-time-slot {
+    height: 60px;
+    font-size: 11px;
+  }
+  
+  .dh-sm-lesson-cell {
+    height: 60px;
+  }
+  
+  .dh-sm-lesson-item {
+    padding: 4px;
+  }
+  
+  .dh-sm-lesson-time {
+    font-size: 9px;
+  }
+  
+  .dh-sm-lesson-subject {
+    font-size: 10px;
+  }
+  
+  .dh-sm-lesson-group {
+    font-size: 9px;
+  }
+  
+  .dh-sm-lesson-room {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  
+  .dh-sm-days-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-sm-schedule-grid {
+    grid-template-columns: 50px 1fr;
+  }
+  
+  .dh-sm-days-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dh-sm-schedule-tabs {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  
+  .dh-sm-schedule-tab {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+}
+
+/* Стили для кнопки "Все группы" */
+.dh-sm-view-all-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #002FA7;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  margin-bottom: 10px;
+}
+
+.dh-sm-view-all-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.dh-sm-view-all-btn:active {
+  transform: translateY(0);
+}
+
+.dh-sm-view-all-btn:hover::after {
+  transform: translateX(2px);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dh-sm-view-all-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .dh-sm-section-header-small {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .dh-sm-section-header-small .dh-sm-view-all-btn {
+    margin-left: 0;
+    margin-top: -8px;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-sm-view-all-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
