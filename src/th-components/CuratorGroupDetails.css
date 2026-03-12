@@ -5,65 +5,6 @@
   box-sizing: border-box;
 }
 
-/* Заголовок как в успеваемости */
-.curator-details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  background: white;
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.curator-details-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.curator-details-header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.curator-details-back-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  border: 1px solid #002FA7;
-  border-radius: 8px;
-  color: #002FA7;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-}
-
-.curator-details-back-button:hover {
-  background: #f0f4ff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.15);
-}
-
-.curator-details-back-button:active {
-  transform: translateY(0);
-}
-
-.curator-details-back-button img {
-  width: 18px;
-  height: 18px;
-  filter: brightness(0) saturate(100%) invert(16%) sepia(98%) saturate(2349%) hue-rotate(217deg) brightness(94%) contrast(107%);
-}
-
-/* Секция старосты */
 /* Секция старосты */
 .curator-details-monitor-section {
   background: white;
@@ -176,48 +117,6 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-}
-
-.curator-details-monitor-edit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 22px;
-  background: linear-gradient(135deg, #002FA7 0%, #3a6df0 100%);
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.25);
-  letter-spacing: 0.3px;
-  margin-left: auto;
-}
-
-.curator-details-monitor-edit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 47, 167, 0.35);
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-}
-
-.curator-details-monitor-edit:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 8px rgba(0, 47, 167, 0.25);
-}
-
-.curator-details-monitor-edit:hover img {
-  filter: brightness(0) invert(1);
-  transform: scale(1.1);
-}
-
-.curator-details-monitor-edit img {
-  width: 16px;
-  height: 16px;
-  filter: brightness(0) invert(1);
-  transition: transform 0.2s ease;
 }
 
 /* Таблица студентов */
@@ -537,7 +436,7 @@
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.15);
 }
 
-/* Модальные окна - повышенный z-index */
+/* Модальные окна */
 .curator-details-modal-overlay {
   position: fixed;
   top: 0;
@@ -579,11 +478,6 @@
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-}
-
-.curator-details-modal.medium {
-  max-width: 500px;
-  width: 90%;
 }
 
 .curator-details-modal-header {
@@ -749,6 +643,15 @@
   font-style: italic;
 }
 
+.curator-details-modal-content img {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+}
+
 /* Формы */
 .curator-details-form-group {
   margin-bottom: 16px;
@@ -798,7 +701,7 @@
   background: #f8fafc;
 }
 
-.curator-details-btn-secondary {
+.button-secondary {
   padding: 8px 16px;
   background: white;
   color: #1e293b;
@@ -810,13 +713,13 @@
   transition: all 0.2s ease;
 }
 
-.curator-details-btn-secondary:hover {
+.button-secondary:hover {
   border-color: #002FA7;
   color: #002FA7;
 }
 
-.curator-details-btn-primary {
-  padding: 8px 20px;
+.button-primary {
+  padding: 10px 20px;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   color: white;
   border: none;
@@ -825,11 +728,6 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.curator-details-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
 }
 
 /* Компоненты из успеваемости */
@@ -1081,63 +979,138 @@
   margin: 0;
 }
 
-.assignments-container {
+/* Двухколоночный макет для шага 2 */
+.two-column-layout {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 350px;
-  overflow-y: auto;
-  padding-right: 8px;
+  gap: 20px;
+  height: 400px;
+  overflow: hidden;
 }
 
-.assignment-section {
-  background: white;
-  border: 2px solid #e2e8f0;
+.categories-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: #f8fafc;
   border-radius: 10px;
   padding: 12px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
 }
 
-.assignment-header {
+.categories-sidebar h4 {
+  margin: 0 0 12px 0;
+  color: #002FA7;
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.category-sidebar-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.assignment-category {
+.category-sidebar-item:hover {
+  border-color: #002FA7;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.category-sidebar-item.active {
+  border-color: #002FA7;
+  background: rgba(0, 47, 167, 0.05);
+  border-left-width: 3px;
+}
+
+.category-sidebar-info {
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow: hidden;
 }
 
-.assignment-category i {
-  width: 28px;
-  height: 28px;
+.category-sidebar-info i {
+  width: 24px;
+  height: 24px;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.category-sidebar-name {
   font-size: 12px;
-}
-
-.assignment-category h5 {
+  font-weight: 500;
   color: #1e293b;
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.assignment-count {
+.category-sidebar-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.students-sidebar {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.current-category-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.current-category-header h4 {
+  margin: 0 0 4px 0;
+  color: #002FA7;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.category-description {
+  margin: 0;
   color: #64748b;
   font-size: 12px;
-  font-weight: 600;
-  background: #f8fafc;
-  padding: 2px 8px;
-  border-radius: 20px;
+  line-height: 1.4;
+}
+
+.students-selection-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .selection-controls {
@@ -1181,6 +1154,12 @@
   padding: 6px;
   background: #f8fafc;
   border-radius: 6px;
+}
+
+.students-list.full-height {
+  flex: 1;
+  max-height: none;
+  overflow-y: auto;
 }
 
 .student-checkbox {
@@ -1364,11 +1343,6 @@
   border: none;
 }
 
-.stepper-buttons .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
-}
-
 /* Адаптивность */
 @media (max-width: 768px) {
   .curator-details-header {
@@ -1384,24 +1358,14 @@
     gap: 12px;
   }
   
-  .curator-details-back-button {
+  .curator-details-backs-button {
     width: 100%;
     justify-content: center;
-  }
-  
-  .curator-details-monitor-card {
-    flex-direction: column;
-    align-items: flex-start;
   }
   
   .curator-details-monitor-meta {
     flex-direction: column;
     gap: 8px;
-  }
-  
-  .curator-details-monitor-edit {
-    width: 100%;
-    justify-content: center;
   }
   
   .curator-details-modal-actions {
@@ -1447,6 +1411,25 @@
   .header-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .two-column-layout {
+    flex-direction: column;
+    height: auto;
+    gap: 12px;
+  }
+  
+  .categories-sidebar {
+    width: 100%;
+    max-height: 200px;
+  }
+  
+  .students-sidebar {
+    width: 100%;
+  }
+  
+  .category-sidebar-item:hover {
+    transform: none;
   }
 }
 

@@ -2211,7 +2211,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                     </div>
                   </div>
                 )}
-            
+              
               {index < comments.length - 1 && <div className="comment-divider"></div>}
             </div>
           ))}
@@ -3138,7 +3138,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна подгрупп
+  // Рендер модального окна подгрупп с префиксом th-
   const renderSubgroupModal = (): React.ReactElement | null => {
     if (!showSubgroupModal) return null;
 
@@ -3146,29 +3146,37 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     const studentsInSubgroupII = students.filter(student => studentSubgroups[student.id] === 'II');
 
     return (
-      <div className="modal-overlay">
-        <div className="modal-content subgroup-modal expanded">
-          <h3>Управление подгруппами</h3>
+      <div className="th-subgroup-modal-overlay" onClick={() => setShowSubgroupModal(false)}>
+        <div className="th-subgroup-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="th-subgroup-modal-header">
+            <h3>Управление подгруппами</h3>
+            <button 
+              className="th-subgroup-modal-close"
+              onClick={() => setShowSubgroupModal(false)}
+            >
+              ×
+            </button>
+          </div>
           
-          <div className="subgroup-modal-content">
-            <div className="subgroup-stats-centered">
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{studentsInSubgroupI.length}</div>
-                <div className="stat-label-centered">I подгруппа</div>
+          <div className="th-subgroup-modal-content">
+            <div className="th-subgroup-stats">
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{studentsInSubgroupI.length}</div>
+                <div className="th-stat-label">I подгруппа</div>
               </div>
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{studentsInSubgroupII.length}</div>
-                <div className="stat-label-centered">II подгруппа</div>
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{studentsInSubgroupII.length}</div>
+                <div className="th-stat-label">II подгруппа</div>
               </div>
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{students.length}</div>
-                <div className="stat-label-centered">Всего студентов</div>
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{students.length}</div>
+                <div className="th-stat-label">Всего студентов</div>
               </div>
             </div>
 
-            <div className="subgroup-actions">
+            <div className="th-auto-distribute-section">
               <button 
-                className="gradient-btn auto-distribute-btn"
+                className="th-auto-distribute-btn"
                 onClick={autoDistributeSubgroups}
                 disabled={savingSubgroups}
               >
@@ -3176,17 +3184,19 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               </button>
             </div>
 
-            <div className="students-list">
-              <div className="students-grid">
+            <div className="th-students-section">
+              <h4>Список студентов</h4>
+              <div className="th-students-grid">
                 {students.map((student) => (
-                  <div key={student.id} className="student-subgroup-item">
-                    <span className="student-name">
+                  <div key={student.id} className="th-student-item">
+                    <span className="th-student-name">
                       {student.lastName} {student.firstName} {student.middleName}
                     </span>
                     <select 
                       value={studentSubgroups[student.id] || 'I'}
                       onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II')}
-                      className="subgroup-select-modal"
+                      className="th-subgroup-select"
+                      disabled={savingSubgroups}
                     >
                       <option value="I">I подгруппа</option>
                       <option value="II">II подгруппа</option>
@@ -3195,23 +3205,23 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 ))}
               </div>
             </div>
-          </div>
 
-          <div className="modal-actions">
-            <button 
-              className="cancel-btn" 
-              onClick={() => setShowSubgroupModal(false)}
-              disabled={savingSubgroups}
-            >
-              Отмена
-            </button>
-            <button 
-              className="gradient-btn" 
-              onClick={saveSubgroupsDistribution}
-              disabled={savingSubgroups}
-            >
-              {savingSubgroups ? 'Сохранение...' : 'Сохранить распределение'}
-            </button>
+            <div className="th-modal-actions">
+              <button 
+                className="th-cancel-btn" 
+                onClick={() => setShowSubgroupModal(false)}
+                disabled={savingSubgroups}
+              >
+                Отмена
+              </button>
+              <button 
+                className={`th-save-btn ${savingSubgroups ? 'th-loading' : ''}`} 
+                onClick={saveSubgroupsDistribution}
+                disabled={savingSubgroups}
+              >
+                {savingSubgroups ? 'Сохранение...' : 'Сохранить распределение'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -3367,7 +3377,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       <div className="performance-cabinet-header">
         <div className="header-left-actions">
           {onBackToGroups && (
-            <button className="back-button" onClick={onBackToGroups}>
+            <button className="backs-button" onClick={onBackToGroups}>
               <img src="/th-icons/arrow_icon.svg" alt="Назад" />
             </button>
           )}

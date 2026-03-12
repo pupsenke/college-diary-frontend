@@ -737,7 +737,7 @@ export const PersonalCabinet: React.FC<Props> = ({
       {/* Модальное окно смены пароля */}
       {showPasswordModal && (
         <div className="pc-modal-overlay" onClick={() => setShowPasswordModal(false)}>
-          <div className="pc-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="lk-pc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
               <h3>Смена пароля</h3>
               <button 
@@ -786,7 +786,7 @@ export const PersonalCabinet: React.FC<Props> = ({
       {/* Модальное окно смены логина */}
       {showLoginModal && (
         <div className="pc-modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="pc-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="lk-pc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
               <h3>Смена логина</h3>
               <button 

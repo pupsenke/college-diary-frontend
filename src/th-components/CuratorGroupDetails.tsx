@@ -63,6 +63,7 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
   const [socialPortraitCurrentStep, setSocialPortraitCurrentStep] = useState(1);
   const [categorySearchTerms, setCategorySearchTerms] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   
   const [socialPortraitData, setSocialPortraitData] = useState<{
     categories: {
@@ -219,6 +220,8 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
     return '#ef4444';
   };
 
+  const currentCategoryId = socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex]?.id || 0;
+
   const filteredMonitorStudents = [...group.students]
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter(student => student.name.toLowerCase().includes(monitorSearchTerm.toLowerCase()));
@@ -339,7 +342,7 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
     <div className="curator-details-page">
       <div className="attendance-cabinet-header">
         <div className="header-left-actions">
-          <button className="back-button" onClick={onBack}>
+          <button className="backs-button" onClick={onBack}>
             <img src="/th-icons/arrow_icon.svg" alt="Назад" />
           </button>
           <InfoIcon />
@@ -370,7 +373,7 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
       <div className="curator-details-students-section">
         <h3>
           <img src="/social-icons/students_icon.svg" alt="Студенты" className="section-icon" />
-          Список студентов
+          Список студентов {group.number}
         </h3>
 
         <div className="curator-details-table-container">
@@ -686,43 +689,69 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
 
                   {socialPortraitCurrentStep === 2 && (
                     <div className="step-content active">
-                      <div className="assignments-container">
-                        {socialPortraitData.categories.filter(c => c.selected).map(category => {
-                          const filteredStudents = getFilteredStudents(category.id, category.students);
-                          
-                          return (
-                            <div key={category.id} className="assignment-section compact">
-                              <div className="assignment-header compact">
-                                <div className="assignment-category">
-                                  <i className={category.icon}></i>
-                                  <h5>{category.name}</h5>
-                                </div>
-                                <span className="assignment-count compact">
-                                  {category.students.filter(s => s.selected).length}/{category.students.length}
-                                </span>
-                              </div>
+                      <div className="two-column-layout">
+                        {/* Левая колонка - список категорий */}
+                        <div className="categories-sidebar">
+                          <h4>Категории</h4>
+                          <div className="categories-list">
+                            {socialPortraitData.categories.filter(c => c.selected).map((category, index) => {
+                              const selectedCount = category.students.filter(s => s.selected).length;
+                              const isCurrentCategory = index === currentCategoryIndex;
                               
-                              <div className="students-selection">
-                                <div className="selection-controls compact">
-                                  <div className="search-student compact">
+                              return (
+                                <div 
+                                  key={category.id}
+                                  className={`category-sidebar-item ${isCurrentCategory ? 'active' : ''}`}
+                                  onClick={() => setCurrentCategoryIndex(index)}
+                                >
+                                  <div className="category-sidebar-info">
+                                    <i className={category.icon}></i>
+                                    <span className="category-sidebar-name">{category.name}</span>
+                                  </div>
+                                  <span className="category-sidebar-count">
+                                    {selectedCount}/{category.students.length}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Правая колонка - список студентов для текущей категории */}
+                        <div className="students-sidebar">
+                          {socialPortraitData.categories.filter(c => c.selected).length > 0 && (
+                            <>
+                              <div className="current-category-header">
+                                <h4>
+                                  {socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex]?.name}
+                                </h4>
+                                <p className="category-description">
+                                  {socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex]?.description}
+                                </p>
+                              </div>
+
+                              <div className="students-selection-area">
+                                <div className="selection-controls">
+                                  <div className="search-student">
                                     <i className="fas fa-search"></i>
+                                    <img src="/social-icons/search_icon.svg" alt="Поиск" />
                                     <input 
                                       type="text" 
-                                      placeholder="Поиск..."
-                                      value={categorySearchTerms[category.id] || ''}
+                                      placeholder="Поиск студентов..."
+                                      value={categorySearchTerms[currentCategoryId] || ''}
                                       onChange={(e) => {
                                         setCategorySearchTerms({
                                           ...categorySearchTerms,
-                                          [category.id]: e.target.value
+                                          [currentCategoryId]: e.target.value
                                         });
                                       }}
                                     />
-                                    {categorySearchTerms[category.id] && (
+                                    {categorySearchTerms[currentCategoryId] && (
                                       <button 
                                         className="search-clear"
                                         onClick={() => {
                                           const newTerms = { ...categorySearchTerms };
-                                          delete newTerms[category.id];
+                                          delete newTerms[currentCategoryId];
                                           setCategorySearchTerms(newTerms);
                                         }}
                                       >
@@ -730,12 +759,16 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
                                       </button>
                                     )}
                                   </div>
+                                  
                                   <button 
                                     className="btn-select-all"
                                     onClick={() => {
-                                      const newData = { ...socialPortraitData };
-                                      const categoryIndex = newData.categories.findIndex(c => c.id === category.id);
+                                      const currentCategory = socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex];
+                                      const filteredStudents = getFilteredStudents(currentCategory.id, currentCategory.students);
                                       const allSelected = filteredStudents.every(s => s.selected);
+                                      
+                                      const newData = { ...socialPortraitData };
+                                      const categoryIndex = newData.categories.findIndex(c => c.id === currentCategory.id);
                                       
                                       filteredStudents.forEach(student => {
                                         const studentIndex = newData.categories[categoryIndex].students.findIndex(s => s.id === student.id);
@@ -746,42 +779,51 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
                                     }}
                                   >
                                     <i className="fas fa-check-double"></i>
-                                    {filteredStudents.every(s => s.selected) ? 'Снять все' : 'Выбрать всех'}
+                                    {(() => {
+                                      const currentCategory = socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex];
+                                      const filteredStudents = getFilteredStudents(currentCategory.id, currentCategory.students);
+                                      return filteredStudents.every(s => s.selected) ? 'Снять все' : 'Выбрать всех';
+                                    })()}
                                   </button>
                                 </div>
-                                
-                                <div className="students-list compact">
-                                  {filteredStudents.length > 0 ? (
-                                    filteredStudents.map(student => (
-                                      <label 
-                                        key={student.id} 
-                                        className={`student-checkbox compact ${student.selected ? 'checked' : ''}`}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={student.selected}
-                                          onChange={(e) => {
-                                            const newData = { ...socialPortraitData };
-                                            const categoryIndex = newData.categories.findIndex(c => c.id === category.id);
-                                            const studentIndex = newData.categories[categoryIndex].students.findIndex(s => s.id === student.id);
-                                            newData.categories[categoryIndex].students[studentIndex].selected = e.target.checked;
-                                            setSocialPortraitData(newData);
-                                          }}
-                                        />
-                                        <span className="checkbox-custom"></span>
-                                        <span className="student-name">{student.name}</span>
-                                      </label>
-                                    ))
-                                  ) : (
-                                    <div className="no-results">
-                                      Студенты не найдены
-                                    </div>
-                                  )}
+
+                                <div className="students-list full-height">
+                                  {(() => {
+                                    const currentCategory = socialPortraitData.categories.filter(c => c.selected)[currentCategoryIndex];
+                                    const filteredStudents = getFilteredStudents(currentCategory.id, currentCategory.students);
+                                    
+                                    return filteredStudents.length > 0 ? (
+                                      filteredStudents.map(student => (
+                                        <label 
+                                          key={student.id} 
+                                          className={`student-checkbox ${student.selected ? 'checked' : ''}`}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={student.selected}
+                                            onChange={(e) => {
+                                              const newData = { ...socialPortraitData };
+                                              const categoryIndex = newData.categories.findIndex(c => c.id === currentCategory.id);
+                                              const studentIndex = newData.categories[categoryIndex].students.findIndex(s => s.id === student.id);
+                                              newData.categories[categoryIndex].students[studentIndex].selected = e.target.checked;
+                                              setSocialPortraitData(newData);
+                                            }}
+                                          />
+                                          <span className="checkbox-custom"></span>
+                                          <span className="student-name">{student.name}</span>
+                                        </label>
+                                      ))
+                                    ) : (
+                                      <div className="no-results">
+                                        Студенты не найдены
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -796,17 +838,24 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
                   
                   <div className="stepper-buttons">
                     {socialPortraitCurrentStep > 1 && (
-                      <button className="btn-secondary" onClick={handlePrevStep}>
+                      <button className="button-secondary" onClick={handlePrevStep}>
                         Назад
                       </button>
                     )}
                     {socialPortraitCurrentStep < 2 ? (
-                      <button className="btn-primary" onClick={handleNextStep}>
+                      <button className="button-primary" onClick={handleNextStep}>
                         Далее
                       </button>
                     ) : (
-                      <button className="btn-primary" onClick={handleSaveSocialPortrait}>
-                        <i className="fas fa-save"></i> Сохранить портрет
+                      <button 
+                        className="button-primary" 
+                        onClick={() => {
+                          // Сохраняем данные и закрываем модальное окно
+                          console.log('Сохраненные данные:', socialPortraitData);
+                          setShowSocialPortraitModal(false);
+                        }}
+                      >
+                        <i className="fas fa-save"></i> Сохранить
                       </button>
                     )}
                   </div>
@@ -816,6 +865,5 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
           </div>
         </div>
       )}
-    </div>
-  );
-};
+  </div>
+)};

@@ -1149,7 +1149,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
       <div className="attendance-cabinet-header">
         <div className="header-left-actions">
           {onBackToGroups && (
-            <button className="back-button" onClick={onBackToGroups}>
+            <button className="backs-button" onClick={onBackToGroups}>
               <img src="/th-icons/arrow_icon.svg" alt="Назад" />
             </button>
           )}

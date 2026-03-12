@@ -166,7 +166,7 @@
   margin-bottom: 16px;
 }
 
-/* Общие стили для обеих кнопок */
+/* Общие стили для кнопок */
 .header-btn {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 2px solid #e2e8f0;
@@ -223,7 +223,6 @@
   to { transform: rotate(360deg); }
 }
 
-
 .info-icon-btn {
   position: relative;
   display: inline-flex;
@@ -274,14 +273,6 @@
   text-align: left;
   word-break: break-word;
   white-space: normal;
-}
-
-/* Стиль для синего заголовка */
-.info-tooltip-content strong {
-  color: #002FA7;
-  font-size: 15px;
-  display: block;
-  margin-bottom: 8px;
 }
 
 /* Стрелка тултипа */
@@ -353,13 +344,6 @@
   }
 }
 
-@keyframes pc-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-
-
 /* Стили для модальных окон */
 .pc-modal-overlay {
   position: fixed;
@@ -375,12 +359,11 @@
   backdrop-filter: blur(4px);
 }
 
-.pc-modal {
+.lk-pc-modal {
   background: white;
   border-radius: 12px;
   padding: 0;
-  width: 90%;
-  max-width: 450px;
+  width: 30%;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -497,7 +480,6 @@
 
 .pc-confirm-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .pc-confirm-btn:active:not(:disabled) {
@@ -511,7 +493,6 @@
   box-shadow: none;
 }
 
-  
 /* Стили для красивого уведомления об успехе */
 .pc-success-notification {
   position: fixed;
@@ -643,10 +624,7 @@
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
 }
 
-.pc-success-message {
-  display: none;
-}
-
+/* Адаптивность для десктопа и планшетов */
 @media (max-width: 768px) {
   .personal-cabinet {
     gap: 20px;
