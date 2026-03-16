@@ -26,6 +26,7 @@
 .h-header-logo-area {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .h-logo-mark {
@@ -105,7 +106,7 @@
   transform: rotate(180deg);
 }
 
-/* Выпадающее меню */
+/* выпадающее меню */
 .h-profile-dropdown {
   position: absolute;
   top: 100%;

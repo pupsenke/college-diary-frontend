@@ -12,6 +12,20 @@
   position: relative;
 }
 
+/* темная тема (по умолчанию) */
+body.h-theme-dark .md-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  position: relative;
+}
+
+/* светлая тема */
+body.h-theme-light .md-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
 .md-content {
   position: relative;
   z-index: 1;
