@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './DepartmentManagementSectionStyle.css';
 import { GroupDetail } from './GroupDetail';
+import { AddGroupModal } from './AddGroupModal';
 import { 
   headApiService, 
   GroupInfo as ApiGroupInfo,
@@ -26,7 +27,9 @@ interface GroupData {
 export const DepartmentManagementSection: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<number | 'all'>('all');
   const [academicGroups, setAcademicGroups] = useState<GroupData[]>([]);
   const [departmentInfo, setDepartmentInfo] = useState({
     name: 'Отделение информационных технологий',
@@ -52,54 +55,63 @@ export const DepartmentManagementSection: React.FC = () => {
       const deptInfo = await headApiService.getDepartmentInfo();
       setDepartmentInfo(deptInfo);
       
-      // Загружаем группы с фильтрацией по профилю
-      const groups = await headApiService.getGroups("Информационные системы и программирование");
+      // Загружаем все группы без фильтрации в API
+      const groups = await headApiService.getGroups();
+      
+      // Фильтруем группы по специальности 09.02.07 Информационные системы и программирование
+      const filteredGroups = groups.filter(group => 
+        group.specialty === "09.02.07 Информационные системы и программирование"
+      );
       
       // Преобразуем данные для отображения
       const formattedGroups: GroupData[] = [];
       
-      for (const group of groups) {
+      for (const group of filteredGroups) {
         try {
           // Получаем куратора
-          const curator = await headApiService.getCurator(group.idCurator);
-          const curatorName = `${curator.lastName} ${curator.name.charAt(0)}.${curator.patronymic ? curator.patronymic.charAt(0) + '.' : ''}`;
+          let curatorName = 'Не указан';
+          try {
+            const curator = await headApiService.getCurator(group.idCurator);
+            curatorName = `${curator.lastName} ${curator.name.charAt(0)}.${curator.patronymic ? curator.patronymic.charAt(0) + '.' : ''}`;
+          } catch (curatorError) {
+            console.error(`Ошибка при загрузке куратора для группы ${group.id}:`, curatorError);
+          }
           
           // Получаем студентов группы
-          const students = await headApiService.getGroupStudents(group.id);
+          let studentsCount = 0;
+          try {
+            const students = await headApiService.getGroupStudents(group.id);
+            studentsCount = students.length;
+          } catch (studentsError) {
+            console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
+          }
           
           formattedGroups.push({
             id: group.id,
             name: group.numberGroup.toString(),
             numberGroup: group.numberGroup,
             course: group.course,
-            students: students.length,
+            students: studentsCount,
             curator: curatorName,
-            curatorId: curator.id,
-            leader: 'Пропуск', // Пока ставим пропуск
-            performance: 4.0, // Пока статическое значение
-            attendance: 85.0, // Пока статическое значение
-            speciality: group.specialty,
-            profile: group.profile
-          });
-        } catch (error) {
-          console.error(`Ошибка при загрузке данных группы ${group.id}:`, error);
-          // Создаем группу с базовой информацией
-          formattedGroups.push({
-            id: group.id,
-            name: group.numberGroup.toString(),
-            numberGroup: group.numberGroup,
-            course: group.course,
-            students: 0,
-            curator: 'Не указан',
             curatorId: group.idCurator,
-            leader: 'Пропуск',
+            leader: 'Не указан',
             performance: 4.0,
             attendance: 85.0,
             speciality: group.specialty,
             profile: group.profile
           });
+        } catch (error) {
+          console.error(`Ошибка при обработке группы ${group.id}:`, error);
         }
       }
+      
+      // Сортируем группы по курсу и номеру
+      formattedGroups.sort((a, b) => {
+        if (a.course !== b.course) {
+          return a.course - b.course;
+        }
+        return a.numberGroup - b.numberGroup;
+      });
       
       setAcademicGroups(formattedGroups);
       setError(null);
@@ -111,13 +123,41 @@ export const DepartmentManagementSection: React.FC = () => {
     }
   };
 
-  // Функция для поиска групп
-  const filteredGroups = academicGroups.filter(group =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.curator.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.leader.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.speciality.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Функция для добавления новой группы
+  const handleAddGroup = async (groupNumber: string) => {
+    try {
+      await headApiService.addGroup(groupNumber);
+      // После успешного добавления перезагружаем список групп
+      await loadGroups();
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Ошибка при добавлении группы:', error);
+      return Promise.reject(error);
+    }
+  };
+
+  // Функция для поиска и фильтрации групп
+  const filteredGroups = academicGroups.filter(group => {
+    // Фильтр по поисковому запросу
+    const matchesSearch = 
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.curator.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.speciality.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.profile.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Фильтр по курсу
+    const matchesCourse = selectedCourse === 'all' || group.course === selectedCourse;
+    
+    return matchesSearch && matchesCourse;
+  });
+
+  // Группировка групп по курсам
+  const groupsByCourse = {
+    1: filteredGroups.filter(g => g.course === 1),
+    2: filteredGroups.filter(g => g.course === 2),
+    3: filteredGroups.filter(g => g.course === 3),
+    4: filteredGroups.filter(g => g.course === 4)
+  };
 
   const handleGroupClick = (groupId: number) => {
     setSelectedGroupId(groupId);
@@ -129,8 +169,16 @@ export const DepartmentManagementSection: React.FC = () => {
     setSelectedGroupId(null);
   };
 
+  const handleCloseAddGroupModal = () => {
+    setIsAddGroupModalOpen(false);
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleCourseFilterChange = (course: number | 'all') => {
+    setSelectedCourse(course);
   };
 
   if (loading) {
@@ -248,6 +296,12 @@ export const DepartmentManagementSection: React.FC = () => {
               <div className="dhm-section-header">
                 <h2 className="dhm-section-title">Учебные группы ({filteredGroups.length})</h2>
                 <div className="dhm-groups-actions">
+                  <button 
+                    className="dhm-add-group-btn"
+                    onClick={() => setIsAddGroupModalOpen(true)}
+                  >
+                    <span>+</span> Добавить группу
+                  </button>
                   <div className="dhm-search-container">
                     <input
                       type="text"
@@ -259,49 +313,135 @@ export const DepartmentManagementSection: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="dhm-groups-grid">
-                {filteredGroups.length > 0 ? (
-                  filteredGroups.map(group => (
-                    <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
-                      <div className="dhm-group-header">
-                        <div className="dhm-group-badge">{group.name}</div>
-                        <div className="dhm-group-course">{group.course} курс</div>
-                      </div>
-                      <div className="dhm-group-body">
-                        <div className="dhm-group-metrics">
-                          <div className="dhm-group-metric">
-                            <div className="dhm-metric-value">{group.students}</div>
-                            <div className="dhm-metric-label">студентов</div>
-                          </div>
-                          <div className="dhm-group-metric">
-                            <div className="dhm-metric-value">{group.performance.toFixed(1)}</div>
-                            <div className="dhm-metric-label">средний балл</div>
-                          </div>
-                          <div className="dhm-group-metric">
-                            <div className="dhm-metric-value">{group.attendance}%</div>
-                            <div className="dhm-metric-label">посещаемость</div>
-                          </div>
+
+              {/* Фильтр по курсам */}
+              <div className="dhm-course-filter">
+                <button 
+                  className={`dhm-course-filter-btn ${selectedCourse === 'all' ? 'active' : ''}`}
+                  onClick={() => handleCourseFilterChange('all')}
+                >
+                  Все курсы
+                </button>
+                {[1, 2, 3, 4].map(course => (
+                  <button
+                    key={course}
+                    className={`dhm-course-filter-btn ${selectedCourse === course ? 'active' : ''}`}
+                    onClick={() => handleCourseFilterChange(course)}
+                  >
+                    {course} курс
+                  </button>
+                ))}
+              </div>
+
+              {/* Отображение групп по курсам */}
+              <div className="dhm-courses-container">
+                {selectedCourse === 'all' ? (
+                  // Показываем все курсы
+                  [1, 2, 3, 4].map(course => (
+                    groupsByCourse[course as keyof typeof groupsByCourse].length > 0 && (
+                      <div key={course} className="dhm-course-section">
+                        <h3 className="dhm-course-title">{course} курс</h3>
+                        <div className="dhm-groups-grid">
+                          {groupsByCourse[course as keyof typeof groupsByCourse].map(group => (
+                            <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
+                              <div className="dhm-group-header">
+                                <div className="dhm-group-badge">{group.name}</div>
+                                <div className="dhm-group-course">{group.course} курс</div>
+                              </div>
+                              <div className="dhm-group-body">
+                                <div className="dhm-group-metrics">
+                                  <div className="dhm-group-metric">
+                                    <div className="dhm-metric-value">{group.students}</div>
+                                    <div className="dhm-metric-label">студентов</div>
+                                  </div>
+                                  <div className="dhm-group-metric">
+                                    <div className="dhm-metric-value">{group.performance.toFixed(1)}</div>
+                                    <div className="dhm-metric-label">средний балл</div>
+                                  </div>
+                                  <div className="dhm-group-metric">
+                                    <div className="dhm-metric-value">{group.attendance}%</div>
+                                    <div className="dhm-metric-label">посещаемость</div>
+                                  </div>
+                                </div>
+                                <div className="dhm-group-info">
+                                  <div className="dhm-info-row">
+                                    <span className="dhm-info-label">Куратор:</span>
+                                    <span className="dhm-info-value">{group.curator}</span>
+                                  </div>
+                                  <div className="dhm-info-row">
+                                    <span className="dhm-info-label">Староста:</span>
+                                    <span className="dhm-info-value">{group.leader}</span>
+                                  </div>
+                                  <div className="dhm-info-row">
+                                    <span className="dhm-info-label">Специальность:</span>
+                                    <span className="dhm-info-value">{group.speciality}</span>
+                                  </div>
+                                  <div className="dhm-info-row">
+                                    <span className="dhm-info-label">Профиль:</span>
+                                    <span className="dhm-info-value">{group.profile}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="dhm-group-info">
-                          <div className="dhm-info-row">
-                            <span className="dhm-info-label">Куратор:</span>
-                            <span className="dhm-info-value">{group.curator}</span>
-                          </div>
-                          <div className="dhm-info-row">
-                            <span className="dhm-info-label">Староста:</span>
-                            <span className="dhm-info-value">{group.leader}</span>
-                          </div>
-                          <div className="dhm-info-row">
-                            <span className="dhm-info-label">Профиль:</span>
-                            <span className="dhm-info-value">{group.profile}</span>
-                          </div>
-                        </div>
                       </div>
-                    </div>
+                    )
                   ))
                 ) : (
+                  // Показываем только выбранный курс
+                  <div className="dhm-course-section">
+                    <h3 className="dhm-course-title">{selectedCourse} курс</h3>
+                    <div className="dhm-groups-grid">
+                      {groupsByCourse[selectedCourse as keyof typeof groupsByCourse].map(group => (
+                        <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
+                          <div className="dhm-group-header">
+                            <div className="dhm-group-badge">{group.name}</div>
+                            <div className="dhm-group-course">{group.course} курс</div>
+                          </div>
+                          <div className="dhm-group-body">
+                            <div className="dhm-group-metrics">
+                              <div className="dhm-group-metric">
+                                <div className="dhm-metric-value">{group.students}</div>
+                                <div className="dhm-metric-label">студентов</div>
+                              </div>
+                              <div className="dhm-group-metric">
+                                <div className="dhm-metric-value">{group.performance.toFixed(1)}</div>
+                                <div className="dhm-metric-label">средний балл</div>
+                              </div>
+                              <div className="dhm-group-metric">
+                                <div className="dhm-metric-value">{group.attendance}%</div>
+                                <div className="dhm-metric-label">посещаемость</div>
+                              </div>
+                            </div>
+                            <div className="dhm-group-info">
+                              <div className="dhm-info-row">
+                                <span className="dhm-info-label">Куратор:</span>
+                                <span className="dhm-info-value">{group.curator}</span>
+                              </div>
+                              <div className="dhm-info-row">
+                                <span className="dhm-info-label">Староста:</span>
+                                <span className="dhm-info-value">{group.leader}</span>
+                              </div>
+                              <div className="dhm-info-row">
+                                <span className="dhm-info-label">Специальность:</span>
+                                <span className="dhm-info-value">{group.speciality}</span>
+                              </div>
+                              <div className="dhm-info-row">
+                                <span className="dhm-info-label">Профиль:</span>
+                                <span className="dhm-info-value">{group.profile}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {filteredGroups.length === 0 && (
                   <div className="dhm-no-groups">
-                    <p>Группы не найдены. Попробуйте изменить поисковый запрос.</p>
+                    <p>Группы не найдены</p>
                   </div>
                 )}
               </div>
@@ -320,6 +460,14 @@ export const DepartmentManagementSection: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Модальное окно добавления группы */}
+      {isAddGroupModalOpen && (
+        <AddGroupModal
+          onClose={handleCloseAddGroupModal}
+          onAdd={handleAddGroup}
+        />
       )}
     </>
   );

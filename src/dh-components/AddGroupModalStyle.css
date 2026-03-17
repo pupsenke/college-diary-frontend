@@ -1,0 +1,191 @@
+/* AddGroupModal.css */
+.agm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(50, 64, 124, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.agm-modal-content {
+  background: white;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: agm-slideIn 0.3s ease;
+}
+
+@keyframes agm-slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.agm-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 20px 20px 0 0;
+}
+
+.agm-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0;
+}
+
+.agm-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.agm-modal-close:hover {
+  background: rgba(0, 47, 167, 0.1);
+  color: #002FA7;
+}
+
+.agm-modal-form {
+  padding: 28px;
+}
+
+.agm-form-group {
+  margin-bottom: 24px;
+}
+
+.agm-form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #002FA7;
+  margin-bottom: 8px;
+}
+
+.agm-form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #1f2937;
+  box-sizing: border-box;
+}
+
+.agm-form-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.agm-form-input:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+.agm-error-message {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+.agm-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.agm-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 14px;
+}
+
+.agm-btn-primary {
+  background: #002FA7;
+  color: white;
+}
+
+.agm-btn-primary:hover:not(:disabled) {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.agm-btn-secondary {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.agm-btn-secondary:hover:not(:disabled) {
+  background: rgba(0, 47, 167, 0.05);
+}
+
+.agm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .agm-modal-content {
+    margin: 10px;
+  }
+
+  .agm-modal-header {
+    padding: 20px;
+  }
+
+  .agm-modal-title {
+    font-size: 18px;
+  }
+
+  .agm-modal-form {
+    padding: 20px;
+  }
+
+  .agm-modal-footer {
+    flex-direction: column;
+  }
+
+  .agm-btn {
+    width: 100%;
+  }
+}

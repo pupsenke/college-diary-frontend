@@ -341,5 +341,28 @@ export const headApiService = {
       console.error('Ошибка при получении данных преподавателя:', error);
       throw error;
     }
+  },
+
+
+  // Добавление новой группы
+  async addGroup(groupNumber: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/add/${groupNumber}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка добавления группы: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при добавлении группы:', error);
+      throw error;
+    }
   }
 };

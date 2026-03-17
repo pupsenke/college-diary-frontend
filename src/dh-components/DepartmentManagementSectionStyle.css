@@ -1031,3 +1031,60 @@
     width: 100%;
   }
 }
+
+
+
+
+
+
+
+/* Фильтр по курсам */
+.dhm-course-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.dhm-course-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dhm-course-filter-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.dhm-course-filter-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+/* Контейнер для курсов */
+.dhm-courses-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.dhm-course-section {
+  width: 100%;
+}
+
+.dhm-course-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
