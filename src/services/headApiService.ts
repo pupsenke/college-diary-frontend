@@ -104,6 +104,46 @@ export interface FullStudentInfo extends StudentInfo {
   code: string | null;
 }
 
+// Интерфейсы для успеваемости и посещаемости группы
+export interface SubjectInfo {
+  id: number;
+  name: string;
+  teacherId: number;
+  teacherName?: string;
+}
+
+export interface GroupMark {
+  studentId: number;
+  mark: number;
+  date: string;
+  lessonNumber: number;
+  typeMark?: string;
+}
+
+export interface GroupAttendance {
+  studentId: number;
+  present: boolean;
+  date: string;
+  lessonNumber: number;
+  status: string;
+  comment?: string;
+}
+
+export interface LessonDate {
+  number: number;
+  date: string;
+  lessonId: number;
+}
+
+export interface SubjectTeacher {
+  id: number;
+  subjectId: number;
+  subjectName: string;
+  teacherId: number;
+  teacherLastName: string;
+  teacherName: string;
+  teacherPatronymic: string;
+}
 
 export const headApiService = {
   // Обновление данных сотрудника
@@ -343,7 +383,6 @@ export const headApiService = {
     }
   },
 
-
   // Добавление новой группы
   async addGroup(groupNumber: string): Promise<any> {
     try {
@@ -363,6 +402,397 @@ export const headApiService = {
     } catch (error) {
       console.error('Ошибка при добавлении группы:', error);
       throw error;
+    }
+  },
+
+  // Удаление группы
+  async deleteGroup(groupId: number): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/delete/${groupId}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка удаления группы: ${response.status} - ${errorText}`);
+      }
+
+      // Проверяем, есть ли содержимое в ответе
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        // Если текст не пустой, парсим JSON
+        if (text && text.trim()) {
+          return JSON.parse(text);
+        }
+      }
+      
+      // Возвращаем успешный результат без данных
+      return { success: true, message: 'Группа успешно удалена' };
+    } catch (error) {
+      console.error('Ошибка при удалении группы:', error);
+      throw error;
+    }
+  },
+
+  // ============= НОВЫЕ МЕТОДЫ ДЛЯ УСПЕВАЕМОСТИ И ПОСЕЩАЕМОСТИ ГРУППЫ =============
+
+  // Получение всех предметов и преподавателей для группы
+
+  async getGroupSubjectsWithTeachers(groupId: number): Promise<SubjectTeacher[]> {
+    try {
+      // Получаем все распределения ST
+      const response = await fetch(`${API_BASE_URL}/api/v1/st`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения данных ST: ${response.status}`);
+      }
+      
+      const stData: any[] = await response.json();
+      
+      // Фильтруем по группе
+      const groupStData = stData.filter(item => item.groups && item.groups.includes(groupId));
+      
+      // Получаем информацию о преподавателях
+      const result: SubjectTeacher[] = [];
+      
+      for (const st of groupStData) {
+        // Получаем информацию о предмете
+        const subjectResponse = await fetch(`${API_BASE_URL}/api/v1/subjects/id/${st.idSubject}`);
+        if (subjectResponse.ok) {
+          const subject = await subjectResponse.json();
+          
+          // Для каждого преподавателя в ST
+          for (const teacherId of st.teachers) {
+            try {
+              const teacher = await this.getTeacherById(teacherId);
+              result.push({
+                id: st.id,
+                subjectId: st.idSubject,
+                subjectName: subject.subjectName || subject.name || `Предмет ${st.idSubject}`,
+                teacherId: teacherId,
+                teacherLastName: teacher.lastName,
+                teacherName: teacher.name,
+                teacherPatronymic: teacher.patronymic
+              });
+            } catch (err) {
+              console.error(`Ошибка загрузки преподавателя ${teacherId}:`, err);
+              result.push({
+                id: st.id,
+                subjectId: st.idSubject,
+                subjectName: subject.subjectName || subject.name || `Предмет ${st.idSubject}`,
+                teacherId: teacherId,
+                teacherLastName: 'Неизвестный',
+                teacherName: 'преподаватель',
+                teacherPatronymic: ''
+              });
+            }
+          }
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Ошибка при получении предметов группы с преподавателями:', error);
+      return [];
+    }
+  },
+
+  // Получение дат занятий для группы по предмету и преподавателю
+
+  async getLessonDatesBySubject(groupId: number, subjectId: number, teacherId: number): Promise<LessonDate[]> {
+    try {
+      // Сначала получаем stId
+      const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
+      if (!stResponse.ok) {
+        throw new Error(`Ошибка получения ST: ${stResponse.status}`);
+      }
+      
+      const stData: any[] = await stResponse.json();
+      const st = stData.find(item => 
+        item.groups?.includes(groupId) && 
+        item.idSubject === subjectId && 
+        item.teachers?.includes(teacherId)
+      );
+      
+      if (!st) {
+        console.warn('ST не найден для группы, предмета и преподавателя');
+        return [];
+      }
+      
+      // Получаем даты занятий
+      const response = await fetch(`${API_BASE_URL}/api/v1/lessons/date/st/${st.id}/group/${groupId}/teacher/${teacherId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения дат занятий: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      return data.map((item: any) => ({
+        number: item.number,
+        date: item.date,
+        lessonId: item.id || item.lessonId
+      }));
+    } catch (error) {
+      console.error('Ошибка при получении дат занятий:', error);
+      return [];
+    }
+  },
+
+  // Получение оценок группы по предмету и преподавателю
+
+  async getGroupMarksWithTeachers(groupId: number, subjectId: number, teacherId: number): Promise<GroupMark[]> {
+    try {
+      // Получаем stId
+      const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
+      if (!stResponse.ok) {
+        throw new Error(`Ошибка получения ST: ${stResponse.status}`);
+      }
+      
+      const stData: any[] = await stResponse.json();
+      const st = stData.find(item => 
+        item.groups?.includes(groupId) && 
+        item.idSubject === subjectId && 
+        item.teachers?.includes(teacherId)
+      );
+      
+      if (!st) {
+        console.warn('ST не найден для группы, предмета и преподавателя');
+        return [];
+      }
+      
+      // Получаем студентов группы с оценками
+      const studentsResponse = await fetch(`${API_BASE_URL}/api/v1/groups/marks/group?idGroup=${groupId}&idSt=${st.id}&idTeacher=${teacherId}`);
+      if (!studentsResponse.ok) {
+        throw new Error(`Ошибка получения студентов с оценками: ${studentsResponse.status}`);
+      }
+      
+      const studentsData = await studentsResponse.json();
+      const marks: GroupMark[] = [];
+      
+      // Извлекаем оценки из данных студентов
+      for (const student of studentsData) {
+        if (student.marks && Array.isArray(student.marks)) {
+          for (const mark of student.marks) {
+            if (mark.value !== null && mark.value !== undefined && mark.number) {
+              // Получаем дату занятия по номеру
+              let dateStr = '';
+              try {
+                const lessonDate = await this.getLessonDateByNumber(groupId, st.id, teacherId, mark.number);
+                dateStr = lessonDate || '';
+              } catch (err) {
+                console.error(`Ошибка получения даты для занятия ${mark.number}:`, err);
+              }
+              
+              marks.push({
+                studentId: student.idStudent,
+                mark: mark.value,
+                date: dateStr,
+                lessonNumber: mark.number,
+                typeMark: mark.typeMark
+              });
+            }
+          }
+        }
+      }
+      
+      return marks;
+    } catch (error) {
+      console.error('Ошибка при получении оценок группы:', error);
+      return [];
+    }
+  },
+
+  //Получение даты занятия по номеру
+
+  async getLessonDateByNumber(groupId: number, stId: number, teacherId: number, lessonNumber: number): Promise<string> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/lessons/date/st/${stId}/group/${groupId}/teacher/${teacherId}`);
+      if (!response.ok) {
+        return '';
+      }
+      
+      const data = await response.json();
+      const lesson = data.find((item: any) => item.number === lessonNumber);
+      
+      return lesson ? lesson.date : '';
+    } catch (error) {
+      console.error('Ошибка получения даты занятия:', error);
+      return '';
+    }
+  },
+
+  // Получение всех доступных предметов для группы
+
+  async getAvailableSubjectsForGroup(groupId: number): Promise<SubjectInfo[]> {
+    try {
+      const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
+      
+      // Группируем по предметам и выбираем уникальные
+      const uniqueSubjects = new Map<number, SubjectInfo>();
+      
+      for (const item of subjectsWithTeachers) {
+        if (!uniqueSubjects.has(item.subjectId)) {
+          uniqueSubjects.set(item.subjectId, {
+            id: item.subjectId,
+            name: item.subjectName,
+            teacherId: item.teacherId,
+            teacherName: `${item.teacherLastName} ${item.teacherName.charAt(0)}.${item.teacherPatronymic ? item.teacherPatronymic.charAt(0) + '.' : ''}`
+          });
+        }
+      }
+      
+      return Array.from(uniqueSubjects.values());
+    } catch (error) {
+      console.error('Ошибка при получении доступных предметов для группы:', error);
+      return [];
+    }
+  },
+
+  // Получение всех преподавателей для предмета в группе
+
+  async getTeachersForSubject(groupId: number, subjectId: number): Promise<SubjectTeacher[]> {
+    try {
+      const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
+      
+      return subjectsWithTeachers.filter(item => item.subjectId === subjectId);
+    } catch (error) {
+      console.error('Ошибка при получении преподавателей для предмета:', error);
+      return [];
+    }
+  },
+
+  // Получение полной информации об успеваемости группы с фильтрацией по предмету и преподавателю
+  
+  async getFullGroupPerformance(groupId: number, subjectId: number, teacherId: number): Promise<{
+    students: StudentInfo[];
+    marks: GroupMark[];
+    lessonDates: LessonDate[];
+    subjectInfo: SubjectTeacher | null;
+  }> {
+    try {
+      const [students, marks, lessonDates, subjectTeachers] = await Promise.all([
+        this.getGroupStudents(groupId),
+        this.getGroupMarksWithTeachers(groupId, subjectId, teacherId),
+        this.getLessonDatesBySubject(groupId, subjectId, teacherId),
+        this.getTeachersForSubject(groupId, subjectId)
+      ]);
+      
+      const subjectInfo = subjectTeachers.find(t => t.teacherId === teacherId) || null;
+      
+      return {
+        students,
+        marks,
+        lessonDates,
+        subjectInfo
+      };
+    } catch (error) {
+      console.error('Ошибка при получении полной информации об успеваемости группы:', error);
+      return {
+        students: [],
+        marks: [],
+        lessonDates: [],
+        subjectInfo: null
+      };
+    }
+  },
+
+  // Получение посещаемости группы по предмету и преподавателю
+  
+  async getGroupAttendanceWithTeachers(groupId: number, subjectId: number, teacherId: number): Promise<GroupAttendance[]> {
+    try {
+      // Получаем stId
+      const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
+      if (!stResponse.ok) {
+        throw new Error(`Ошибка получения ST: ${stResponse.status}`);
+      }
+      
+      const stData: any[] = await stResponse.json();
+      const st = stData.find(item => 
+        item.groups?.includes(groupId) && 
+        item.idSubject === subjectId && 
+        item.teachers?.includes(teacherId)
+      );
+      
+      if (!st) {
+        console.warn('ST не найден для группы, предмета и преподавателя');
+        return [];
+      }
+      
+      // Получаем посещаемость группы
+      const url = `${API_BASE_URL}/api/v1/attendances/group/${groupId}/st/${st.id}/teacher/${teacherId}`;
+      console.log('Запрос посещаемости URL:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Ошибка получения посещаемости группы: ${response.status}`);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log('Сырые данные посещаемости от API:', data);
+      
+      const attendance: GroupAttendance[] = [];
+      
+      for (const student of data) {
+        if (student.attendances && Array.isArray(student.attendances)) {
+          for (const att of student.attendances) {
+            // ВАЖНО: сохраняем оригинальный статус
+            const statusValue = att.status || '';
+            attendance.push({
+              studentId: student.idStudent,
+              present: statusValue === 'п',
+              date: att.date,
+              lessonNumber: att.idLesson,
+              status: statusValue, // Сохраняем 'п', 'у', 'н' или ''
+              comment: att.comment || undefined
+            });
+          }
+        }
+      }
+      
+      console.log('Преобразованные данные посещаемости:', attendance);
+      return attendance;
+    } catch (error) {
+      console.error('Ошибка при получении посещаемости группы:', error);
+      return [];
+    }
+  },
+
+  // Получение полной информации о посещаемости группы с фильтрацией по предмету и преподавателю
+  
+  async getFullGroupAttendance(groupId: number, subjectId: number, teacherId: number): Promise<{
+    students: StudentInfo[];
+    attendance: GroupAttendance[];
+    lessonDates: LessonDate[];
+    subjectInfo: SubjectTeacher | null;
+  }> {
+    try {
+      const [students, attendance, lessonDates, subjectTeachers] = await Promise.all([
+        this.getGroupStudents(groupId),
+        this.getGroupAttendanceWithTeachers(groupId, subjectId, teacherId),
+        this.getLessonDatesBySubject(groupId, subjectId, teacherId),
+        this.getTeachersForSubject(groupId, subjectId)
+      ]);
+      
+      const subjectInfo = subjectTeachers.find(t => t.teacherId === teacherId) || null;
+      
+      return {
+        students,
+        attendance,
+        lessonDates,
+        subjectInfo
+      };
+    } catch (error) {
+      console.error('Ошибка при получении полной информации о посещаемости группы:', error);
+      return {
+        students: [],
+        attendance: [],
+        lessonDates: [],
+        subjectInfo: null
+      };
     }
   }
 };

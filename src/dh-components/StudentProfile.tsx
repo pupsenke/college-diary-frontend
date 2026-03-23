@@ -17,13 +17,13 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   const [student, setStudent] = useState<FullStudentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'marks' | 'attendance' | 'documents'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'documents'>('info');
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [marks, setMarks] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
   const [loadingMarks, setLoadingMarks] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
-  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
   useEffect(() => {
     loadStudentData();
@@ -35,6 +35,12 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
       const studentData = await headApiService.getStudentById(studentId);
       setStudent(studentData);
       setError(null);
+      
+      // Загружаем оценки и посещаемость параллельно
+      await Promise.all([
+        loadMarks(),
+        loadAttendance()
+      ]);
     } catch (err) {
       setError('Не удалось загрузить данные студента');
       console.error(err);
@@ -44,8 +50,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   };
 
   const loadMarks = async () => {
-    if (marks.length > 0) return;
-    
     try {
       setLoadingMarks(true);
       const marksData = await headApiService.getStudentMarks(studentId);
@@ -58,8 +62,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   };
 
   const loadAttendance = async () => {
-    if (attendance.length > 0) return;
-    
     try {
       setLoadingAttendance(true);
       const attendanceData = await headApiService.getStudentAttendance(studentId);
@@ -85,11 +87,9 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     }
   };
 
-  const handleTabChange = (tab: 'info' | 'marks' | 'attendance' | 'documents') => {
+  const handleTabChange = (tab: 'info' | 'documents') => {
     setActiveTab(tab);
     
-    if (tab === 'marks') loadMarks();
-    if (tab === 'attendance') loadAttendance();
     if (tab === 'documents') loadDocuments();
   };
 
@@ -100,16 +100,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
       console.error('Ошибка скачивания:', error);
       alert('Не удалось скачать документ');
     }
-  };
-
-  const getFullName = () => {
-    if (!student) return '';
-    return `${student.lastName} ${student.name} ${student.patronymic}`;
-  };
-
-  const getInitials = () => {
-    if (!student) return '';
-    return `${student.name.charAt(0)}${student.patronymic?.charAt(0) || ''}`;
   };
 
   const calculateAverageMark = () => {
@@ -150,10 +140,20 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     return total > 0 ? ((present / total) * 100).toFixed(1) + '%' : '—';
   };
 
+  const getFullName = () => {
+    if (!student) return '';
+    return `${student.lastName} ${student.name} ${student.patronymic}`;
+  };
+
+  const getInitials = () => {
+    if (!student) return '';
+    return `${student.name.charAt(0)}${student.patronymic?.charAt(0) || ''}`;
+  };
+
   if (loading) {
     return (
-      <div className="sp-modal-overlay">
-        <div className="sp-modal-content">
+      <div className="sp-modal-overlay" onClick={onClose}>
+        <div className="sp-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="sp-loading">
             <div className="sp-loading-spinner"></div>
             <p>Загрузка профиля студента...</p>
@@ -165,8 +165,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
   if (error || !student) {
     return (
-      <div className="sp-modal-overlay">
-        <div className="sp-modal-content">
+      <div className="sp-modal-overlay" onClick={onClose}>
+        <div className="sp-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="sp-error">
             <p>{error || 'Данные студента не найдены'}</p>
             <button className="sp-close-button" onClick={onClose}>Закрыть</button>
@@ -179,12 +179,9 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   return (
     <div className="sp-modal-overlay" onClick={onClose}>
       <div className="sp-modal-content" onClick={(e) => e.stopPropagation()}>
-        
-        
         <div className="sp-profile-container">
           {/* Шапка профиля */}
           <div className="sp-profile-header">
-            
             <div className="sp-avatar-circle">
               {getInitials()}
             </div>
@@ -196,31 +193,26 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
               </div>
             </div>
             <div className="sp-modal-header">
-          <button className="sp-modal-close" onClick={onClose}>×</button>
-        </div>
+              <button className="sp-modal-close" onClick={onClose}>×</button>
+            </div>
           </div>
 
-          {/* Табы */}
-          <div className="sp-tabs">
-            <button 
-              className={`sp-tab ${activeTab === 'info' ? 'active' : ''}`}
-              onClick={() => handleTabChange('info')}
-            >
-              Личная информация
-            </button>
-            <button 
-              className={`sp-tab ${activeTab === 'marks' ? 'active' : ''}`}
-              onClick={() => handleTabChange('marks')}
-            >
-              Успеваемость
-            </button>
-            <button 
-              className={`sp-tab ${activeTab === 'attendance' ? 'active' : ''}`}
-              onClick={() => handleTabChange('attendance')}
-            >
-              Посещаемость
-            </button>
+          {/* Карточки со статистикой */}
+          <div className="sp-stats-cards">
+            <div className="sp-stat-card">
+              <div className="sp-stat-title">Средний балл</div>
+              <div className="sp-stat-value">
+                {loadingMarks ? '...' : calculateAverageMark()}
+              </div>
+            </div>
+            <div className="sp-stat-card">
+              <div className="sp-stat-title">Посещаемость</div>
+              <div className="sp-stat-value">
+                {loadingAttendance ? '...' : calculateAttendancePercentage()}
+              </div>
+            </div>
           </div>
+
 
           {/* Контент табов */}
           <div className="sp-tab-content">
@@ -260,119 +252,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                     <div className="sp-info-value">{student.login}</div>
                   </div>
                 </div>
-
-                <div className="sp-stats-cards">
-                  <div className="sp-stat-card">
-                    <div className="sp-stat-title">Средний балл</div>
-                    <div className="sp-stat-value">{calculateAverageMark()}</div>
-                  </div>
-                  <div className="sp-stat-card">
-                    <div className="sp-stat-title">Посещаемость</div>
-                    <div className="sp-stat-value">{calculateAttendancePercentage()}</div>
-                  </div>
-                  <div className="sp-stat-card">
-                    <div className="sp-stat-title">Документов</div>
-                    <div className="sp-stat-value">{documents.length}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'marks' && (
-              <div className="sp-marks-tab">
-                {loadingMarks ? (
-                  <div className="sp-tab-loading">Загрузка оценок...</div>
-                ) : marks.length > 0 ? (
-                  <div className="sp-subjects-list">
-                    {marks.map((subject, idx) => {
-                      const subjectInfo = subject.nameSubjectTeachersDTO || subject.stteachersDTO;
-                      if (!subjectInfo) return null;
-                      
-                      const validMarks = subject.marksBySt?.filter((m: any) => m.value && m.value > 0) || [];
-                      
-                      return (
-                        <div key={idx} className="sp-subject-card">
-                          <div className="sp-subject-header">
-                            <h3>{subjectInfo.nameSubject}</h3>
-                            {subjectInfo.teachers && subjectInfo.teachers.length > 0 && (
-                              <span className="sp-subject-teacher">
-                                {subjectInfo.teachers.map((t: any) => 
-                                  `${t.lastnameTeacher} ${t.nameTeacher?.charAt(0)}.`
-                                ).join(', ')}
-                              </span>
-                            )}
-                          </div>
-                          <div className="sp-marks-grid">
-                            {validMarks.map((mark: any, i: number) => (
-                              <div key={i} className="sp-mark-item">
-                                <span className="sp-mark-value">{mark.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                          {subject.certification && (
-                            <div className="sp-exam-mark">
-                              Экзамен: {subject.certification}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="sp-empty-state">Нет данных об оценках</div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'attendance' && (
-              <div className="sp-attendance-tab">
-                {loadingAttendance ? (
-                  <div className="sp-tab-loading">Загрузка посещаемости...</div>
-                ) : attendance.length > 0 ? (
-                  <div className="sp-attendance-list">
-                    {attendance.map((subject, idx) => {
-                      const subjectInfo = subject.nameSubjectTeachersDTO;
-                      if (!subjectInfo) return null;
-                      
-                      const stats = {
-                        total: 0,
-                        present: 0,
-                        absent: 0,
-                        excused: 0
-                      };
-                      
-                      subject.attendances?.forEach((a: any) => {
-                        if (a.status) {
-                          stats.total++;
-                          if (a.status === 'п') stats.present++;
-                          if (a.status === 'н') stats.absent++;
-                          if (a.status === 'у') stats.excused++;
-                        }
-                      });
-                      
-                      const percentage = stats.total > 0 
-                        ? ((stats.present / stats.total) * 100).toFixed(1) 
-                        : '0';
-                      
-                      return (
-                        <div key={idx} className="sp-attendance-subject">
-                          <div className="sp-attendance-header">
-                            <h3>{subjectInfo.nameSubject}</h3>
-                            <span className="sp-attendance-percentage">{percentage}%</span>
-                          </div>
-                          <div className="sp-attendance-stats">
-                            <span className="sp-attendance-stat present">✓ {stats.present}</span>
-                            <span className="sp-attendance-stat absent">✗ {stats.absent}</span>
-                            <span className="sp-attendance-stat excused">У {stats.excused}</span>
-                            <span className="sp-attendance-stat total">Всего: {stats.total}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="sp-empty-state">Нет данных о посещаемости</div>
-                )}
               </div>
             )}
           </div>
@@ -381,3 +260,5 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     </div>
   );
 };
+
+export default StudentProfile;

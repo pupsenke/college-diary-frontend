@@ -28,6 +28,7 @@ export const DepartmentManagementSection: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false);
+  const [selectedPerformanceGroup, setSelectedPerformanceGroup] = useState<{id: number, name: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<number | 'all'>('all');
   const [academicGroups, setAcademicGroups] = useState<GroupData[]>([]);
@@ -42,6 +43,7 @@ export const DepartmentManagementSection: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<number | null>(null);
 
   useEffect(() => {
     loadGroups();
@@ -51,11 +53,7 @@ export const DepartmentManagementSection: React.FC = () => {
     try {
       setLoading(true);
       
-      // Загружаем информацию об отделении
-      const deptInfo = await headApiService.getDepartmentInfo();
-      setDepartmentInfo(deptInfo);
-      
-      // Загружаем все группы без фильтрации в API
+      // Загружаем все группы
       const groups = await headApiService.getGroups();
       
       // Фильтруем группы по специальности 09.02.07 Информационные системы и программирование
@@ -65,6 +63,7 @@ export const DepartmentManagementSection: React.FC = () => {
       
       // Преобразуем данные для отображения
       const formattedGroups: GroupData[] = [];
+      let totalStudentsCount = 0;
       
       for (const group of filteredGroups) {
         try {
@@ -82,6 +81,7 @@ export const DepartmentManagementSection: React.FC = () => {
           try {
             const students = await headApiService.getGroupStudents(group.id);
             studentsCount = students.length;
+            totalStudentsCount += studentsCount; // Суммируем общее количество студентов
           } catch (studentsError) {
             console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
           }
@@ -114,6 +114,18 @@ export const DepartmentManagementSection: React.FC = () => {
       });
       
       setAcademicGroups(formattedGroups);
+      
+      // Обновляем информацию об отделении с корректными данными
+      setDepartmentInfo({
+        name: 'Отделение информационных технологий',
+        specialities: ['09.02.07 Информационные системы и программирование'],
+        totalGroups: filteredGroups.length, // Количество групп
+        totalStudents: totalStudentsCount, // Общее количество студентов
+        totalTeachers: 24,
+        averagePerformance: 4.1,
+        averageAttendance: 86.0
+      });
+      
       setError(null);
     } catch (error) {
       console.error('Ошибка при загрузке групп:', error);
@@ -133,6 +145,24 @@ export const DepartmentManagementSection: React.FC = () => {
     } catch (error) {
       console.error('Ошибка при добавлении группы:', error);
       return Promise.reject(error);
+    }
+  };
+
+  // Функция для удаления группы
+  const handleDeleteGroup = async (groupId: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // Предотвращаем открытие модального окна
+    
+    if (window.confirm('Вы уверены, что хотите удалить эту группу? Это действие нельзя отменить.')) {
+      try {
+        setDeletingGroupId(groupId);
+        await headApiService.deleteGroup(groupId);
+        await loadGroups(); // Перезагружаем список после удаления
+      } catch (error) {
+        console.error('Ошибка при удалении группы:', error);
+        alert('Не удалось удалить группу. Пожалуйста, попробуйте позже.');
+      } finally {
+        setDeletingGroupId(null);
+      }
     }
   };
 
@@ -207,6 +237,40 @@ export const DepartmentManagementSection: React.FC = () => {
       </div>
     );
   }
+
+  const renderGroupCard = (group: GroupData) => (
+    <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
+      <div className="dhm-group-header">
+        <div className="dhm-group-badge">{group.name}</div>
+      </div>
+      <div className="dhm-group-body">
+        <div className="dhm-group-stats-compact">
+          <div className="dhm-stat-compact">
+            <span className="dhm-stat-value-compact">{group.students}</span>
+            <span className="dhm-stat-label-compact">студ.</span>
+          </div>
+          <div className="dhm-stat-compact">
+            <span className="dhm-stat-value-compact">{group.performance.toFixed(1)}</span>
+            <span className="dhm-stat-label-compact">ср.балл</span>
+          </div>
+          <div className="dhm-stat-compact">
+            <span className="dhm-stat-value-compact">{group.attendance}%</span>
+            <span className="dhm-stat-label-compact">посещ.</span>
+          </div>
+        </div>
+        <div className="dhm-group-info-compact">
+          <div className="dhm-info-compact">
+            <span className="dhm-info-label-compact">Куратор:</span>
+            <span className="dhm-info-value-compact">{group.curator}</span>
+          </div>
+          <div className="dhm-info-compact">
+            <span className="dhm-info-label-compact">{group.course} курс</span>
+            <span className="dhm-info-value-compact">{group.profile}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -300,7 +364,7 @@ export const DepartmentManagementSection: React.FC = () => {
                     className="dhm-add-group-btn"
                     onClick={() => setIsAddGroupModalOpen(true)}
                   >
-                    <span>+</span> Добавить группу
+                    Добавить группу
                   </button>
                   <div className="dhm-search-container">
                     <input
@@ -342,48 +406,7 @@ export const DepartmentManagementSection: React.FC = () => {
                       <div key={course} className="dhm-course-section">
                         <h3 className="dhm-course-title">{course} курс</h3>
                         <div className="dhm-groups-grid">
-                          {groupsByCourse[course as keyof typeof groupsByCourse].map(group => (
-                            <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
-                              <div className="dhm-group-header">
-                                <div className="dhm-group-badge">{group.name}</div>
-                                <div className="dhm-group-course">{group.course} курс</div>
-                              </div>
-                              <div className="dhm-group-body">
-                                <div className="dhm-group-metrics">
-                                  <div className="dhm-group-metric">
-                                    <div className="dhm-metric-value">{group.students}</div>
-                                    <div className="dhm-metric-label">студентов</div>
-                                  </div>
-                                  <div className="dhm-group-metric">
-                                    <div className="dhm-metric-value">{group.performance.toFixed(1)}</div>
-                                    <div className="dhm-metric-label">средний балл</div>
-                                  </div>
-                                  <div className="dhm-group-metric">
-                                    <div className="dhm-metric-value">{group.attendance}%</div>
-                                    <div className="dhm-metric-label">посещаемость</div>
-                                  </div>
-                                </div>
-                                <div className="dhm-group-info">
-                                  <div className="dhm-info-row">
-                                    <span className="dhm-info-label">Куратор:</span>
-                                    <span className="dhm-info-value">{group.curator}</span>
-                                  </div>
-                                  <div className="dhm-info-row">
-                                    <span className="dhm-info-label">Староста:</span>
-                                    <span className="dhm-info-value">{group.leader}</span>
-                                  </div>
-                                  <div className="dhm-info-row">
-                                    <span className="dhm-info-label">Специальность:</span>
-                                    <span className="dhm-info-value">{group.speciality}</span>
-                                  </div>
-                                  <div className="dhm-info-row">
-                                    <span className="dhm-info-label">Профиль:</span>
-                                    <span className="dhm-info-value">{group.profile}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                          {groupsByCourse[course as keyof typeof groupsByCourse].map(group => renderGroupCard(group))}
                         </div>
                       </div>
                     )
@@ -393,48 +416,7 @@ export const DepartmentManagementSection: React.FC = () => {
                   <div className="dhm-course-section">
                     <h3 className="dhm-course-title">{selectedCourse} курс</h3>
                     <div className="dhm-groups-grid">
-                      {groupsByCourse[selectedCourse as keyof typeof groupsByCourse].map(group => (
-                        <div key={group.id} className="dhm-group-card" onClick={() => handleGroupClick(group.id)}>
-                          <div className="dhm-group-header">
-                            <div className="dhm-group-badge">{group.name}</div>
-                            <div className="dhm-group-course">{group.course} курс</div>
-                          </div>
-                          <div className="dhm-group-body">
-                            <div className="dhm-group-metrics">
-                              <div className="dhm-group-metric">
-                                <div className="dhm-metric-value">{group.students}</div>
-                                <div className="dhm-metric-label">студентов</div>
-                              </div>
-                              <div className="dhm-group-metric">
-                                <div className="dhm-metric-value">{group.performance.toFixed(1)}</div>
-                                <div className="dhm-metric-label">средний балл</div>
-                              </div>
-                              <div className="dhm-group-metric">
-                                <div className="dhm-metric-value">{group.attendance}%</div>
-                                <div className="dhm-metric-label">посещаемость</div>
-                              </div>
-                            </div>
-                            <div className="dhm-group-info">
-                              <div className="dhm-info-row">
-                                <span className="dhm-info-label">Куратор:</span>
-                                <span className="dhm-info-value">{group.curator}</span>
-                              </div>
-                              <div className="dhm-info-row">
-                                <span className="dhm-info-label">Староста:</span>
-                                <span className="dhm-info-value">{group.leader}</span>
-                              </div>
-                              <div className="dhm-info-row">
-                                <span className="dhm-info-label">Специальность:</span>
-                                <span className="dhm-info-value">{group.speciality}</span>
-                              </div>
-                              <div className="dhm-info-row">
-                                <span className="dhm-info-label">Профиль:</span>
-                                <span className="dhm-info-value">{group.profile}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                      {groupsByCourse[selectedCourse as keyof typeof groupsByCourse].map(group => renderGroupCard(group))}
                     </div>
                   </div>
                 )}
@@ -457,6 +439,7 @@ export const DepartmentManagementSection: React.FC = () => {
             <GroupDetail 
               groupId={selectedGroupId} 
               onClose={handleCloseModal}
+              onGroupDeleted={loadGroups} 
             />
           </div>
         </div>

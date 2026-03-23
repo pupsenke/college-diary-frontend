@@ -1,5 +1,3 @@
-/* StudentProfileStyle.css */
-
 /* Модальное окно */
 .sp-modal-overlay {
   position: fixed;
@@ -20,7 +18,7 @@
   background: white;
   border-radius: 16px;
   width: 90%;
-  max-width: 900px;
+  max-width: 700px;
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
@@ -64,7 +62,7 @@
   align-items: center;
   gap: 24px;
   margin-top: 32px;
-  margin-bottom: 32px;
+  margin-bottom: 14px;
   padding-bottom: 24px;
   border-bottom: 1px solid #eef2f6;
 }
@@ -88,7 +86,7 @@
 }
 
 .sp-student-name {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   color: #1e293b;
   margin: 0 0 8px 0;
@@ -113,6 +111,7 @@
 .sp-tabs {
   display: flex;
   gap: 8px;
+  margin-top: 14px;
   margin-bottom: 24px;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 8px;
@@ -138,8 +137,7 @@
 }
 
 .sp-tab.active {
-  background-color: #002FA7;
-  color: white;
+  color: #002FA7;
 }
 
 .sp-tab-content {
@@ -185,6 +183,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
+  margin-bottom: 20px;
 }
 
 .sp-stat-card {
