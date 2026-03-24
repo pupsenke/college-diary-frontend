@@ -11,6 +11,14 @@ import {
   LessonDate
 } from '../services/headApiService';
 import StudentProfile from './StudentProfile';
+import { 
+  calculateStudentAverage, 
+  calculateGroupAverage,
+  calculateStudentAttendancePercent,
+  calculateGroupAttendancePercent,
+  getGradeColor
+} from '../utils/groupCalculations';
+import { SelectCuratorModal } from './SelectCuratorModal';
 
 interface GroupDetailProps {
   groupId: number;
@@ -28,6 +36,7 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
   const [searchStudentTerm, setSearchStudentTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'info' | 'performance' | 'attendance'>('info');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
   
   // Состояния для успеваемости и посещаемости
   const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<SubjectTeacher[]>([]);
@@ -50,16 +59,6 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
   const subjectsLoadedRef = useRef(false);
   const performanceLoadedRef = useRef(false);
   const attendanceLoadedRef = useRef(false);
-
-  // Функция для получения цвета оценки
-  const getGradeColor = (grade: number | null): string => {
-    if (grade === null) return '#d1d5db';
-    if (grade === 0) return '#d1d5db';
-    if (grade >= 4) return '#2cbb00';
-    if (grade >= 3) return '#f59e0b';
-    if (grade >= 1) return '#ef4444';
-    return '#d1d5db';
-  };
 
   useEffect(() => {
     loadGroupData();
@@ -85,6 +84,33 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
       loadAttendanceData();
     }
   }, [activeTab, selectedSubjectTeacher]);
+
+  useEffect(() => {
+    // Функция для вычисления ширины скроллбара
+    const getScrollbarWidth = () => {
+      const div = document.createElement('div');
+      div.style.overflow = 'scroll';
+      div.style.position = 'absolute';
+      div.style.top = '-9999px';
+      document.body.appendChild(div);
+      const scrollbarWidth = div.offsetWidth - div.clientWidth;
+      document.body.removeChild(div);
+      return scrollbarWidth;
+    };
+
+    // Блокируем прокрутку при открытии модалки
+    const scrollbarWidth = getScrollbarWidth();
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.classList.add('modal-open');
+
+    // Возвращаем функцию для восстановления при закрытии
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.classList.remove('modal-open');
+    };
+  }, []); 
 
   const loadGroupData = async () => {
     try {
@@ -254,6 +280,15 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
     return mark ? mark.mark : null;
   };
 
+  const getStatusText = (status: 'п' | 'у' | 'н' | null): string => {
+    switch (status) {
+      case 'п': return 'Присутствовал';
+      case 'у': return 'Уважительная причина';
+      case 'н': return 'Отсутствовал';
+      default: return 'Не отмечен';
+    }
+  };
+
   const handleStudentClick = (studentId: number) => {
     setSelectedStudentId(studentId);
     setIsStudentProfileOpen(true);
@@ -306,90 +341,43 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
     s => s.subjectId === selectedSubjectTeacher?.subjectId
   );
 
-  // Расчет среднего балла для студента по выбранному предмету
-  const calculateStudentAverage = (studentId: number): number => {
-    const studentMarks = marksData.filter(m => m.studentId === studentId && m.mark !== null);
-    if (studentMarks.length === 0) return 0;
-    const sum = studentMarks.reduce((total, m) => total + m.mark, 0);
-    return sum / studentMarks.length;
+  // Вспомогательная функция для получения среднего балла студента
+  const getStudentAverage = (studentId: number): number => {
+    return calculateStudentAverage(marksData, studentId);
+  };
+
+// Вспомогательная функция для получения процента посещаемости студента
+  const getStudentAttendancePercent = (studentId: number): number => {
+    return calculateStudentAttendancePercent(attendanceData, studentId, lessonDates);
   };
 
   // Расчет среднего балла по группе
-  const calculateGroupAverage = (): number => {
-    if (students.length === 0) return 0;
-    const sum = students.reduce((total, student) => total + calculateStudentAverage(student.id), 0);
-    return sum / students.length;
+  const groupAverage = calculateGroupAverage(students, marksData);
+
+  const handleOpenCuratorModal = () => {
+    setIsCuratorModalOpen(true);
   };
 
-  // Функция для получения цвета статуса посещаемости
-  const getStatusColor = (status: 'п' | 'у' | 'н' | null): string => {
-    switch (status) {
-      case 'п': return '#2cbb00';
-      case 'у': return '#f59e0b';
-      case 'н': return '#ef4444';
-      default: return '#d1d5db';
+  const handleSelectCurator = async (staffId: number, staffFullName: string) => {
+    if (!groupInfo) return;
+    try {
+      // Показываем индикатор загрузки (можно добавить состояние)
+      await headApiService.updateGroupCurator(groupInfo.id, staffId);
+      // Обновляем локальные данные
+      setCuratorInfo({
+        lastName: staffFullName.split(' ')[0],
+        name: staffFullName.split(' ')[1] || '',
+        patronymic: staffFullName.split(' ')[2] || '',
+        email: '' // email может быть неизвестен, можно оставить пустым или получить из данных
+      });
+      // Дополнительно можно перезагрузить группу, чтобы получить актуального куратора с email
+      await loadGroupData(); // перезагружаем, чтобы получить email и т.д.
+    } catch (error) {
+      console.error('Ошибка при назначении куратора:', error);
+      alert('Не удалось назначить куратора. Попробуйте позже.');
+    } finally {
+      setIsCuratorModalOpen(false);
     }
-  };
-
-  // Функция для получения текста статуса
-  const getStatusText = (status: 'п' | 'у' | 'н' | null): string => {
-    switch (status) {
-      case 'п': return 'Присутствовал';
-      case 'у': return 'Уважительная причина';
-      case 'н': return 'Отсутствовал';
-      default: return 'Не отмечен';
-    }
-  };
-
-  // Функция для получения цвета процента
-  const getPercentColor = (percent: number): string => {
-    if (percent >= 90) return '#2cbb00';
-    if (percent >= 75) return '#a5db28';
-    if (percent >= 60) return '#f59e0b';
-    return '#ef4444';
-  };
-
-  // Функция для получения цвета процента посещаемости
-  const getAttendancePercentColor = (percent: number): string => {
-    if (percent >= 90) return '#2cbb00';
-    if (percent >= 75) return '#a5db28';
-    if (percent >= 60) return '#f59e0b';
-    return '#ef4444';
-  };
-
-  // Функция для нормализации даты
-  const normalizeDate = (date: string): string => {
-    if (!date) return '';
-    if (date.includes('-')) {
-      return date.split('T')[0];
-    }
-    if (date.includes('.')) {
-      const parts = date.split('.');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-      if (parts.length === 2) {
-        const currentYear = new Date().getFullYear();
-        return `${currentYear}-${parts[1]}-${parts[0]}`;
-      }
-    }
-    return date;
-  };
-
-  // Расчет общего процента посещаемости группы
-  const calculateGroupAttendancePercentage = (): number => {
-    if (students.length === 0) return 0;
-    
-    let totalPresent = 0;
-    let totalLessons = 0;
-    
-    students.forEach(student => {
-      const studentAttendances = attendanceData.filter(a => a.studentId === student.id);
-      totalLessons += studentAttendances.length;
-      totalPresent += studentAttendances.filter(a => a.status === 'п').length;
-    });
-    
-    return totalLessons > 0 ? (totalPresent / totalLessons) * 100 : 0;
   };
 
   if (loading) {
@@ -490,6 +478,12 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                     {curatorInfo?.email && (
                       <div className="dhm-detail-email">{curatorInfo.email}</div>
                     )}
+                    <button 
+                      className="dhm-choose-curator-btn"
+                      onClick={handleOpenCuratorModal}
+                    >
+                      {curatorInfo ? 'Изменить куратора' : 'Выбрать куратора'}
+                    </button>
                   </div>
                   <div className="dhm-detail-item">
                     <div className="dhm-detail-label">Специальность</div>
@@ -502,10 +496,6 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                   <div className="dhm-detail-item">
                     <div className="dhm-detail-label">Год поступления</div>
                     <div className="dhm-detail-value">{groupInfo.admissionYear}</div>
-                  </div>
-                  <div className="dhm-detail-item">
-                    <div className="dhm-detail-label">Форма обучения</div>
-                    <div className="dhm-detail-value">{groupInfo.formEducation}</div>
                   </div>
                 </div>
               </div>
@@ -682,50 +672,43 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                               {lessonDates.map(lesson => (
                                 <th key={lesson.number} className="dhm-date-col">
                                   {new Date(lesson.date).toLocaleDateString('ru-RU')}
-                                  <br />
                                 </th>
                               ))}
                               </tr>
-                             </thead>
+                            </thead>
                           <tbody>
                             {students.map(student => {
-                              const studentMarks = marksData.filter(m => m.studentId === student.id && m.mark !== null);
-                              const avg = studentMarks.length > 0
-                                ? studentMarks.reduce((sum, m) => sum + m.mark, 0) / studentMarks.length
-                                : 0;
-
+                              const studentAvg = getStudentAverage(student.id);
+                              
                               return (
                                 <tr key={student.id}>
                                   <td className="dhm-student-name">
                                     {student.lastName} {student.name.charAt(0)}.
                                     {student.patronymic ? student.patronymic.charAt(0) + '.' : ''}
-                                   </td>
+                                  </td>
                                   <td className="dhm-average-cell">
                                     <div
                                       className="dhm-average-badge"
-                                      style={{ backgroundColor: getGradeColor(avg || null) }}
+                                      style={{ backgroundColor: getGradeColor(studentAvg || null) }}
                                     >
-                                      {avg > 0 ? avg.toFixed(2) : '-'}
+                                      {studentAvg > 0 ? studentAvg.toFixed(2) : '-'}
                                     </div>
-                                   </td>
+                                  </td>
                                   {lessonDates.map(lesson => {
-                                    const mark = marksData.find(
-                                      m => m.studentId === student.id && m.lessonNumber === lesson.number
-                                    );
-                                    const markValue = mark ? mark.mark : null;
+                                    const mark = getMarkForStudent(student.id, lesson.number);
                                     
                                     return (
                                       <td key={lesson.number} className="dhm-mark-cell">
                                         <div
                                           className="dhm-mark"
-                                          style={{ backgroundColor: getGradeColor(markValue) }}
+                                          style={{ backgroundColor: getGradeColor(mark) }}
                                         >
-                                          {markValue !== null ? markValue : '-'}
+                                          {mark !== null ? mark : '-'}
                                         </div>
-                                       </td>
+                                      </td>
                                     );
                                   })}
-                                 </tr>
+                                </tr>
                               );
                             })}
                           </tbody>
@@ -738,10 +721,10 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                           <div
                             className="dhm-average-value"
                             style={{
-                              backgroundColor: getGradeColor(calculateGroupAverage() || null)
+                              backgroundColor: getGradeColor(groupAverage || null)
                             }}
                           >
-                            {calculateGroupAverage() > 0 ? calculateGroupAverage().toFixed(2) : '—'}
+                            {groupAverage > 0 ? groupAverage.toFixed(2) : '—'}
                           </div>
                         </div>
                       </div>
@@ -833,82 +816,169 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                       <p>Нет данных о посещаемости</p>
                     </div>
                   ) : (
-                    <div className="dhm-table-container">
-                      <table className="dhm-data-table">
-                        <thead>
-                          <tr>
-                            <th className="dhm-student-col">Студент</th>
-                            <th className="dhm-average-col">% посещаемости</th>
-                            {lessonDates.map(lesson => (
-                              <th key={lesson.number} className="dhm-date-col">
-                                {new Date(lesson.date).toLocaleDateString('ru-RU')}
-                                <br />
-                              </th>
-                            ))}
-                            </tr>
-                          </thead>
-
-                        <tbody>
-                          {students.map(student => {
-                            const studentAttendances = attendanceData.filter(a => a.studentId === student.id);
-                            const totalLessons = studentAttendances.length;
-                            const presentCount = studentAttendances.filter(a => a.status === 'п').length;
-                            const attendancePercent = totalLessons > 0 ? (presentCount / totalLessons) * 100 : 0;
-
-                            return (
-                              <tr key={student.id}>
-                                <td className="dhm-student-name">
-                                  {student.lastName} {student.name.charAt(0)}.
-                                  {student.patronymic ? student.patronymic.charAt(0) + '.' : ''}
-                                </td>
-
-                                <td className="dhm-average-cell">
-                                  <div
-                                    className="dhm-average-badge"
-                                    style={{
-                                      backgroundColor: getAttendancePercentColor(attendancePercent),
-                                      color: 'white'
-                                    }}
-                                  >
-                                    {attendancePercent > 0 ? attendancePercent.toFixed(1) + '%' : '-'}
-                                  </div>
-                                </td>
-
-                                {lessonDates.map(lesson => {
-                                  const lessonDateNormalized = normalizeDate(lesson.date);
+                    <>
+                      <div className="dhm-table-container">
+                        <table className="dhm-data-table">
+                          <thead>
+                            <tr>
+                              <th className="dhm-student-col">Студент</th>
+                              <th className="dhm-average-col">% посещаемости</th>
+                              {(() => {
+                                // Собираем все уникальные idLesson из данных посещаемости
+                                const existingLessonIds = new Set<number>();
+                                attendanceData.forEach(attendance => {
+                                  existingLessonIds.add(attendance.lessonNumber);
+                                });
+                                
+                                // Фильтруем уроки, оставляя только те, которые есть в данных посещаемости
+                                const filteredLessons = lessonDates.filter(lesson => 
+                                  existingLessonIds.has(lesson.lessonId)
+                                );
+                                
+                                // Убираем дубликаты по lessonId
+                                const uniqueLessons = filteredLessons.reduce((acc, current) => {
+                                  const exists = acc.find(item => item.lessonId === current.lessonId);
+                                  if (!exists) {
+                                    acc.push(current);
+                                  }
+                                  return acc;
+                                }, [] as LessonDate[]);
+                                
+                                return uniqueLessons.map(lesson => {
+                                  const dateObj = new Date(lesson.date);
+                                  const day = dateObj.getDate().toString().padStart(2, '0');
+                                  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                                  const year = (dateObj.getFullYear()).toString().padStart(2, '0');
+                                  const displayDate = `${day}.${month}.${year}`;
                                   
-                                  const attendance = attendanceData.find(
-                                    a => a.studentId === student.id && 
-                                        normalizeDate(a.date) === lessonDateNormalized
-                                  );
-
-                                  const status = attendance?.status ?? null;
-                                  const statusText = getStatusText(status as 'п' | 'у' | 'н' | null);
-
                                   return (
-                                    <td key={lesson.number} className="dhm-mark-cell">
-                                      <div
-                                        className="dhm-attendance-status"
-                                        style={{
-                                          backgroundColor: getStatusColor(status as 'п' | 'у' | 'н' | null)
-                                        }}
-                                        title={statusText}
-                                      >
-                                        {status === 'п' ? 'п' : status === 'у' ? 'У' : status === 'н' ? 'н' : '-'}
-                                      </div>
-                                    </td>
+                                    <th key={lesson.lessonId} className="dhm-date-col">
+                                      {displayDate}
+                                    </th>
                                   );
-                                })}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                });
+                              })()}
+                            </tr>
+                            </thead>
+
+                          <tbody>
+                            {students.map(student => {
+                              // Находим все записи посещаемости для этого студента
+                              const studentAttendances = attendanceData.filter(
+                                a => a.studentId === student.id
+                              );
+                              
+                              // Убираем дубликаты в посещаемости студента по lessonNumber
+                              const uniqueAttendances = studentAttendances.reduce((acc, current) => {
+                                const exists = acc.find(item => item.lessonNumber === current.lessonNumber);
+                                if (!exists) {
+                                  acc.push(current);
+                                }
+                                return acc;
+                              }, [] as typeof studentAttendances);
+                              
+                              // Расчет процента посещаемости для студента
+                              let presentCount = 0;
+                              let totalCount = uniqueAttendances.length;
+                              
+                              uniqueAttendances.forEach(attendance => {
+                                if (attendance.status === 'п') {
+                                  presentCount++;
+                                }
+                              });
+                              
+                              const studentAttendancePercent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
+                              
+                              // Функция для получения класса статуса
+                              const getStatusClass = (status: string): string => {
+                                switch (status) {
+                                  case 'п': return 'dhm-status-present';
+                                  case 'у': return 'dhm-status-absent';
+                                  case 'н': return 'dhm-status-not';
+                                  default: return 'dhm-status-empty';
+                                }
+                              };
+                              
+                              // Функция для получения цвета процента
+                              const getPercentColor = (percent: number, hasData: boolean): string => {
+                                if (!hasData) return '#9ca3af'; // серый если нет данных
+                                if (percent === 0) return '#ef4444'; // красный если 0%
+                                if (percent >= 70) return '#2cbb00';
+                                if (percent >= 55) return '#a5db28';
+                                if (percent >= 20) return '#f59e0b';
+                                return '#ef4444';
+                              };
+                              
+                              // Проверяем, есть ли данные о посещаемости у студента
+                              const hasAttendanceData = uniqueAttendances.length > 0;
+                              
+                              // Получаем отфильтрованные уникальные уроки
+                              const existingLessonIds = new Set<number>();
+                              attendanceData.forEach(attendance => {
+                                existingLessonIds.add(attendance.lessonNumber);
+                              });
+                              
+                              const filteredLessons = lessonDates.filter(lesson => 
+                                existingLessonIds.has(lesson.lessonId)
+                              );
+                              
+                              const uniqueLessons = filteredLessons.reduce((acc, current) => {
+                                const exists = acc.find(item => item.lessonId === current.lessonId);
+                                if (!exists) {
+                                  acc.push(current);
+                                }
+                                return acc;
+                              }, [] as LessonDate[]);
+                              
+                              return (
+                                <tr key={student.id}>
+                                  <td className="dhm-student-name">
+                                    {student.lastName} {student.name.charAt(0)}.
+                                    {student.patronymic ? student.patronymic.charAt(0) + '.' : ''}
+                                  </td>
+                                  <td className="dhm-average-cell">
+                                    {(() => {
+                                      const percent = getStudentAttendancePercent(student.id);
+                                      const hasData = percent !== -1;
+                                      const displayPercent = hasData ? percent.toFixed(1) + '%' : '-';
+                                      const bgColor = hasData ? getPercentColor(percent, true) : '#d1d5db';
+                                      
+                                      return (
+                                        <div
+                                          className="dhm-average-badge"
+                                          style={{
+                                            backgroundColor: bgColor,
+                                            color: 'white'
+                                          }}
+                                        >
+                                          {displayPercent}
+                                        </div>
+                                      );
+                                    })()}
+                                  </td>
+                                  {uniqueLessons.map(lesson => {
+                                    // Ищем запись по lessonNumber (который содержит idLesson) и lesson.lessonId
+                                    const attendance = uniqueAttendances.find(
+                                      a => a.lessonNumber === lesson.lessonId
+                                    );
+                                    const status = attendance?.status || '';
+                                    
+                                    return (
+                                      <td key={lesson.lessonId} className="dhm-mark-cell">
+                                        <div className={`dhm-cell-status ${getStatusClass(status)}`}>
+                                          {status || '-'}
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                       
-                    </div>
-                    
-                  )}
-                  {/* Общий процент посещаемости группы */}
+                      {/* Общий процент посещаемости группы */}
                       <div className="dhm-group-average-footer">
                         <div className="dhm-group-average">
                           <div className="dhm-average-label">Общая посещаемость группы</div>
@@ -916,21 +986,70 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
                             className="dhm-average-value"
                             style={{
                               backgroundColor: (() => {
-                                const totalPercent = calculateGroupAttendancePercentage();
-                                if (totalPercent >= 90) return '#2cbb00';
-                                if (totalPercent >= 75) return '#a5db28';
-                                if (totalPercent >= 60) return '#f59e0b';
+                                let totalPresent = 0;
+                                let totalLessons = 0;
+                                
+                                students.forEach(student => {
+                                  const studentAttendances = attendanceData.filter(
+                                    a => a.studentId === student.id
+                                  );
+                                  // Убираем дубликаты
+                                  const uniqueAttendances = studentAttendances.reduce((acc, current) => {
+                                    const exists = acc.find(item => item.lessonNumber === current.lessonNumber);
+                                    if (!exists) {
+                                      acc.push(current);
+                                    }
+                                    return acc;
+                                  }, [] as typeof studentAttendances);
+                                  
+                                  totalLessons += uniqueAttendances.length;
+                                  totalPresent += uniqueAttendances.filter(a => a.status === 'п').length;
+                                });
+                                
+                                const groupPercent = totalLessons > 0 ? (totalPresent / totalLessons) * 100 : 0;
+                                const hasGroupData = totalLessons > 0;
+                                
+                                if (!hasGroupData) return '#9ca3af'; // серый если нет данных
+                                if (groupPercent === 0) return '#ef4444'; // красный если 0%
+                                if (groupPercent >= 90) return '#2cbb00';
+                                if (groupPercent >= 75) return '#a5db28';
+                                if (groupPercent >= 60) return '#f59e0b';
                                 return '#ef4444';
-                              })()
+                              })(),
+                              color: 'white'
                             }}
                           >
                             {(() => {
-                              const totalPercent = calculateGroupAttendancePercentage();
-                              return totalPercent > 0 ? totalPercent.toFixed(1) + '%' : '—';
+                              let totalPresent = 0;
+                              let totalLessons = 0;
+                              
+                              students.forEach(student => {
+                                const studentAttendances = attendanceData.filter(
+                                  a => a.studentId === student.id
+                                );
+                                // Убираем дубликаты
+                                const uniqueAttendances = studentAttendances.reduce((acc, current) => {
+                                  const exists = acc.find(item => item.lessonNumber === current.lessonNumber);
+                                  if (!exists) {
+                                    acc.push(current);
+                                  }
+                                  return acc;
+                                }, [] as typeof studentAttendances);
+                                
+                                totalLessons += uniqueAttendances.length;
+                                totalPresent += uniqueAttendances.filter(a => a.status === 'п').length;
+                              });
+                              
+                              const groupPercent = totalLessons > 0 ? (totalPresent / totalLessons) * 100 : 0;
+                              const hasGroupData = totalLessons > 0;
+                              
+                              return hasGroupData ? groupPercent.toFixed(1) + '%' : '—';
                             })()}
                           </div>
                         </div>
                       </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -959,6 +1078,14 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({ groupId, onClose, onGr
             />
           </div>
         </div>
+      )}
+
+      {isCuratorModalOpen && (
+        <SelectCuratorModal
+          onClose={() => setIsCuratorModalOpen(false)}
+          onSelect={handleSelectCurator}
+          currentCuratorId={groupInfo?.curatorId}
+        />
       )}
     </>
   );

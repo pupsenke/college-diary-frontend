@@ -18,12 +18,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'info' | 'documents'>('info');
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [loadingDocuments, setLoadingDocuments] = useState(false);
-  const [marks, setMarks] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
-  const [loadingMarks, setLoadingMarks] = useState(false);
-  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   useEffect(() => {
     loadStudentData();
@@ -36,11 +30,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
       setStudent(studentData);
       setError(null);
       
-      // Загружаем оценки и посещаемость параллельно
-      await Promise.all([
-        loadMarks(),
-        loadAttendance()
-      ]);
     } catch (err) {
       setError('Не удалось загрузить данные студента');
       console.error(err);
@@ -49,96 +38,29 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     }
   };
 
-  const loadMarks = async () => {
-    try {
-      setLoadingMarks(true);
-      const marksData = await headApiService.getStudentMarks(studentId);
-      setMarks(marksData);
-    } catch (err) {
-      console.error('Ошибка загрузки оценок:', err);
-    } finally {
-      setLoadingMarks(false);
-    }
-  };
+  useEffect(() => {
+    const getScrollbarWidth = () => {
+      const div = document.createElement('div');
+      div.style.overflow = 'scroll';
+      div.style.position = 'absolute';
+      div.style.top = '-9999px';
+      document.body.appendChild(div);
+      const scrollbarWidth = div.offsetWidth - div.clientWidth;
+      document.body.removeChild(div);
+      return scrollbarWidth;
+    };
 
-  const loadAttendance = async () => {
-    try {
-      setLoadingAttendance(true);
-      const attendanceData = await headApiService.getStudentAttendance(studentId);
-      setAttendance(attendanceData);
-    } catch (err) {
-      console.error('Ошибка загрузки посещаемости:', err);
-    } finally {
-      setLoadingAttendance(false);
-    }
-  };
+    const scrollbarWidth = getScrollbarWidth();
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.classList.add('modal-open');
 
-  const loadDocuments = async () => {
-    if (documents.length > 0) return;
-    
-    try {
-      setLoadingDocuments(true);
-      const documentsData = await headApiService.getStudentDocuments(studentId);
-      setDocuments(documentsData);
-    } catch (err) {
-      console.error('Ошибка загрузки документов:', err);
-    } finally {
-      setLoadingDocuments(false);
-    }
-  };
-
-  const handleTabChange = (tab: 'info' | 'documents') => {
-    setActiveTab(tab);
-    
-    if (tab === 'documents') loadDocuments();
-  };
-
-  const downloadDocument = async (docId: number, fileName: string) => {
-    try {
-      await apiService.downloadDocument(docId);
-    } catch (error) {
-      console.error('Ошибка скачивания:', error);
-      alert('Не удалось скачать документ');
-    }
-  };
-
-  const calculateAverageMark = () => {
-    if (!marks || marks.length === 0) return '—';
-    
-    let sum = 0;
-    let count = 0;
-    
-    marks.forEach(subject => {
-      if (subject.marksBySt) {
-        subject.marksBySt.forEach((mark: any) => {
-          if (mark.value && mark.value > 0) {
-            sum += mark.value;
-            count++;
-          }
-        });
-      }
-    });
-    
-    return count > 0 ? (sum / count).toFixed(2) : '—';
-  };
-
-  const calculateAttendancePercentage = () => {
-    if (!attendance || attendance.length === 0) return '—';
-    
-    let present = 0;
-    let total = 0;
-    
-    attendance.forEach(subject => {
-      subject.attendances?.forEach((a: any) => {
-        if (a.status) {
-          total++;
-          if (a.status === 'п') present++;
-        }
-      });
-    });
-    
-    return total > 0 ? ((present / total) * 100).toFixed(1) + '%' : '—';
-  };
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
 
   const getFullName = () => {
     if (!student) return '';
@@ -197,23 +119,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
             </div>
           </div>
 
-          {/* Карточки со статистикой */}
-          <div className="sp-stats-cards">
-            <div className="sp-stat-card">
-              <div className="sp-stat-title">Средний балл</div>
-              <div className="sp-stat-value">
-                {loadingMarks ? '...' : calculateAverageMark()}
-              </div>
-            </div>
-            <div className="sp-stat-card">
-              <div className="sp-stat-title">Посещаемость</div>
-              <div className="sp-stat-value">
-                {loadingAttendance ? '...' : calculateAttendancePercentage()}
-              </div>
-            </div>
-          </div>
-
-
           {/* Контент табов */}
           <div className="sp-tab-content">
             {activeTab === 'info' && (
@@ -229,23 +134,23 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Отчество:</div>
-                    <div className="sp-info-value">{student.patronymic || '—'}</div>
+                    <div className="sp-info-value">{student.patronymic || '-'}</div>
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Дата рождения:</div>
-                    <div className="sp-info-value">{student.birthDate || '—'}</div>
+                    <div className="sp-info-value">{student.birthDate || '-'}</div>
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Email:</div>
-                    <div className="sp-info-value">{student.email || '—'}</div>
+                    <div className="sp-info-value">{student.email || '-'}</div>
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Телефон:</div>
-                    <div className="sp-info-value">{student.telephone || '—'}</div>
+                    <div className="sp-info-value">{student.telephone || '-'}</div>
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Адрес:</div>
-                    <div className="sp-info-value">{student.address || '—'}</div>
+                    <div className="sp-info-value">{student.address || '-'}</div>
                   </div>
                   <div className="sp-info-row">
                     <div className="sp-info-label">Логин:</div>

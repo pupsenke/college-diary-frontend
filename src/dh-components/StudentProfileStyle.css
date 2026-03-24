@@ -23,6 +23,7 @@
   overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: sp-slideUp 0.3s ease;
+  overflow-y: auto;
 }
 
 .sp-modal-header {
@@ -167,7 +168,7 @@
 }
 
 .sp-info-label {
-  min-width: 100px;
+  min-width: 120px;
   font-size: 14px;
   color: #64748b;
 }

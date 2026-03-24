@@ -351,6 +351,7 @@
   border-radius: 20px;
   font-weight: 600;
   font-size: 16px;
+  margin-bottom: 10px;
 }
 
 .dhm-group-badge-large {
@@ -470,9 +471,10 @@
   border-radius: 20px;
   max-width: 800px;
   width: 100%;
-  max-height: 85vh;
+  max-height: 90vh;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideIn 0.3s ease;
+  overflow-y: auto; 
 }
 
 @keyframes modalSlideIn {
@@ -623,9 +625,9 @@
 }
 
 .dhm-view-all-btn {
-  background-color: rgba(227, 232, 253, 0.429);
+  background-color: transparent;
   color: #002FA7;
-  border: 1px solid #bbc6fb;
+  border: 1px solid #002FA7;
   padding: 6px 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -776,7 +778,6 @@
   width: 90%;
   max-width: 900px;
   max-height: 85vh;
-  overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: sp-slideUp 0.3s ease;
 }
@@ -846,14 +847,9 @@
   text-align: center;
 }
 
-.dhm-loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+.dhm-loading p{
+  font-size: 20px;
+  color: #555555;
 }
 
 @keyframes spin {
@@ -1196,7 +1192,7 @@
 .dhm-group-info-compact {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 18px;
 }
 
 .dhm-info-compact {
@@ -1572,6 +1568,38 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.dhm-cell-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  text-align: center;
+  line-height: 1;
+}
+
+.dhm-status-present {
+  background-color: #2cbb00;
+}
+
+.dhm-status-absent {
+  background-color: #f59e0b;
+}
+
+.dhm-status-not {
+  background-color: #ef4444;
+}
+
+.dhm-status-empty {
+  background-color: #d1d5db;
+}
+
 
 
 
@@ -1588,7 +1616,6 @@
   position: relative;
 }
 
-/* Таблица */
 .dhm-data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1596,7 +1623,6 @@
   min-width: 600px;
 }
 
-/* Фиксация ПЕРВОЙ колонки (Студент) */
 .dhm-data-table th:first-child,
 .dhm-data-table td:first-child {
   position: sticky !important;
@@ -1605,13 +1631,11 @@
   z-index: 10 !important;
 }
 
-/* Заголовок первой колонки */
 .dhm-data-table thead th:first-child {
   background-color: #f8fafc !important;
   z-index: 20 !important;
 }
 
-/* Ячейки первой колонки (студенты) */
 .dhm-data-table tbody td:first-child {
   background-color: white !important;
   font-weight: 500;
@@ -1620,7 +1644,6 @@
   left: 0 !important;
 }
 
-/* Стили для содержимого ячейки студента */
 .dhm-student-name {
   font-weight: 500;
   color: #1f2937;
@@ -1628,7 +1651,6 @@
   font-size: 13px;
 }
 
-/* Удаляем старые стили sticky у этих классов */
 .dhm-student-col {
   min-width: 180px;
   text-align: left;
@@ -1646,3 +1668,35 @@
 
 
 
+body.modal-open {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+@media (min-width: 768px) {
+  body.modal-open {
+    position: fixed;
+    width: 100%;
+  }
+}
+
+
+
+
+
+
+.dhm-choose-curator-btn {
+  background: none;
+  border: none;
+  color: #002FA7;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 8px;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.dhm-choose-curator-btn:hover {
+  opacity: 0.8;
+}

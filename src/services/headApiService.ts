@@ -145,6 +145,20 @@ export interface SubjectTeacher {
   teacherPatronymic: string;
 }
 
+// Интерфейс для сотрудника
+interface Staff {
+  id: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  login: string;
+  email: string;
+  staffPosition: Array<{
+    id: number;
+    name: string;
+  }>;
+}
+
 export const headApiService = {
   // Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
@@ -502,6 +516,7 @@ export const headApiService = {
 
   // Получение дат занятий для группы по предмету и преподавателю
 
+  // Получение дат занятий для группы по предмету и преподавателю
   async getLessonDatesBySubject(groupId: number, subjectId: number, teacherId: number): Promise<LessonDate[]> {
     try {
       // Сначала получаем stId
@@ -530,10 +545,12 @@ export const headApiService = {
       
       const data = await response.json();
       
+      // Важно: используем idLesson из данных посещаемости для сопоставления
+      // lessonId должен быть именно idLesson, а не номер урока
       return data.map((item: any) => ({
         number: item.number,
         date: item.date,
-        lessonId: item.id || item.lessonId
+        lessonId: item.id || item.lessonId || item.idLesson
       }));
     } catch (error) {
       console.error('Ошибка при получении дат занятий:', error);
@@ -793,6 +810,184 @@ export const headApiService = {
         lessonDates: [],
         subjectInfo: null
       };
+    }
+  },
+
+  // Получение всех предметов и оценок для студента
+  async getStudentMarksBySubjects(studentId: number): Promise<{ subjectId: number; subjectName: string; marks: GroupMark[] }[]> {
+    try {
+      const allMarks = await this.getStudentMarks(studentId);
+      
+      // Группируем оценки по предметам
+      const marksBySubject = new Map<number, { subjectId: number; subjectName: string; marks: GroupMark[] }>();
+      
+      for (const mark of allMarks) {
+        const subjectId = mark.subjectId || mark.idSubject;
+        if (!subjectId) continue;
+        
+        if (!marksBySubject.has(subjectId)) {
+          // Получаем название предмета
+          let subjectName = `Предмет ${subjectId}`;
+          try {
+            const subjectResponse = await fetch(`${API_BASE_URL}/api/v1/subjects/id/${subjectId}`);
+            if (subjectResponse.ok) {
+              const subject = await subjectResponse.json();
+              subjectName = subject.subjectName || subject.name || subjectName;
+            }
+          } catch (err) {
+            console.error(`Ошибка получения названия предмета ${subjectId}:`, err);
+          }
+          
+          marksBySubject.set(subjectId, {
+            subjectId,
+            subjectName,
+            marks: []
+          });
+        }
+        
+        marksBySubject.get(subjectId)!.marks.push({
+          studentId: mark.idStudent || studentId,
+          mark: mark.value || mark.mark,
+          date: mark.date,
+          lessonNumber: mark.number || mark.lessonNumber,
+          typeMark: mark.typeMark
+        });
+      }
+      
+      return Array.from(marksBySubject.values());
+    } catch (error) {
+      console.error('Ошибка при получении оценок студента по предметам:', error);
+      return [];
+    }
+  },
+
+  // Получение среднего балла группы по всем предметам
+  async getGroupOverallAverage(groupId: number): Promise<number> {
+    try {
+      const students = await this.getGroupStudents(groupId);
+      if (students.length === 0) return 0;
+      
+      let totalAverage = 0;
+      let studentsWithMarks = 0;
+      
+      for (const student of students) {
+        const avg = await this.getStudentOverallAverage(student.id);
+        if (avg > 0) {
+          totalAverage += avg;
+          studentsWithMarks++;
+        }
+      }
+      
+      return studentsWithMarks > 0 ? totalAverage / studentsWithMarks : 0;
+    } catch (error) {
+      console.error('Ошибка расчета среднего балла группы:', error);
+      return 0;
+    }
+  },
+
+  // Получение общего среднего балла студента
+  async getStudentOverallAverage(studentId: number): Promise<number> {
+    try {
+      const subjectsMarks = await this.getStudentMarksBySubjects(studentId);
+      if (subjectsMarks.length === 0) return 0;
+      
+      let totalAverage = 0;
+      let subjectsWithMarks = 0;
+      
+      subjectsMarks.forEach(subject => {
+        const validMarks = subject.marks.filter(m => m.mark !== null && m.mark > 0);
+        if (validMarks.length > 0) {
+          const subjectAvg = validMarks.reduce((sum, m) => sum + m.mark, 0) / validMarks.length;
+          totalAverage += subjectAvg;
+          subjectsWithMarks++;
+        }
+      });
+      
+      return subjectsWithMarks > 0 ? totalAverage / subjectsWithMarks : 0;
+    } catch (error) {
+      console.error('Ошибка расчета среднего балла студента:', error);
+      return 0;
+    }
+  },
+
+  // Получение общего процента посещаемости группы
+  async getGroupOverallAttendance(groupId: number): Promise<number> {
+    try {
+      // Получаем все предметы группы
+      const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
+      if (subjectsWithTeachers.length === 0) return 0;
+      
+      const students = await this.getGroupStudents(groupId);
+      if (students.length === 0) return 0;
+      
+      let totalPresent = 0;
+      let totalLessons = 0;
+      
+      // Для каждого предмета собираем данные посещаемости
+      for (const subject of subjectsWithTeachers) {
+        const attendance = await this.getGroupAttendanceWithTeachers(
+          groupId, 
+          subject.subjectId, 
+          subject.teacherId
+        );
+        const lessonDates = await this.getLessonDatesBySubject(
+          groupId,
+          subject.subjectId,
+          subject.teacherId
+        );
+        
+        students.forEach(student => {
+          const studentAttendances = attendance.filter(a => a.studentId === student.id);
+          const presentCount = studentAttendances.filter(a => a.status === 'п').length;
+          totalPresent += presentCount;
+          totalLessons += lessonDates.length;
+        });
+      }
+      
+      return totalLessons > 0 ? (totalPresent / totalLessons) * 100 : 0;
+    } catch (error) {
+      console.error('Ошибка расчета посещаемости группы:', error);
+      return 0;
+    }
+  },
+  // Получение преподавателей
+  async getStaffs(): Promise<Staff[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/staffs`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения сотрудников: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении списка сотрудников:', error);
+      throw error;
+    }
+  },
+
+
+  async updateGroupCurator(groupId: number, curatorId: number): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          id: groupId,
+          idCurator: curatorId
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка обновления куратора: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при обновлении куратора группы:', error);
+      throw error;
     }
   }
 };

@@ -5,8 +5,6 @@ import { AddGroupModal } from './AddGroupModal';
 import { 
   headApiService, 
   GroupInfo as ApiGroupInfo,
-  CuratorInfo,
-  StudentInfo 
 } from '../services/headApiService';
 
 interface GroupData {
@@ -18,8 +16,6 @@ interface GroupData {
   curator: string;
   curatorId: number;
   leader: string;
-  performance: number;
-  attendance: number;
   speciality: string;
   profile: string;
 }
@@ -28,7 +24,6 @@ export const DepartmentManagementSection: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false);
-  const [selectedPerformanceGroup, setSelectedPerformanceGroup] = useState<{id: number, name: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<number | 'all'>('all');
   const [academicGroups, setAcademicGroups] = useState<GroupData[]>([]);
@@ -36,10 +31,7 @@ export const DepartmentManagementSection: React.FC = () => {
     name: 'Отделение информационных технологий',
     specialities: ['09.02.07 Информационные системы и программирование'],
     totalGroups: 0,
-    totalStudents: 0,
-    totalTeachers: 24,
-    averagePerformance: 4.1,
-    averageAttendance: 86.0
+    totalStudents: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,19 +41,18 @@ export const DepartmentManagementSection: React.FC = () => {
     loadGroups();
   }, []);
 
+
+
   const loadGroups = async () => {
     try {
       setLoading(true);
       
-      // Загружаем все группы
       const groups = await headApiService.getGroups();
       
-      // Фильтруем группы по специальности 09.02.07 Информационные системы и программирование
       const filteredGroups = groups.filter(group => 
         group.specialty === "09.02.07 Информационные системы и программирование"
       );
       
-      // Преобразуем данные для отображения
       const formattedGroups: GroupData[] = [];
       let totalStudentsCount = 0;
       
@@ -81,7 +72,7 @@ export const DepartmentManagementSection: React.FC = () => {
           try {
             const students = await headApiService.getGroupStudents(group.id);
             studentsCount = students.length;
-            totalStudentsCount += studentsCount; // Суммируем общее количество студентов
+            totalStudentsCount += studentsCount;
           } catch (studentsError) {
             console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
           }
@@ -95,8 +86,6 @@ export const DepartmentManagementSection: React.FC = () => {
             curator: curatorName,
             curatorId: group.idCurator,
             leader: 'Не указан',
-            performance: 4.0,
-            attendance: 85.0,
             speciality: group.specialty,
             profile: group.profile
           });
@@ -105,7 +94,6 @@ export const DepartmentManagementSection: React.FC = () => {
         }
       }
       
-      // Сортируем группы по курсу и номеру
       formattedGroups.sort((a, b) => {
         if (a.course !== b.course) {
           return a.course - b.course;
@@ -114,18 +102,7 @@ export const DepartmentManagementSection: React.FC = () => {
       });
       
       setAcademicGroups(formattedGroups);
-      
-      // Обновляем информацию об отделении с корректными данными
-      setDepartmentInfo({
-        name: 'Отделение информационных технологий',
-        specialities: ['09.02.07 Информационные системы и программирование'],
-        totalGroups: filteredGroups.length, // Количество групп
-        totalStudents: totalStudentsCount, // Общее количество студентов
-        totalTeachers: 24,
-        averagePerformance: 4.1,
-        averageAttendance: 86.0
-      });
-      
+
       setError(null);
     } catch (error) {
       console.error('Ошибка при загрузке групп:', error);
@@ -145,24 +122,6 @@ export const DepartmentManagementSection: React.FC = () => {
     } catch (error) {
       console.error('Ошибка при добавлении группы:', error);
       return Promise.reject(error);
-    }
-  };
-
-  // Функция для удаления группы
-  const handleDeleteGroup = async (groupId: number, event: React.MouseEvent) => {
-    event.stopPropagation(); // Предотвращаем открытие модального окна
-    
-    if (window.confirm('Вы уверены, что хотите удалить эту группу? Это действие нельзя отменить.')) {
-      try {
-        setDeletingGroupId(groupId);
-        await headApiService.deleteGroup(groupId);
-        await loadGroups(); // Перезагружаем список после удаления
-      } catch (error) {
-        console.error('Ошибка при удалении группы:', error);
-        alert('Не удалось удалить группу. Пожалуйста, попробуйте позже.');
-      } finally {
-        setDeletingGroupId(null);
-      }
     }
   };
 
@@ -215,7 +174,6 @@ export const DepartmentManagementSection: React.FC = () => {
     return (
       <div className="dhm-department-container">
         <div className="dhm-loading">
-          <div className="dhm-loading-spinner"></div>
           <p>Загрузка данных...</p>
         </div>
       </div>
@@ -244,20 +202,6 @@ export const DepartmentManagementSection: React.FC = () => {
         <div className="dhm-group-badge">{group.name}</div>
       </div>
       <div className="dhm-group-body">
-        <div className="dhm-group-stats-compact">
-          <div className="dhm-stat-compact">
-            <span className="dhm-stat-value-compact">{group.students}</span>
-            <span className="dhm-stat-label-compact">студ.</span>
-          </div>
-          <div className="dhm-stat-compact">
-            <span className="dhm-stat-value-compact">{group.performance.toFixed(1)}</span>
-            <span className="dhm-stat-label-compact">ср.балл</span>
-          </div>
-          <div className="dhm-stat-compact">
-            <span className="dhm-stat-value-compact">{group.attendance}%</span>
-            <span className="dhm-stat-label-compact">посещ.</span>
-          </div>
-        </div>
         <div className="dhm-group-info-compact">
           <div className="dhm-info-compact">
             <span className="dhm-info-label-compact">Куратор:</span>
@@ -289,67 +233,16 @@ export const DepartmentManagementSection: React.FC = () => {
             {/* Блок общей информации */}
             <div className="dhm-info-section">
               <div className="dhm-section-header">
-                <h2 className="dhm-section-title">Общая информация</h2>
+                <h2 className="dhm-section-title">Специальности отделения</h2>
               </div>
               <div className="dhm-info-content">
                 <div className="dhm-info-card">
-                  <div className="dhm-info-label">Специальности</div>
                   <div className="dhm-specialities-list">
                     {departmentInfo.specialities.map((speciality, index) => (
                       <div key={index} className="dhm-speciality-item">
                         <span>{speciality}</span>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                <div className="dhm-info-stats">
-                  <div className="dhm-stat-item">
-                    <div className="dhm-stat-content">
-                      <div className="dhm-stat-number">{departmentInfo.totalStudents}</div>
-                      <div className="dhm-stat-text">студентов</div>
-                    </div>
-                  </div>
-
-                  <div className="dhm-stat-item">
-                    <div className="dhm-stat-content">
-                      <div className="dhm-stat-number">{departmentInfo.totalGroups}</div>
-                      <div className="dhm-stat-text">учебных групп</div>
-                    </div>
-                  </div>     
-                </div>
-              </div>
-            </div>
-
-            {/* Блок ключевых показателей */}
-            <div className="dhm-metrics-section">
-              <div className="dhm-section-header">
-                <h2 className="dhm-section-title">Ключевые показатели</h2>
-              </div>
-              <div className="dhm-metrics-grid">
-                <div className="dhm-metric-card dhm-performance-card">
-                  <div className="dhm-metric-header">
-                    <h3 className="dhm-metric-title">Средний балл</h3>
-                  </div>
-                  <div className="dhm-metric-value">{departmentInfo.averagePerformance}</div>
-                  <div className="dhm-metric-progress">
-                    <div className="dhm-progress-bar">
-                      <div className="dhm-progress-fill" style={{ width: '82%' }}></div>
-                    </div>
-                    <span className="dhm-progress-text">82% студентов сдают успешно</span>
-                  </div>
-                </div>
-
-                <div className="dhm-metric-card dhm-attendance-card">
-                  <div className="dhm-metric-header">
-                    <h3 className="dhm-metric-title">Посещаемость</h3>
-                  </div>
-                  <div className="dhm-metric-value">{departmentInfo.averageAttendance}%</div>
-                  <div className="dhm-metric-progress">
-                    <div className="dhm-progress-bar">
-                      <div className="dhm-progress-fill" style={{ width: '86%' }}></div>
-                    </div>
-                    <span className="dhm-progress-text">Высокий уровень посещаемости</span>
                   </div>
                 </div>
               </div>
