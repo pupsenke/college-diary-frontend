@@ -1459,16 +1459,6 @@ export const GroupsSection: React.FC = () => {
             <p>Всего студентов</p>
           </div>
         </div>
-        
-        <div className="sg-stat-card">
-          <div className="sg-stat-icon">
-            <img src="/social-icons/warning_icon.svg" alt="Риск" />
-          </div>
-          <div className="sg-stat-info">
-            <h3>{stats.riskGroups}</h3>
-            <p>Группы риска</p>
-          </div>
-        </div>
       </div>
 
       {/* Контент с группами */}

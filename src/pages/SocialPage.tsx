@@ -3,7 +3,6 @@ import { SocialHeader } from '../social-components/SocialHeader';
 import { PersonalCabinet } from '../social-components/PersonalCabinet';
 import { GroupsSection } from '../social-components/SocialGroupsSection';
 import { ReportsSection } from '../social-components/ReportsSection';
-import { DocumentsSection } from '../social-components/DocumentsSection';
 import { useUser } from '../context/UserContext';
 import './SocialPage.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -67,8 +66,6 @@ export const SocialPage: React.FC = () => {
         return <GroupsSection />;
       case 'reports':
         return <ReportsSection />;
-      case 'documents':
-        return <DocumentsSection />;
       case 'personal':
       default:
         return <PersonalCabinet />;
@@ -81,8 +78,6 @@ export const SocialPage: React.FC = () => {
         return <img src="th-icons/groups_icon.svg" alt="Группы" className="social-nav-svg-icon" />;
       case 'reports':
         return <img src="social-icons/reports_icon.svg" alt="Отчеты" className="social-nav-svg-icon" />;
-      case 'documents':
-        return <img src="social-icons/documents_icon.svg" alt="Документы" className="social-nav-svg-icon" />;
       case 'personal':
         return <img src="th-icons/paccount_icon.svg" alt="Личный кабинет" className="social-nav-svg-icon" />;
       default:
@@ -96,8 +91,6 @@ export const SocialPage: React.FC = () => {
         return 'Группы';
       case 'reports':
         return 'Отчеты';
-      case 'documents':
-        return 'Документы';
       case 'personal':
         return 'Личный кабинет';
       default:
@@ -111,8 +104,6 @@ export const SocialPage: React.FC = () => {
         return 'Просмотр социальных портретов учебных групп';
       case 'reports':
         return 'Создание и управление отчетами';
-      case 'documents':
-        return 'Информация о необходимых документах для различных категорий социальной поддержки';
       case 'personal':
         return 'Профиль социального педагога';
       default:
@@ -172,7 +163,7 @@ export const SocialPage: React.FC = () => {
             </div>
 
             <nav className="social-sidebar-nav">
-              {['personal', 'groups', 'reports', 'documents'].map((tab) => (
+              {['personal', 'groups', 'reports'].map((tab) => (
                 <button
                   key={tab}
                   className={`social-nav-item ${activeTab === tab ? 'active' : ''}`}
