@@ -110,6 +110,7 @@ export interface SubjectInfo {
   name: string;
   teacherId: number;
   teacherName?: string;
+  assessmentForm?: string; // добавим
 }
 
 export interface GroupMark {
@@ -988,6 +989,90 @@ export const headApiService = {
     } catch (error) {
       console.error('Ошибка при обновлении куратора группы:', error);
       throw error;
+    }
+  },
+
+
+
+  // Получение предметов для группы (уникальные)
+  async getGroupSubjects(groupId: number): Promise<SubjectInfo[]> {
+    try {
+      const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
+      const uniqueSubjects = new Map<number, SubjectInfo>();
+      for (const item of subjectsWithTeachers) {
+        if (!uniqueSubjects.has(item.subjectId)) {
+          uniqueSubjects.set(item.subjectId, {
+            id: item.subjectId,
+            name: item.subjectName,
+            teacherId: item.teacherId,
+            teacherName: `${item.teacherLastName} ${item.teacherName.charAt(0)}.${item.teacherPatronymic ? item.teacherPatronymic.charAt(0) + '.' : ''}`
+          });
+        }
+      }
+      return Array.from(uniqueSubjects.values());
+    } catch (error) {
+      console.error('Ошибка при получении предметов группы:', error);
+      return [];
+    }
+  },
+
+  // Получение итоговых оценок студента по предмету (экзамен/дифф.зачёт/зачёт)
+  // Здесь нужно знать, какое поле в API отвечает за итоговую оценку. 
+  // Допустим, в объекте оценки есть поле certification.
+  // Предположим, что getStudentMarks возвращает массив с полем certification.
+  async getStudentFinalMark(studentId: number, subjectId: number): Promise<string | null> {
+    try {
+      const marks = await this.getStudentMarks(studentId);
+      const subjectMarks = marks.find(m => m.subjectId === subjectId || m.idSubject === subjectId);
+      if (subjectMarks && subjectMarks.certification) {
+        // certification может быть числом 2-5 или строкой 'зач.'
+        return subjectMarks.certification.toString();
+      }
+      return null;
+    } catch (error) {
+      console.error('Ошибка получения итоговой оценки:', error);
+      return null;
+    }
+  },
+
+  // Получение всех оценок студента по предмету (для среднего балла)
+  async getStudentSubjectMarks(studentId: number, subjectId: number): Promise<number[]> {
+    try {
+      const marks = await this.getStudentMarks(studentId);
+      const subjectMarks = marks.find(m => m.subjectId === subjectId || m.idSubject === subjectId);
+      if (subjectMarks && subjectMarks.marksBySt && Array.isArray(subjectMarks.marksBySt)) {
+        return subjectMarks.marksBySt
+          .map((m: any) => m.value)
+          .filter((v: number) => v !== null && v !== undefined && v > 0);
+      }
+      return [];
+    } catch (error) {
+      console.error('Ошибка получения оценок студента по предмету:', error);
+      return [];
+    }
+  },
+
+  // Получение статистики пропусков студента (всего и по неуважительным причинам)
+  async getStudentAttendanceStats(studentId: number, groupId: number): Promise<{ total: number; unjustified: number }> {
+    try {
+      const attendanceData = await this.getStudentAttendance(studentId);
+      // attendanceData – массив предметов с посещаемостью
+      let total = 0;
+      let unjustified = 0;
+      for (const subject of attendanceData) {
+        if (subject.attendances) {
+          for (const att of subject.attendances) {
+            total++;
+            if (att.status === 'н') {
+              unjustified++;
+            }
+          }
+        }
+      }
+      return { total, unjustified };
+    } catch (error) {
+      console.error('Ошибка получения статистики посещаемости:', error);
+      return { total: 0, unjustified: 0 };
     }
   }
 };

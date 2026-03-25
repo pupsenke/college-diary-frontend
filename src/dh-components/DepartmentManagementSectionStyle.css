@@ -99,7 +99,6 @@
 .dhm-info-section,
 .dhm-metrics-section,
 .dhm-groups-section {
-  background: #f8fafc;
   border-radius: 16px;
   padding: 24px;
   border: 1px solid #e2e8f0;
@@ -131,21 +130,8 @@
   gap: 12px;
 }
 
-.dhm-speciality-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
 
-.dhm-speciality-item span {
-  font-size: 14px;
-  color: #1f2937;
-  flex: 1;
-}
+
 
 .dhm-info-stats {
   display: grid;
@@ -335,6 +321,7 @@
   border-color: #002FA7;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 47, 167, 0.1);
+  background: #f0f7ff;
 }
 
 .dhm-group-header {
@@ -1084,7 +1071,7 @@
   color: #002FA7;
   margin: 0 0 16px 0;
   padding-bottom: 8px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px dashed #e2e8f0;
 }
 
 
@@ -1699,4 +1686,132 @@ body.modal-open {
 
 .dhm-choose-curator-btn:hover {
   opacity: 0.8;
+}
+
+
+
+
+
+
+
+
+/* Стили для специальностей и профилей */
+.dhm-specialities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dhm-speciality-item {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.dhm-speciality-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.dhm-speciality-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #002FA7;
+  line-height: 1.4;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: inline-block;
+  width: fit-content;
+  flex: 1;
+}
+
+.dhm-profiles-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.dhm-profiles-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  min-width: 55px;
+  padding-top: 6px;
+}
+
+.dhm-profiles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.dhm-profile-badge {
+  background: white;
+  color: #002FA7;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: default;
+  
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .dhm-speciality-item {
+    padding: 16px;
+  }
+  
+  .dhm-speciality-name {
+    font-size: 15px;
+    padding: 6px 12px;
+  }
+  
+  .dhm-profiles-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dhm-profiles-label {
+    min-width: auto;
+    padding-top: 0;
+  }
+  
+  .dhm-profile-badge {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  
+  .dhm-profiles-list {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhm-speciality-item {
+    padding: 12px;
+  }
+  
+  .dhm-speciality-name {
+    font-size: 14px;
+    padding: 5px 10px;
+  }
+  
+  .dhm-profile-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
 }

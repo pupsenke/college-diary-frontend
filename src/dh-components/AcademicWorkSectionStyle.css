@@ -7,21 +7,25 @@
 }
 
 .dh-at-academic-section {
-  padding: 32px;
+  padding-bottom: 32px;
 }
 
 /* Заголовок */
 .dh-at-section-header {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  background: white;
+  padding: 32px 0 0 40px;
   border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
 }
 
 .dh-at-section-title {
   color: #002FA7;
   font-size: 32px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 24px 0;
 }
 
 .dh-at-section-subtitle {
@@ -35,6 +39,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
+  padding: 0 32px 0 32px;
 }
 
 .dh-at-group-card {
@@ -86,7 +91,7 @@
 .dh-at-group-specialty {
   color: #1f2937;
   font-size: 14px;
-  margin: 0 0 12px 0;
+  margin: 0 0 4px 0;
   line-height: 1.4;
 }
 
@@ -746,5 +751,241 @@
 
   .dh-at-statistics-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+
+
+
+/* Фильтры */
+.dh-at-filters {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 8px 32px 0 32px;
+}
+
+.dh-at-search-container {
+  flex: 1;
+  min-width: 250px;
+}
+
+.dh-at-search-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.dh-at-search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.dh-at-course-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dh-at-course-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dh-at-course-filter-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.dh-at-course-filter-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+
+
+
+
+
+
+
+/* Контейнер для курсов */
+.dh-at-courses-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-top: 24px;
+}
+
+.dh-at-course-section {
+  width: 100%;
+}
+
+.dh-at-course-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #e2e8f0;
+  position: relative;
+  padding: 0 32px 8px 32px;
+}
+
+/* Сетка карточек групп */
+.dh-at-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* Карточка группы */
+.dh-at-group-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+
+.dh-at-group-card:hover {
+  border-color: #002FA7;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 47, 167, 0.12);
+}
+
+.dh-at-group-card:hover::before {
+  transform: scaleX(1);
+}
+
+/* Заголовок карточки */
+.dh-at-group-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.dh-at-group-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0;
+}
+
+/* Информация о группе */
+.dh-at-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.dh-at-group-specialty {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.4;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.dh-at-group-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dh-at-group-details span {
+  background: #f8fafc;
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: #002FA7;
+  font-weight: 500;
+}
+
+/* Сообщение о пустых группах */
+.dh-at-no-groups {
+  text-align: center;
+  padding: 60px 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.dh-at-no-groups p {
+  margin: 0;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dh-at-course-title {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  
+  .dh-at-groups-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .dh-at-group-card {
+    padding: 16px;
+  }
+  
+  .dh-at-group-title {
+    font-size: 18px;
+  }
+  
+  .dh-at-group-details {
+    gap: 12px;
+  }
+  
+  .dh-at-group-details span {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-at-courses-container {
+    gap: 24px;
+  }
+  
+  .dh-at-course-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .dh-at-group-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dh-at-group-details span {
+    display: inline-block;
+    width: fit-content;
   }
 }

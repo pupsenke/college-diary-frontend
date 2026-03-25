@@ -233,17 +233,51 @@ export const DepartmentManagementSection: React.FC = () => {
             {/* Блок общей информации */}
             <div className="dhm-info-section">
               <div className="dhm-section-header">
-                <h2 className="dhm-section-title">Специальности отделения</h2>
+                <h2 className="dhm-section-title">Специальности и профили отделения</h2>
               </div>
               <div className="dhm-info-content">
-                <div className="dhm-info-card">
-                  <div className="dhm-specialities-list">
-                    {departmentInfo.specialities.map((speciality, index) => (
-                      <div key={index} className="dhm-speciality-item">
-                        <span>{speciality}</span>
+                <div className="dhm-specialities-list">
+                  {(() => {
+                    const specialitiesMap = new Map<string, string[]>();
+                    
+                    academicGroups.forEach(group => {
+                      if (!specialitiesMap.has(group.speciality)) {
+                        specialitiesMap.set(group.speciality, []);
+                      }
+                      const profiles = specialitiesMap.get(group.speciality)!;
+                      if (group.profile && group.profile !== 'Не указан' && !profiles.includes(group.profile)) {
+                        profiles.push(group.profile);
+                      }
+                    });
+                    
+                    return Array.from(specialitiesMap.entries()).map(([speciality, profiles]) => (
+                      <div key={speciality} className="dhm-speciality-item">
+                        <div className="dhm-speciality-header">
+                          <span className="dhm-speciality-name">{speciality}</span>
+                        </div>
+                        {profiles.length > 0 && (
+                          <div className="dhm-profiles-container">
+                            <span className="dhm-profiles-label">Профили:</span>
+                            <div className="dhm-profiles-list">
+                              {profiles.map((profile, profileIndex) => (
+                                <span key={profileIndex} className="dhm-profile-badge">
+                                  {profile}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    ));
+                  })()}
+                  
+                  {academicGroups.length === 0 && (
+                    departmentInfo.specialities.map((speciality, index) => (
+                      <div key={index} className="dhm-speciality-item">
+                        <span className="dhm-speciality-name">{speciality}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
