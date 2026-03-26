@@ -213,7 +213,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({
   // Функция для скачивания файла
   const handleDownloadFile = async (fileId: number, fileName: string, documentInfo?: Document) => {
     try {
-      await apiService.downloadFileById(fileId, fileName);
+      await apiService.downloadFileByIdSt(fileId, fileName);
     } catch (error) {
       console.error('Ошибка скачивания файла:', error);
       setError('Не удалось скачать файл');

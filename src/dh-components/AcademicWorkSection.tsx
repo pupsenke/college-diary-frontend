@@ -112,6 +112,65 @@ export const AcademicWorkSection: React.FC = () => {
     }
   };
 
+      // Компонент информации о функционале
+  const InfoIcon = (): React.ReactElement => (
+    <div className="dh-at-info-icon-btn" tabIndex={0}>
+      <button className="dh-at-header-btn" type="button">
+        <span className="dh-at-info-icon-text">i</span>
+        <span>Информация</span>
+      </button>
+      <div className="dh-at-info-tooltip">
+        <div className="dh-at-info-tooltip-content">
+          <div className="dh-at-info-header">
+            <div className="dh-at-info-title">
+              <h3>Сводные ведомости групп</h3>
+            </div>
+          </div>
+          
+          <div className="dh-at-info-scrollable">
+            <div className="dh-at-info-section">
+              <h4>Возможности</h4>
+              <div className="dh-at-features-list">
+                <div className="dh-at-feature-item">- Просмотр успеваемости студентов</div>
+                <div className="dh-at-feature-item">- Редактирование оценок</div>
+                <div className="dh-at-feature-item">- Статистика по группе</div>
+                <div className="dh-at-feature-item">- Направление на аттестацию (н/а)</div>
+                <div className="dh-at-feature-item">- Экспорт ведомости</div>
+                <div className="dh-at-feature-item">- Фильтрация по курсам</div>
+              </div>
+            </div>
+
+            <div className="dh-at-info-section">
+              <h4>Как использовать</h4>
+              <div className="dh-at-usage-steps">
+                <div className="dh-at-step">
+                  <span className="dh-at-step-number">1</span>
+                  <span>Нажмите на карточку группы</span>
+                </div>
+                <div className="dh-at-step">
+                  <span className="dh-at-step-number">2</span>
+                  <span>Нажмите "Редактировать" для изменения оценок</span>
+                </div>
+                <div className="dh-at-step">
+                  <span className="dh-at-step-number">3</span>
+                  <span>Нажатие на "н/а" создает направление на аттестацию</span>
+                </div>
+                <div className="dh-at-step">
+                  <span className="dh-at-step-number">4</span>
+                  <span>Используйте фильтры для поиска групп</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="dh-at-info-tip">
+              Нажмите на карточку группы для просмотра полной сводной ведомости
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const getAssessmentForm = (subjectName: string): string => {
     if (subjectName.toLowerCase().includes('физическая культура')) {
       return 'З (заглушка)';
@@ -510,7 +569,9 @@ export const AcademicWorkSection: React.FC = () => {
   return (
     <div className="dh-at-section dh-at-academic-section">
       <div className="dh-at-section-header">
-        <h1 className="dh-at-section-title">Сводные ведомости групп</h1> </div>
+        <h1 className="dh-at-section-title">Сводные ведомости групп</h1> 
+          <InfoIcon />
+        </div>
         <div className="dh-at-filters">
           <div className="dh-at-search-container">
             <input

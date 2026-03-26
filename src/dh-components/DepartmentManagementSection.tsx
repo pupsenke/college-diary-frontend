@@ -170,6 +170,41 @@ export const DepartmentManagementSection: React.FC = () => {
     setSelectedCourse(course);
   };
 
+  const InfoIcon = (): React.ReactElement => (
+    <div className="dhm-info-icon-btn" tabIndex={0}>
+      <button className="dhm-header-btn" type="button">
+        <span className="dhm-info-icon-text">i</span>
+        <span>Информация</span>
+      </button>
+      <div className="dhm-info-tooltip">
+        <div className="dhm-info-tooltip-content">
+          <div className="dhm-info-header">
+            <div className="dhm-info-title">
+              <h3>Управление группами</h3>
+            </div>
+          </div>
+          
+          <div className="dhm-info-scrollable">
+            <div className="dhm-info-page-section">
+              <h4>Возможности</h4>
+              <div className="dhm-features-list">
+                <div className="dhm-feature-item">-  Просмотр успеваемости</div>
+                <div className="dhm-feature-item">-  Отслеживание посещаемости</div>
+                <div className="dhm-feature-item">-  Информация о студентах</div>
+                <div className="dhm-feature-item">-  Данные о группе</div>
+                <div className="dhm-feature-item">-  Добавление и удаление групп</div>
+              </div>
+            </div>
+
+            <div className="dhm-info-tip">
+              Нажмите на карточку для просмотра успеваемости и посещаемости
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="dhm-department-container">
@@ -223,6 +258,7 @@ export const DepartmentManagementSection: React.FC = () => {
         <div className="dhm-department-header dhm-department-header-white">
           <div className="dhm-header-content">
             <h1 className="dhm-department-title dhm-department-title-blue">Информация об отделении</h1>
+            <InfoIcon />
           </div>
         </div>
 

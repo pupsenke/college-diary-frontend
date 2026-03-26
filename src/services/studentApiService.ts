@@ -1041,7 +1041,7 @@ export const apiService = {
   },
 
   // Скачивание файла по ID с именем
-  async downloadFileById(fileId: number, fileName: string): Promise<void> {
+  async downloadFileByIdSt(fileId: number, fileName: string): Promise<void> {
     try {
       const blob = await this.getFileById(fileId);
       
