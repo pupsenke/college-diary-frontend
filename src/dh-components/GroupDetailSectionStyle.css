@@ -575,7 +575,6 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  padding-top: 14px;
 }
 
 .dhm-detail-item {
@@ -628,6 +627,13 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
+  margin: 24px auto;
+  display: block;
+  width: fit-content;
+}
+
+.dhm-view-all-btn:hover {
+  background-color: rgba(0, 47, 167, 0.05);
 }
 
 .dhm-view-all-btn:hover {
@@ -1239,16 +1245,17 @@
 
 
 
-г.dhm-group-tabs {
+.dhm-group-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 18px;
+  margin: 12px 24px 12px 24px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 18px;
 }
 
 .dhm-group-tab {
-  padding: 8px 20px;
+  padding: 8px 60px;
   background: none;
   border: none;
   border-radius: 8px;
@@ -1268,10 +1275,6 @@
 .dhm-group-tab.active {
   background-color: #002FA7;
   color: white;
-}
-
-.dhm-performance-tab {
-  padding: 16px 0;
 }
 
 .dhm-subject-selector {
@@ -1353,6 +1356,7 @@
   left: 0;
   background: #f8fafc;
   min-width: 180px;
+  max-width: 200px;
   text-align: left !important;
 }
 
@@ -1437,10 +1441,10 @@
 
 .dhm-modal-delete-btn {
   background: white;
-  color: #ff0000;
-  border: 1px solid #ff0000;
+  color: #012171;
+  border: 1px solid #012171;
   border-radius: 8px;
-  padding: 0 12px 0 12px;
+  padding: 0 8px 0 8px;
   height: 40px;
 }
 
@@ -1494,6 +1498,7 @@
 
 .dhm-average-col {
   min-width: 80px;
+  width: 100px;
   background: #f8fafc;
 }
 
@@ -1646,13 +1651,11 @@
 }
 
 .dhm-student-col {
-  min-width: 180px;
+  width: 230px;
   text-align: left;
 }
 
-.dhm-average-col {
-  min-width: 100px;
-}
+
 
 .dhm-average-cell {
   text-align: center;
@@ -2001,4 +2004,176 @@ body.modal-open {
   font-size: 32px;
   font-weight: 700;
   margin: 0 0 24px 0;
+}
+
+
+
+
+/* Стили для GroupDetailView */
+.dhm-group-detail-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.dhm-group-detail-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  position: relative;
+}
+
+.dhm-group-badge-large {
+  background: #002FA7;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 24px;
+  display: inline-block;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+
+.dhm-group-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.dhm-group-detail-header .dhm-modal-delete-btn {
+  position: absolute;
+  top: 45px;
+  right: 24px;
+  background: white;
+  color: #012171;
+  border: 1px solid #012171;
+  border-radius: 8px;
+  padding: 2px 18px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  height: 30px;
+}
+
+.dhm-group-detail-header .dhm-modal-delete-btn:hover {
+  background: rgba(0, 0, 255, 0.05);
+}
+
+.dhm-group-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  padding-top: 12px;
+}
+
+.dhm-group-detail-loading,
+.dhm-group-detail-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px;
+}
+
+.dhm-group-detail-loading .dhm-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #002FA7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.dhm-group-detail-error .dhm-error-message {
+  color: #e74c3c;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+
+/* Правая панель - детальная информация */
+.dhp-detail-panel {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  min-height: 600px;
+}
+
+/* Вкладки внутри правой панели */
+.dhp-detail-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 16px 24px 0 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.dhp-detail-tab {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.dhp-detail-tab:hover {
+  color: #002FA7;
+  background: #f8fafc;
+}
+
+.dhp-detail-tab.active {
+  color: #002FA7;
+  background: #f0f7ff;
+  position: relative;
+}
+
+.dhp-detail-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #002FA7;
+}
+
+/* Контент правой панели - здесь будет скролл */
+.dhp-detail-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Для содержимого внутри dhp-detail-content */
+.dhp-detail-content > * {
+  height: 100%;
 }
