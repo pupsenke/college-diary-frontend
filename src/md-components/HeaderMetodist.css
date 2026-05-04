@@ -158,6 +158,12 @@
   color: #ffffff;
   margin-bottom: 4px;
 }
+.h-dropdown-position {
+  font-size: 15px;
+  font-weight: 400;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
 
 .h-dropdown-group {
   display: block;
