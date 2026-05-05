@@ -132,14 +132,14 @@ body.dh-theme-light .dhp-container {
 /* Фильтр по курсам */
 .dhp-course-filter {
   display: flex;
-  gap: 8px;
-  padding: 14px 12px;
+  gap: 4px;
+  padding: 14px 20px;
   flex-wrap: wrap;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .dhp-course-filter-btn {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border: 1px solid #e2e8f0;
   background: white;
   color: #64748b;
@@ -1568,4 +1568,87 @@ body.dh-theme-light .dhp-container {
 .dhp-quick-link-btn.active .dhp-quick-link-arrow {
   color: #002FA7;
   transform: translateX(4px);
+}
+
+
+/* DepartmentHeadPageStyle.css - добавьте эти стили */
+
+.dhp-cache-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  margin: 10px 20px;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+}
+
+.dhp-cache-warning-icon {
+  font-size: 20px;
+}
+
+.dhp-cache-warning-text {
+  flex: 1;
+  color: #ffc107;
+}
+
+.dhp-cache-warning-btn {
+  padding: 6px 16px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  color: #ffc107;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dhp-cache-warning-btn:hover {
+  background: rgba(255, 193, 7, 0.3);
+}
+
+.dhp-metric-card.placeholder {
+  position: relative;
+}
+
+.dhp-metric-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(255, 193, 7, 0.2);
+  border-radius: 12px;
+  color: #ffc107;
+  margin-left: 8px;
+}
+
+.dhp-metric-note {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Темная тема */
+.dhp-theme-dark .dhp-cache-warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.dhp-theme-dark .dhp-cache-warning-text {
+  color: #ffd54f;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dhp-cache-warning {
+    flex-wrap: wrap;
+    margin: 8px 12px;
+    padding: 10px 16px;
+  }
+  
+  .dhp-cache-warning-btn {
+    width: 100%;
+    text-align: center;
+  }
 }

@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+// DepartmentHeadPage.tsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { HeaderDepartmentHead } from '../dh-components/HeaderDepartmentHead';
 import { GroupDetailSection } from '../dh-components/GroupDetailSection';
 import { AddGroupModal } from '../dh-components/AddGroupModal';
 import { headApiService, StudentInfo } from '../services/headApiService';
 import { SummaryStatementSection } from '../dh-components/SummaryStatementSection';
-import './DepartmentHeadPageStyle.css';
 import { ScholarshipSection } from '../dh-components/ScholarshipSection';
 import { DepartmentGroupsList } from '../dh-components/DepartmentGroupsList';
+import { cacheService } from '../services/cacheService';
+import { CACHE_TTL } from '../services/cacheConstants';
+import './DepartmentHeadPageStyle.css';
 
 interface GroupData {
   id: number;
@@ -27,199 +30,331 @@ interface GroupData {
 type DetailTabType = 'group' | 'diploma' | 'scholarship' | 'session' | 'summary' | 'departmentGroups';
 type LeftPanelView = 'department' | 'groups';
 
+// Хук для кешированных данных
+function useCachedFetch<T>(
+  cacheKey: string,
+  fetchFn: () => Promise<T>,
+  ttl: number,
+  dependencies: React.DependencyList = []
+): { data: T | null; loading: boolean; error: string | null; fromCache: boolean; refetch: () => void } {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+
+  const fetchData = useCallback(async (ignoreCache = false) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!ignoreCache && !cacheService.isNetworkOnline()) {
+        // Оффлайн - только кэш
+        const cached = cacheService.get<T>(cacheKey, { ttl });
+        if (cached) {
+          setData(cached);
+          setFromCache(true);
+          setError('Нет подключения к интернету. Показаны кэшированные данные.');
+          setLoading(false);
+          return;
+        }
+        throw new Error('Нет подключения к интернету и отсутствуют кэшированные данные');
+      }
+
+      // Онлайн или игнорируем кэш - пробуем получить свежие данные
+      const result = await cacheService.getWithFallback(cacheKey, fetchFn, { ttl });
+      setData(result.data);
+      setFromCache(result.fromCache);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+      // Пробуем кэш как последнюю надежду
+      const cached = cacheService.get<T>(cacheKey, { ttl });
+      if (cached) {
+        setData(cached);
+        setFromCache(true);
+        setError('Используются кэшированные данные из-за ошибки загрузки');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [cacheKey, fetchFn, ttl]);
+
+  const refetch = useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, ...dependencies]);
+
+  return { data, loading, error, fromCache, refetch };
+}
+
 export const DepartmentHeadPage: React.FC = () => {
   const { user } = useUser();
   const [academicGroups, setAcademicGroups] = useState<GroupData[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<DetailTabType>('departmentGroups'); // Изменено на 'departmentGroups'
+  const [activeDetailTab, setActiveDetailTab] = useState<DetailTabType>('departmentGroups');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<number | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
-  const [leftPanelView, setLeftPanelView] = useState<LeftPanelView>('department'); // Изменено на 'department'
-  const [departmentInfo, setDepartmentInfo] = useState<any>(null);
-  const [departmentLoading, setDepartmentLoading] = useState(false);
-  const [departmentScholarships, setDepartmentScholarships] = useState<any>(null);
-  const [showDepartmentGroups, setShowDepartmentGroups] = useState(true); // Изменено на true
+  const [leftPanelView, setLeftPanelView] = useState<LeftPanelView>('department');
+  const [showDepartmentGroups, setShowDepartmentGroups] = useState(true);
   const [selectedDepartmentGroupId, setSelectedDepartmentGroupId] = useState<number | null>(null);
-  const [activeDepartmentTab, setActiveDepartmentTab] = useState<'groups' | 'scholarship'>('groups'); // Новое состояние для активной вкладки в отделении
+  const [activeDepartmentTab, setActiveDepartmentTab] = useState<'groups' | 'scholarship'>('groups');
+  const [onlineStatus, setOnlineStatus] = useState(true);
+  const [usingCache, setUsingCache] = useState(false);
 
+  // Отслеживание статуса сети
   useEffect(() => {
-    loadGroups();
-    loadDepartmentInfo();
-    loadDepartmentScholarships();
-  }, []);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const savedTheme = localStorage.getItem('dh-theme');
-      const isDark = savedTheme === 'dark' || (!savedTheme && document.body.classList.contains('dh-theme-dark'));
-      setIsDarkTheme(isDark);
+    const updateOnlineStatus = () => {
+      const isOnline = navigator.onLine;
+      setOnlineStatus(isOnline);
+      if (!isOnline) {
+        setUsingCache(true);
+      } else {
+        setUsingCache(false);
+      }
     };
 
-    checkTheme();
-    
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          checkTheme();
-        }
-      });
+    const unsubscribe = cacheService.onNetworkChange((isOnline) => {
+      setOnlineStatus(isOnline);
+      setUsingCache(!isOnline);
     });
-    
-    observer.observe(document.body, { attributes: true });
-    
-    return () => observer.disconnect();
+
+    updateOnlineStatus();
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  const loadGroups = async () => {
-    try {
-      setLoading(true);
-      
-      const groups = await headApiService.getGroups();
-      
-      const filteredGroups = groups.filter(group => 
-        group.specialty === "09.02.07 Информационные системы и программирование"
-      );
-      
-      const formattedGroups: GroupData[] = [];
-      
-      for (const group of filteredGroups) {
+  // Кешированная загрузка групп
+  const loadGroups = useCallback(async () => {
+    const groups = await headApiService.getGroups();
+    
+    const filteredGroups = groups.filter(group => 
+      group.specialty === "09.02.07 Информационные системы и программирование"
+    );
+    
+    const formattedGroups: GroupData[] = [];
+    
+    for (const group of filteredGroups) {
+      try {
+        let curatorName = 'Не указан';
         try {
-          let curatorName = 'Не указан';
-          try {
-            const curator = await headApiService.getCurator(group.idCurator);
-            curatorName = `${curator.lastName} ${curator.name.charAt(0)}.${curator.patronymic ? curator.patronymic.charAt(0) + '.' : ''}`;
-          } catch (curatorError) {
-            console.error(`Ошибка при загрузке куратора для группы ${group.id}:`, curatorError);
-          }
-          
-          let studentsCount = 0;
-          let groupAverageGrade = 0;
-          let groupAttendance = 0;
-          
-          try {
-            const students = await headApiService.getGroupStudents(group.id);
-            studentsCount = students.length;
-            
-            let totalGrade = 0;
-            let studentsWithGrades = 0;
-            for (const student of students) {
-              const avgGrade = await headApiService.getStudentOverallAverage(student.id);
-              if (avgGrade > 0) {
-                totalGrade += avgGrade;
-                studentsWithGrades++;
-              }
-            }
-            groupAverageGrade = studentsWithGrades > 0 ? totalGrade / studentsWithGrades : 0;
-            
-            groupAttendance = await headApiService.getGroupOverallAttendance(group.id);
-            
-          } catch (studentsError) {
-            console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
-          }
-          
-          formattedGroups.push({
-            id: group.id,
-            name: group.numberGroup.toString(),
-            numberGroup: group.numberGroup,
-            course: group.course,
-            students: studentsCount,
-            curator: curatorName,
-            curatorId: group.idCurator,
-            leader: 'Не указан',
-            speciality: group.specialty,
-            profile: group.profile,
-            averageGrade: groupAverageGrade,
-            attendance: groupAttendance
-          });
-        } catch (error) {
-          console.error(`Ошибка при обработке группы ${group.id}:`, error);
+          const curator = await headApiService.getCurator(group.idCurator);
+          curatorName = `${curator.lastName} ${curator.name.charAt(0)}.${curator.patronymic ? curator.patronymic.charAt(0) + '.' : ''}`;
+        } catch (curatorError) {
+          console.error(`Ошибка при загрузке куратора для группы ${group.id}:`, curatorError);
         }
-      }
-      
-      formattedGroups.sort((a, b) => {
-        if (a.course !== b.course) {
-          return a.course - b.course;
-        }
-        return a.numberGroup - b.numberGroup;
-      });
-      
-      setAcademicGroups(formattedGroups);
-      setError(null);
-    } catch (error) {
-      console.error('Ошибка при загрузке групп:', error);
-      setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDepartmentInfo = async () => {
-    try {
-      setDepartmentLoading(true);
-      const info = await headApiService.getDepartmentInfo();
-      setDepartmentInfo(info);
-    } catch (error) {
-      console.error('Ошибка при загрузке информации об отделении:', error);
-    } finally {
-      setDepartmentLoading(false);
-    }
-  };
-
-  const loadDepartmentScholarships = async () => {
-    try {
-      const groups = academicGroups;
-      let totalStudents = 0;
-      let excellentCount = 0;
-      let goodExcellentCount = 0;
-      let goodCount = 0;
-      let noneCount = 0;
-      let totalAmount = 0;
-
-      for (const group of groups) {
-        const students = await headApiService.getGroupStudents(group.id);
-        totalStudents += students.length;
         
-        for (const student of students) {
-          const avgGrade = await headApiService.getStudentOverallAverage(student.id);
-          
-          if (avgGrade >= 4.8) {
-            excellentCount++;
-            totalAmount += 3500;
-          } else if (avgGrade >= 4.0) {
-            goodExcellentCount++;
-            totalAmount += 2500;
-          } else if (avgGrade >= 3.5) {
-            goodCount++;
-            totalAmount += 1800;
-          } else {
-            noneCount++;
-          }
+        let studentsCount = 0;
+        
+        try {
+          const students = await headApiService.getGroupStudents(group.id);
+          studentsCount = students.length;
+        } catch (studentsError) {
+          console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
+        }
+        
+        // ЗАГЛУШКА для среднего балла
+        const groupAverageGrade = 111111 // Случайное число от 3 до 5
+        
+        // ЗАГЛУШКА для процента посещаемости
+        const groupAttendance =  1111; // Случайное число от 70 до 100
+        
+        formattedGroups.push({
+          id: group.id,
+          name: group.numberGroup.toString(),
+          numberGroup: group.numberGroup,
+          course: group.course,
+          students: studentsCount,
+          curator: curatorName,
+          curatorId: group.idCurator,
+          leader: 'Не указан',
+          speciality: group.specialty,
+          profile: group.profile,
+          averageGrade: groupAverageGrade,
+          attendance: groupAttendance
+        });
+      } catch (error) {
+        console.error(`Ошибка при обработке группы ${group.id}:`, error);
+      }
+    }
+    
+    formattedGroups.sort((a, b) => {
+      if (a.course !== b.course) {
+        return a.course - b.course;
+      }
+      return a.numberGroup - b.numberGroup;
+    });
+    
+    return formattedGroups;
+  }, []);
+
+  const { 
+    data: cachedGroups, 
+    loading: groupsLoading, 
+    error: groupsError,
+    fromCache: groupsFromCache
+  } = useCachedFetch(
+    'department_groups',
+    loadGroups,
+    CACHE_TTL.GROUP_DATA,
+    []
+  );
+
+  useEffect(() => {
+    if (cachedGroups) {
+      setAcademicGroups(cachedGroups);
+    }
+    setLoading(groupsLoading);
+    if (groupsError) {
+      setError(groupsError);
+    } else {
+      setError(null);
+    }
+    if (groupsFromCache) {
+      setUsingCache(true);
+    }
+  }, [cachedGroups, groupsLoading, groupsError, groupsFromCache]);
+
+  // Кешированная загрузка информации об отделении
+  // В DepartmentHeadPage.tsx, исправленная функция loadDepartmentInfo
+
+const loadDepartmentInfo = useCallback(async () => {
+  try {
+    // Получаем актуальные группы (не из кеша)
+    const groups = await headApiService.getGroups();
+    
+    // Фильтруем группы по специальности
+    const filteredGroups = groups.filter(group => 
+      group.specialty === "09.02.07 Информационные системы и программирование"
+    );
+    
+    console.log('Фильтрованные группы:', filteredGroups.map(g => ({ id: g.id, number: g.numberGroup, specialty: g.specialty })));
+    
+    let totalStudents = 0;
+    const groupStudentsPromises = filteredGroups.map(async (group) => {
+      try {
+        const students = await headApiService.getGroupStudents(group.id);
+        console.log(`Группа ${group.numberGroup}: ${students.length} студентов`);
+        return students.length;
+      } catch (err) {
+        console.error(`Ошибка загрузки студентов для группы ${group.id}:`, err);
+        return 0;
+      }
+    });
+    
+    const studentsCounts = await Promise.all(groupStudentsPromises);
+    totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
+    
+    // ЗАГЛУШКА для средней успеваемости
+    const averagePerformance = 0;
+    
+    // ЗАГЛУШКА для общей посещаемости
+    const averageAttendance = 0;
+    
+    const departmentData = {
+      totalGroups: filteredGroups.length,
+      totalStudents: totalStudents,
+      name: 'Отделение информационных технологий',
+      specialities: ['09.02.07 Информационные системы и программирование'],
+      totalTeachers: 24,
+      averagePerformance: averagePerformance,
+      averageAttendance: averageAttendance
+    };
+    
+    console.log('Информация об отделении:', departmentData);
+    return departmentData;
+  } catch (error) {
+    console.error('Ошибка при загрузке информации об отделении:', error);
+    throw error;
+  }
+}, []); 
+
+  const { 
+    data: departmentInfo, 
+    loading: departmentLoading,
+    fromCache: deptFromCache
+  } = useCachedFetch(
+    'department_info',
+    loadDepartmentInfo,
+    CACHE_TTL.DEPARTMENT_INFO,
+    [cachedGroups]
+  );
+
+  // Кешированная загрузка статистики стипендий
+  const loadDepartmentScholarships = useCallback(async () => {
+    const groups = academicGroups.length > 0 ? academicGroups : cachedGroups || [];
+    let totalStudents = 0;
+    let excellentCount = 0;
+    let goodExcellentCount = 0;
+    let goodCount = 0;
+    let noneCount = 0;
+    let totalAmount = 0;
+
+    for (const group of groups) {
+      const students = await headApiService.getGroupStudents(group.id);
+      totalStudents += students.length;
+      
+      for (const student of students) {
+        // ЗАГЛУШКА для среднего балла студента
+        const avgGrade = Math.random() * 2 + 3;
+        
+        if (avgGrade >= 4.8) {
+          excellentCount++;
+          totalAmount += 3500;
+        } else if (avgGrade >= 4.0) {
+          goodExcellentCount++;
+          totalAmount += 2500;
+        } else if (avgGrade >= 3.5) {
+          goodCount++;
+          totalAmount += 1800;
+        } else {
+          noneCount++;
         }
       }
-
-      setDepartmentScholarships({
-        totalStudents,
-        excellentCount,
-        goodExcellentCount,
-        goodCount,
-        noneCount,
-        totalAmount,
-        averageAmount: totalStudents > 0 ? totalAmount / totalStudents : 0
-      });
-    } catch (error) {
-      console.error('Ошибка при загрузке статистики стипендий:', error);
     }
-  };
+
+    return {
+      totalStudents,
+      excellentCount,
+      goodExcellentCount,
+      goodCount,
+      noneCount,
+      totalAmount,
+      averageAmount: totalStudents > 0 ? totalAmount / totalStudents : 0
+    };
+  }, [academicGroups, cachedGroups]);
+
+  const { 
+    data: departmentScholarships,
+    fromCache: scholarshipsFromCache
+  } = useCachedFetch(
+    'department_scholarships',
+    loadDepartmentScholarships,
+    CACHE_TTL.DEPARTMENT_SCHOLARSHIPS,
+    [academicGroups]
+  );
 
   const handleAddGroup = async (groupNumber: string) => {
     try {
       await headApiService.addGroup(groupNumber);
-      await loadGroups();
-      return Promise.resolve();
+      // Инвалидируем кэш групп
+      cacheService.remove('department_groups');
+      cacheService.remove('department_info');
+      cacheService.remove('department_scholarships');
+      // Перезагружаем
+      window.location.reload();
     } catch (error) {
       console.error('Ошибка при добавлении группы:', error);
       return Promise.reject(error);
@@ -276,13 +411,51 @@ export const DepartmentHeadPage: React.FC = () => {
     setSelectedDepartmentGroupId(null);
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  // Компонент предупреждения о использовании кэша
+  const CacheWarning = () => {
+    if (!usingCache && !groupsFromCache && !deptFromCache && !scholarshipsFromCache) return null;
+    
+    return (
+      <div className="dhp-cache-warning">
+        <div className="dhp-cache-warning-icon">⚠️</div>
+        <div className="dhp-cache-warning-text">
+          {!onlineStatus 
+            ? 'Нет подключения к интернету. Показаны сохранённые данные.' 
+            : 'Используются кэшированные данные. Некоторые данные могут быть устаревшими.'}
+        </div>
+        {onlineStatus && (
+          <button 
+            className="dhp-cache-warning-btn"
+            onClick={() => window.location.reload()}
+          >
+            Обновить
+          </button>
+        )}
+      </div>
+    );
   };
 
-  const handleCourseFilterChange = (course: number | 'all') => {
-    setSelectedCourse(course);
-  };
+  // Компонент заглушки для метрик
+  const MetricPlaceholder = ({ label, value, isPercentage = false }: { label: string; value: number; isPercentage?: boolean }) => (
+    <div className="dhp-metric-card placeholder">
+      <div className="dhp-metric-header">
+        <span className="dhp-metric-title">{label}</span>
+        <span className="dhp-metric-badge">ЗАГЛУШКА</span>
+      </div>
+      <div className="dhp-metric-value">
+        {isPercentage ? `${value.toFixed(1)}%` : value.toFixed(2)}
+      </div>
+      <div className="dhp-metric-progress">
+        <div className="dhp-progress-bar">
+          <div 
+            className="dhp-progress-fill" 
+            style={{ width: `${isPercentage ? value : (value / 5) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+      <div className="dhp-metric-note">* демонстрационные данные</div>
+    </div>
+  );
 
   const renderGroupCard = (group: GroupData) => (
     <div 
@@ -332,10 +505,6 @@ export const DepartmentHeadPage: React.FC = () => {
                 <span className="dhp-stat-number">{departmentInfo.totalStudents}</span>
                 <span className="dhp-stat-label">Студентов</span>
               </div>
-              <div className="dhp-department-stat">
-                <span className="dhp-stat-number">{departmentInfo.totalTeachers}</span>
-                <span className="dhp-stat-label">Преподавателей</span>
-              </div>
             </div>
           </div>
           
@@ -352,34 +521,15 @@ export const DepartmentHeadPage: React.FC = () => {
 
           <div className="dhp-department-metrics">
             <div className="dhp-metrics-grid">
-              <div className="dhp-metric-card">
-                <div className="dhp-metric-header">
-                  <span className="dhp-metric-title">Средняя успеваемость</span>
-                </div>
-                <div className="dhp-metric-value">{departmentInfo.averagePerformance?.toFixed(2) || '—'}</div>
-                <div className="dhp-metric-progress">
-                  <div className="dhp-progress-bar">
-                    <div 
-                      className="dhp-progress-fill" 
-                      style={{ width: `${(departmentInfo.averagePerformance / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div className="dhp-metric-card">
-                <div className="dhp-metric-header">
-                  <span className="dhp-metric-title">Общая посещаемость</span>
-                </div>
-                <div className="dhp-metric-value">{departmentInfo.averageAttendance?.toFixed(1)}%</div>
-                <div className="dhp-metric-progress">
-                  <div className="dhp-progress-bar">
-                    <div 
-                      className="dhp-progress-fill" 
-                      style={{ width: `${departmentInfo.averageAttendance}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
+              <MetricPlaceholder 
+                label="Средняя успеваемость" 
+                value={departmentInfo.averagePerformance} 
+              />
+              <MetricPlaceholder 
+                label="Общая посещаемость" 
+                value={departmentInfo.averageAttendance} 
+                isPercentage 
+              />
             </div>
           </div>
 
@@ -408,7 +558,7 @@ export const DepartmentHeadPage: React.FC = () => {
       ) : (
         <div className="dhp-department-error">
           <p>Не удалось загрузить информацию об отделении</p>
-          <button onClick={loadDepartmentInfo} className="dhp-retry-btn">Повторить</button>
+          <button onClick={() => window.location.reload()} className="dhp-retry-btn">Повторить</button>
         </div>
       )}
     </div>
@@ -445,7 +595,7 @@ export const DepartmentHeadPage: React.FC = () => {
               className="dhp-search-input"
               placeholder="Поиск по группам..."
               value={searchTerm}
-              onChange={handleSearchChange}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -454,7 +604,7 @@ export const DepartmentHeadPage: React.FC = () => {
       <div className="dhp-course-filter">
         <button 
           className={`dhp-course-filter-btn ${selectedCourse === 'all' ? 'active' : ''}`}
-          onClick={() => handleCourseFilterChange('all')}
+          onClick={() => setSelectedCourse('all')}
         >
           Все
         </button>
@@ -462,7 +612,7 @@ export const DepartmentHeadPage: React.FC = () => {
           <button
             key={course}
             className={`dhp-course-filter-btn ${selectedCourse === course ? 'active' : ''}`}
-            onClick={() => handleCourseFilterChange(course)}
+            onClick={() => setSelectedCourse(course)}
           >
             {course} курс
           </button>
@@ -500,173 +650,173 @@ export const DepartmentHeadPage: React.FC = () => {
   );
 
   const renderDetailContent = () => {
-  // Показываем список групп отделения в правой панели (для представления "Отделение")
-  if (leftPanelView === 'department' && (showDepartmentGroups || activeDetailTab === 'departmentGroups')) {
-    return (
-      <div className="dhp-department-groups-full">
-        <DepartmentGroupsList 
-          groups={academicGroups}
-          onGroupSelect={(groupId) => {
-            setSelectedGroupId(groupId);
-            setActiveDetailTab('group');
-            setShowDepartmentGroups(false);
-            setSelectedDepartmentGroupId(null);
-          }}
-        />
-      </div>
-    );
-  }
-  
-  // Если выбран просмотр стипендии на уровне отделения (для представления "Отделение")
-  if (leftPanelView === 'department' && selectedGroupId === null && activeDetailTab === 'scholarship') {
-    return (
-      <div className="dhp-department-scholarship-full">
-        <div className="dhp-detail-header-bar">
-          <button 
-            className="dhp-back-to-info-btn"
-            onClick={handleBackToDepartmentGroups}
-          >
-            ← Назад к информации о группах
-          </button>
-        </div>
-        <div className="dhp-scholarship-header">
-          <h3>Статистика стипендий по отделению</h3>
-        </div>
-        {departmentScholarships && (
-          <div className="dhp-department-scholarships-detail">
-            <div className="dhp-scholarships-stats-grid">
-              <div className="dhp-scholarship-stat-card">
-                <div className="dhp-scholarship-stat-value">{departmentScholarships.totalStudents}</div>
-                <div className="dhp-scholarship-stat-label">Всего студентов</div>
-              </div>
-              <div className="dhp-scholarship-stat-card">
-                <div className="dhp-scholarship-stat-value">{departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount}</div>
-                <div className="dhp-scholarship-stat-label">Получают стипендию</div>
-              </div>
-              <div className="dhp-scholarship-stat-card">
-                <div className="dhp-scholarship-stat-value">{Math.round((departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount) / departmentScholarships.totalStudents * 100)}%</div>
-                <div className="dhp-scholarship-stat-label">Охват стипендиями</div>
-              </div>
-              <div className="dhp-scholarship-stat-card">
-                <div className="dhp-scholarship-stat-value">{Math.round(departmentScholarships.averageAmount)} ₽</div>
-                <div className="dhp-scholarship-stat-label">Средняя стипендия</div>
-              </div>
-            </div>
-            
-            <div className="dhp-scholarship-distribution-detail">
-              <h4>Распределение по категориям</h4>
-              <div className="dhp-distribution-item">
-                <div className="dhp-distribution-header">
-                  <span className="dhp-distribution-label">Повышенная (5)</span>
-                  <span className="dhp-distribution-count">{departmentScholarships.excellentCount}</span>
-                </div>
-                <div className="dhp-distribution-bar">
-                  <div 
-                    className="dhp-distribution-fill excellent" 
-                    style={{ width: `${(departmentScholarships.excellentCount / departmentScholarships.totalStudents) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="dhp-distribution-item">
-                <div className="dhp-distribution-header">
-                  <span className="dhp-distribution-label">Обычная (4-5)</span>
-                  <span className="dhp-distribution-count">{departmentScholarships.goodExcellentCount}</span>
-                </div>
-                <div className="dhp-distribution-bar">
-                  <div 
-                    className="dhp-distribution-fill good-excellent" 
-                    style={{ width: `${(departmentScholarships.goodExcellentCount / departmentScholarships.totalStudents) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="dhp-distribution-item">
-                <div className="dhp-distribution-header">
-                  <span className="dhp-distribution-label">Пониженная (4)</span>
-                  <span className="dhp-distribution-count">{departmentScholarships.goodCount}</span>
-                </div>
-                <div className="dhp-distribution-bar">
-                  <div 
-                    className="dhp-distribution-fill good" 
-                    style={{ width: `${(departmentScholarships.goodCount / departmentScholarships.totalStudents) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="dhp-distribution-item">
-                <div className="dhp-distribution-header">
-                  <span className="dhp-distribution-label">Не получают</span>
-                  <span className="dhp-distribution-count">{departmentScholarships.noneCount}</span>
-                </div>
-                <div className="dhp-distribution-bar">
-                  <div 
-                    className="dhp-distribution-fill none" 
-                    style={{ width: `${(departmentScholarships.noneCount / departmentScholarships.totalStudents) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-  
-  // Просмотр для выбранной группы (для представления "Группы")
-  if (leftPanelView === 'groups' && selectedGroupId !== null) {
-    switch (activeDetailTab) {
-      case 'group':
-        return (
-          <GroupDetailSection 
-            groupId={selectedGroupId}
-            onClose={() => {}}
-            onGroupDeleted={() => {
-              loadGroups();
-              setSelectedGroupId(null);
+    if (leftPanelView === 'department' && (showDepartmentGroups || activeDetailTab === 'departmentGroups')) {
+      return (
+        <div className="dhp-department-groups-full">
+          <DepartmentGroupsList 
+            groups={academicGroups}
+            onGroupSelect={(groupId) => {
+              setSelectedGroupId(groupId);
+              setActiveDetailTab('group');
+              setShowDepartmentGroups(false);
+              setSelectedDepartmentGroupId(null);
             }}
           />
-        );
-      case 'diploma':
-        return (
-          <div className="dhp-detail-panel-content">
-            <h3>Дипломные работы</h3>
-            <p>Информация о дипломных работах будет доступна в ближайшее время.</p>
-          </div>
-        );
-      case 'scholarship':
-        return (
-          <ScholarshipSection
-            groupId={selectedGroupId}
-            onClose={() => {}}
-          />
-        );
-      case 'session':
-        return (
-          <div className="dhp-detail-panel-content">
-            <h3>Сессия</h3>
-            <p>Информация о сессии будет доступна в ближайшее время.</p>
-          </div>
-        );
-      case 'summary':
-        return (
-          <SummaryStatementSection
-            groupId={selectedGroupId}
-            onClose={() => {}}
-          />
-        );
-      default:
-        return null;
+        </div>
+      );
     }
-  }
-  
-  if (leftPanelView === 'groups' && selectedGroupId === null) {
-    return (
-      <div className="dhp-info-placeholder">
-        <h3>Выберите группу</h3>
-        <p>Нажмите на карточку группы слева, чтобы просмотреть подробную информацию об успеваемости, посещаемости и студентах группы.</p>
-      </div>
-    );
-  }
-  
-};
+    
+    if (leftPanelView === 'department' && selectedGroupId === null && activeDetailTab === 'scholarship') {
+      return (
+        <div className="dhp-department-scholarship-full">
+          <div className="dhp-detail-header-bar">
+            <button 
+              className="dhp-back-to-info-btn"
+              onClick={handleBackToDepartmentGroups}
+            >
+              ← Назад к информации о группах
+            </button>
+          </div>
+          <div className="dhp-scholarship-header">
+            <h3>Статистика стипендий по отделению</h3>
+          </div>
+          {departmentScholarships && (
+            <div className="dhp-department-scholarships-detail">
+              <div className="dhp-scholarships-stats-grid">
+                <div className="dhp-scholarship-stat-card">
+                  <div className="dhp-scholarship-stat-value">{departmentScholarships.totalStudents}</div>
+                  <div className="dhp-scholarship-stat-label">Всего студентов</div>
+                </div>
+                <div className="dhp-scholarship-stat-card">
+                  <div className="dhp-scholarship-stat-value">{departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount}</div>
+                  <div className="dhp-scholarship-stat-label">Получают стипендию</div>
+                </div>
+                <div className="dhp-scholarship-stat-card">
+                  <div className="dhp-scholarship-stat-value">{Math.round((departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount) / departmentScholarships.totalStudents * 100)}%</div>
+                  <div className="dhp-scholarship-stat-label">Охват стипендиями</div>
+                </div>
+                <div className="dhp-scholarship-stat-card">
+                  <div className="dhp-scholarship-stat-value">{Math.round(departmentScholarships.averageAmount)} ₽</div>
+                  <div className="dhp-scholarship-stat-label">Средняя стипендия</div>
+                </div>
+              </div>
+              
+              <div className="dhp-scholarship-distribution-detail">
+                <h4>Распределение по категориям</h4>
+                <div className="dhp-distribution-item">
+                  <div className="dhp-distribution-header">
+                    <span className="dhp-distribution-label">Повышенная (5)</span>
+                    <span className="dhp-distribution-count">{departmentScholarships.excellentCount}</span>
+                  </div>
+                  <div className="dhp-distribution-bar">
+                    <div 
+                      className="dhp-distribution-fill excellent" 
+                      style={{ width: `${(departmentScholarships.excellentCount / departmentScholarships.totalStudents) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="dhp-distribution-item">
+                  <div className="dhp-distribution-header">
+                    <span className="dhp-distribution-label">Обычная (4-5)</span>
+                    <span className="dhp-distribution-count">{departmentScholarships.goodExcellentCount}</span>
+                  </div>
+                  <div className="dhp-distribution-bar">
+                    <div 
+                      className="dhp-distribution-fill good-excellent" 
+                      style={{ width: `${(departmentScholarships.goodExcellentCount / departmentScholarships.totalStudents) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="dhp-distribution-item">
+                  <div className="dhp-distribution-header">
+                    <span className="dhp-distribution-label">Пониженная (4)</span>
+                    <span className="dhp-distribution-count">{departmentScholarships.goodCount}</span>
+                  </div>
+                  <div className="dhp-distribution-bar">
+                    <div 
+                      className="dhp-distribution-fill good" 
+                      style={{ width: `${(departmentScholarships.goodCount / departmentScholarships.totalStudents) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="dhp-distribution-item">
+                  <div className="dhp-distribution-header">
+                    <span className="dhp-distribution-label">Не получают</span>
+                    <span className="dhp-distribution-count">{departmentScholarships.noneCount}</span>
+                  </div>
+                  <div className="dhp-distribution-bar">
+                    <div 
+                      className="dhp-distribution-fill none" 
+                      style={{ width: `${(departmentScholarships.noneCount / departmentScholarships.totalStudents) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    if (leftPanelView === 'groups' && selectedGroupId !== null) {
+      switch (activeDetailTab) {
+        case 'group':
+          return (
+            <GroupDetailSection 
+              groupId={selectedGroupId}
+              onClose={() => {}}
+              onGroupDeleted={() => {
+                cacheService.remove('department_groups');
+                cacheService.remove('department_info');
+                cacheService.remove('department_scholarships');
+                window.location.reload();
+              }}
+            />
+          );
+        case 'diploma':
+          return (
+            <div className="dhp-detail-panel-content">
+              <h3>Дипломные работы</h3>
+              <p>Информация о дипломных работах будет доступна в ближайшее время.</p>
+            </div>
+          );
+        case 'scholarship':
+          return (
+            <ScholarshipSection
+              groupId={selectedGroupId}
+              onClose={() => {}}
+            />
+          );
+        case 'session':
+          return (
+            <div className="dhp-detail-panel-content">
+              <h3>Сессия</h3>
+              <p>Информация о сессии будет доступна в ближайшее время.</p>
+            </div>
+          );
+        case 'summary':
+          return (
+            <SummaryStatementSection
+              groupId={selectedGroupId}
+              onClose={() => {}}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+    
+    if (leftPanelView === 'groups' && selectedGroupId === null) {
+      return (
+        <div className="dhp-info-placeholder">
+          <h3>Выберите группу</h3>
+          <p>Нажмите на карточку группы слева, чтобы просмотреть подробную информацию.</p>
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
   const getDetailTabTitle = (tab: DetailTabType) => {
     const titles = {
@@ -693,27 +843,6 @@ export const DepartmentHeadPage: React.FC = () => {
           <div className="dhp-loading-container">
             <div className="dhp-loading-spinner"></div>
             <p>Загрузка данных...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="dhp-container">
-        <div className="dhp-background-animation">
-          <div className="dhp-shape dhp-shape-1"></div>
-          <div className="dhp-shape dhp-shape-2"></div>
-          <div className="dhp-shape dhp-shape-3"></div>
-        </div>
-        <div className="dhp-content">
-          <HeaderDepartmentHead />
-          <div className="dhp-error-container">
-            <p className="dhp-error-message">{error}</p>
-            <button className="dhp-retry-button" onClick={loadGroups}>
-              Попробовать снова
-            </button>
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+// DepartmentGroupsList.tsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { headApiService, StudentInfo } from '../services/headApiService';
 import StudentProfile from './StudentProfile';
+import { cacheService } from '../services/cacheService';
+import { CACHE_TTL } from '../services/cacheConstants';
 import './DepartmentGroupsListStyle.css';
 
 interface GroupData {
@@ -22,15 +25,230 @@ interface DepartmentGroupsListProps {
   onGroupSelect?: (groupId: number) => void;
 }
 
+// Хук для кешированной загрузки студентов группы
+function useCachedGroupStudents(groupId: number | null) {
+  const [students, setStudents] = useState<StudentInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+
+  const loadStudents = useCallback(async (ignoreCache = false) => {
+    if (!groupId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const cacheKey = `group_students_${groupId}`;
+
+      // Проверяем кеш если не игнорируем
+      if (!ignoreCache) {
+        const cached = cacheService.get<StudentInfo[]>(cacheKey, { ttl: CACHE_TTL.GROUP_STUDENTS });
+        if (cached) {
+          setStudents(cached);
+          setFromCache(true);
+          setLoading(false);
+          
+          // Если есть интернет, обновляем в фоне
+          if (cacheService.isNetworkOnline()) {
+            loadStudents(true);
+          }
+          return;
+        }
+      }
+
+      // Если нет интернета и нет кеша
+      if (!cacheService.isNetworkOnline()) {
+        throw new Error('Нет подключения к интернету');
+      }
+
+      // Загружаем свежие данные
+      const freshStudents = await headApiService.getGroupStudents(groupId);
+      setStudents(freshStudents);
+      setFromCache(false);
+      
+      // Сохраняем в кеш
+      cacheService.set(cacheKey, freshStudents, { ttl: CACHE_TTL.GROUP_STUDENTS });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки студентов');
+      
+      // Пробуем кеш как fallback
+      const cacheKey = `group_students_${groupId}`;
+      const cached = cacheService.get<StudentInfo[]>(cacheKey, { ttl: CACHE_TTL.GROUP_STUDENTS });
+      if (cached) {
+        setStudents(cached);
+        setFromCache(true);
+        setError('Используются кэшированные данные');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (groupId) {
+      loadStudents();
+    }
+  }, [groupId, loadStudents]);
+
+  return { students, loading, error, fromCache, refetch: () => loadStudents(true) };
+}
+
+// Компонент для отображения информации о группе с кешированием
+const GroupExpandedInfo: React.FC<{ 
+  group: GroupData; 
+  onStudentClick: (studentId: number, groupName: string) => void;
+}> = ({ group, onStudentClick }) => {
+  const { students, loading, error, fromCache } = useCachedGroupStudents(group.id);
+
+  const getStudentFullName = (student: StudentInfo) => {
+    return `${student.lastName} ${student.name} ${student.patronymic}`;
+  };
+
+  const getStudentInitials = (student: StudentInfo) => {
+    const nameInitial = student.name.charAt(0);
+    const patronymicInitial = student.patronymic ? student.patronymic.charAt(0) : '';
+    return `${nameInitial}${patronymicInitial}`;
+  };
+
+  return (
+    <div className="dgl-group-expanded-info">
+      {/* Предупреждение о кеше */}
+      {fromCache && !loading && (
+        <div className="dgl-cache-badge">
+          <span className="dgl-cache-text">Нет подключения к интернету. Отображаются сохраненные данные из локального хранилища</span>
+        </div>
+      )}
+
+      {/* Основная информация о группе */}
+      <div className="dgl-expanded-grid">
+        <div className="dgl-expanded-item">
+          <span className="dgl-expanded-label">Специальность</span>
+          <span className="dgl-expanded-value">{group.speciality}</span>
+        </div>
+        <div className="dgl-expanded-item">
+          <span className="dgl-expanded-label">Профиль</span>
+          <span className="dgl-expanded-value">{group.profile}</span>
+        </div>
+        <div className="dgl-expanded-item">
+          <span className="dgl-expanded-label">Куратор</span>
+          <span className="dgl-expanded-value">{group.curator}</span>
+        </div>
+      </div>
+
+      {/* Список студентов со скроллом */}
+      <div className="dgl-students-section">
+        <div className="dgl-students-header">
+          <span className="dgl-students-title">Список студентов</span>
+          <span className="dgl-students-count">{students.length} чел.</span>
+        </div>
+        
+        {loading && !students.length ? (
+          <div className="dgl-students-loading">
+            <div className="dgl-loading-spinner-small"></div>
+            <span>Загрузка студентов...</span>
+          </div>
+        ) : error && !students.length ? (
+          <div className="dgl-students-error">
+            <span className="dgl-error-icon">⚠️</span>
+            <span className="dgl-error-text">{error}</span>
+          </div>
+        ) : students.length === 0 ? (
+          <div className="dgl-no-students">
+            <p>В группе нет студентов</p>
+          </div>
+        ) : (
+          <div className="dgl-students-list-scrollable">
+            {students.map((student) => (
+              <div 
+                key={student.id} 
+                className="dgl-student-item"
+                onClick={() => onStudentClick(student.id, group.name)}
+              >
+                <div className="dgl-student-avatar">
+                  {getStudentInitials(student)}
+                </div>
+                <div className="dgl-student-info">
+                  <div className="dgl-student-name">
+                    {getStudentFullName(student)}
+                  </div>
+                  <div className="dgl-student-contact">
+                    {student.email && (
+                      <span className="dgl-student-email">{student.email}</span>
+                    )}
+                    {student.telephone && (
+                      <span className="dgl-student-phone">{student.telephone}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Компонент для отображения метрик с заглушками
+const GroupMetrics: React.FC<{ group: GroupData }> = ({ group }) => {
+  // Заглушки для среднего балла и посещаемости
+  const displayAverageGrade = 0;
+  const displayAttendance = 0;
+
+  return (
+    <div className="dgl-group-stats">
+      <div className="dgl-group-stat">
+        <span className="dgl-stat-label">Студентов:</span>
+        <span className="dgl-stat-value">{group.students}</span>
+      </div>
+      <div className="dgl-group-stat">
+        <span className="dgl-stat-label">Куратор:</span>
+        <span className="dgl-stat-value">{group.curator}</span>
+      </div>
+      <div className="dgl-group-stat placeholder-stat">
+        <span className="dgl-stat-label">Ср. балл:</span>
+        <span className="dgl-stat-value demo-value">
+          {displayAverageGrade.toFixed(2)}
+          <span className="demo-badge">ЗАГЛУШКА</span>
+        </span>
+      </div>
+      <div className="dgl-group-stat placeholder-stat">
+        <span className="dgl-stat-label">Посещ.:</span>
+        <span className="dgl-stat-value demo-value">
+          {displayAttendance.toFixed(1)}%
+          <span className="demo-badge">ЗАГЛУШКА</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ groups, onGroupSelect }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<number | null>(null);
   const [groupsByCourse, setGroupsByCourse] = useState<Record<number, GroupData[]>>({});
-  const [groupStudents, setGroupStudents] = useState<Record<number, StudentInfo[]>>({});
-  const [loadingStudents, setLoadingStudents] = useState<Record<number, boolean>>({});
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
   const [selectedGroupName, setSelectedGroupName] = useState<string>('');
+  const [onlineStatus, setOnlineStatus] = useState(true);
 
+  // Отслеживание статуса сети
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setOnlineStatus(navigator.onLine);
+    };
+
+    updateOnlineStatus();
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
+
+  // Группировка групп по курсам
   useEffect(() => {
     const grouped: Record<number, GroupData[]> = {
       1: [],
@@ -52,48 +270,24 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
     setGroupsByCourse(grouped);
   }, [groups]);
 
-  const loadGroupStudents = async (groupId: number) => {
-    if (groupStudents[groupId]) return;
-    
-    try {
-      setLoadingStudents(prev => ({ ...prev, [groupId]: true }));
-      const students = await headApiService.getGroupStudents(groupId);
-      setGroupStudents(prev => ({ ...prev, [groupId]: students }));
-    } catch (error) {
-      console.error('Ошибка при загрузке студентов группы:', error);
-    } finally {
-      setLoadingStudents(prev => ({ ...prev, [groupId]: false }));
-    }
-  };
-
   const toggleExpand = async (groupId: number, groupName: string) => {
     if (expandedGroupId === groupId) {
       setExpandedGroupId(null);
     } else {
       setExpandedGroupId(groupId);
       setSelectedGroupName(groupName);
-      await loadGroupStudents(groupId);
     }
   };
 
-  const handleStudentClick = (studentId: number) => {
+  const handleStudentClick = (studentId: number, groupName: string) => {
     setSelectedStudentId(studentId);
+    setSelectedGroupName(groupName);
     setIsStudentProfileOpen(true);
   };
 
   const handleCloseStudentProfile = () => {
     setIsStudentProfileOpen(false);
     setSelectedStudentId(null);
-  };
-
-  const getStudentFullName = (student: StudentInfo) => {
-    return `${student.lastName} ${student.name} ${student.patronymic}`;
-  };
-
-  const getStudentInitials = (student: StudentInfo) => {
-    const nameInitial = student.name.charAt(0);
-    const patronymicInitial = student.patronymic ? student.patronymic.charAt(0) : '';
-    return `${nameInitial}${patronymicInitial}`;
   };
 
   const getCourseName = (course: number): string => {
@@ -106,71 +300,6 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
     return names[course] || `${course} курс`;
   };
 
-  const GroupExpandedInfo = ({ group }: { group: GroupData }) => {
-    const students = groupStudents[group.id] || [];
-    const isLoading = loadingStudents[group.id];
-
-    return (
-      <div className="dgl-group-expanded-info">
-        {/* Основная информация о группе */}
-        <div className="dgl-expanded-grid">
-          <div className="dgl-expanded-item">
-            <span className="dgl-expanded-label">Специальность</span>
-            <span className="dgl-expanded-value">{group.speciality}</span>
-          </div>
-          <div className="dgl-expanded-item">
-            <span className="dgl-expanded-label">Профиль</span>
-            <span className="dgl-expanded-value">{group.profile}</span>
-          </div>
-        </div>
-
-        {/* Список студентов со скроллом */}
-        <div className="dgl-students-section">
-          <div className="dgl-students-header">
-            <span className="dgl-students-title">Список студентов</span>
-          </div>
-          
-          {isLoading ? (
-            <div className="dgl-students-loading">
-              <div className="dgl-loading-spinner-small"></div>
-              <span>Загрузка студентов...</span>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="dgl-no-students">
-              <p>В группе нет студентов</p>
-            </div>
-          ) : (
-            <div className="dgl-students-list-scrollable">
-              {students.map((student) => (
-                <div 
-                  key={student.id} 
-                  className="dgl-student-item"
-                  onClick={() => handleStudentClick(student.id)}
-                >
-                  <div className="dgl-student-avatar">
-                    {getStudentInitials(student)}
-                  </div>
-                  <div className="dgl-student-info">
-                    <div className="dgl-student-name">
-                      {getStudentFullName(student)}
-                    </div>
-                    <div className="dgl-student-contact">
-                      {student.email && (
-                        <span className="dgl-student-email">{student.email}</span>
-                      )}
-                      {student.telephone && (
-                        <span className="dgl-student-phone">{student.telephone}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <>
@@ -208,24 +337,7 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
                               {group.name}
                             </span>
                           </div>
-                          <div className="dgl-group-stats">
-                            <div className="dgl-group-stat">
-                              <span className="dgl-stat-label">Студентов:</span>
-                              <span className="dgl-stat-value">{group.students}</span>
-                            </div>
-                            <div className="dgl-group-stat">
-                              <span className="dgl-stat-label">Куратор:</span>
-                              <span className="dgl-stat-value">{group.curator}</span>
-                            </div>
-                            <div className="dgl-group-stat">
-                              <span className="dgl-stat-label">Ср. балл:</span>
-                              <span className="dgl-stat-value">{group.averageGrade?.toFixed(2) || '—'}</span>
-                            </div>
-                            <div className="dgl-group-stat">
-                              <span className="dgl-stat-label">Посещ.:</span>
-                              <span className="dgl-stat-value">{group.attendance?.toFixed(1) || '—'}%</span>
-                            </div>
-                          </div>
+                          <GroupMetrics group={group} />
                         </div>
                         <div className="dgl-group-arrow">
                           <svg 
@@ -246,7 +358,10 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
 
                       {expandedGroupId === group.id && (
                         <div className="dgl-group-expanded">
-                          <GroupExpandedInfo group={group} />
+                          <GroupExpandedInfo 
+                            group={group} 
+                            onStudentClick={handleStudentClick}
+                          />
                         </div>
                       )}
                     </div>
