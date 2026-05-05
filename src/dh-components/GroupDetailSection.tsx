@@ -19,13 +19,13 @@ import {
 } from '../utils/groupCalculations';
 import { SelectCuratorModal } from './SelectCuratorModal';
 
-interface GroupDetailViewProps {
+interface GroupDetailSectionProps {
   groupId: number;
   onClose?: () => void;
   onGroupDeleted?: () => void;
 }
 
-export const GroupDetailView: React.FC<GroupDetailViewProps> = ({ groupId, onClose, onGroupDeleted }) => {
+export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId, onClose, onGroupDeleted }) => {
   const [groupInfo, setGroupInfo] = useState<ApiGroupInfo | null>(null);
   const [curatorInfo, setCuratorInfo] = useState<CuratorInfo | null>(null);
   const [students, setStudents] = useState<StudentInfo[]>([]);

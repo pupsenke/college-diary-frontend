@@ -54,11 +54,11 @@ export const StudentPage: React.FC = () => {
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['attendance', 'performance', 'personal', 'schedule', 'documents'].includes(tab)) {
+    if (tab && ['personal',  'schedule', 'attendance', 'performance','documents'].includes(tab)) {
       setActiveTab(tab);
     } else {
-      setActiveTab('attendance');
-      searchParams.set('tab', 'attendance');
+      setActiveTab('personal');
+      searchParams.set('tab', 'personal');
       setSearchParams(searchParams);
     }
   }, [searchParams, setSearchParams]);
@@ -282,7 +282,7 @@ export const StudentPage: React.FC = () => {
       performance: 'Успеваемость',
       personal: 'Личный кабинет',
       schedule: 'Расписание',
-      documents: 'Мои документы'
+      documents: 'Документы'
     };
     return titles[tabName as keyof typeof titles] || 'Посещаемость';
   };
@@ -346,40 +346,11 @@ export const StudentPage: React.FC = () => {
                 <p className="st-user-name">{student.lastName} {student.name}</p>
                 <p className="st-user-patronymic">{student.patronymic}</p>
                 <p className="st-user-role">Студент</p>
-                
-                <p className="st-user-group">
-                  <strong>Группа:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : (
-                    <span>{groupData?.numberGroup || 'Не указана'}</span>
-                  )}
-                </p>
-                
-                <p className="st-user-speciality">
-                  <strong>Специальность:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : (
-                    <span>{groupData?.specialty || 'Не указана'}</span>
-                  )}
-                </p>
-                
-                <p className="st-user-curator">
-                  <strong>Куратор:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : curatorData ? (
-                    <span>{formatCuratorName(curatorData)}</span>
-                  ) : (
-                    <span>Не назначен</span>
-                  )}
-                </p>
               </div>
             </div>
 
             <nav className="st-sidebar-nav">
-              {['attendance', 'performance', 'personal', 'schedule', 'documents'].map((tab) => (
+              {['personal', 'schedule', 'attendance', 'performance', 'documents'].map((tab) => (
                 <button
                   key={tab}
                   className={`st-nav-item ${activeTab === tab ? 'active' : ''}`}

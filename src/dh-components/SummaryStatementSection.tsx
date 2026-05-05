@@ -37,12 +37,12 @@ interface GroupStatement {
   studentsCount?: number;
 }
 
-interface SummaryStatementViewProps {
+interface SummaryStatementSectionProps {
   groupId: number;
   onClose: () => void;
 }
 
-export const SummaryStatementView: React.FC<SummaryStatementViewProps> = ({ groupId, onClose }) => {
+export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = ({ groupId, onClose }) => {
   const [groupStatement, setGroupStatement] = useState<GroupStatement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

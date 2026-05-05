@@ -6,11 +6,20 @@
 }
 
 /* Контейнер страницы */
-.dhp-container {
+body.dh-theme-dark .dhp-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   position: relative;
 }
+
+
+/* Светлая тема */
+body.dh-theme-light .dhp-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
 
 .dhp-content {
   position: relative;
@@ -791,7 +800,6 @@
   background: white;
   position: sticky;
   top: 0;
-  z-index: 10;
   flex-wrap: wrap;
   overflow: hidden;
 }
@@ -1046,4 +1054,518 @@
   .dhm-filter-btn {
     white-space: nowrap;
   }
+}
+
+
+/* Навигация левой панели между отделением и группами */
+.dhp-left-panel-nav {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 0 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.dhp-nav-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dhp-nav-btn:hover {
+  color: #002FA7;
+  background: #f8fafc;
+}
+
+.dhp-nav-btn.active {
+  color: #002FA7;
+  background: #f0f7ff;
+  position: relative;
+}
+
+.dhp-nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #002FA7;
+}
+
+.dhp-left-panel-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Стили для представления отделения */
+.dhp-department-view {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dhp-department-header-info {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dhp-department-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0 0 16px 0;
+}
+
+.dhp-department-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.dhp-department-stat {
+  text-align: center;
+  flex: 1;
+}
+
+.dhp-department-stat .dhp-stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #002FA7;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.dhp-department-stat .dhp-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dhp-department-specialities {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.dhp-specialities-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 12px 0;
+}
+
+.dhp-specialities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dhp-speciality-item {
+  padding: 8px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dhp-speciality-name {
+  font-size: 13px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.dhp-department-metrics {
+  margin-top: 8px;
+}
+
+.dhp-metrics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dhp-metric-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.dhp-metric-header {
+  margin-bottom: 12px;
+}
+
+.dhp-metric-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dhp-metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 8px;
+}
+
+.dhp-metric-progress {
+  margin-top: 8px;
+}
+
+.dhp-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dhp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #002FA7 0%, #3b82f6 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.dhp-department-loading,
+.dhp-department-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.dhp-loading-spinner-small {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #002FA7;
+  border-radius: 50%;
+  animation: dhp-spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+.dhp-retry-btn {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dhp-left-panel-nav {
+    padding: 12px 16px 0;
+  }
+  
+  .dhp-nav-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .dhp-department-view {
+    padding: 16px;
+  }
+  
+  .dhp-department-name {
+    font-size: 18px;
+  }
+  
+  .dhp-department-stat .dhp-stat-number {
+    font-size: 24px;
+  }
+  
+  .dhp-metric-value {
+    font-size: 24px;
+  }
+}
+
+
+/* Быстрые ссылки/кнопки */
+.dhp-quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dhp-quick-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.dhp-quick-link-btn:hover {
+  transform: translateX(4px);
+  border-color: #002FA7;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  background: #f8fafc;
+}
+
+.dhp-quick-link-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.dhp-quick-link-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dhp-quick-link-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dhp-quick-link-description {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dhp-quick-link-arrow {
+  font-size: 20px;
+  color: #64748b;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.dhp-quick-link-btn:hover .dhp-quick-link-arrow {
+  transform: translateX(4px);
+  color: #002FA7;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .dhp-quick-link-btn {
+    padding: 12px 16px;
+  }
+  
+  .dhp-quick-link-icon {
+    font-size: 28px;
+  }
+  
+  .dhp-quick-link-title {
+    font-size: 14px;
+  }
+  
+  .dhp-quick-link-description {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhp-quick-link-btn {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .dhp-quick-link-icon {
+    font-size: 24px;
+  }
+  
+  .dhp-quick-link-arrow {
+    margin-left: auto;
+  }
+}
+
+
+
+
+/* Дополнительные стили для отображения информации о группах и стипендиях отделения в правой панели */
+
+/* Стили для детального просмотра группы в представлении отделения */
+.dhp-department-group-detail {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dhp-back-to-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #002FA7;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.dhp-back-to-summary-btn:hover {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  transform: translateX(-2px);
+}
+
+/* Стили для детального просмотра стипендий отделения */
+.dhp-department-scholarship-full {
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.dhp-scholarship-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.dhp-scholarship-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0;
+}
+
+.dhp-scholarships-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.dhp-scholarship-stat-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.dhp-scholarship-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 47, 167, 0.1);
+  border-color: #002FA7;
+}
+
+.dhp-scholarship-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 8px;
+}
+
+.dhp-scholarship-stat-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dhp-scholarship-distribution-detail {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dhp-scholarship-distribution-detail h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 20px 0;
+}
+
+/* Стили для кнопки возврата */
+.dhp-detail-header-bar {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.dhp-back-to-department-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: #002FA7;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dhp-back-to-department-btn:hover {
+  transform: translateX(-4px);
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .dhp-scholarships-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .dhp-scholarship-stat-value {
+    font-size: 24px;
+  }
+  
+  .dhp-scholarship-distribution-detail {
+    padding: 16px;
+  }
+  
+  .dhp-department-scholarship-full {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhp-scholarships-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Активное состояние для кнопок быстрых ссылок в отделении */
+.dhp-quick-link-btn.active {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.dhp-quick-link-btn.active .dhp-quick-link-title {
+  color: #002FA7;
+}
+
+.dhp-quick-link-btn.active .dhp-quick-link-arrow {
+  color: #002FA7;
+  transform: translateX(4px);
 }

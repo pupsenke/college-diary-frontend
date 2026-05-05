@@ -195,6 +195,7 @@
   padding: 16px 20px 20px;
   position: relative;
   overflow: hidden;
+  z-index: 10;
 }
 
 .dh-dropdown-user-info .dh-user-gradient-bg {
