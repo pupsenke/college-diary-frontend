@@ -724,12 +724,14 @@
   transition: all 0.2s ease;
   border-radius: 8px;
   position: relative;
+  margin-bottom: 4px;
+  border: 1px solid rgb(235, 236, 240);
 }
 
 .dhm-student-clickable:hover {
   background-color: #f0f9ff;
-  transform: translateX(4px);
   box-shadow: 0 2px 8px rgba(173, 173, 173, 0.1);
+  border: 1px solid #002FA7;
 }
 
 .dhm-student-clickable:active {
@@ -737,11 +739,9 @@
 }
 
 .dhm-student-clickable::after {
-  content: 'Просмотр профиля';
   position: absolute;
   right: 16px;
   top: 50%;
-  transform: translateY(-50%);
   font-size: 12px;
   color: #2563eb;
   background-color: rgba(37, 99, 235, 0.1);

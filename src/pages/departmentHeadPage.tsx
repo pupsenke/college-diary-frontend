@@ -820,11 +820,11 @@ const loadDepartmentInfo = useCallback(async () => {
 
   const getDetailTabTitle = (tab: DetailTabType) => {
     const titles = {
-      group: 'Группа',
-      diploma: 'Диплом',
-      scholarship: 'Стипендия',
+      group: 'Информация',
+      summary: 'Сводные ведомости',
+      scholarship: 'Стипендии',
       session: 'Сессия',
-      summary: 'Сводная ведомость',
+      diploma: 'Диплом',
       departmentGroups: 'Группы отделения'
     };
     return titles[tab];
@@ -894,7 +894,7 @@ const loadDepartmentInfo = useCallback(async () => {
             <div className="dhp-detail-panel">
               {leftPanelView === 'groups' && selectedGroupId !== null && (
                 <div className="dhp-detail-tabs">
-                  {(['group', 'diploma', 'scholarship', 'session', 'summary'] as DetailTabType[]).map((tab) => (
+                 { (['group', 'summary', 'scholarship', 'session', 'diploma'] as DetailTabType[]).map((tab) => (
                     <button
                       key={tab}
                       className={`dhp-detail-tab ${activeDetailTab === tab ? 'active' : ''}`}
