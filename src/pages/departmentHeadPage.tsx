@@ -1,4 +1,3 @@
-// DepartmentHeadPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { HeaderDepartmentHead } from '../dh-components/HeaderDepartmentHead';
@@ -11,6 +10,7 @@ import { DepartmentGroupsList } from '../dh-components/DepartmentGroupsList';
 import { cacheService } from '../services/cacheService';
 import { CACHE_TTL } from '../services/cacheConstants';
 import './DepartmentHeadPageStyle.css';
+import { DepartmentScholarshipSection } from '../dh-components/DepartmentScholarshipSection';
 
 interface GroupData {
   id: number;
@@ -667,96 +667,8 @@ const loadDepartmentInfo = useCallback(async () => {
     }
     
     if (leftPanelView === 'department' && selectedGroupId === null && activeDetailTab === 'scholarship') {
-      return (
-        <div className="dhp-department-scholarship-full">
-          <div className="dhp-detail-header-bar">
-            <button 
-              className="dhp-back-to-info-btn"
-              onClick={handleBackToDepartmentGroups}
-            >
-              ← Назад к информации о группах
-            </button>
-          </div>
-          <div className="dhp-scholarship-header">
-            <h3>Статистика стипендий по отделению</h3>
-          </div>
-          {departmentScholarships && (
-            <div className="dhp-department-scholarships-detail">
-              <div className="dhp-scholarships-stats-grid">
-                <div className="dhp-scholarship-stat-card">
-                  <div className="dhp-scholarship-stat-value">{departmentScholarships.totalStudents}</div>
-                  <div className="dhp-scholarship-stat-label">Всего студентов</div>
-                </div>
-                <div className="dhp-scholarship-stat-card">
-                  <div className="dhp-scholarship-stat-value">{departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount}</div>
-                  <div className="dhp-scholarship-stat-label">Получают стипендию</div>
-                </div>
-                <div className="dhp-scholarship-stat-card">
-                  <div className="dhp-scholarship-stat-value">{Math.round((departmentScholarships.excellentCount + departmentScholarships.goodExcellentCount + departmentScholarships.goodCount) / departmentScholarships.totalStudents * 100)}%</div>
-                  <div className="dhp-scholarship-stat-label">Охват стипендиями</div>
-                </div>
-                <div className="dhp-scholarship-stat-card">
-                  <div className="dhp-scholarship-stat-value">{Math.round(departmentScholarships.averageAmount)} ₽</div>
-                  <div className="dhp-scholarship-stat-label">Средняя стипендия</div>
-                </div>
-              </div>
-              
-              <div className="dhp-scholarship-distribution-detail">
-                <h4>Распределение по категориям</h4>
-                <div className="dhp-distribution-item">
-                  <div className="dhp-distribution-header">
-                    <span className="dhp-distribution-label">Повышенная (5)</span>
-                    <span className="dhp-distribution-count">{departmentScholarships.excellentCount}</span>
-                  </div>
-                  <div className="dhp-distribution-bar">
-                    <div 
-                      className="dhp-distribution-fill excellent" 
-                      style={{ width: `${(departmentScholarships.excellentCount / departmentScholarships.totalStudents) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="dhp-distribution-item">
-                  <div className="dhp-distribution-header">
-                    <span className="dhp-distribution-label">Обычная (4-5)</span>
-                    <span className="dhp-distribution-count">{departmentScholarships.goodExcellentCount}</span>
-                  </div>
-                  <div className="dhp-distribution-bar">
-                    <div 
-                      className="dhp-distribution-fill good-excellent" 
-                      style={{ width: `${(departmentScholarships.goodExcellentCount / departmentScholarships.totalStudents) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="dhp-distribution-item">
-                  <div className="dhp-distribution-header">
-                    <span className="dhp-distribution-label">Пониженная (4)</span>
-                    <span className="dhp-distribution-count">{departmentScholarships.goodCount}</span>
-                  </div>
-                  <div className="dhp-distribution-bar">
-                    <div 
-                      className="dhp-distribution-fill good" 
-                      style={{ width: `${(departmentScholarships.goodCount / departmentScholarships.totalStudents) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="dhp-distribution-item">
-                  <div className="dhp-distribution-header">
-                    <span className="dhp-distribution-label">Не получают</span>
-                    <span className="dhp-distribution-count">{departmentScholarships.noneCount}</span>
-                  </div>
-                  <div className="dhp-distribution-bar">
-                    <div 
-                      className="dhp-distribution-fill none" 
-                      style={{ width: `${(departmentScholarships.noneCount / departmentScholarships.totalStudents) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
+  return <DepartmentScholarshipSection />;
+}
     
     if (leftPanelView === 'groups' && selectedGroupId !== null) {
       switch (activeDetailTab) {

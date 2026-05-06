@@ -1,0 +1,664 @@
+.dhp-department-scholarship {
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.dss-header {
+  margin-bottom: 24px;
+}
+
+.dss-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #002FA7;
+  margin: 0 0 8px 0;
+}
+
+.dss-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.dss-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.dss-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.dss-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 8px;
+}
+
+.dss-stat-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.dss-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.dss-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dss-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #002FA7;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.dss-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.dss-course-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.dss-course-header {
+  font-size: 18px;
+  font-weight: 700;
+  color: #002FA7;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.dss-course-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 16px;
+}
+
+.dss-course-stat {
+  text-align: center;
+}
+
+.dss-course-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dss-course-stat-label {
+  font-size: 10px;
+  color: #64748b;
+  display: block;
+  margin-top: 4px;
+}
+
+.dss-course-progress {
+  margin-top: 12px;
+}
+
+.dss-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+
+.dss-progress-fill.excellent {
+  background: #002FA7;
+}
+
+.dss-progress-fill.good-excellent {
+  background: #002FA7;
+}
+
+.dss-progress-fill.good {
+  background: #002FA7;
+}
+
+.dss-course-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dss-filter-btn {
+  padding: 6px 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dss-filter-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.dss-filter-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.dss-table-container {
+  overflow-x: auto;
+}
+
+.dss-groups-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dss-groups-table th,
+.dss-groups-table td {
+  padding: 12px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dss-groups-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dss-group-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dss-group-row:hover {
+  background: #f0f7ff;
+}
+
+.dss-group-name {
+  font-weight: 500;
+  color: #002FA7;
+}
+
+.dss-cell-excellent {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.dss-cell-good-excellent {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.dss-cell-good {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.dss-cell-none {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.dss-coverage-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.dss-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dss-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease;
+}
+
+.dss-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dss-modal-header h3 {
+  margin: 0;
+  color: #002FA7;
+}
+
+.dss-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.dss-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.dss-students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dss-student-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid transparent;
+}
+
+.dss-student-item:hover {
+  background: #f0f7ff;
+  transform: translateX(4px);
+}
+
+.dss-student-item.type-excellent {
+  border-left-color: #10b981;
+}
+
+.dss-student-item.type-good-excellent {
+  border-left-color: #3b82f6;
+}
+
+.dss-student-item.type-good {
+  border-left-color: #f59e0b;
+}
+
+.dss-student-item.type-none {
+  border-left-color: #ef4444;
+}
+
+.dss-student-number {
+  width: 30px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dss-student-info {
+  flex: 1;
+  padding: 0 16px;
+}
+
+.dss-student-name {
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.dss-student-grades {
+  display: flex;
+  gap: 12px;
+}
+
+.grade-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.grade-badge.grade-5 {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.grade-badge.grade-4 {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.grade-badge.grade-3 {
+  background: #fed7aa;
+  color: #f59e0b;
+}
+
+.dss-student-type {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dss-student-details-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  animation: modalSlideIn 0.3s ease;
+}
+
+.dss-student-details {
+  padding: 20px;
+}
+
+.dss-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dss-detail-row:last-child {
+  border-bottom: none;
+}
+
+.dss-detail-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.dss-detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.dss-grades-stats-container {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dss-grade-stat-card {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+}
+
+.dss-grade-stat-card.grade-5 {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.dss-grade-stat-card.grade-4 {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.dss-grade-stat-card.grade-3 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.dss-grade-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.dss-grade-stat-label {
+  font-size: 11px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.scholarship-type-excellent {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.scholarship-type-good-excellent {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.scholarship-type-good {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.scholarship-type-none {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.dss-loading,
+.dss-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+}
+
+.dss-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #002FA7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.dss-retry-btn {
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: #002FA7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .dss-stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dss-courses-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dss-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dss-groups-table th,
+  .dss-groups-table td {
+    padding: 8px;
+    font-size: 11px;
+  }
+  
+  .dss-student-item {
+    flex-wrap: wrap;
+  }
+  
+  .dss-student-info {
+    width: 100%;
+    padding: 8px 0;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Стили для кнопки экспорта */
+.dss-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dss-header-left {
+  flex: 1;
+}
+
+.dss-export-btn {
+  background: linear-gradient(135deg, #002FA7, #1e40af);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.2);
+}
+
+.dss-export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+/* Стили для модального окна экспорта */
+.dss-export-modal {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.dss-modal-toolbar {
+  display: flex;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.dss-toolbar-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dss-toolbar-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.dss-toolbar-btn.primary {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.dss-toolbar-btn.primary:hover {
+  background: #1e40af;
+}
+
+.dss-modal-content {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+}
+
+.dss-edit-area {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  padding: 16px;
+  font-family: monospace;
+  font-size: 12px;
+  border: none;
+  resize: none;
+  outline: none;
+}
+
+.dss-preview-frame {
+  width: 100%;
+  height: 500px;
+  border: none;
+}
