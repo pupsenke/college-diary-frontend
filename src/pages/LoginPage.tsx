@@ -494,7 +494,7 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div className="version-info">
-          Версия 1.0.0 • © 2025 Дневник ПТК
+          Версия 1.0.0 • © 2026 Дневник ПТК
         </div>
       </div>
 

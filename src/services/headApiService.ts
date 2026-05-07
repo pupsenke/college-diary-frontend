@@ -1074,5 +1074,179 @@ export const headApiService = {
       console.error('Ошибка получения статистики посещаемости:', error);
       return { total: 0, unjustified: 0 };
     }
+  },
+
+
+
+    // Восстановление пароля - отправка кода на email
+  async sendPasswordResetCode(email: string, userId: number): Promise<boolean> {
+    try {
+      // Сначала проверяем/обновляем email пользователя
+      const userType = await this.getUserTypeById(userId);
+      if (userType) {
+        await this.updateUserEmail(userId, email, userType);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/email/code/active/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Ошибка при отправке кода восстановления:', error);
+      return false;
+    }
+  },
+
+  // Проверка кода и смена пароля
+  async resetPasswordWithCode(userId: number, code: string, newPassword: string): Promise<boolean> {
+    try {
+      // Проверяем код
+      const verifyResponse = await fetch(`${API_BASE_URL}/api/v1/email/password/id/${userId}/change/${code}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!verifyResponse.ok) {
+        return false;
+      }
+      
+      // Обновляем пароль
+      const updateData = { id: userId, password: newPassword };
+      
+      // Пробуем обновить как студента
+      let updateResponse = await fetch(`${API_BASE_URL}/api/v1/students/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+      
+      // Если не студент, пробуем как сотрудника
+      if (!updateResponse.ok) {
+        updateResponse = await fetch(`${API_BASE_URL}/api/v1/staffs/update`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+      }
+      
+      return updateResponse.ok;
+    } catch (error) {
+      console.error('Ошибка при смене пароля через код:', error);
+      return false;
+    }
+  },
+
+  // Получение ID пользователя по email
+  async getUserIdByEmail(email: string): Promise<number | null> {
+    try {
+      // Проверяем среди студентов
+      const studentsResponse = await fetch(`${API_BASE_URL}/api/v1/students`);
+      if (studentsResponse.ok) {
+        const students = await studentsResponse.json();
+        const student = students.find((s: any) => s.email === email);
+        if (student) return student.id;
+      }
+      
+      // Проверяем среди сотрудников
+      const staffResponse = await fetch(`${API_BASE_URL}/api/v1/staffs`);
+      if (staffResponse.ok) {
+        const staff = await staffResponse.json();
+        const staffMember = staff.find((s: any) => s.email === email);
+        if (staffMember) return staffMember.id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Ошибка при поиске пользователя по email:', error);
+      return null;
+    }
+  },
+
+  // Получение типа пользователя по ID
+  async getUserTypeById(userId: number): Promise<'student' | 'staff' | null> {
+    try {
+      const studentResponse = await fetch(`${API_BASE_URL}/api/v1/students/id/${userId}`);
+      if (studentResponse.ok) return 'student';
+      
+      const staffResponse = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${userId}`);
+      if (staffResponse.ok) return 'staff';
+      
+      return null;
+    } catch (error) {
+      console.error('Ошибка при определении типа пользователя:', error);
+      return null;
+    }
+  },
+
+  // Обновление email пользователя
+  async updateUserEmail(userId: number, email: string, userType: 'student' | 'staff'): Promise<boolean> {
+    try {
+      if (userType === 'student') {
+        const getResponse = await fetch(`${API_BASE_URL}/api/v1/students/id/${userId}`);
+        if (!getResponse.ok) return false;
+        
+        const studentData = await getResponse.json();
+        
+        const updateData = {
+          id: userId,
+          lastName: studentData.lastName,
+          name: studentData.name,
+          patronymic: studentData.patronymic,
+          lastNameGenitive: studentData.lastNameGenitive,
+          nameGenitive: studentData.nameGenitive,
+          patronymicGenitive: studentData.patronymicGenitive,
+          idGroup: studentData.idGroup,
+          login: studentData.login,
+          password: studentData.password,
+          telephone: studentData.telephone,
+          birthDate: studentData.birthDate,
+          address: studentData.address,
+          email: email,
+          code: studentData.code
+        };
+        
+        const updateResponse = await fetch(`${API_BASE_URL}/api/v1/students/update`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+        
+        return updateResponse.ok;
+      } else {
+        const getResponse = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${userId}`);
+        if (!getResponse.ok) return false;
+        
+        const staffData = await getResponse.json();
+        
+        const updateData = {
+          id: userId,
+          lastName: staffData.lastName,
+          name: staffData.name,
+          patronymic: staffData.patronymic,
+          login: staffData.login,
+          email: email,
+          telephone: staffData.telephone,
+          birthDate: staffData.birthDate,
+          address: staffData.address
+        };
+        
+        const updateResponse = await fetch(`${API_BASE_URL}/api/v1/staffs/update`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
+        
+        return updateResponse.ok;
+      }
+    } catch (error) {
+      console.error('Ошибка при обновлении email:', error);
+      return false;
+    }
   }
 };
