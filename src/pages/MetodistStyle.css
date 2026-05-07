@@ -164,30 +164,3 @@ body.h-theme-light .md-container {
   50% { transform: translateY(0) rotate(180deg); }
   75% { transform: translateY(20px) rotate(270deg); }
 }
-
-/* адаптив */
-@media (max-width: 768px) {
-  .md-button-icon-container {
-    width: 42px;
-    height: 42px;
-    margin-bottom: 10px;
-  }
-  
-  .md-button-icon {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .md-button-icon-container {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-  }
-  
-  .md-button-icon {
-    width: 18px;
-    height: 18px;
-  }
-}

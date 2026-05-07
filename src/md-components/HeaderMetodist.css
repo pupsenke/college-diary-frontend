@@ -251,7 +251,6 @@ body.h-theme-light .h-dropdown-divider {
   background: rgba(0, 47, 167, 0.1);
 }
 
-/* ========== ТЁМНАЯ ТЕМА (явное объявление для переключения) ========== */
 body.h-theme-dark .h-profile-dropdown {
   background: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -288,69 +287,4 @@ body.h-theme-dark .h-dropdown-item.h-logout:hover {
 
 body.h-theme-dark .h-dropdown-divider {
   background: rgba(102, 126, 234, 0.1);
-}
-
-/* адаптив */
-@media (max-width: 700px) {
-  .h-header-main {
-    padding: 8px 12px;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .h-logo-title {
-    font-size: 16px;
-  }
-  
-  .h-logo-subtitle {
-    font-size: 11px;
-  }
-  
-  .h-profile-card {
-    padding: 6px 12px;
-  }
-  
-  .h-profile-dropdown {
-    width: 240px;
-    right: -10px;
-  }
-  
-  .h-profile-info {
-    align-items: flex-start;
-  }
-  
-  .h-dropdown-item {
-    padding: 9px 18px;
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 480px) {
-  .h-logo-mark {
-    flex-direction: column;
-    text-align: center;
-    gap: 5px;
-  }
-  
-  .h-logo-title,
-  .h-logo-subtitle {
-    margin-left: 0;
-  }
-  
-  .h-profile-name,
-  .h-profile-patronymic {
-    font-size: 12px;
-  }
-  
-  .h-dropdown-user-info {
-    padding: 14px 16px 18px;
-  }
-  
-  .h-dropdown-fullname {
-    font-size: 14px;
-  }
-  
-  .h-dropdown-role {
-    font-size: 12px;
-  }
 }

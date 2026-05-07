@@ -415,31 +415,3 @@
   background: #e5eaff;
   transform: translateY(-1px);
 }
-
-@media (max-width: 768px) {
-  .cs-container {
-    padding: 16px;
-  }
-  
-  .cs-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .cs-teacher-search {
-    flex-direction: column;
-  }
-  
-  .cs-actions {
-    flex-direction: column;
-  }
-  
-  .cs-table {
-    font-size: 12px;
-  }
-  
-  .cs-table th,
-  .cs-table td {
-    padding: 8px 4px;
-  }
-}
