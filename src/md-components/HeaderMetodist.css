@@ -106,7 +106,7 @@
   transform: rotate(180deg);
 }
 
-/* выпадающее меню */
+/* выпадающее меню - тёмная тема (по умолчанию) */
 .h-profile-dropdown {
   position: absolute;
   top: 100%;
@@ -209,6 +209,85 @@
   height: 1px;
   background: rgba(102, 126, 234, 0.1);
   margin: 8px 0;
+}
+
+/* ========== СВЕТЛАЯ ТЕМА ========== */
+body.h-theme-light .h-profile-dropdown {
+  background: white;
+  border: 1px solid rgba(0, 47, 167, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+body.h-theme-light .h-dropdown-user-info .h-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+}
+
+body.h-theme-light .h-dropdown-fullname,
+body.h-theme-light .h-dropdown-position {
+  color: #0d2e82;
+}
+
+body.h-theme-light .h-dropdown-group {
+  color: #002FA7;
+}
+
+body.h-theme-light .h-dropdown-item {
+  color: #4664b5;
+}
+
+body.h-theme-light .h-dropdown-item:hover {
+  background: rgba(0, 47, 167, 0.08);
+}
+
+body.h-theme-light .h-dropdown-item.h-logout {
+  color: #e53e3e;
+}
+
+body.h-theme-light .h-dropdown-item.h-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+body.h-theme-light .h-dropdown-divider {
+  background: rgba(0, 47, 167, 0.1);
+}
+
+/* ========== ТЁМНАЯ ТЕМА (явное объявление для переключения) ========== */
+body.h-theme-dark .h-profile-dropdown {
+  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.h-theme-dark .h-dropdown-user-info .h-user-gradient-bg {
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+}
+
+body.h-theme-dark .h-dropdown-fullname,
+body.h-theme-dark .h-dropdown-position {
+  color: #ffffff;
+}
+
+body.h-theme-dark .h-dropdown-group {
+  color: #d6e1ff;
+}
+
+body.h-theme-dark .h-dropdown-item {
+  color: #4664b5;
+}
+
+body.h-theme-dark .h-dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+body.h-theme-dark .h-dropdown-item.h-logout {
+  color: #e53e3e;
+}
+
+body.h-theme-dark .h-dropdown-item.h-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+body.h-theme-dark .h-dropdown-divider {
+  background: rgba(102, 126, 234, 0.1);
 }
 
 /* адаптив */
