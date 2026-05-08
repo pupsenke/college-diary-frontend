@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SocialHeader } from '../social-components/SocialHeader';
-import { PersonalCabinet } from '../social-components/PersonalCabinet';
+import { PersonalCabinet } from '../social-components/SocialPersonalCabinet';
 import { GroupsSection } from '../social-components/SocialGroupsSection';
-import { ReportsSection } from '../social-components/ReportsSection';
+import { ReportsSection } from '../social-components/SocialReportsSection';
 import { useUser } from '../context/UserContext';
 import './SocialPage.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
