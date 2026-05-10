@@ -1,4 +1,3 @@
-// headApiService.ts
 import { API_BASE_URL } from '../constants/apiConstant';
 
 // Интерфейс для данных сотрудника
@@ -175,6 +174,12 @@ interface StudentReportData {
   non_excused: number;
   scholarship: string;
   total_absent: number;
+}
+
+// Интерфейс для категорий стипендии
+export interface ScholarshipCategory {
+  category: string;
+  students: string[];
 }
 
 export const headApiService = {
@@ -1286,6 +1291,20 @@ export const headApiService = {
       return await response.json();
     } catch (error) {
       console.error('Ошибка при получении сводной ведомости группы:', error);
+      throw error;
+    }
+  },
+
+  // ПОЛУЧЕНИЕ СТУДЕНТОВ ПО КАТЕГОРИЯМ СТИПЕНДИИ
+  async getStudentsByScholarshipCategories(groupId: number): Promise<ScholarshipCategory[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/categories/${groupId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка получения категорий стипендии: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении студентов по категориям стипендии:', error);
       throw error;
     }
   }

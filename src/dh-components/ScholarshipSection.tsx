@@ -1,27 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { headApiService, StudentInfo } from '../services/headApiService';
+import React, { useState, useEffect } from 'react';
+import { headApiService, StudentInfo, ScholarshipCategory } from '../services/headApiService';
+import { DocxService, ScholarshipDocData } from '../services/docxService';
 import './ScholarshipSectionStyle.css';
-
-interface SessionGrades {
-  hasGrade5: boolean;
-  hasGrade4: boolean;
-  hasGrade3: boolean;
-  bestGrade: number;
-  gradesList: number[];
-  count5: number;
-  count4: number;
-  count3: number;
-  countNA: number;
-}
-
-interface ScholarshipData {
-  studentId: number;
-  year: number;
-  semester: 1 | 2;
-  sessionGrades: SessionGrades;
-  scholarshipType: 'excellent' | 'good-excellent' | 'good' | 'none';
-  bonusPercent: number;
-}
 
 interface ScholarshipSectionProps {
   groupId: number;
@@ -30,28 +10,35 @@ interface ScholarshipSectionProps {
 
 export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId, onClose }) => {
   const [students, setStudents] = useState<StudentInfo[]>([]);
-  const [scholarships, setScholarships] = useState<ScholarshipData[]>([]);
+  const [scholarshipCategories, setScholarshipCategories] = useState<ScholarshipCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportData, setExportData] = useState<string>('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<StudentInfo | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [groupInfo, setGroupInfo] = useState<any>(null);
 
   useEffect(() => {
     loadStudents();
     loadAvailableYears();
+    loadGroupInfo();
   }, [groupId]);
 
   useEffect(() => {
     if (students.length > 0) {
-      loadScholarships();
+      loadScholarshipCategories();
     }
   }, [students, selectedYear, selectedSemester]);
+
+  const loadGroupInfo = async () => {
+    try {
+      const group = await headApiService.getGroupById(groupId);
+      setGroupInfo(group);
+    } catch (error) {
+      console.error('Ошибка при загрузке информации о группе:', error);
+    }
+  };
 
   const loadStudents = async () => {
     try {
@@ -71,100 +58,34 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
     setAvailableYears(years);
   };
 
-  const getMockSessionGrades = (studentId: number, year: number, semester: 1 | 2): SessionGrades => {
-    const seed = (studentId * year * semester) % 100;
-    const gradesCount = 8 + Math.floor(seed % 5);
-    const gradesList: number[] = [];
-    let count5 = 0, count4 = 0, count3 = 0, countNA = 0;
-    
-    for (let i = 0; i < gradesCount; i++) {
-      const random = (seed * (i + 1)) % 10;
-      let grade: number;
-      if (random < 1) grade = 3;
-      else if (random < 4) grade = 4;
-      else grade = 5;
-      gradesList.push(grade);
-      
-      if (grade === 5) count5++;
-      else if (grade === 4) count4++;
-      else if (grade === 3) count3++;
-    }
-    
-    countNA = Math.floor((seed % 15) / 5);
-    
-    const hasGrade5 = count5 > 0;
-    const hasGrade4 = count4 > 0;
-    const hasGrade3 = count3 > 0;
-    const bestGrade = count5 > 0 ? 5 : (count4 > 0 ? 4 : 3);
-    
-    return { hasGrade5, hasGrade4, hasGrade3, bestGrade, gradesList, count5, count4, count3, countNA };
-  };
-
-  const getScholarshipInfo = (sessionGrades: SessionGrades): {
-    type: 'excellent' | 'good-excellent' | 'good' | 'none';
-    bonusPercent: number;
-  } => {
-    if (sessionGrades.hasGrade3) {
-      return { type: 'none', bonusPercent: 0 };
-    }
-    if (sessionGrades.hasGrade5 && !sessionGrades.hasGrade4) {
-      return { type: 'excellent', bonusPercent: 50 };
-    }
-    if (sessionGrades.hasGrade5 && sessionGrades.hasGrade4) {
-      return { type: 'good-excellent', bonusPercent: 25 };
-    }
-    if (sessionGrades.hasGrade4 && !sessionGrades.hasGrade5) {
-      return { type: 'good', bonusPercent: 0 };
-    }
-    return { type: 'none', bonusPercent: 0 };
-  };
-
-  const loadScholarships = async () => {
+  const loadScholarshipCategories = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const scholarshipsData: ScholarshipData[] = [];
-      
-      for (const student of students) {
-        const sessionGrades = getMockSessionGrades(student.id, selectedYear, selectedSemester);
-        const { type, bonusPercent } = getScholarshipInfo(sessionGrades);
-        
-        scholarshipsData.push({
-          studentId: student.id,
-          year: selectedYear,
-          semester: selectedSemester,
-          sessionGrades: sessionGrades,
-          scholarshipType: type,
-          bonusPercent: bonusPercent
-        });
-      }
-      
-      scholarshipsData.sort((a, b) => {
-        const order = { excellent: 0, 'good-excellent': 1, good: 2, none: 3 };
-        return order[a.scholarshipType] - order[b.scholarshipType];
-      });
-      
-      setScholarships(scholarshipsData);
+      const categories = await headApiService.getStudentsByScholarshipCategories(groupId);
+      setScholarshipCategories(categories);
     } catch (error) {
-      console.error('Ошибка при загрузке данных о стипендиях:', error);
+      console.error('Ошибка при загрузке категорий стипендии:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getScholarshipForStudent = (studentId: number): ScholarshipData | undefined => {
-    return scholarships.find(s => s.studentId === studentId);
+  const getStudentCategory = (studentFullName: string): string => {
+    for (const category of scholarshipCategories) {
+      if (category.students.includes(studentFullName)) {
+        return category.category;
+      }
+    }
+    return 'none';
   };
 
-  const getScholarshipTypeName = (type: ScholarshipData['scholarshipType']): string => {
-    const types = {
-      excellent: `Стипендия +50% (только 5)`,
-      'good-excellent': `Стипендия +25% (4-5)`,
-      good: `Стандартная стипендия (только 4)`,
-      none: 'Не получает стипендию'
-    };
-    return types[type];
+  const getStudentsByType = (categoryType: string): StudentInfo[] => {
+    const category = scholarshipCategories.find(c => c.category === categoryType);
+    if (!category) return [];
+    
+    return students.filter(student => 
+      category.students.includes(getStudentFullName(student))
+    );
   };
 
   const getStudentFullName = (student: StudentInfo) => {
@@ -179,224 +100,89 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
     setSelectedSemester(semester);
   };
 
-  const generateExportData = () => {
-    const groupName = `Группа ${groupId}`;
-    
-    const excellentStudents = students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'excellent');
-    const goodExcellentStudents = students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'good-excellent');
-    const goodStudents = students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'good');
-    
-    let html = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Списки студентов на стипендию</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            background: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            padding: 40px;
-        }
-        .document {
-            max-width: 1200px;
-            width: 100%;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 30px 25px 40px 25px;
-        }
-        .title {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1.4;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .specialty {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .styled-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .styled-table th, .styled-table td {
-            border: 1px solid #000;
-            padding: 10px 12px;
-            vertical-align: top;
-        }
-        .styled-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-align: center;
-        }
-        .group-row td {
-            border-top: 2px solid #000;
-            font-weight: bold;
-        }
-        .student-list {
-            list-style: none;
-            margin: 0;
-            padding-left: 0;
-        }
-        .student-list li {
-            margin-bottom: 6px;
-            padding-left: 20px;
-            position: relative;
-        }
-        .student-list li:before {
-            content: "•";
-            position: absolute;
-            left: 5px;
-        }
-        .signature {
-            margin-top: 45px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-        }
-        .signature-line {
-            margin-top: 5px;
-            width: 220px;
-            border-bottom: 1px solid #000;
-        }
-    </style>
-</head>
-<body>
-    <div class="document">
-        <div class="title">
-            СПИСКИ СТУДЕНТОВ НА НАЗНАЧЕНИЕ<br>
-            ГОСУДАРСТВЕННОЙ АКАДЕМИЧЕСКОЙ СТИПЕНДИИ
-        </div>
-        <div class="subtitle">
-            (Федеральное финансирование)
-        </div>
-        <div class="specialty">
-            Специальность 09.02.07 Информационные системы и программирование III курс
-        </div>
-
-        <table class="styled-table">
-            <thead>
-                <tr>
-                    <th style="width: 15%">Группа/ФИО</th>
-                    <th style="width: 30%">«5»</th>
-                    <th style="width: 30%">«4-5»</th>
-                    <th style="width: 25%">«4»</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="group-row">
-                    <td>${groupName}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td>
-                        <ul class="student-list">
-                            ${excellentStudents.map((s, index) => `<li>${index + 1}. ${getStudentFullName(s)}</li>`).join('')}
-                            ${excellentStudents.length === 0 ? '<li>—</li>' : ''}
-                        </ul>
-                    </td>
-                    <td>
-                        <ul class="student-list">
-                            ${goodExcellentStudents.map((s, index) => `<li>${index + 1}. ${getStudentFullName(s)}</li>`).join('')}
-                            ${goodExcellentStudents.length === 0 ? '<li>—</li>' : ''}
-                        </ul>
-                    </td>
-                    <td>
-                        <ul class="student-list">
-                            ${goodStudents.map((s, index) => `<li>${index + 1}. ${getStudentFullName(s)}</li>`).join('')}
-                            ${goodStudents.length === 0 ? '<li>—</li>' : ''}
-                        </ul>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="signature">
-            <div>
-                Председатель стипендиальной комиссии<br>
-                <div class="signature-line"></div>
-            </div>
-            <div>
-                Секретарь<br>
-                <div class="signature-line"></div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
-    
-    return html;
-  };
-
-  const handleExport = () => {
-    const data = generateExportData();
-    setExportData(data);
-    setEditedContent(data);
-    setIsEditing(false);
-    setShowExportModal(true);
-  };
-
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(exportData);
-      printWindow.document.close();
-      printWindow.print();
+  // Экспорт в DOCX с использованием шаблона
+  const handleExportToDocx = async () => {
+    setExporting(true);
+    try {
+      // Получаем студентов по категориям
+      const excellentStudents = getStudentsByType('5');
+      const goodExcellentStudents = getStudentsByType('4-5');
+      const goodStudents = getStudentsByType('4');
+      
+      // Получаем ФИО заведующего отделением
+      const headName = "Голубева Г.А.";
+      
+      // Получаем информацию о специальности
+      const specialityName = groupInfo?.specialty || '09.02.07 Информационные системы и программирование';
+      
+      // Подготавливаем данные для шаблона - убираем дублирование "Группа"
+      const groupName = `${groupInfo?.numberGroup || groupId}`;
+      
+      const docData: ScholarshipDocData = {
+        specialityCode: '',
+        specialityName: specialityName,
+        course: groupInfo?.course || 4,
+        group: groupName,
+        excellentStudents: excellentStudents.map(s => getStudentFullName(s)),
+        goodExcellentStudents: goodExcellentStudents.map(s => getStudentFullName(s)),
+        goodStudents: goodStudents.map(s => getStudentFullName(s)),
+        headName: headName
+      };
+      
+      console.log('Данные для экспорта:', docData);
+      
+      // Загружаем шаблон
+      const templatePath = '/templates/scholarship_template.docx';
+      const templateBlob = await DocxService.loadTemplate(templatePath);
+      
+      // Генерируем документ
+      const documentBlob = await DocxService.generateScholarshipDocument(templateBlob, docData);
+      
+      // Скачиваем документ
+      const fileName = `Стипендии_${groupInfo?.numberGroup || groupId}_${selectedYear}_семестр${selectedSemester}.docx`;
+      DocxService.downloadDocument(documentBlob, fileName);
+      
+    } catch (error) {
+      console.error('Ошибка при экспорте в DOCX:', error);
+      alert('Произошла ошибка при формировании документа. Пожалуйста, попробуйте снова.');
+    } finally {
+      setExporting(false);
     }
-  };
-
-  const handleSaveEdit = () => {
-    setExportData(editedContent);
-    setIsEditing(false);
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([exportData], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `стипендии_${selectedYear}_семестр_${selectedSemester}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const getStatistics = () => {
     const totalStudents = students.length;
-    const receivingCount = scholarships.filter(s => s.scholarshipType !== 'none').length;
-    const byType = {
-      excellent: scholarships.filter(s => s.scholarshipType === 'excellent').length,
-      goodExcellent: scholarships.filter(s => s.scholarshipType === 'good-excellent').length,
-      good: scholarships.filter(s => s.scholarshipType === 'good').length,
-      none: scholarships.filter(s => s.scholarshipType === 'none').length
-    };
+    const excellentCount = getStudentsByType('5').length;
+    const goodExcellentCount = getStudentsByType('4-5').length;
+    const goodCount = getStudentsByType('4').length;
+    const noneCount = students.length - (excellentCount + goodExcellentCount + goodCount);
+    const receivingCount = excellentCount + goodExcellentCount + goodCount;
 
-    return { totalStudents, receivingCount, byType, coveragePercent: totalStudents > 0 ? (receivingCount / totalStudents) * 100 : 0 };
+    return { 
+      totalStudents, 
+      receivingCount, 
+      byType: {
+        excellent: excellentCount,
+        goodExcellent: goodExcellentCount,
+        good: goodCount,
+        none: noneCount
+      }, 
+      coveragePercent: totalStudents > 0 ? (receivingCount / totalStudents) * 100 : 0 
+    };
   };
 
   const stats = getStatistics();
 
   const studentsByType = {
-    excellent: students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'excellent'),
-    goodExcellent: students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'good-excellent'),
-    good: students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'good'),
-    none: students.filter(s => getScholarshipForStudent(s.id)?.scholarshipType === 'none')
+    excellent: getStudentsByType('5'),
+    goodExcellent: getStudentsByType('4-5'),
+    good: getStudentsByType('4'),
+    none: students.filter(student => getStudentCategory(getStudentFullName(student)) === 'none')
   };
+
+  if (loading) {
+    return <div className="schs-loading">Загрузка данных о стипендиях...</div>;
+  }
 
   return (
     <div className="schs-container">
@@ -418,15 +204,28 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
           </div>
         </div>
         
-        <button className="schs-export-btn" onClick={handleExport}>
-          Экспорт документа
+        <button 
+          className="schs-export-btn" 
+          onClick={handleExportToDocx}
+          disabled={exporting}
+        >
+          {exporting ? 'Формирование документа...' : 'Экспорт в DOCX'}
         </button>
       </div>
 
       <div className="schs-stats">
-        <div className="schs-stat-card"><div className="schs-stat-value">{stats.totalStudents}</div><div className="schs-stat-label">Всего студентов</div></div>
-        <div className="schs-stat-card"><div className="schs-stat-value">{stats.receivingCount}</div><div className="schs-stat-label">Получают стипендию</div></div>
-        <div className="schs-stat-card"><div className="schs-stat-value">{stats.coveragePercent.toFixed(1)}%</div><div className="schs-stat-label">Охват стипендиями</div></div>
+        <div className="schs-stat-card">
+          <div className="schs-stat-value">{stats.totalStudents}</div>
+          <div className="schs-stat-label">Всего студентов</div>
+        </div>
+        <div className="schs-stat-card">
+          <div className="schs-stat-value">{stats.receivingCount}</div>
+          <div className="schs-stat-label">Получают стипендию</div>
+        </div>
+        <div className="schs-stat-card">
+          <div className="schs-stat-value">{stats.coveragePercent.toFixed(1)}%</div>
+          <div className="schs-stat-label">Охват стипендиями</div>
+        </div>
       </div>
 
       <div className="schs-categories">
@@ -510,94 +309,27 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
         </div>
       </div>
 
-      {showExportModal && (
-        <div className="schs-modal-overlay">
-          <div className="schs-modal">
-            <div className="schs-modal-header">
-              <h3>Просмотр и экспорт ведомости</h3>
-              <button className="schs-modal-close" onClick={() => setShowExportModal(false)}>×</button>
-            </div>
-            <div className="schs-modal-toolbar">
-              {!isEditing ? (
-                <>
-                  <button className="schs-toolbar-btn" onClick={() => setIsEditing(true)}>Редактировать</button>
-                  <button className="schs-toolbar-btn" onClick={handlePrint}>Печать</button>
-                  <button className="schs-toolbar-btn" onClick={handleDownload}>Скачать</button>
-                </>
-              ) : (
-                <>
-                  <button className="schs-toolbar-btn primary" onClick={handleSaveEdit}>Сохранить изменения</button>
-                  <button className="schs-toolbar-btn" onClick={() => { setIsEditing(false); setEditedContent(exportData); }}>Отменить</button>
-                </>
-              )}
-            </div>
-            <div className="schs-modal-content">
-              {isEditing ? (
-                <textarea 
-                  className="schs-edit-area"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  rows={20}
-                />
-              ) : (
-                <iframe srcDoc={exportData} className="schs-preview-frame" title="Предпросмотр" />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {selectedStudentForDetails && (
         <div className="schs-modal-overlay" onClick={() => setSelectedStudentForDetails(null)}>
           <div className="schs-student-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="schs-modal-header">
-              <h3>Детали успеваемости</h3>
+              <h3>Информация о студенте</h3>
               <button className="schs-modal-close" onClick={() => setSelectedStudentForDetails(null)}>✕</button>
             </div>
             <div className="schs-student-details">
               <div className="detail-row">
                 <span className="detail-label">Студент:</span>
                 <span className="detail-value">{getStudentFullName(selectedStudentForDetails)}</span>
-                
               </div>
-              
-              {(() => {
-                const scholarship = getScholarshipForStudent(selectedStudentForDetails.id);
-                
-                return (
-                  <>
-                  <div className="detail-row">
-                      <span className="detail-label">Тип стипендии:</span>
-                      <span className={`detail-value scholarship-type-${scholarship?.scholarshipType}`}>
-                        {getScholarshipTypeName(scholarship?.scholarshipType || 'none')}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Оценки за сессию:</span>
-                      
-                      <div className="grades-stats-container">
-                        <div className="grade-stat-card grade-5">
-                          <div className="grade-stat-value">{scholarship?.sessionGrades.count5 || 0}</div>
-                          <div className="grade-stat-label">Отлично (5)</div>
-                        </div>
-                        <div className="grade-stat-card grade-4">
-                          <div className="grade-stat-value">{scholarship?.sessionGrades.count4 || 0}</div>
-                          <div className="grade-stat-label">Хорошо (4)</div>
-                        </div>
-                        <div className="grade-stat-card grade-3">
-                          <div className="grade-stat-value">{scholarship?.sessionGrades.count3 || 0}</div>
-                          <div className="grade-stat-label">Удовлетворительно (3)</div>
-                        </div>
-                        <div className="grade-stat-card grade-na">
-                          <div className="grade-stat-value">{scholarship?.sessionGrades.countNA || 0}</div>
-                          <div className="grade-stat-label">Не аттестован</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                  </>
-                );
-              })()}
+              <div className="detail-row">
+                <span className="detail-label">Категория стипендии:</span>
+                <span className={`detail-value scholarship-type-${getStudentCategory(getStudentFullName(selectedStudentForDetails))}`}>
+                  {getStudentCategory(getStudentFullName(selectedStudentForDetails)) === '5' && 'Повышенная стипендия (+50%)'}
+                  {getStudentCategory(getStudentFullName(selectedStudentForDetails)) === '4-5' && 'Повышенная стипендия (+25%)'}
+                  {getStudentCategory(getStudentFullName(selectedStudentForDetails)) === '4' && 'Стандартная стипендия'}
+                  {getStudentCategory(getStudentFullName(selectedStudentForDetails)) === 'none' && 'Не получает стипендию'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
