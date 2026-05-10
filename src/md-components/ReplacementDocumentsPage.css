@@ -210,19 +210,3 @@
     grid-template-columns: 1fr;
   }
 }
-
-@media (max-width: 768px) {
-  .rd-container {
-    padding: 16px;
-  }
-  
-  .rd-header-block {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .back-button,
-  .download-main-btn {
-    width: 100%;
-  }
-}

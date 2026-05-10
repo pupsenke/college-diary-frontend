@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import './PersonalCabinet.css'; 
+import './SocialPersonalCabinet.css'; 
 
 interface SocialWorkerData {
   firstName: string;
