@@ -160,6 +160,23 @@ interface Staff {
   }>;
 }
 
+interface GroupReportResponse {
+  subjectNames: string[];
+  studentsData: StudentReportData[][];
+}
+
+interface StudentReportData {
+  fio: string;
+  marks: number[];
+  average: number;
+  count_3: number;
+  count_4: number;
+  count_5: number;
+  non_excused: number;
+  scholarship: string;
+  total_absent: number;
+}
+
 export const headApiService = {
   // Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
@@ -1247,6 +1264,29 @@ export const headApiService = {
     } catch (error) {
       console.error('Ошибка при обновлении email:', error);
       return false;
+    }
+  },
+
+
+  // Получение сводной ведомости группы
+  async getGroupReport(groupId: number): Promise<GroupReportResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/report/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка получения отчета группы: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении сводной ведомости группы:', error);
+      throw error;
     }
   }
 };

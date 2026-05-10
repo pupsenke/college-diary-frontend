@@ -455,16 +455,6 @@ function useCachedSubjects(groupId: number) {
   }};
 }
 
-// Компонент для отображения кеш-бейджа
-const CacheBadge: React.FC<{ visible: boolean }> = ({ visible }) => {
-  if (!visible) return null;
-  
-  return (
-    <div className="dhm-cache-badge">
-          <span className="dhm-cache-text">Нет подключения к интернету. Отображаются сохраненные данные из локального хранилища</span>
-    </div>
-  );
-};
 
 // Заглушка для среднего балла
 const getDemoAverage = (studentId: number): number => {
@@ -751,8 +741,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
             {isDeleting ? 'Удаление...' : 'Удалить группу'}
           </button>
         </div>
-        {/* Кеш-бейдж */}
-        <CacheBadge visible={isUsingCache} />
 
         {/* Табы */}
         <div className="dhm-group-tabs">
