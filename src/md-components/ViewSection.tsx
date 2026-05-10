@@ -48,7 +48,8 @@ const pairTimeMap: Record<number, string> = {
   3: '12.45-14.25',
   4: '14.35-16.15',
   5: '16.25-18.05',
-  6: '18.15-20.05',
+  6: '18.15-19.55',
+  7: '20.05-21.45'
 };
 
 const weekDaysOrder = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -564,32 +565,28 @@ export const ViewSectionPage: React.FC = () => {
                             className="action-btn edit-btn"
                             onClick={() => handleEditClick(group.id)}
                             title="Редактировать расписание">
-                            <img
-                              src="/md-icons/edit_icon.svg"
-                              alt="Редактировать"
-                              className="action-icon"/>
+                            <img src="/md-icons/edit_icon.svg" alt="Редактировать" className="action-icon"/>
+                            <span>Редактировать</span>
                           </button>
                           <button
                             className="action-btn view-btn"
                             onClick={() => handleViewScheduleClick(group.id)}
                             title="Просмотр расписания">
-                            <img
-                              src="/md-icons/eye_icon.svg"
-                              alt="Просмотреть"
-                              className="action-icon"/>
+                            <img src="/md-icons/eye_icon.svg" alt="Просмотреть" className="action-icon"/>
+                            <span>Просмотр</span>
                           </button>
                           <button
                             className="action-btn export-btn"
                             onClick={() => handleExportClick(group.id, String(group.numberGroup))}
                             disabled={exportingGroupId === group.id}
-                            title="Экспорт расписания">
+                            title="Экспорт расписания в Excel">
                             {exportingGroupId === group.id ? (
                               <span className="export-spinner"></span>
                             ) : (
-                              <img
-                                src="/md-icons/download_icon.svg"
-                                alt="Экспорт"
-                                className="action-icon"/>
+                              <>
+                                <img src="/md-icons/download_icon.svg" alt="Экспорт" className="action-icon"/>
+                                <span>Экспорт</span>
+                              </>
                             )}
                           </button>
                         </div>
