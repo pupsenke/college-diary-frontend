@@ -79,7 +79,8 @@ export const EditSchedulePage: React.FC = () => {
     { number: 3, time: '12:45 - 14:25' },
     { number: 4, time: '14:35 - 16:15' },
     { number: 5, time: '16:25 - 18:05' },
-    { number: 6, time: '18:15 - 19:55' }
+    { number: 6, time: '18:15 - 19:55' },
+    { number: 7, time: '20:05 - 21:45' }
   ];
 
   const handleBackToMain = () => {
