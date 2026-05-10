@@ -460,3 +460,31 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
 }
+
+/* стили для поиска */
+.search-box {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.no-results {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-style: italic;
+}

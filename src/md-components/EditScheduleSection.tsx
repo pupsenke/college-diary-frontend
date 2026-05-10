@@ -66,6 +66,8 @@ export const EditSchedulePage: React.FC = () => {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [filteredTeachers, setFilteredTeachers] = useState<{ id: number; name: string }[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<string[]>([]);
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState<string>('');
+  const [subjectSearchTerm, setSubjectSearchTerm] = useState<string>('');
 
   const dbRooms = ['120', '123', '124', '127', '221', '226'];
   const [filteredRooms, setFilteredRooms] = useState<string[]>(dbRooms);
@@ -124,8 +126,11 @@ export const EditSchedulePage: React.FC = () => {
         }
         const data: ApiSubject[] = await res.json();
         const names = data.map(s => s.subjectName);
-        setSubjects(names);
-        setFilteredSubjects(names);
+        
+        // сортировка предметов по алфавиту
+        const sortedNames = [...names].sort((a, b) => a.localeCompare(b, 'ru'));
+        setSubjects(sortedNames);
+        setFilteredSubjects(sortedNames);
       } catch (e: any) {
         console.error(e);
       }
@@ -134,7 +139,7 @@ export const EditSchedulePage: React.FC = () => {
     loadSubjects();
   }, []);
 
-  // загрузка преподавателей (только staffPosition id=9)
+  // загрузка преподавателей
   useEffect(() => {
     const loadTeachers = async () => {
       try {
@@ -149,8 +154,11 @@ export const EditSchedulePage: React.FC = () => {
             id: st.id,
             name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim()
           }));
-        setTeachers(onlyTeachers);
-        setFilteredTeachers(onlyTeachers);
+
+        // сортировка преподавателей по алфавиту
+        const sortedTeachers = [...onlyTeachers].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+        setTeachers(sortedTeachers);
+        setFilteredTeachers(sortedTeachers);
       } catch (e: any) {
         console.error(e);
       }
@@ -158,6 +166,30 @@ export const EditSchedulePage: React.FC = () => {
 
     loadTeachers();
   }, []);
+
+  // фильтрация преподавателей по поиску
+  useEffect(() => {
+    if (teacherSearchTerm.trim() === '') {
+      setFilteredTeachers(teachers);
+    } else {
+      const filtered = teachers.filter(teacher =>
+        teacher.name.toLowerCase().includes(teacherSearchTerm.toLowerCase())
+      );
+      setFilteredTeachers(filtered);
+    }
+  }, [teacherSearchTerm, teachers]);
+
+  // фильтрация предметов по поиску
+  useEffect(() => {
+    if (subjectSearchTerm.trim() === '') {
+      setFilteredSubjects(subjects);
+    } else {
+      const filtered = subjects.filter(subject =>
+        subject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
+      );
+      setFilteredSubjects(filtered);
+    }
+  }, [subjectSearchTerm, subjects]);
 
   // фильтрация предметов и аудиторий по преподавателю (пока без логики, просто сброс)
   useEffect(() => {
@@ -234,6 +266,8 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedRoom('');
     setUpperWeekChecked(true);
     setLowerWeekChecked(true);
+    setTeacherSearchTerm('');
+    setSubjectSearchTerm('');
     loadScheduleForGroup(id);
     if (id) {
       localStorage.setItem('selectedGroupForEdit', String(id));
@@ -304,6 +338,8 @@ export const EditSchedulePage: React.FC = () => {
       setSelectedPair(null);
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
+      setTeacherSearchTerm('');
+      setSubjectSearchTerm('');
 
       alert('Пара успешно сохранена');
     } else {
@@ -318,6 +354,8 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedPair(null);
     setUpperWeekChecked(true);
     setLowerWeekChecked(true);
+    setTeacherSearchTerm('');
+    setSubjectSearchTerm('');
   };
 
   const getPairData = (day: string, pairNumber: number): PairCellData => {
@@ -361,6 +399,8 @@ export const EditSchedulePage: React.FC = () => {
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
     }
+    setTeacherSearchTerm('');
+    setSubjectSearchTerm('');
   };
 
   const renderCellContent = (pairData: PairCellData) => {
@@ -481,6 +521,15 @@ export const EditSchedulePage: React.FC = () => {
               <div className="edit-controls">
                 <div className="control-group">
                   <h4>Преподаватель</h4>
+                  <div className="search-box">
+                    <input
+                      type="text"
+                      placeholder="Поиск преподавателя..."
+                      value={teacherSearchTerm}
+                      onChange={(e) => setTeacherSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
                   <div className="teachers-list">
                     {filteredTeachers.map(teacher => (
                       <button
@@ -490,11 +539,23 @@ export const EditSchedulePage: React.FC = () => {
                         {teacher.name}
                       </button>
                     ))}
+                    {filteredTeachers.length === 0 && (
+                      <div className="no-results">Преподаватели не найдены</div>
+                    )}
                   </div>
                 </div>
 
                 <div className="control-group">
                   <h4>Предмет</h4>
+                  <div className="search-box">
+                    <input
+                      type="text"
+                      placeholder="Поиск предмета..."
+                      value={subjectSearchTerm}
+                      onChange={(e) => setSubjectSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
                   <div className="subjects-list">
                     {filteredSubjects.map(subject => (
                       <button
@@ -505,6 +566,9 @@ export const EditSchedulePage: React.FC = () => {
                         {subject}
                       </button>
                     ))}
+                    {filteredSubjects.length === 0 && (
+                      <div className="no-results">Предметы не найдены</div>
+                    )}
                   </div>
                 </div>
 
