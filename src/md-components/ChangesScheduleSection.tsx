@@ -639,7 +639,8 @@ export const AddPairPage: React.FC = () => {
       { numPair: 3, time: '12:45 - 14:25' },
       { numPair: 4, time: '14:35 - 16:15' },
       { numPair: 5, time: '16:25 - 18:05' },
-      { numPair: 6, time: '18:45 - 20:05' }
+      { numPair: 6, time: '18:45 - 20:05' },
+      { numPair: 7, time: '20:05 - 21:45' }
     ];
     return allPairs.filter(pair => !occupiedPairs.includes(pair.numPair));
   };

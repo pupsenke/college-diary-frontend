@@ -342,7 +342,6 @@ export const EditSchedulePage: React.FC = () => {
       setTeacherSearchTerm('');
       setSubjectSearchTerm('');
 
-      alert('Пара успешно сохранена');
     } else {
       alert('Заполните все поля и выберите хотя бы одну неделю');
     }
