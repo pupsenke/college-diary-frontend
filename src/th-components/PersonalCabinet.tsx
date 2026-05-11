@@ -451,7 +451,7 @@ export const PersonalCabinet: React.FC<Props> = ({
           <div className="info-header">
             <div className="info-title">
               <h3>Личный кабинет преподавателя</h3>
-              <p>Здесь вы можете просмотреть свои личные данные, изменить логин или пароль, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
+              <p>Здесь вы можете просмотреть свои личные данные, изменить логин, пароль или электронную почту, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
             </div>
           </div>
           
@@ -464,7 +464,7 @@ export const PersonalCabinet: React.FC<Props> = ({
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
-                <span>Изменение логина и пароля учетной записи</span>
+                <span>Изменение логина, пароля и email учетной записи</span>
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
