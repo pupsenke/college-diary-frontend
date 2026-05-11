@@ -1052,6 +1052,56 @@ export const teacherApiService = {
     }
   },
 
+    // Смена email
+  async changeEmail(teacherId: number, email: string): Promise<{ success: boolean }> {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/staffs/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: teacherId,
+          email: email
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Не удалось изменить почту';
+        try {
+          const errorText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          switch (response.status) {
+            case 400:
+              errorMessage = errorData.message || 'Неверный формат данных';
+              break;
+            case 500:
+              errorMessage = errorData.message || 'Внутренняя ошибка сервера';
+              break;
+            default:
+              errorMessage = errorData.message || `Ошибка сервера: ${response.status}`;
+          }
+        } catch {
+          errorMessage = `Ошибка соединения: ${response.status}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      this.invalidateTeacherCache(teacherId);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Превышено время ожидания ответа от сервера.');
+      }
+      throw error;
+    }
+  },
+
   /* Успеваемость */
   // Получение дат занятий - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
   async getLessonDates(groupId: number, idSt: number): Promise<LessonDate[]> {

@@ -613,13 +613,13 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
 
             <div className="curator-details-modal-actions">
               <button
-                className="curator-details-btn-secondary"
+                className="button-secondary"
                 onClick={() => setShowSocialModal(false)}
               >
                 Отмена
               </button>
               <button
-                className="curator-details-btn-primary"
+                className="button-primary"
                 onClick={handleSaveSocialData}
               >
                 Сохранить
