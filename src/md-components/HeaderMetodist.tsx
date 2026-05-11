@@ -85,8 +85,24 @@ export const Header: React.FC = () => {
   };
 
   const handleNavigation = (tab: string) => {
-    navigate(`/metodist?tab=${tab}`);
     setIsDropdownOpen(false);
+
+    switch (tab) {
+      case 'personal-cabinet':
+        navigate('/metodist/personal-cabinet');
+        break;
+      case 'edit-schedule':
+        navigate('/metodist/edit-schedule');
+        break;
+      case 'view-groups':
+        navigate('/metodist/view-groups');
+        break;
+      case 'changes':
+        navigate('/metodist/changes');
+        break;
+      default:
+        navigate(`/metodist?tab=${tab}`);
+    }
   };
 
   const getFullName = () => {
@@ -138,6 +154,9 @@ export const Header: React.FC = () => {
                 <span className="h-dropdown-position">{getPosition()}</span>
               </div>
               <div className="h-dropdown-menu">
+                <button className="h-dropdown-item" onClick={() => handleNavigation('personal-cabinet')}>
+                  Личный кабинет
+                </button>
                 <button className="h-dropdown-item" onClick={() => handleNavigation('edit-schedule')}>
                   Редактирование расписания
                 </button>

@@ -1,0 +1,262 @@
+.personal-cabinet-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.cabinet-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.info-card {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 15px 28px 15px 28px;
+  border-bottom: 1px solid #eef2f6;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+.back-button {
+  background: none;
+  border: 1px solid #002FA7;
+  color: #002FA7;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  color: #002FA7;
+}
+
+.staff-info-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  padding: 20px 28px 20px 28px;
+}
+
+.info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #002FA7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a1a2e;
+  padding: 8px 0;
+  border-bottom: 2px solid #eef2f6;
+}
+
+.email-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.email-value {
+  flex: 1;
+  word-break: break-all;
+}
+
+.edit-email-btn {
+  background: none;
+  border: 1px solid #002FA7;
+  color: #002FA7;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.edit-email-btn:hover {
+  background: #002FA7;
+  color: white;
+}
+
+.email-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.email-input {
+  padding: 10px 14px;
+  border: 1px solid #e0e5ec;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.email-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.email-edit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.save-email-btn {
+  background: #002FA7;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-email-btn:hover:not(:disabled) {
+  background: #001f7a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.3);
+}
+
+.save-email-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-email-btn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #666;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-email-btn:hover {
+  border-color: #999;
+  color: #333;
+}
+
+.groups-section {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.groups-section h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #eef2f6;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.course-column {
+  background: #fafbff;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.course-column:hover {
+  box-shadow: 0 2px 12px rgba(0, 47, 167, 0.1);
+}
+
+.course-column h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0 0 16px 0;
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #002FA7;
+  display: inline-block;
+  width: 100%;
+}
+
+.groups-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.group-item {
+  background: white;
+  padding: 10px 8px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #002FA7;
+  border: 1px solid #e0e5ec;
+  transition: all 0.2s;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-item:hover {
+  background: #f0f4ff;
+  border-color: #002FA7;
+  transform: translateY(-1px);
+}
+
+.cs-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #002FA7;
+  font-size: 18px;
+  font-weight: 500;
+}

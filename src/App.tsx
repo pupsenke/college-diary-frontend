@@ -15,6 +15,7 @@ import { ViewSectionPage } from './md-components/ViewSection';
 import { ChangesSchedulePage, AddPairPage } from './md-components/ChangesScheduleSection';
 import { ViewScheduleSection } from './md-components/ViewScheduleSection';
 import { ReplacementDocumentsPage } from './md-components/ReplacementDocumentsPage';
+import { PersonalCabinet } from './md-components/PersonalCabinetMetodist';
 
 
 
@@ -60,6 +61,7 @@ function App() {
               <Route path="changes" element={<ChangesSchedulePage />} />
               <Route path="/metodist/changes/replacement-documents" element={<ReplacementDocumentsPage />} />
               <Route path="changes/add-pair" element={<AddPairPage />} />
+              <Route path="personal-cabinet" element={<PersonalCabinet />} />
             </Route>
 
             <Route 
