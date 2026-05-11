@@ -11,6 +11,7 @@ import { cacheService } from '../services/cacheService';
 import { CACHE_TTL } from '../services/cacheConstants';
 import './DepartmentHeadPageStyle.css';
 import { DepartmentScholarshipSection } from '../dh-components/DepartmentScholarshipSection';
+import { SessionAttestationSection } from '../dh-components/SessionAttestationSection';
 
 interface GroupData {
   id: number;
@@ -685,13 +686,6 @@ const loadDepartmentInfo = useCallback(async () => {
               }}
             />
           );
-        case 'diploma':
-          return (
-            <div className="dhp-detail-panel-content">
-              <h3>Дипломные работы</h3>
-              <p>Информация о дипломных работах будет доступна в ближайшее время.</p>
-            </div>
-          );
         case 'scholarship':
           return (
             <ScholarshipSection
@@ -701,10 +695,10 @@ const loadDepartmentInfo = useCallback(async () => {
           );
         case 'session':
           return (
-            <div className="dhp-detail-panel-content">
-              <h3>Сессия</h3>
-              <p>Информация о сессии будет доступна в ближайшее время.</p>
-            </div>
+            <SessionAttestationSection
+              groupId={selectedGroupId}
+              onClose={() => {}}
+            />
           );
         case 'summary':
           return (
