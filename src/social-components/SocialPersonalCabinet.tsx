@@ -353,14 +353,14 @@ export const PersonalCabinet: React.FC = () => {
 
       <div className="buttons-row">
         <button 
-          className="section-button edit-btn"
+          className="section-button"
           onClick={handleProfileModalOpen}
           disabled={loading}
         >
           Редактировать профиль
         </button>
         <button 
-          className="section-button password-btn"
+          className="section-button"
           onClick={handlePasswordModalOpen}
           disabled={loading}
         >

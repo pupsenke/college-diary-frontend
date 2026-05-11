@@ -43,12 +43,6 @@ interface PasswordChangeData {
   confirmPassword: string;
 }
 
-interface LoginChangeData {
-  currentPassword?: string;
-  newLogin: string;
-  confirmNewLogin: string;
-}
-
 interface Props {
   onNavigateToDisciplines?: (disciplineName?: string) => void;
   onNavigateToGroups?: (disciplineName?: string) => void;
@@ -76,27 +70,29 @@ export const PersonalCabinet: React.FC<Props> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credentialsMode, setCredentialsMode] = useState<'login' | 'email' | null>(null);
+  const [credentialsLoading, setCredentialsLoading] = useState(false);
+
   const [passwordData, setPasswordData] = useState<PasswordChangeData>({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
   
-  const [loginData, setLoginData] = useState<LoginChangeData>({
-    currentPassword: '',
-    newLogin: '',
-    confirmNewLogin: ''
+  const [loginData, setLoginData] = useState({
+    newLogin: ''
+  });
+
+  const [emailData, setEmailData] = useState({
+    newEmail: ''
   });
   
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
 
-  // Функция для показа успешного сообщения
   const showSuccess = useCallback((message: string) => {
     setSuccessMessage(message);
-    // Автоматически скрываем сообщение через 5 секунд
     setTimeout(() => {
       setSuccessMessage(null);
     }, 5000);
@@ -114,19 +110,16 @@ export const PersonalCabinet: React.FC<Props> = ({
 
       console.log('Загрузка данных преподавателя...');
       
-      // ПРОВЕРКА С ОТЧЕСТВОМ И БЕЗ
       if (!user?.name || !user?.lastName) {
         throw new Error('Недостаточно данных пользователя для поиска: требуется имя и фамилия');
       }
 
-      // Инвалидируем кэш при принудительном обновлении
       if (forceRefresh && teacherData.teacherId) {
         teacherApiService.invalidateTeacherCache(teacherData.teacherId);
       }
 
       let teacher: StaffApiResponse | null = null;
 
-      // ПЕРВАЯ ПОПЫТКА: поиск с отчеством (если оно есть)
       if (user.patronymic && user.patronymic.trim() !== '') {
         console.log('Поиск преподавателя с отчеством:', user.name, user.lastName, user.patronymic);
         teacher = await teacherApiService.findTeacherByName(
@@ -136,7 +129,6 @@ export const PersonalCabinet: React.FC<Props> = ({
         );
       }
 
-      // ВТОРАЯ ПОПЫТКА: если не нашли с отчеством, ищем только по имени и фамилии
       if (!teacher) {
         console.log('Преподаватель не найден с отчеством, поиск только по имени и фамилии:', user.name, user.lastName);
         teacher = await teacherApiService.findTeacherByNameWithoutPatronymic(
@@ -151,19 +143,14 @@ export const PersonalCabinet: React.FC<Props> = ({
         console.log('Teacher ID сохранен в localStorage:', teacher.id);
 
         try {
-          // Получаем дисциплины преподавателя
           const teacherDisciplines = await teacherApiService.getTeacherDisciplines(teacher.id);
           
-          // Форматируем email для novsu.ru
-          const formattedEmail = teacher.email 
-            ? teacher.email.replace(/@.*$/, '@novsu.ru')
-            : `${teacher.login}@novsu.ru`;
+          const formattedEmail = teacher.email || `${teacher.login}@novsu.ru`;
           
-          // Преобразуем данные из API в наш формат
           const transformedData: TeacherData = {
             firstName: teacher.name,
             lastName: teacher.lastName,
-            middleName: teacher.patronymic || '', // Может быть пустой строкой
+            middleName: teacher.patronymic || '',
             email: formattedEmail,
             position: teacher.staffPosition[0]?.name || 'Преподаватель',
             disciplines: teacherDisciplines.length > 0 ? teacherDisciplines : ['Дисциплины не назначены'],
@@ -177,10 +164,7 @@ export const PersonalCabinet: React.FC<Props> = ({
         } catch (disciplinesError) {
           console.error('Ошибка загрузки дисциплин:', disciplinesError);
           
-          // Используем базовые данные при ошибке
-          const formattedEmail = teacher.email 
-            ? teacher.email.replace(/@.*$/, '@novsu.ru')
-            : `${teacher.login}@novsu.ru`;
+          const formattedEmail = teacher.email || `${teacher.login}@novsu.ru`;
           
           const transformedData: TeacherData = {
             firstName: teacher.name,
@@ -196,14 +180,12 @@ export const PersonalCabinet: React.FC<Props> = ({
         }
       } else {
         console.log('Преподаватель не найден, используются контекстные данные');
-        const formattedEmail = user?.email 
-          ? user.email.replace(/@.*$/, '@novsu.ru')
-          : `${user?.login}@novsu.ru`;
+        const formattedEmail = user?.email || `${user?.login}@novsu.ru`;
         
         const fallbackData: TeacherData = {
           firstName: user?.name || '',
           lastName: user?.lastName || '',
-          middleName: user?.patronymic || '', // Может быть пустой строкой
+          middleName: user?.patronymic || '',
           email: formattedEmail,
           position: 'Преподаватель',
           disciplines: ['Дисциплины не найдены'],
@@ -217,7 +199,6 @@ export const PersonalCabinet: React.FC<Props> = ({
     } catch (err: any) {
       console.error('Ошибка при загрузке данных преподавателя:', err);
       
-      // Проверяем, является ли ошибка сетевой
       const isNetworkError = 
         err.message?.includes('Failed to fetch') ||
         err.message?.includes('NetworkError') ||
@@ -226,36 +207,30 @@ export const PersonalCabinet: React.FC<Props> = ({
         err.name === 'TypeError';
       
       if (isNetworkError) {
-        // Принудительно проверяем глобальное состояние кэша
         forceCacheCheck();
-        
         setShowCacheWarning(true);
 
-        const formattedEmail = user?.email 
-          ? user.email.replace(/@.*$/, '@novsu.ru')
-          : `${user?.login}@novsu.ru`;
+        const formattedEmail = user?.email || `${user?.login}@novsu.ru`;
           
-          const fallbackData: TeacherData = {
-            firstName: user?.name || '',
-            lastName: user?.lastName || '',
-            middleName: user?.patronymic || '', // Может быть пустой строкой
-            email: formattedEmail,
-            position: 'Преподаватель',
-            disciplines: ['Данные загружены из кэша'],
-            login: user?.login || ''
-          };
-          setTeacherData(fallbackData);
+        const fallbackData: TeacherData = {
+          firstName: user?.name || '',
+          lastName: user?.lastName || '',
+          middleName: user?.patronymic || '',
+          email: formattedEmail,
+          position: 'Преподаватель',
+          disciplines: ['Данные загружены из кэша'],
+          login: user?.login || ''
+        };
+        setTeacherData(fallbackData);
       } else {
         setError('Не удалось загрузить данные преподавателя');
         
-        const formattedEmail = user?.email 
-          ? user.email.replace(/@.*$/, '@novsu.ru')
-          : `${user?.login}@novsu.ru`;
+        const formattedEmail = user?.email || `${user?.login}@novsu.ru`;
         
         const fallbackData: TeacherData = {
           firstName: user?.name || '',
           lastName: user?.lastName || '',
-          middleName: user?.patronymic || '', // Может быть пустой строкой
+          middleName: user?.patronymic || '',
           email: formattedEmail,
           position: 'Преподаватель',
           disciplines: ['Ошибка загрузки дисциплин'],
@@ -264,7 +239,6 @@ export const PersonalCabinet: React.FC<Props> = ({
         setTeacherData(fallbackData);
       }
       
-      // Очищаем teacher_id при ошибке
       localStorage.removeItem('teacher_id');
     } finally {
       setLoading(false);
@@ -272,19 +246,16 @@ export const PersonalCabinet: React.FC<Props> = ({
     }
   };
 
-  // Функция принудительного обновления данных
   const handleRefresh = async () => {
     await fetchTeacherData(true);
   };
 
-  // Загружаем данные при монтировании компонента
   useEffect(() => {
     if (user) {
       fetchTeacherData();
     }
   }, [user]);
 
-  // Обработчики модальных окон
   const handlePasswordModalOpen = useCallback(() => {
     setShowPasswordModal(true);
     setPasswordData({
@@ -296,25 +267,26 @@ export const PersonalCabinet: React.FC<Props> = ({
     setSuccessMessage(null);
   }, []);
 
-  const handleLoginModalOpen = useCallback(() => {
-    setShowLoginModal(true);
-    setLoginData({
-      currentPassword: '',
-      newLogin: '',
-      confirmNewLogin: ''
-    });
+  const handleCredentialsModalOpen = useCallback(() => {
+    setShowCredentialsModal(true);
+    setCredentialsMode(null);
+    setLoginData({ newLogin: '' });
+    setEmailData({ newEmail: '' });
     setError(null);
     setSuccessMessage(null);
   }, []);
 
-  // Обновленные обработчики с использованием API сервиса
+  const handleCredentialsModeSelect = (mode: 'login' | 'email') => {
+    setCredentialsMode(mode);
+    setError(null);
+  };
+
   const handlePasswordChange = async () => {
     try {
       setPasswordLoading(true);
       setError(null);
       setSuccessMessage(null);
 
-      // Валидация (без проверки текущего пароля)
       if (!passwordData.newPassword) {
         setError('Введите новый пароль');
         return;
@@ -335,13 +307,14 @@ export const PersonalCabinet: React.FC<Props> = ({
         return;
       }
 
-      // Используем API сервис для смены пароля
-      await teacherApiService.changePassword(teacherData.teacherId, passwordData);
+      await teacherApiService.changePassword(teacherData.teacherId, {
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword
+      });
 
       showSuccess('Пароль успешно изменен!');
       setShowPasswordModal(false);
       
-      // Очищаем форму
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -356,103 +329,117 @@ export const PersonalCabinet: React.FC<Props> = ({
     }
   };
 
-  const handleLoginChange = async () => {
+  const handleCredentialsChange = async () => {
     try {
-      setLoginLoading(true);
+      setCredentialsLoading(true);
       setError(null);
       setSuccessMessage(null);
-
-      // Валидация
-      if (!loginData.newLogin) {
-        setError('Введите новый логин');
-        return;
-      }
-
-      if (loginData.newLogin.length < 3) {
-        setError('Логин должен содержать минимум 3 символа');
-        return;
-      }
-
-      const loginRegex = /^[a-zA-Z0-9]+$/;
-      if (!loginRegex.test(loginData.newLogin)) {
-        setError('Логин может содержать только латинские буквы и цифры');
-        return;
-      }
-
-      if (loginData.newLogin !== loginData.confirmNewLogin) {
-        setError('Новые логины не совпадают');
-        return;
-      }
-
-      if (loginData.newLogin === teacherData.login) {
-        setError('Новый логин не должен совпадать с текущим');
-        return;
-      }
 
       if (!teacherData.teacherId) {
         setError('ID преподавателя не найден');
         return;
       }
 
-      console.log('Starting login change process...');
-      
-      // Проверяем доступность логина
-      try {
-        const availability = await teacherApiService.isLoginAvailable(loginData.newLogin);
-        if (!availability.available) {
-          setError(availability.message || 'Этот логин уже занят');
+      if (credentialsMode === 'login') {
+        if (!loginData.newLogin) {
+          setError('Введите новый логин');
           return;
         }
-      } catch (availabilityError) {
-        console.log('Login availability check failed, proceeding...');
-      }
-      
-      // Используем API сервис для смены логина
-      const result = await teacherApiService.changeLogin(teacherData.teacherId, loginData);
-      
-      console.log('Login change result:', result);
 
-      showSuccess('Логин успешно изменен!');
-      setShowLoginModal(false);
+        if (loginData.newLogin.length < 3) {
+          setError('Логин должен содержать минимум 3 символа');
+          return;
+        }
+
+        const loginRegex = /^[a-zA-Z0-9._-]+$/;
+        if (!loginRegex.test(loginData.newLogin)) {
+          setError('Логин может содержать только латинские буквы, цифры и символы ._-');
+          return;
+        }
+
+        if (loginData.newLogin === teacherData.login) {
+          setError('Новый логин не должен совпадать с текущим');
+          return;
+        }
+
+        try {
+          const availability = await teacherApiService.isLoginAvailable(loginData.newLogin);
+          if (!availability.available) {
+            setError(availability.message || 'Этот логин уже занят');
+            return;
+          }
+        } catch (availabilityError) {
+          console.log('Login availability check failed, proceeding...');
+        }
+        
+        const result = await teacherApiService.changeLogin(teacherData.teacherId, {
+          newLogin: loginData.newLogin,
+          confirmNewLogin: loginData.newLogin 
+        });
+
+        setTeacherData(prev => ({
+          ...prev,
+          login: loginData.newLogin
+        }));
+
+        showSuccess('Логин успешно изменен!');
+      } 
       
-      // Обновляем данные пользователя
-      setTeacherData(prev => ({
-        ...prev,
-        login: loginData.newLogin,
-        email: `${loginData.newLogin}@novsu.ru`
-      }));
-      
-      // Очищаем форму
-      setLoginData({
-        currentPassword: '',
-        newLogin: '',
-        confirmNewLogin: ''
-      });
+      else if (credentialsMode === 'email') {
+        if (!emailData.newEmail) {
+          setError('Введите новую почту');
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailData.newEmail)) {
+          setError('Введите корректный email');
+          return;
+        }
+
+        if (emailData.newEmail === teacherData.email) {
+          setError('Новый email не должен совпадать с текущим');
+          return;
+        }
+
+        await teacherApiService.changeEmail(teacherData.teacherId, emailData.newEmail);
+
+        setTeacherData(prev => ({
+          ...prev,
+          email: emailData.newEmail
+        }));
+
+        showSuccess('Почта успешно изменена!');
+      }
+
+      setShowCredentialsModal(false);
+      setCredentialsMode(null);
+      setLoginData({ newLogin: '' });
+      setEmailData({ newEmail: '' });
       
     } catch (err) {
-      console.error('Login change error:', err);
+      console.error('Credentials change error:', err);
       
       if (err instanceof Error) {
         if (err.message.includes('уже занят') || err.message.includes('409')) {
           setError('Этот логин уже занят. Выберите другой логин.');
         } else if (err.message.includes('400')) {
-          setError('Неверный формат логина');
+          setError('Неверный формат данных');
         } else if (err.message.includes('500')) {
-          setError('Внутренняя ошибка сервера. Попробуйте другой логин.');
+          setError('Внутренняя ошибка сервера. Попробуйте позже.');
         } else if (err.message.includes('Ошибка соединения')) {
           setError('Проблемы с соединением. Проверьте интернет и попробуйте снова.');
         } else {
           setError(err.message);
         }
       } else {
-        setError('Не удалось изменить логин. Попробуйте позже.');
+        setError('Не удалось изменить данные. Попробуйте позже.');
       }
     } finally {
-      setLoginLoading(false);
+      setCredentialsLoading(false);
     }
   };
 
-  // Компонент информационной иконки
   const InfoIcon = () => (
     <div className="info-icon-btn" tabIndex={0}>
       <button className="header-btn" type="button">
@@ -464,7 +451,7 @@ export const PersonalCabinet: React.FC<Props> = ({
           <div className="info-header">
             <div className="info-title">
               <h3>Личный кабинет преподавателя</h3>
-              <p>Здесь вы можете просмотреть свои личные данные, изменить логин или пароль, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
+              <p>Здесь вы можете просмотреть свои личные данные, изменить логин, пароль или электронную почту, а также ознакомиться с перечнем преподаваемых дисциплин.</p>
             </div>
           </div>
           
@@ -477,7 +464,7 @@ export const PersonalCabinet: React.FC<Props> = ({
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
-                <span>Изменение логина и пароля учетной записи</span>
+                <span>Изменение логина, пароля и email учетной записи</span>
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
@@ -520,7 +507,6 @@ export const PersonalCabinet: React.FC<Props> = ({
     </div>
   );
 
-  // Компонент кнопки обновления
   const RefreshButton = () => (
     <button 
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
@@ -536,46 +522,45 @@ export const PersonalCabinet: React.FC<Props> = ({
     </button>
   );
 
-  // Компонент успешного уведомления
-  const SuccessNotification = () => {
-    if (!successMessage) return null;
+const SuccessNotification = () => {
+  if (!successMessage) return null;
 
-    return (
-      <div className="pc-success-notification">
-        <div className="pc-success-content">
-          <div className="pc-success-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path 
-                d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="pc-success-text">
-            <div className="pc-success-title">Успешно!</div>
-            <div className="pc-success-message">{successMessage}</div>
-          </div>
-          <button 
-            className="pc-success-close"
-            onClick={() => setSuccessMessage(null)}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path 
-                d="M12 4L4 12M4 4L12 12" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+  return (
+    <div className="lk-success-notification">
+      <div className="lk-success-content">
+        <div className="lk-success-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path 
+              d="M16.6667 5L7.5 14.1667L3.33333 10" 
+              stroke="white" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
+        <div className="lk-success-text">
+          <div className="lk-success-title">Успешно!</div>
+          <div className="lk-success-message">{successMessage}</div>
+        </div>
+        <button 
+          className="lk-success-close"
+          onClick={() => setSuccessMessage(null)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path 
+              d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const handlePasswordDataChange = useCallback((field: keyof PasswordChangeData, value: string) => {
     setPasswordData(prev => ({
@@ -584,11 +569,12 @@ export const PersonalCabinet: React.FC<Props> = ({
     }));
   }, []);
 
-  const handleLoginDataChange = useCallback((field: keyof LoginChangeData, value: string) => {
-    setLoginData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleLoginFieldChange = useCallback((value: string) => {
+    setLoginData({ newLogin: value });
+  }, []);
+
+  const handleEmailFieldChange = useCallback((value: string) => {
+    setEmailData({ newEmail: value });
   }, []);
 
   const handleDisciplineClick = (discipline: string) => {
@@ -610,7 +596,6 @@ export const PersonalCabinet: React.FC<Props> = ({
     }
   };
 
-  // Если данные пользователя еще не загружены
   if (!user) {
     return (
       <div className="personal-cabinet">
@@ -622,12 +607,14 @@ export const PersonalCabinet: React.FC<Props> = ({
     );
   }
 
+  const isCredentialsSubmitDisabled = credentialsLoading || 
+    (credentialsMode === 'login' && !loginData.newLogin) ||
+    (credentialsMode === 'email' && !emailData.newEmail);
+
   return (
     <div className="personal-cabinet">
-      {/* Уведомление об успехе */}
       <SuccessNotification />
 
-      {/* Добавляем заголовок с кнопкой обновления */}
       <div className="cabinet-header">
         <InfoIcon />
         <RefreshButton />
@@ -636,7 +623,6 @@ export const PersonalCabinet: React.FC<Props> = ({
       {showCacheWarning && <CacheWarning />}
 
       <div className="personal-info-main">
-        {/* Левый блок - ФИО */}
         <div className="personal-info-section">
           <div className="info-column">
             <div className="info-item">
@@ -654,7 +640,6 @@ export const PersonalCabinet: React.FC<Props> = ({
           </div>
         </div>
         
-        {/* Правый блок - почта и логин */}
         <div className="personal-info-section">
           <div className="info-column">
             <div className="info-item">
@@ -669,7 +654,6 @@ export const PersonalCabinet: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Кнопки под блоками */}
       <div className="buttons-row">
         <button 
           className="section-button password-btn"
@@ -680,10 +664,10 @@ export const PersonalCabinet: React.FC<Props> = ({
         </button>
         <button 
           className="section-button login-btn"
-          onClick={handleLoginModalOpen}
+          onClick={handleCredentialsModalOpen}
           disabled={loading}
         >
-          Сменить логин
+          Сменить логин или почту
         </button>
       </div>
 
@@ -783,54 +767,102 @@ export const PersonalCabinet: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Модальное окно смены логина */}
-      {showLoginModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="lk-pc-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="pc-modal-header">
-              <h3>Смена логина</h3>
-              <button 
-                className="pc-modal-close"
-                onClick={() => setShowLoginModal(false)}
-              >
-                ×
-              </button>
-            </div>
+    {/* Модальное окно смены логина или почты */}
+    {showCredentialsModal && (
+      <div className="pc-modal-overlay" onClick={() => setShowCredentialsModal(false)}>
+        <div className="lk-pc-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="pc-modal-header">
+            <h3>
+              {!credentialsMode && 'Смена данных учетной записи'}
+              {credentialsMode === 'login' && 'Смена логина'}
+              {credentialsMode === 'email' && 'Смена почты'}
+            </h3>
+            <button 
+              className="pc-modal-close"
+              onClick={() => setShowCredentialsModal(false)}
+            >
+              ×
+            </button>
+          </div>
 
-            <div className="pc-modal-content">
-              <div className="pc-form-group">
-                <label>Новый логин</label>
-                <input
-                  type="text"
-                  value={loginData.newLogin}
-                  onChange={(e) => handleLoginDataChange('newLogin', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите новый логин"
-                />
-              </div>
-              <div className="pc-form-group">
-                <label>Подтвердите новый логин</label>
-                <input
-                  type="text"
-                  value={loginData.confirmNewLogin}
-                  onChange={(e) => handleLoginDataChange('confirmNewLogin', e.target.value)}
-                  className="pc-input"
-                  placeholder="Повторите новый логин"
-                />
-              </div>
-              <div className="pc-modal-actions">
-                <button
-                  className="pc-confirm-btn"
-                  onClick={handleLoginChange}
-                  disabled={loginLoading || !loginData.newLogin || !loginData.confirmNewLogin}
+          <div className="pc-modal-content">
+            {!credentialsMode ? (
+              <div className="credentials-mode-selector">
+                <button 
+                  className="credentials-mode-btn"
+                  onClick={() => handleCredentialsModeSelect('login')}
                 >
-                  {loginLoading ? 'Смена логина...' : 'Сменить логин'}
+                  <div className="credentials-mode-icon">@</div>
+                  <div className="credentials-mode-info">
+                    <h4>Сменить логин</h4>
+                    <p>Изменить логин для входа в систему</p>
+                  </div>
+                </button>
+                <button 
+                  className="credentials-mode-btn"
+                  onClick={() => handleCredentialsModeSelect('email')}
+                >
+                  <div className="credentials-mode-icon">✉</div>
+                  <div className="credentials-mode-info">
+                    <h4>Сменить почту</h4>
+                    <p>Изменить электронную почту аккаунта</p>
+                  </div>
                 </button>
               </div>
-            </div>
+            ) : (
+              <>
+                {error && (
+                  <div className="pc-error-message" style={{ marginTop: 0 }}>
+                    {error}
+                  </div>
+                )}
+
+                {credentialsMode === 'login' ? (
+                  <div className="pc-form-group">
+                    <label>Новый логин</label>
+                    <input
+                      type="text"
+                      value={loginData.newLogin}
+                      onChange={(e) => handleLoginFieldChange(e.target.value)}
+                      className="pc-input"
+                      placeholder="Введите новый логин"
+                    />
+                    <small className="pc-form-hint">Только латинские буквы, цифры и символы ._- (минимум 3 символа)</small>
+                  </div>
+                ) : (
+                  <div className="pc-form-group">
+                    <label>Новая почта</label>
+                    <input
+                      type="email"
+                      value={emailData.newEmail}
+                      onChange={(e) => handleEmailFieldChange(e.target.value)}
+                      className="pc-input"
+                      placeholder="Введите новый email"
+                    />
+                  </div>
+                )}
+
+                <div className="pc-modal-actions">
+                  <button 
+                    className="pc-secondary-btn"
+                    onClick={() => setCredentialsMode(null)}
+                  >
+                    Назад к выбору
+                  </button>
+                  <button
+                    className="pc-confirm-btn"
+                    onClick={handleCredentialsChange}
+                    disabled={isCredentialsSubmitDisabled}
+                  >
+                    {credentialsLoading ? 'Сохранение...' : 'Сохранить'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 };
