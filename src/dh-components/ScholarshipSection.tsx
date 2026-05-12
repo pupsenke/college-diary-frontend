@@ -14,7 +14,7 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
+  const [selectedSemester, setSelectedSemester] = useState<7 | 8>(7);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<StudentInfo | null>(null);
   const [groupInfo, setGroupInfo] = useState<any>(null);
@@ -96,7 +96,7 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
     setSelectedYear(year);
   };
 
-  const handleSemesterChange = (semester: 1 | 2) => {
+  const handleSemesterChange = (semester: 7 | 8) => {
     setSelectedSemester(semester);
   };
 
@@ -198,8 +198,8 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
           <div className="schs-filter-group">
             <label className="schs-filter-label">Семестр:</label>
             <div className="schs-semester-buttons">
-              <button className={`schs-semester-btn ${selectedSemester === 1 ? 'active' : ''}`} onClick={() => handleSemesterChange(1)}>1 семестр</button>
-              <button className={`schs-semester-btn ${selectedSemester === 2 ? 'active' : ''}`} onClick={() => handleSemesterChange(2)}>2 семестр</button>
+              <button className={`schs-semester-btn ${selectedSemester === 7 ? 'active' : ''}`} onClick={() => handleSemesterChange(7)}>7 семестр</button>
+              <button className={`schs-semester-btn ${selectedSemester === 8 ? 'active' : ''}`} onClick={() => handleSemesterChange(8)}>8 семестр</button>
             </div>
           </div>
         </div>

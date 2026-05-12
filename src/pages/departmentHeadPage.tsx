@@ -12,6 +12,7 @@ import { CACHE_TTL } from '../services/cacheConstants';
 import './DepartmentHeadPageStyle.css';
 import { DepartmentScholarshipSection } from '../dh-components/DepartmentScholarshipSection';
 import { SessionAttestationSection } from '../dh-components/SessionAttestationSection';
+import { PersonalCabinetSection } from '../dh-components/PersonalCabinetSection';
 
 interface GroupData {
   id: number;
@@ -28,7 +29,7 @@ interface GroupData {
   attendance?: number;
 }
 
-type DetailTabType = 'group' | 'diploma' | 'scholarship' | 'session' | 'summary' | 'departmentGroups';
+type DetailTabType = 'group' | 'scholarship' | 'session' | 'summary' | 'departmentGroups' | 'personalCabinet';
 type LeftPanelView = 'department' | 'groups';
 
 // Хук для кешированных данных
@@ -49,7 +50,6 @@ function useCachedFetch<T>(
 
     try {
       if (!ignoreCache && !cacheService.isNetworkOnline()) {
-        // Оффлайн - только кэш
         const cached = cacheService.get<T>(cacheKey, { ttl });
         if (cached) {
           setData(cached);
@@ -61,7 +61,6 @@ function useCachedFetch<T>(
         throw new Error('Нет подключения к интернету и отсутствуют кэшированные данные');
       }
 
-      // Онлайн или игнорируем кэш - пробуем получить свежие данные
       const result = await cacheService.getWithFallback(cacheKey, fetchFn, { ttl });
       setData(result.data);
       setFromCache(result.fromCache);
@@ -72,7 +71,6 @@ function useCachedFetch<T>(
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
-      // Пробуем кэш как последнюю надежду
       const cached = cacheService.get<T>(cacheKey, { ttl });
       if (cached) {
         setData(cached);
@@ -112,8 +110,8 @@ export const DepartmentHeadPage: React.FC = () => {
   const [activeDepartmentTab, setActiveDepartmentTab] = useState<'groups' | 'scholarship'>('groups');
   const [onlineStatus, setOnlineStatus] = useState(true);
   const [usingCache, setUsingCache] = useState(false);
+  const [showPersonalCabinet, setShowPersonalCabinet] = useState(false);
 
-  // Отслеживание статуса сети
   useEffect(() => {
     const updateOnlineStatus = () => {
       const isOnline = navigator.onLine;
@@ -137,7 +135,6 @@ export const DepartmentHeadPage: React.FC = () => {
     };
   }, []);
 
-  // Кешированная загрузка групп
   const loadGroups = useCallback(async () => {
     const groups = await headApiService.getGroups();
     
@@ -166,11 +163,8 @@ export const DepartmentHeadPage: React.FC = () => {
           console.error(`Ошибка при загрузке студентов для группы ${group.id}:`, studentsError);
         }
         
-        // ЗАГЛУШКА для среднего балла
-        const groupAverageGrade = 111111 // Случайное число от 3 до 5
-        
-        // ЗАГЛУШКА для процента посещаемости
-        const groupAttendance =  1111; // Случайное число от 70 до 100
+        const groupAverageGrade = 111111;
+        const groupAttendance = 1111;
         
         formattedGroups.push({
           id: group.id,
@@ -228,59 +222,51 @@ export const DepartmentHeadPage: React.FC = () => {
     }
   }, [cachedGroups, groupsLoading, groupsError, groupsFromCache]);
 
-  // Кешированная загрузка информации об отделении
-  // В DepartmentHeadPage.tsx, исправленная функция loadDepartmentInfo
-
-const loadDepartmentInfo = useCallback(async () => {
-  try {
-    // Получаем актуальные группы (не из кеша)
-    const groups = await headApiService.getGroups();
-    
-    // Фильтруем группы по специальности
-    const filteredGroups = groups.filter(group => 
-      group.specialty === "09.02.07 Информационные системы и программирование"
-    );
-    
-    console.log('Фильтрованные группы:', filteredGroups.map(g => ({ id: g.id, number: g.numberGroup, specialty: g.specialty })));
-    
-    let totalStudents = 0;
-    const groupStudentsPromises = filteredGroups.map(async (group) => {
-      try {
-        const students = await headApiService.getGroupStudents(group.id);
-        console.log(`Группа ${group.numberGroup}: ${students.length} студентов`);
-        return students.length;
-      } catch (err) {
-        console.error(`Ошибка загрузки студентов для группы ${group.id}:`, err);
-        return 0;
-      }
-    });
-    
-    const studentsCounts = await Promise.all(groupStudentsPromises);
-    totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
-    
-    // ЗАГЛУШКА для средней успеваемости
-    const averagePerformance = 0;
-    
-    // ЗАГЛУШКА для общей посещаемости
-    const averageAttendance = 0;
-    
-    const departmentData = {
-      totalGroups: filteredGroups.length,
-      totalStudents: totalStudents,
-      name: 'Отделение информационных технологий',
-      specialities: ['09.02.07 Информационные системы и программирование'],
-      totalTeachers: 24,
-      averagePerformance: averagePerformance,
-      averageAttendance: averageAttendance
-    };
-    
-    console.log('Информация об отделении:', departmentData);
-    return departmentData;
-  } catch (error) {
-    console.error('Ошибка при загрузке информации об отделении:', error);
-    throw error;
-  }
-}, []); 
+  const loadDepartmentInfo = useCallback(async () => {
+    try {
+      const groups = await headApiService.getGroups();
+      
+      const filteredGroups = groups.filter(group => 
+        group.specialty === "09.02.07 Информационные системы и программирование"
+      );
+      
+      console.log('Фильтрованные группы:', filteredGroups.map(g => ({ id: g.id, number: g.numberGroup, specialty: g.specialty })));
+      
+      let totalStudents = 0;
+      const groupStudentsPromises = filteredGroups.map(async (group) => {
+        try {
+          const students = await headApiService.getGroupStudents(group.id);
+          console.log(`Группа ${group.numberGroup}: ${students.length} студентов`);
+          return students.length;
+        } catch (err) {
+          console.error(`Ошибка загрузки студентов для группы ${group.id}:`, err);
+          return 0;
+        }
+      });
+      
+      const studentsCounts = await Promise.all(groupStudentsPromises);
+      totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
+      
+      const averagePerformance = 0;
+      const averageAttendance = 0;
+      
+      const departmentData = {
+        totalGroups: filteredGroups.length,
+        totalStudents: totalStudents,
+        name: 'Отделение информационных технологий',
+        specialities: ['09.02.07 Информационные системы и программирование'],
+        totalTeachers: 24,
+        averagePerformance: averagePerformance,
+        averageAttendance: averageAttendance
+      };
+      
+      console.log('Информация об отделении:', departmentData);
+      return departmentData;
+    } catch (error) {
+      console.error('Ошибка при загрузке информации об отделении:', error);
+      throw error;
+    }
+  }, []); 
 
   const { 
     data: departmentInfo, 
@@ -293,7 +279,6 @@ const loadDepartmentInfo = useCallback(async () => {
     [cachedGroups]
   );
 
-  // Кешированная загрузка статистики стипендий
   const loadDepartmentScholarships = useCallback(async () => {
     const groups = academicGroups.length > 0 ? academicGroups : cachedGroups || [];
     let totalStudents = 0;
@@ -308,7 +293,6 @@ const loadDepartmentInfo = useCallback(async () => {
       totalStudents += students.length;
       
       for (const student of students) {
-        // ЗАГЛУШКА для среднего балла студента
         const avgGrade = Math.random() * 2 + 3;
         
         if (avgGrade >= 4.8) {
@@ -350,11 +334,9 @@ const loadDepartmentInfo = useCallback(async () => {
   const handleAddGroup = async (groupNumber: string) => {
     try {
       await headApiService.addGroup(groupNumber);
-      // Инвалидируем кэш групп
       cacheService.remove('department_groups');
       cacheService.remove('department_info');
       cacheService.remove('department_scholarships');
-      // Перезагружаем
       window.location.reload();
     } catch (error) {
       console.error('Ошибка при добавлении группы:', error);
@@ -386,6 +368,7 @@ const loadDepartmentInfo = useCallback(async () => {
     setActiveDetailTab('group');
     setShowDepartmentGroups(false);
     setSelectedDepartmentGroupId(null);
+    setShowPersonalCabinet(false);
   };
 
   const handleShowDepartmentGroups = () => {
@@ -394,6 +377,7 @@ const loadDepartmentInfo = useCallback(async () => {
     setSelectedGroupId(null);
     setActiveDetailTab('departmentGroups');
     setSelectedDepartmentGroupId(null);
+    setShowPersonalCabinet(false);
   };
 
   const handleShowDepartmentScholarship = () => {
@@ -402,6 +386,7 @@ const loadDepartmentInfo = useCallback(async () => {
     setSelectedGroupId(null);
     setActiveDetailTab('scholarship');
     setSelectedDepartmentGroupId(null);
+    setShowPersonalCabinet(false);
   };
 
   const handleBackToDepartmentGroups = () => {
@@ -410,9 +395,23 @@ const loadDepartmentInfo = useCallback(async () => {
     setSelectedGroupId(null);
     setActiveDetailTab('departmentGroups');
     setSelectedDepartmentGroupId(null);
+    setShowPersonalCabinet(false);
   };
 
-  // Компонент предупреждения о использовании кэша
+  const handleOpenPersonalCabinet = () => {
+    setShowPersonalCabinet(true);
+    setActiveDetailTab('personalCabinet');
+    setSelectedGroupId(null);
+    setShowDepartmentGroups(false);
+    setLeftPanelView('department');
+  };
+
+  const handleClosePersonalCabinet = () => {
+    setShowPersonalCabinet(false);
+    setActiveDetailTab('departmentGroups');
+    setShowDepartmentGroups(true);
+  };
+
   const CacheWarning = () => {
     if (!usingCache && !groupsFromCache && !deptFromCache && !scholarshipsFromCache) return null;
     
@@ -436,12 +435,10 @@ const loadDepartmentInfo = useCallback(async () => {
     );
   };
 
-  // Компонент заглушки для метрик
   const MetricPlaceholder = ({ label, value, isPercentage = false }: { label: string; value: number; isPercentage?: boolean }) => (
     <div className="dhp-metric-card placeholder">
       <div className="dhp-metric-header">
         <span className="dhp-metric-title">{label}</span>
-        <span className="dhp-metric-badge">ЗАГЛУШКА</span>
       </div>
       <div className="dhp-metric-value">
         {isPercentage ? `${value.toFixed(1)}%` : value.toFixed(2)}
@@ -651,6 +648,10 @@ const loadDepartmentInfo = useCallback(async () => {
   );
 
   const renderDetailContent = () => {
+    if (showPersonalCabinet) {
+      return <PersonalCabinetSection />;
+    }
+    
     if (leftPanelView === 'department' && (showDepartmentGroups || activeDetailTab === 'departmentGroups')) {
       return (
         <div className="dhp-department-groups-full">
@@ -661,6 +662,7 @@ const loadDepartmentInfo = useCallback(async () => {
               setActiveDetailTab('group');
               setShowDepartmentGroups(false);
               setSelectedDepartmentGroupId(null);
+              setShowPersonalCabinet(false);
             }}
           />
         </div>
@@ -668,8 +670,8 @@ const loadDepartmentInfo = useCallback(async () => {
     }
     
     if (leftPanelView === 'department' && selectedGroupId === null && activeDetailTab === 'scholarship') {
-  return <DepartmentScholarshipSection />;
-}
+      return <DepartmentScholarshipSection />;
+    }
     
     if (leftPanelView === 'groups' && selectedGroupId !== null) {
       switch (activeDetailTab) {
@@ -730,8 +732,8 @@ const loadDepartmentInfo = useCallback(async () => {
       summary: 'Сводные ведомости',
       scholarship: 'Стипендии',
       session: 'Сессия',
-      diploma: 'Диплом',
-      departmentGroups: 'Группы отделения'
+      departmentGroups: 'Группы отделения',
+      personalCabinet: 'Личный кабинет'
     };
     return titles[tab];
   };
@@ -768,37 +770,66 @@ const loadDepartmentInfo = useCallback(async () => {
           <HeaderDepartmentHead />
 
           <div className="dhp-main-layout">
-            <div className="dhp-groups-panel">
-              <div className="dhp-left-panel-nav">
-                <button
-                  className={`dhp-nav-btn ${leftPanelView === 'department' ? 'active' : ''}`}
-                  onClick={() => {
-                    setLeftPanelView('department');
-                    setShowDepartmentGroups(true);
-                    setActiveDetailTab('departmentGroups');
-                    setActiveDepartmentTab('groups');
-                  }}
-                >
-                  Отделение
-                </button>
-                <button
-                  className={`dhp-nav-btn ${leftPanelView === 'groups' ? 'active' : ''}`}
-                  onClick={() => {
-                    setLeftPanelView('groups');
-                    setShowDepartmentGroups(false);
-                  }}
-                >
-                  Группы
-                </button>
+            {/* Левая колонка: панель + кнопка под ней */}
+            <div className="dhp-left-column">
+              <div className="dhp-groups-panel">
+                <div className="dhp-left-panel-nav">
+                  <button
+                    className={`dhp-nav-btn ${leftPanelView === 'department' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLeftPanelView('department');
+                      setShowDepartmentGroups(true);
+                      setActiveDetailTab('departmentGroups');
+                      setActiveDepartmentTab('groups');
+                      setShowPersonalCabinet(false);
+                    }}
+                  >
+                    Отделение
+                  </button>
+                  <button
+                    className={`dhp-nav-btn ${leftPanelView === 'groups' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLeftPanelView('groups');
+                      setShowDepartmentGroups(false);
+                      setShowPersonalCabinet(false);
+                    }}
+                  >
+                    Группы
+                  </button>
+                </div>
+
+                <div className="dhp-left-panel-content">
+                  {leftPanelView === 'department' ? renderDepartmentView() : renderGroupsView()}
+                </div>
               </div>
 
-              <div className="dhp-left-panel-content">
-                {leftPanelView === 'department' ? renderDepartmentView() : renderGroupsView()}
+              {/* Кнопка личного кабинета под левой панелью */}
+              <div className="dhp-personal-cabinet-button-container">
+                <button 
+                  className={`dhp-personal-cabinet-btn ${showPersonalCabinet ? 'active' : ''}`}
+                  onClick={handleOpenPersonalCabinet}
+                >
+                  <span className="dhp-personal-cabinet-text">Личный кабинет</span>
+                </button>
               </div>
             </div>
 
+            {/* Правая колонка: детальная панель */}
             <div className="dhp-detail-panel">
-              {leftPanelView === 'groups' && selectedGroupId !== null && (
+              {/* Кнопка закрытия личного кабинета */}
+              {showPersonalCabinet && (
+                <div className="dhp-personal-cabinet-close-bar">
+                  <button 
+                    className="dhp-personal-cabinet-close-btn"
+                    onClick={handleClosePersonalCabinet}
+                  >
+                    <span className="dhp-close-icon">✕</span>
+                    <span>Закрыть личный кабинет</span>
+                  </button>
+                </div>
+              )}
+
+              {leftPanelView === 'groups' && selectedGroupId !== null && !showPersonalCabinet && (
                 <div className="dhp-detail-tabs">
                  { (['group', 'summary', 'scholarship', 'session', 'diploma'] as DetailTabType[]).map((tab) => (
                     <button

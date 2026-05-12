@@ -1192,3 +1192,178 @@
   font-weight: 700;
   margin: 0 0 24px 0;
 }
+
+
+
+
+
+/* ============================================
+   ФИЛЬТРЫ ГОД И СЕМЕСТР
+   ============================================ */
+
+/* Контейнер фильтров слева */
+.dh-at-filters-left {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-right: auto;
+}
+
+/* Группа фильтра */
+.dh-at-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Лейбл фильтра */
+.dh-at-filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #002FA7;
+  white-space: nowrap;
+}
+
+/* Селект выбора года */
+.dh-at-filter-select {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  background: white;
+  cursor: pointer;
+  color: #1f2937;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.dh-at-filter-select:hover {
+  border-color: #002FA7;
+}
+
+.dh-at-filter-select:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+/* Кнопки семестров */
+.dh-at-semester-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.dh-at-semester-btn {
+  padding: 8px 18px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 44px;
+}
+
+.dh-at-semester-btn:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f7ff;
+}
+
+.dh-at-semester-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+  box-shadow: 0 2px 6px rgba(0, 47, 167, 0.3);
+}
+
+/* Правая часть действий (кнопки редактировать/экспорт) */
+.dh-at-actions-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Обновлённый контейнер действий */
+.dh-at-statement-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ ФИЛЬТРОВ
+   ============================================ */
+
+@media (max-width: 768px) {
+  .dh-at-statement-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .dh-at-filters-left {
+    justify-content: flex-start;
+    margin-right: 0;
+    gap: 16px;
+  }
+
+  .dh-at-actions-right {
+    justify-content: flex-end;
+  }
+
+  .dh-at-filter-select {
+    min-width: 90px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .dh-at-semester-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+    min-width: 40px;
+  }
+
+  .dh-at-filter-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-at-filters-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .dh-at-filter-group {
+    justify-content: space-between;
+  }
+
+  .dh-at-filter-select {
+    flex: 1;
+    max-width: 150px;
+  }
+
+  .dh-at-semester-buttons {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .dh-at-actions-right {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .dh-at-actions-right button {
+    flex: 1;
+  }
+}

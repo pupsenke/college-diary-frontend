@@ -17,11 +17,25 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
   const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
   const [availableTeachers, setAvailableTeachers] = useState<SubjectTeacher[]>([]);
   const [attestationForm, setAttestationForm] = useState<AttestationForm>('exam');
-  const [semester, setSemester] = useState<1 | 2>(1);
+  const [semester, setSemester] = useState<7 | 8>(7);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [groupInfo, setGroupInfo] = useState<any>(null);
   const [date, setDate] = useState<string>(new Date().toLocaleDateString('ru-RU'));
+
+  // Фильтр по году
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  // Инициализация доступных годов
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 3; i <= currentYear + 2; i++) {
+      years.push(i);
+    }
+    setAvailableYears(years);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -97,7 +111,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
         subject: selectedSubject?.subjectName || 'Не указан',
         specialityCode: groupInfo?.specialty?.split(' ')[0] || '09.02.07',
         specialityName: groupInfo?.specialty || 'Информационные системы и программирование',
-        course: groupInfo?.course || 1,
+        course: groupInfo?.course || 7,
         group: `${groupInfo?.numberGroup || groupId}`,
         students: students.map((student, index) => ({
           number: index + 1,
@@ -110,7 +124,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
       console.log('Данные для экспорта:', attestationData);
       
       const documentBlob = await SessionAttestationService.generateAttestationDocument(attestationData);
-      const fileName = `Аттестационная_ведомость_${groupInfo?.numberGroup || groupId}_${selectedSubject?.subjectName || 'предмет'}.doc`;
+      const fileName = `Аттестационная_ведомость_${groupInfo?.numberGroup || groupId}_${selectedSubject?.subjectName || 'предмет'}_${selectedYear}.doc`;
       SessionAttestationService.downloadDocument(documentBlob, fileName);
       
     } catch (error) {
@@ -139,33 +153,34 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
 
       <div className="sas-form">
         <div className="sas-form-row">
+          {/* Фильтр по году */}
           <div className="sas-form-group">
-            <label className="sas-label">Дата</label>
-            <input 
-              type="date" 
-              className="sas-input"
-              value={date.split('.').reverse().join('-')}
-              onChange={(e) => {
-                const newDate = new Date(e.target.value);
-                setDate(newDate.toLocaleDateString('ru-RU'));
-              }}
-            />
+            <label className="sas-label">Год</label>
+            <select 
+              className="sas-select sas-year-select"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
 
           <div className="sas-form-group">
             <label className="sas-label">Семестр</label>
             <div className="sas-semester-buttons">
               <button 
-                className={`sas-semester-btn ${semester === 1 ? 'active' : ''}`}
-                onClick={() => setSemester(1)}
+                className={`sas-semester-btn ${semester === 7 ? 'active' : ''}`}
+                onClick={() => setSemester(7)}
               >
-                1 семестр
+                7 семестр
               </button>
               <button 
-                className={`sas-semester-btn ${semester === 2 ? 'active' : ''}`}
-                onClick={() => setSemester(2)}
+                className={`sas-semester-btn ${semester === 8 ? 'active' : ''}`}
+                onClick={() => setSemester(8)}
               >
-                2 семестр
+                8 семестр
               </button>
             </div>
           </div>
@@ -224,7 +239,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
                 className={`sas-attestation-btn ${attestationForm === 'test' ? 'active' : ''}`}
                 onClick={() => setAttestationForm('test')}
               >
-                Контрольная работа
+                Дифференцированный зачет
               </button>
             </div>
           </div>

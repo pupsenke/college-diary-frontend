@@ -803,12 +803,10 @@ const getStudentAttendancePercent = (studentId: number): number => {
                 <div className="dhm-metric-card-small">
                   <div className="dhm-metric-label">Средний балл группы</div>
                   <div className="dhm-metric-value">0.00</div>
-                  <div className="dhm-metric-note">ЗАГЛУШКА</div>
                 </div>
                 <div className="dhm-metric-card-small">
                   <div className="dhm-metric-label">Посещаемость группы</div>
                   <div className="dhm-metric-value">0.0%</div>
-                  <div className="dhm-metric-note">ЗАГЛУШКА</div>
                 </div>
               </div>
 

@@ -20,6 +20,10 @@ body.dh-theme-light .dhp-container {
   position: relative;
 }
 
+body {
+  overflow: hidden;
+}
+
 
 .dhp-content {
   position: relative;
@@ -74,10 +78,11 @@ body.dh-theme-light .dhp-container {
 .dhp-groups-panel {
   background: white;
   border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 850px;
+  margin-bottom: 15px;
 }
 
 .dhp-groups-header {
@@ -1650,5 +1655,169 @@ body.dh-theme-light .dhp-container {
   .dhp-cache-warning-btn {
     width: 100%;
     text-align: center;
+  }
+}
+
+
+
+.dhp-left-column {
+  width: 400px;
+}
+
+
+.dhp-personal-cabinet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 22px 24px;
+  background: white;
+  color: #002FA7;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.dhp-personal-cabinet-btn:hover {
+  transform: translateX(4px);
+  border-color: #002FA7;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  background: #f8fafc;
+}
+
+.dhp-personal-cabinet-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.15);
+}
+
+.dhp-personal-cabinet-btn.active {
+  transform: translateX(4px);
+  border-color: #002FA7;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  background: #f8fafc;
+}
+
+.dhp-personal-cabinet-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dhp-personal-cabinet-text {
+  line-height: 1;
+}
+
+/* ============================================
+   ПАНЕЛЬ ЗАКРЫТИЯ ЛИЧНОГО КАБИНЕТА
+   ============================================ */
+
+.dhp-personal-cabinet-close-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.dhp-personal-cabinet-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dhp-personal-cabinet-close-btn:hover {
+  background: #7695e248;
+  color: #002FA7;
+  border-color: #5784f748;
+}
+
+.dhp-close-icon {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ============================================
+   ОСНОВНОЙ LAYOUT
+   ============================================ */
+
+.dhp-main-layout {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.dhp-detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .dhp-left-column {
+    min-width: 280px;
+    max-width: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dhp-main-layout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .dhp-left-column {
+    min-width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .dhp-groups-panel {
+    max-height: 60vh;
+  }
+
+  .dhp-detail-panel {
+    min-height: 50vh;
+  }
+
+  .dhp-personal-cabinet-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhp-personal-cabinet-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .dhp-personal-cabinet-icon {
+    font-size: 18px;
   }
 }

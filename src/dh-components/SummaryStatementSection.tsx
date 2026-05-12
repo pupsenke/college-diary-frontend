@@ -83,6 +83,11 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
   const [selectedNASubject, setSelectedNASubject] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Фильтры год и семестр
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedSemester, setSelectedSemester] = useState<number>(7);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
   const [attestationFormData, setAttestationFormData] = useState<AttestationFormData>({
     attestationForm: 'экзамен',
     teacherName: '',
@@ -94,6 +99,23 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
 
   const attestationForms = ['зачет', 'дифф. зачет', 'экзамен', 'курсовой проект'];
   const headOptions = ['Голубева Г.А.'];
+
+  // Инициализация доступных годов
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 3; i <= currentYear + 2; i++) {
+      years.push(i);
+    }
+    setAvailableYears(years);
+  }, []);
+
+  // Перезагрузка данных при изменении фильтров
+  useEffect(() => {
+    if (groupId) {
+      loadGroupStatement();
+    }
+  }, [groupId, selectedYear, selectedSemester]);
 
   // Функция для форматирования среднего балла
   const formatAverageDisplay = (avg: number): string => {
@@ -108,236 +130,232 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
   };
 
   // Функция экспорта в Excel с использованием ExcelJS
-const exportToExcel = async () => {
-  if (!groupStatement) return;
+  const exportToExcel = async () => {
+    if (!groupStatement) return;
 
-  try {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Сводная ведомость');
-    
-    const subjectCount = groupStatement.subjects.length;
-    
-    // Структура колонок:
-    const afterSubjectsStart = 3 + subjectCount;
-    const avgCol = afterSubjectsStart;           // Средний балл
-    const behaviorCol = afterSubjectsStart + 1;  // Поведение
-    const totalAbsentCol = afterSubjectsStart + 2; // Пропуски всего
-    const unjustifiedCol = afterSubjectsStart + 3; // в т.ч. неув.
-    const scholarshipCol = afterSubjectsStart + 4; // Стипендия
-    const gradesStartCol = afterSubjectsStart + 5; // Начало колонок с оценками (5,4,3)
-    
-    const lastColIndex = gradesStartCol + 2;
-    const lastColLetter = String.fromCharCode(65 + lastColIndex - 1);
-    
-    // 1. Заголовок ведомости
-    worksheet.mergeCells(`A1:${lastColLetter}1`);
-    worksheet.getCell('A1').value = `Сводная аттестационная ведомость на ${groupStatement.academicYear} учебный год Семестр ${groupStatement.semester}`;
-    worksheet.getCell('A1').font = { size: 14, bold: true };
-    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-    
-    worksheet.mergeCells(`A2:${lastColLetter}2`);
-    worksheet.getCell('A2').value = `Специальность: ${groupStatement.specialty}`;
-    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
-    
-    worksheet.mergeCells(`A3:${lastColLetter}3`);
-    worksheet.getCell('A3').value = `Курс: ${groupStatement.course} Группа: ${groupStatement.groupNumber} Форма обучения: ${groupStatement.formOfStudy}`;
-    worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
-    
-    // 2. Первая строка заголовка (строка 5)
-    const firstHeaderRow = worksheet.getRow(5);
-    firstHeaderRow.height = 30; // Уменьшено с 40
-    firstHeaderRow.getCell(1).value = '№ п/п';
-    firstHeaderRow.getCell(2).value = 'Фамилия, имя, отчество студента';
-    
-    // Объединение для дисциплин C5 до колонки с предметами
-    worksheet.mergeCells(5, 3, 5, 2 + subjectCount);
-    firstHeaderRow.getCell(3).value = 'Наименование дисциплины (МДК)/ форма аттестации';
-    
-    // Ячейки после предметов
-    firstHeaderRow.getCell(avgCol).value = 'Средний балл';
-    firstHeaderRow.getCell(behaviorCol).value = 'Поведение';
-    firstHeaderRow.getCell(totalAbsentCol).value = 'Пропуски занятий всего';
-    firstHeaderRow.getCell(unjustifiedCol).value = 'в т. ч. по неуважит. причинам';
-    firstHeaderRow.getCell(scholarshipCol).value = 'Стипендия:';
-    
-    // Объединение для кол-ва оценок - объединяем 3 колонки
-    worksheet.mergeCells(5, gradesStartCol, 5, gradesStartCol + 2);
-    firstHeaderRow.getCell(gradesStartCol).value = 'Кол-во оценок';
-    
-    // Стили первой строки
-    for (let i = 1; i <= lastColIndex; i++) {
-      const cell = firstHeaderRow.getCell(i);
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-      cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 }; // Уменьшен размер шрифта
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    }
-    
-    // 3. Вторая строка заголовка (строка 6)
-    const secondHeaderRow = worksheet.getRow(6);
-    secondHeaderRow.height = 80; // Уменьшено с 120
-    
-    // Заливаем цветом A6 и B6
-    const cellA6 = secondHeaderRow.getCell(1);
-    cellA6.value = '';
-    cellA6.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-    cellA6.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    
-    const cellB6 = secondHeaderRow.getCell(2);
-    cellB6.value = '';
-    cellB6.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-    cellB6.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    
-    // Добавляем предметы с вертикальным текстом
-    groupStatement.subjects.forEach((subject, idx) => {
-      const cell = secondHeaderRow.getCell(3 + idx);
-      cell.value = `${subject.name}, ${subject.assessmentForm}`;
-      cell.alignment = { 
-        horizontal: 'center', 
-        vertical: 'middle', 
-        wrapText: true,
-        textRotation: 255
-      };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-      cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 }; // Уменьшен размер шрифта
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    });
-    
-    // Пустые ячейки для среднего балла, поведения и т.д.
-    for (let i = avgCol; i <= scholarshipCol; i++) {
-      const cell = secondHeaderRow.getCell(i);
-      cell.value = '';
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    }
-    
-    // Отдельные ячейки 5, 4, 3
-    const cell5 = secondHeaderRow.getCell(gradesStartCol);
-    cell5.value = '5';
-    cell5.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-    cell5.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
-    cell5.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell5.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    
-    const cell4 = secondHeaderRow.getCell(gradesStartCol + 1);
-    cell4.value = '4';
-    cell4.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-    cell4.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
-    cell4.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell4.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    
-    const cell3 = secondHeaderRow.getCell(gradesStartCol + 2);
-    cell3.value = '3';
-    cell3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
-    cell3.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
-    cell3.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell3.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    
-    // 4. Данные студентов
-    groupStatement.students.forEach((student, idx) => {
-      const row = worksheet.getRow(7 + idx);
-      row.height = 18; // Уменьшено с 25
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Сводная ведомость');
       
-      row.getCell(1).value = idx + 1;
-      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(1).font = { size: 10 };
-      row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      const subjectCount = groupStatement.subjects.length;
       
-      row.getCell(2).value = student.name;
-      row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
-      row.getCell(2).font = { size: 10 };
-      row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // Структура колонок:
+      const afterSubjectsStart = 3 + subjectCount;
+      const avgCol = afterSubjectsStart;           // Средний балл
+      const behaviorCol = afterSubjectsStart + 1;  // Поведение
+      const totalAbsentCol = afterSubjectsStart + 2; // Пропуски всего
+      const unjustifiedCol = afterSubjectsStart + 3; // в т.ч. неув.
+      const scholarshipCol = afterSubjectsStart + 4; // Стипендия
+      const gradesStartCol = afterSubjectsStart + 5; // Начало колонок с оценками (5,4,3)
       
-      // Оценки по предметам
-      groupStatement.subjects.forEach((subject, subjIdx) => {
-        const subjectKey = `${subject.name}, ${subject.assessmentForm}`;
-        const grade = student.grades.get(subjectKey) || '';
-        const cell = row.getCell(3 + subjIdx);
-        cell.value = grade;
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.font = { size: 10 };
-        if (student.naSubjects?.has(subjectKey)) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe8f4fd' } };
-        }
+      const lastColIndex = gradesStartCol + 2;
+      const lastColLetter = String.fromCharCode(65 + lastColIndex - 1);
+      
+      // 1. Заголовок ведомости
+      worksheet.mergeCells(`A1:${lastColLetter}1`);
+      worksheet.getCell('A1').value = `Сводная аттестационная ведомость на ${groupStatement.academicYear} учебный год Семестр ${groupStatement.semester}`;
+      worksheet.getCell('A1').font = { size: 14, bold: true };
+      worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      worksheet.mergeCells(`A2:${lastColLetter}2`);
+      worksheet.getCell('A2').value = `Специальность: ${groupStatement.specialty}`;
+      worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      worksheet.mergeCells(`A3:${lastColLetter}3`);
+      worksheet.getCell('A3').value = `Курс: ${groupStatement.course} Группа: ${groupStatement.groupNumber} Форма обучения: ${groupStatement.formOfStudy}`;
+      worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // 2. Первая строка заголовка (строка 5)
+      const firstHeaderRow = worksheet.getRow(5);
+      firstHeaderRow.height = 30;
+      firstHeaderRow.getCell(1).value = '№ п/п';
+      firstHeaderRow.getCell(2).value = 'Фамилия, имя, отчество студента';
+      
+      // Объединение для дисциплин C5 до колонки с предметами
+      worksheet.mergeCells(5, 3, 5, 2 + subjectCount);
+      firstHeaderRow.getCell(3).value = 'Наименование дисциплины (МДК)/ форма аттестации';
+      
+      // Ячейки после предметов
+      firstHeaderRow.getCell(avgCol).value = 'Средний балл';
+      firstHeaderRow.getCell(behaviorCol).value = 'Поведение';
+      firstHeaderRow.getCell(totalAbsentCol).value = 'Пропуски занятий всего';
+      firstHeaderRow.getCell(unjustifiedCol).value = 'в т. ч. по неуважит. причинам';
+      firstHeaderRow.getCell(scholarshipCol).value = 'Стипендия:';
+      
+      // Объединение для кол-ва оценок - объединяем 3 колонки
+      worksheet.mergeCells(5, gradesStartCol, 5, gradesStartCol + 2);
+      firstHeaderRow.getCell(gradesStartCol).value = 'Кол-во оценок';
+      
+      // Стили первой строки
+      for (let i = 1; i <= lastColIndex; i++) {
+        const cell = firstHeaderRow.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      }
+      
+      // 3. Вторая строка заголовка (строка 6)
+      const secondHeaderRow = worksheet.getRow(6);
+      secondHeaderRow.height = 80;
+      
+      // Заливаем цветом A6 и B6
+      const cellA6 = secondHeaderRow.getCell(1);
+      cellA6.value = '';
+      cellA6.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+      cellA6.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      
+      const cellB6 = secondHeaderRow.getCell(2);
+      cellB6.value = '';
+      cellB6.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+      cellB6.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      
+      // Добавляем предметы с вертикальным текстом
+      groupStatement.subjects.forEach((subject, idx) => {
+        const cell = secondHeaderRow.getCell(3 + idx);
+        cell.value = `${subject.name}, ${subject.assessmentForm}`;
+        cell.alignment = { 
+          horizontal: 'center', 
+          vertical: 'middle', 
+          wrapText: true,
+          textRotation: 255
+        };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 };
         cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       });
       
-      // Средний балл
-      const avgCell = row.getCell(avgCol);
-      avgCell.value = student.average;
-      avgCell.numFmt = '0.0';
-      avgCell.font = { bold: true, color: { argb: 'FF002FA7' }, size: 10 };
-      avgCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      avgCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // Пустые ячейки для среднего балла, поведения и т.д.
+      for (let i = avgCol; i <= scholarshipCol; i++) {
+        const cell = secondHeaderRow.getCell(i);
+        cell.value = '';
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      }
       
-      // Поведение
-      row.getCell(behaviorCol).value = student.behavior;
-      row.getCell(behaviorCol).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(behaviorCol).font = { size: 10 };
-      row.getCell(behaviorCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // Отдельные ячейки 5, 4, 3
+      const cell5 = secondHeaderRow.getCell(gradesStartCol);
+      cell5.value = '5';
+      cell5.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+      cell5.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
+      cell5.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell5.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       
-      // Пропуски всего
-      row.getCell(totalAbsentCol).value = student.absencesTotal;
-      row.getCell(totalAbsentCol).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(totalAbsentCol).font = { size: 10 };
-      row.getCell(totalAbsentCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      const cell4 = secondHeaderRow.getCell(gradesStartCol + 1);
+      cell4.value = '4';
+      cell4.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+      cell4.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
+      cell4.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell4.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       
-      // Пропуски неуважительные
-      row.getCell(unjustifiedCol).value = student.absencesUnjustified;
-      row.getCell(unjustifiedCol).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(unjustifiedCol).font = { size: 10 };
-      row.getCell(unjustifiedCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      const cell3 = secondHeaderRow.getCell(gradesStartCol + 2);
+      cell3.value = '3';
+      cell3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '7893d9' } };
+      cell3.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
+      cell3.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell3.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       
-      // Стипендия
-      row.getCell(scholarshipCol).value = student.scholarship;
-      row.getCell(scholarshipCol).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(scholarshipCol).font = { size: 10 };
-      row.getCell(scholarshipCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // 4. Данные студентов
+      groupStatement.students.forEach((student, idx) => {
+        const row = worksheet.getRow(7 + idx);
+        row.height = 18;
+        
+        row.getCell(1).value = idx + 1;
+        row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(1).font = { size: 10 };
+        row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        row.getCell(2).value = student.name;
+        row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+        row.getCell(2).font = { size: 10 };
+        row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Оценки по предметам
+        groupStatement.subjects.forEach((subject, subjIdx) => {
+          const subjectKey = `${subject.name}, ${subject.assessmentForm}`;
+          const grade = student.grades.get(subjectKey) || '';
+          const cell = row.getCell(3 + subjIdx);
+          cell.value = grade;
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.font = { size: 10 };
+          if (student.naSubjects?.has(subjectKey)) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe8f4fd' } };
+          }
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+        
+        // Средний балл
+        const avgCell = row.getCell(avgCol);
+        avgCell.value = student.average;
+        avgCell.numFmt = '0.0';
+        avgCell.font = { bold: true, color: { argb: 'FF002FA7' }, size: 10 };
+        avgCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        avgCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Поведение
+        row.getCell(behaviorCol).value = student.behavior;
+        row.getCell(behaviorCol).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(behaviorCol).font = { size: 10 };
+        row.getCell(behaviorCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Пропуски всего
+        row.getCell(totalAbsentCol).value = student.absencesTotal;
+        row.getCell(totalAbsentCol).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(totalAbsentCol).font = { size: 10 };
+        row.getCell(totalAbsentCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Пропуски неуважительные
+        row.getCell(unjustifiedCol).value = student.absencesUnjustified;
+        row.getCell(unjustifiedCol).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(unjustifiedCol).font = { size: 10 };
+        row.getCell(unjustifiedCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Стипендия
+        row.getCell(scholarshipCol).value = student.scholarship;
+        row.getCell(scholarshipCol).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(scholarshipCol).font = { size: 10 };
+        row.getCell(scholarshipCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        // Оценки 5,4,3
+        row.getCell(gradesStartCol).value = student.gradesCount.five;
+        row.getCell(gradesStartCol).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(gradesStartCol).font = { size: 10 };
+        row.getCell(gradesStartCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        row.getCell(gradesStartCol + 1).value = student.gradesCount.four;
+        row.getCell(gradesStartCol + 1).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(gradesStartCol + 1).font = { size: 10 };
+        row.getCell(gradesStartCol + 1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        
+        row.getCell(gradesStartCol + 2).value = student.gradesCount.three;
+        row.getCell(gradesStartCol + 2).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(gradesStartCol + 2).font = { size: 10 };
+        row.getCell(gradesStartCol + 2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      });
       
-      // Оценки 5,4,3
-      row.getCell(gradesStartCol).value = student.gradesCount.five;
-      row.getCell(gradesStartCol).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(gradesStartCol).font = { size: 10 };
-      row.getCell(gradesStartCol).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // 6. Настройка ширины колонок
+      worksheet.getColumn(1).width = 6; 
+      worksheet.getColumn(2).width = 35;
+      for (let i = 0; i < subjectCount; i++) worksheet.getColumn(3 + i).width = 25; 
+      worksheet.getColumn(avgCol).width = 10;
+      worksheet.getColumn(behaviorCol).width = 8;
+      worksheet.getColumn(totalAbsentCol).width = 12;
+      worksheet.getColumn(unjustifiedCol).width = 16;
+      worksheet.getColumn(scholarshipCol).width = 10;
+      worksheet.getColumn(gradesStartCol).width = 6;
+      worksheet.getColumn(gradesStartCol + 1).width = 6;
+      worksheet.getColumn(gradesStartCol + 2).width = 6;
       
-      row.getCell(gradesStartCol + 1).value = student.gradesCount.four;
-      row.getCell(gradesStartCol + 1).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(gradesStartCol + 1).font = { size: 10 };
-      row.getCell(gradesStartCol + 1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      // 7. Сохраняем файл
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Сводная_ведомость_${groupStatement.groupNumber}_${groupStatement.academicYear}_семестр${groupStatement.semester}.xlsx`);
       
-      row.getCell(gradesStartCol + 2).value = student.gradesCount.three;
-      row.getCell(gradesStartCol + 2).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(gradesStartCol + 2).font = { size: 10 };
-      row.getCell(gradesStartCol + 2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    });
-    
-    // 6. Настройка ширины колонок
-    worksheet.getColumn(1).width = 6; 
-    worksheet.getColumn(2).width = 35;
-    for (let i = 0; i < subjectCount; i++) worksheet.getColumn(3 + i).width = 25; 
-    worksheet.getColumn(avgCol).width = 10;
-    worksheet.getColumn(behaviorCol).width = 8;
-    worksheet.getColumn(totalAbsentCol).width = 12;
-    worksheet.getColumn(unjustifiedCol).width = 16;
-    worksheet.getColumn(scholarshipCol).width = 10;
-    worksheet.getColumn(gradesStartCol).width = 6;
-    worksheet.getColumn(gradesStartCol + 1).width = 6;
-    worksheet.getColumn(gradesStartCol + 2).width = 6;
-    
-    // 7. Сохраняем файл
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `Сводная_ведомость_${groupStatement.groupNumber}_${groupStatement.academicYear}.xlsx`);
-    
-  } catch (error) {
-    console.error('Ошибка при экспорте:', error);
-    setError('Не удалось экспортировать ведомость');
-  }
-};
-
-  useEffect(() => {
-    loadGroupStatement();
-  }, [groupId]);
+    } catch (error) {
+      console.error('Ошибка при экспорте:', error);
+      setError('Не удалось экспортировать ведомость');
+    }
+  };
 
   const getAssessmentForm = (subjectName: string): string => {
     if (subjectName.toLowerCase().includes('физическая культура')) return 'З';
@@ -352,7 +370,11 @@ const exportToExcel = async () => {
       const groups = await headApiService.getGroups();
       const group = groups.find(g => g.id === groupId);
       if (!group) throw new Error('Группа не найдена');
+      
+      // Если API поддерживает параметры года и семестра:
+      // const reportData = await headApiService.getGroupReport(groupId, selectedYear, selectedSemester);
       const reportData = await headApiService.getGroupReport(groupId);
+      
       if (!reportData || !reportData.subjectNames || !reportData.studentsData || !reportData.studentsData[0]) {
         throw new Error('Некорректные данные от сервера');
       }
@@ -397,8 +419,8 @@ const exportToExcel = async () => {
         groupNumber: group.numberGroup.toString(),
         specialty: group.specialty,
         course: group.course,
-        semester: 7,
-        academicYear: `${group.admissionYear+3}-${group.admissionYear + 4}`,
+        semester: selectedSemester,
+        academicYear: `${selectedYear}-${selectedYear + 1}`,
         formOfStudy: group.formEducation,
         students: studentGrades,
         subjects,
@@ -542,6 +564,15 @@ const exportToExcel = async () => {
     return student.naSubjects?.has(subjectKey) || false;
   };
 
+  // Обработчики фильтров
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+  };
+
+  const handleSemesterChange = (semester: number) => {
+    setSelectedSemester(semester);
+  };
+
   if (loading) {
     return <div className="dh-at-summary-loading" style={{ padding: '40px', textAlign: 'center' }}>
       <div className="dhm-loading-spinner" style={{ margin: '0 auto 16px' }}></div>
@@ -561,19 +592,54 @@ const exportToExcel = async () => {
   return (
     <div className="dh-at-statement-wrapper" style={{ height: '100%', overflow: 'auto' }}>
       <div className="dh-at-statement-header">
-        <h3>Сводная аттестационная ведомость</h3>
         <div className="dh-at-statement-actions">
-          {isEditing ? (
-            <>
-              <button className="dh-at-btn-secondary" onClick={() => setIsEditing(false)}>Отменить редактирование</button>
-              <button className="dh-at-btn-primary" onClick={() => { setIsEditing(false); alert('Изменения сохранены (локально)'); }}>Сохранить</button>
-            </>
-          ) : (
-            <>
-              <button className="dh-at-btn-secondary" onClick={() => setIsEditing(true)}>Редактировать</button>
-              <button className="dh-at-btn-primary" onClick={handleExportStatement}>Экспорт</button>
-            </>
-          )}
+          {/* Фильтры год и семестр */}
+          <div className="dh-at-filters-left">
+            <div className="dh-at-filter-group">
+              <label className="dh-at-filter-label">Год:</label>
+              <select 
+                className="dh-at-filter-select" 
+                value={selectedYear} 
+                onChange={(e) => handleYearChange(Number(e.target.value))}
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="dh-at-filter-group">
+              <label className="dh-at-filter-label">Семестр:</label>
+              <div className="dh-at-semester-buttons">
+                <button 
+                  className={`dh-at-semester-btn ${selectedSemester === 7 ? 'active' : ''}`} 
+                  onClick={() => handleSemesterChange(7)}
+                >
+                  7 семестр
+                </button>
+                <button 
+                  className={`dh-at-semester-btn ${selectedSemester === 8 ? 'active' : ''}`} 
+                  onClick={() => handleSemesterChange(8)}
+                >
+                  8 семестр
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="dh-at-actions-right">
+            {isEditing ? (
+              <>
+                <button className="dh-at-btn-secondary" onClick={() => setIsEditing(false)}>Отменить редактирование</button>
+                <button className="dh-at-btn-primary" onClick={() => { setIsEditing(false); alert('Изменения сохранены (локально)'); }}>Сохранить</button>
+              </>
+            ) : (
+              <>
+                <button className="dh-at-btn-secondary" onClick={() => setIsEditing(true)}>Редактировать</button>
+                <button className="dh-at-btn-primary" onClick={handleExportStatement}>Экспорт</button>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="dh-at-statement-body">

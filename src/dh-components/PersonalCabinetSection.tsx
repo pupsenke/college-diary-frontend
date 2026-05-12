@@ -16,7 +16,11 @@ interface QuickAction {
   description: string;
 }
 
-export const PersonalCabinetSection: React.FC = () => {
+interface PersonalCabinetSectionProps {
+  onClose?: () => void;
+}
+
+export const PersonalCabinetSection: React.FC<PersonalCabinetSectionProps> = ({ onClose }) => {
   const { user } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -245,7 +249,6 @@ export const PersonalCabinetSection: React.FC = () => {
 
   // Обработчик клика по быстрому действию
   const handleQuickActionClick = (action: QuickAction) => {
-    // В реальном приложении здесь будет навигация
     console.log(`Переход к: ${action.title}`);
     alert(`Переход к разделу: ${action.title}`);
   };
@@ -371,24 +374,6 @@ export const PersonalCabinetSection: React.FC = () => {
                     >
                       Сменить пароль
                     </button>
-
-            <div className="dh-pc-stats-card">
-              <h4 className="dh-pc-stats-title">Статистика отделения</h4>
-              <div className="dh-pc-stats-grid">
-                <div className="dh-pc-stat-item">
-                  <div className="dh-pc-stat-value">?</div>
-                  <div className="dh-pc-stat-label">Групп</div>
-                </div>
-                <div className="dh-pc-stat-item">
-                  <div className="dh-pc-stat-value">?</div>
-                  <div className="dh-pc-stat-label">Сотрудников</div>
-                </div>
-                <div className="dh-pc-stat-item">
-                  <div className="dh-pc-stat-value">?</div>
-                  <div className="dh-pc-stat-label">Студентов</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -251,7 +251,7 @@ export class SessionAttestationService {
     <span class="attestation-form">${attestationFormText}</span>
   </div>
 
-  <div class="small-text">Вид промежуточной аттестации: ${attestationFormText}</div>
+  <div class="small-text">Вид промежуточной аттестации: экзамен, зачет, дифференцированный зачет</div>
 
   <div class="underline-text">${data.teacherName}</div>
   <div class="small-text">Фамилия И.О. преподавателя, проводящего аттестацию</div>
@@ -317,7 +317,7 @@ export class SessionAttestationService {
     switch (form) {
       case 'exam': return 'экзамен';
       case 'credit': return 'зачёт';
-      case 'test': return 'контрольная работа';
+      case 'test': return 'дифференцированный зачет';
       default: return 'экзамен';
     }
   }
