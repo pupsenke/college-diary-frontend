@@ -286,13 +286,59 @@ export interface UpdateAttendanceRequest {
   idStudent: number;
 }
 
-// НОВЫЙ МЕТОД ДЛЯ ПОЛУЧЕНИЯ ТИПОВ ЗАНЯТИЙ ПО SUPPLEMENT ID
+export interface CertificationInfo {
+  type: 'none' | 'credit' | 'exam' | 'diffCredit';
+  displayText: string;
+  shortCode: string;   // 'З', 'Э', 'ДЗ' или ''
+}
+
+export interface GroupInfo {
+  id: number;
+  numberGroup: number;
+  admissionYear: number;
+  idCurator: number;
+  course: number;
+  formEducation: string;
+  profile: string;
+  specialty: string;
+  departmentHead: number;
+  currentSemester: number;
+}
+
+export interface MarkItem {
+  id: {
+    semesterMarkIdSt: number;
+    semesterMarkIdStudent: number;
+    number: number;
+  };
+  value: number | null;
+  idLesson: number;
+  typeMark: {
+    id: number;
+    idSt: number;
+    name: string;
+    weight: number;
+  };
+  changes: ChangeHistory[];
+}
+
+export interface StudentMark {
+  id: {
+    idSt: number;
+    idStudent: number;
+  };
+  certification: number | null;
+  isRetake: boolean;
+  initialCertification: number | null;
+  regularMarks: MarkItem[];
+}
+
 export interface SupplementInfo {
   id: number;
   comment: string;
   typeMark?: string;
-  // другие поля если нужны
 }
+
 
 export const teacherApiService = {
   // Получение всех сотрудников с кэшированием
@@ -646,7 +692,7 @@ export const teacherApiService = {
       const data = await response.json();
       
       const filteredData = data.filter((discipline: Discipline) => {
-        return semester === 1; // Пока возвращаем все данные для первого семестра
+        return true;
       });
       
       cacheService.set(cacheKey, filteredData, { 
@@ -754,8 +800,7 @@ export const teacherApiService = {
         `teacher_disciplines_course_${teacherId}`
       );
       
-      // Удаляем все связанные ключи поиска и семестров
-      for (let i = 1; i <= 2; i++) {
+      for (let i = 1; i <= 8; i++) {
         keysToRemove.push(`teacher_disciplines_semester_${teacherId}_${i}`);
       }
       
@@ -1540,21 +1585,19 @@ export const teacherApiService = {
     }
   },
 
-  /**
-   * Обновление комментария/темы занятия
-   */
+    /**
+     * Обновление комментария/темы занятия
+     */
   async updateLessonComment(idSupplement: number, comment: string): Promise<{ success: boolean }> {
     try {
-      // Используем правильный endpoint и отправляем данные в теле запроса
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/supplements/update`, {
-        method: 'PATCH',
+      const url = `${API_BASE_URL}/api/v1/supplements/update?id=${idSupplement}&comment=${encodeURIComponent(comment)}`;
+      console.log('Updating lesson comment URL:', url);
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'PATCH', 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: idSupplement,
-          comment: comment
-        }),
       });
       
       if (!response.ok) {
@@ -1570,8 +1613,8 @@ export const teacherApiService = {
       }
 
       const responseText = await response.text();
+      console.log('Update lesson comment response:', responseText);
       
-      // Инвалидируем кэш информации о занятиях
       this.invalidateLessonInfoCache();
       
       return { success: true };
@@ -3368,4 +3411,284 @@ export const teacherApiService = {
       return [];
     }
   },
+
+  async getGroupInfo(groupId: number): Promise<GroupInfo | null> {
+    const cacheKey = `group_info_full_${groupId}`;
+    
+    const cached = cacheService.get<GroupInfo>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/id/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const groupInfo: GroupInfo = await response.json();
+      
+      cacheService.set(cacheKey, groupInfo, { 
+        ttl: CACHE_TTL.GROUP_DATA 
+      });
+      
+      return groupInfo;
+    } catch (error) {
+      console.error('Error fetching group info:', error);
+      return null;
+    }
+  },
+
+  async getCertificationType(idSt: number, groupId: number): Promise<CertificationInfo> {
+    const cacheKey = `certification_${idSt}_${groupId}`;
+    
+    const cached = cacheService.get<CertificationInfo>(cacheKey, { 
+      ttl: CACHE_TTL.CERTIFICATION_DATA || 3600000
+    });
+    
+    if (cached) {
+      console.log(`Используем кэш для idSt=${idSt}, groupId=${groupId}:`, cached);
+      return cached;
+    }
+
+    const result = await this.fetchCertificationType(idSt, groupId);
+    
+    cacheService.set(cacheKey, result, { ttl: CACHE_TTL.CERTIFICATION_DATA || 3600000 });
+    return result;
+  },
+
+  async fetchCertificationType(idSt: number, groupId: number): Promise<CertificationInfo> {
+    try {
+      // URL: /api/v1/certification-schedule/current/{idSt}/{groupId}
+      const url = `${API_BASE_URL}/api/v1/certification-schedule/current/${idSt}/${groupId}`;
+      console.log(`Запрос типа аттестации: ${url}`);
+
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }, 5000);
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 500) {
+          console.warn(`API вернул ${response.status} для idSt=${idSt}, groupId=${groupId}, нет данных`);
+          return {
+            type: 'none',
+            displayText: 'Аттестация не назначена',
+            shortCode: ''
+          };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // API возвращает plain text, например "Зачет"
+      const certificationText = await response.text();
+      console.log(`Ответ API для idSt=${idSt}, groupId=${groupId}: "${certificationText}"`);
+
+      const normalizedText = certificationText.trim();
+      
+      switch (normalizedText) {
+        case 'Зачет':
+          return {
+            type: 'credit',
+            displayText: 'Зачет',
+            shortCode: 'З'
+          };
+        case 'Экзамен':
+          return {
+            type: 'exam',
+            displayText: 'Экзамен',
+            shortCode: 'Э'
+          };
+        case 'Дифференцированный зачет':
+          return {
+            type: 'diffCredit',
+            displayText: 'Дифференцированный зачет',
+            shortCode: 'ДЗ'
+          };
+        case 'Аттестация не назначена':
+        case '':
+          return {
+            type: 'none',
+            displayText: 'Аттестация не назначена',
+            shortCode: ''
+          };
+        default:
+          console.warn(`Неизвестный тип аттестации: "${normalizedText}"`);
+          return {
+            type: 'none',
+            displayText: 'Аттестация не назначена',
+            shortCode: ''
+          };
+      }
+
+    } catch (error) {
+      console.error(`Ошибка получения типа аттестации для idSt=${idSt}, groupId=${groupId}:`, error);
+      return {
+        type: 'none',
+        displayText: 'Аттестация не назначена',
+        shortCode: ''
+      };
+    }
+  },
+
+  // Получение всех оценок (включая экзаменационные)
+  async getAllMarks(): Promise<StudentMark[]> {
+    const cacheKey = 'all_marks';
+    
+    const cached = cacheService.get<StudentMark[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: StudentMark[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching all marks:', error);
+      return [];
+    }
+  },
+
+  // Получение экзаменационных оценок для конкретного idSt
+  async getCertificationMarks(idSt: number): Promise<StudentMark[]> {
+    const allMarks = await this.getAllMarks();
+    const filtered = allMarks.filter(mark => mark.id.idSt === idSt);
+    console.log(`getCertificationMarks для idSt=${idSt}: найдено ${filtered.length} записей`, filtered);
+    return filtered;
+  },
+
+  getCertificationGradeText(certificationId: number | null): string {
+    if (certificationId === null) return '';
+    
+    // Для зачета: 5,4,3 -> показываем число (5,4,3)
+    // Для незачета: 2 -> показываем "2"
+    const gradeMap: Record<number, string> = {
+      5: '5',   // 5 -> "5" (зачет)
+      4: '4',   // 4 -> "4" (зачет)
+      3: '3',   // 3 -> "3" (зачет)
+      2: '2',   // 2 -> "2" (незачет)
+      1: '1',   // 1 -> "1"
+      0: '0'    // 0 -> "0"
+    };
+    
+    const result = gradeMap[certificationId] || '';
+    console.log(`getCertificationGradeText: ${certificationId} -> "${result}"`);
+    return result;
+  },
+
+  // Преобразование текста оценки в ID
+  getCertificationGradeId(gradeText: string): number | null {
+    if (!gradeText) return null;
+    
+    const idMap: Record<string, number> = {
+      '5': 5,
+      '4': 4,
+      '3': 3,
+      '2': 2,   // 2 = незачет
+      '1': 1,
+      '0': 0,
+      'нз': 2,  // для обратной совместимости
+      'з': 5    // для обратной совместимости
+    };
+    
+    const result = idMap[gradeText] ?? null;
+    console.log(`getCertificationGradeId: "${gradeText}" -> ${result}`);
+    return result;
+  },
+
+  // Сохранение экзаменационной оценки
+  async updateCertification(idSt: number, studentId: number, certificationId: number | null, isRetake: boolean): Promise<{ success: boolean }> {
+    try {
+      const requestBody = {
+        id: {
+          idSt: idSt,
+          idStudent: studentId
+        },
+        certification: certificationId,
+        isRetake: isRetake
+      };
+      
+      console.log('Saving certification:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks/update/certification`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        throw new Error(`Ошибка сохранения экзамена: ${response.status} - ${errorText}`);
+      }
+
+      // Инвалидируем кэш
+      this.invalidateMarksCache();
+      this.invalidateStudentCache();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating certification:', error);
+      throw error;
+    }
+  },
+
+  // Инвалидация кэша оценок
+  invalidateMarksCache(): void {
+    cacheService.remove('all_marks');
+  },
+
+  invalidateCertificationCache(idSt?: number, groupId?: number): void {
+    if (idSt && groupId) {
+      // Удаляем конкретный ключ
+      cacheService.remove(`certification_${idSt}_${groupId}`);
+    } else {
+      // Удаляем все кэши аттестации
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_certification_')) {
+          cacheService.remove(key.replace('cache_', ''));
+        }
+      }
+    }
+  }
 };

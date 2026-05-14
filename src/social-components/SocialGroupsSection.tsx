@@ -67,7 +67,7 @@ export const GroupsSection: React.FC = () => {
       specialty: "Информационные системы и программирование",
       course: 4,
       studentsCount: 32,
-      performance: 86,
+      performance: 4.4,
       attendance: 92,
       headman: "Шевякова А.И.",
       curator: "Голубева Г.А.",
@@ -88,7 +88,7 @@ export const GroupsSection: React.FC = () => {
       specialty: "Информационные системы и программирование",
       course: 4,
       studentsCount: 30,
-      performance: 82,
+      performance: 4.6,
       attendance: 90,
       headman: "Соколов И.К.",
       curator: "Сазонова Н.В.",
@@ -578,7 +578,7 @@ export const GroupsSection: React.FC = () => {
             <div className="sg-metric-progress">
               <div 
                 className="sg-metric-progress-fill" 
-                style={{ width: `${group.performance}%`, background: '#002FA7' }}
+                style={{ width: `${group.performance}`, background: '#002FA7' }}
               ></div>
             </div>
           </div>

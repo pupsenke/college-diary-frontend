@@ -1,46 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import './SocialPersonalCabinet.css'; 
-
-interface SocialWorkerData {
-  firstName: string;
-  lastName: string;
-  middleName: string;
-  email: string;
-  position: string;
-  phone: string;
-  office: string;
-  department: string;
-}
+import { socialApiService, type SocialWorkerData, type Room } from '../services/socialApiService';
+import './SocialPersonalCabinet.css';
 
 interface PasswordChangeData {
-  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
 
 interface ProfileEditData {
-  lastName: string;
-  firstName: string;
-  middleName: string;
   email: string;
-  phone: string;
-  office: string;
+  telephone: string;
+  officesText: string;  // текст для ввода кабинетов через запятую
+  availableRooms: Room[];
 }
 
 export const PersonalCabinet: React.FC = () => {
   const { user } = useUser();
-  const [workerData, setWorkerData] = useState<SocialWorkerData>({
-    firstName: 'Мария',
-    lastName: 'Пшеничная',
-    middleName: 'Алексеевна',
-    email: 'xxx.p@college.ru',
-    position: 'Социальный педагог',
-    phone: '+7 (xxx) xxx-xx-xx',
-    office: '405, 216A',
-    department: 'Отдел социальной работы'
-  });
-
+  const [workerData, setWorkerData] = useState<SocialWorkerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -48,18 +25,15 @@ export const PersonalCabinet: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [passwordData, setPasswordData] = useState<PasswordChangeData>({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
 
   const [profileData, setProfileData] = useState<ProfileEditData>({
-    lastName: 'Пшеничная',
-    firstName: 'Мария',
-    middleName: 'Алексеевна',
-    email: 'xxx.p@college.ru',
-    phone: '+7 (xxx) xxx-xx-xx',
-    office: '405, 216A'
+    email: '',
+    telephone: '',
+    officesText: '',
+    availableRooms: []
   });
 
   const [recentActivity] = useState([
@@ -74,24 +48,25 @@ export const PersonalCabinet: React.FC = () => {
       if (forceRefresh) {
         setRefreshing(true);
       }
-      
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // В реальном приложении здесь будет запрос к API
-      const mockData: SocialWorkerData = {
-        firstName: user?.name || 'Мария',
-        lastName: user?.lastName || 'Пшеничная',
-        middleName: user?.patronymic || 'Алексеевна',
-        email: `${user?.login || 'xxx.p'}@college.ru`,
-        position: 'Социальный педагог',
-        phone: '+7 (xxx) xxx-xx-xx',
-        office: '405, 216A',
-        department: 'Отдел социальной работы'
-      };
-      
-      setWorkerData(mockData);
-      
+      setError(null);
+
+      const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
+      if (!staffId) {
+        throw new Error('ID сотрудника не найден');
+      }
+
+      let data: SocialWorkerData | null;
+      if (forceRefresh) {
+        data = await socialApiService.refreshSocialWorkerData(staffId);
+      } else {
+        data = await socialApiService.getSocialWorkerData(staffId);
+      }
+
+      if (data) {
+        setWorkerData(data);
+      } else {
+        setError('Не удалось загрузить данные');
+      }
     } catch (err) {
       setError('Не удалось загрузить данные');
       console.error('Error fetching worker data:', err);
@@ -114,23 +89,25 @@ export const PersonalCabinet: React.FC = () => {
   const handlePasswordModalOpen = () => {
     setShowPasswordModal(true);
     setPasswordData({
-      currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     });
     setError(null);
   };
 
-  const handleProfileModalOpen = () => {
-    setShowProfileModal(true);
+  const handleProfileModalOpen = async () => {
+    if (!workerData) return;
+
+    const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
+    const availableRooms = await socialApiService.getAvailableRoomsForStaff(staffId);
+    
     setProfileData({
-      lastName: workerData.lastName,
-      firstName: workerData.firstName,
-      middleName: workerData.middleName,
       email: workerData.email,
-      phone: workerData.phone,
-      office: workerData.office
+      telephone: workerData.telephone,
+      officesText: workerData.offices.join(', '),
+      availableRooms: availableRooms
     });
+    setShowProfileModal(true);
     setError(null);
   };
 
@@ -154,17 +131,13 @@ export const PersonalCabinet: React.FC = () => {
         return;
       }
 
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
+      const result = await socialApiService.changePassword(staffId, passwordData);
 
-      setShowPasswordModal(false);
-      
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      
+      if (result.success) {
+        setShowPasswordModal(false);
+        setPasswordData({ newPassword: '', confirmPassword: '' });
+      }
     } catch (err) {
       setError('Не удалось изменить пароль');
       console.error('Password change error:', err);
@@ -178,22 +151,26 @@ export const PersonalCabinet: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      if (!profileData.lastName || !profileData.firstName) {
-        setError('Пожалуйста, заполните обязательные поля');
-        return;
-      }
-
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Обновляем данные
-      setWorkerData(prev => ({
-        ...prev,
-        ...profileData
-      }));
-
-      setShowProfileModal(false);
+      const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
       
+      // Обновляем email и телефон
+      const updateResult = await socialApiService.updateStaffData(staffId, {
+        email: profileData.email,
+        telephone: profileData.telephone
+      });
+
+      // Обновляем кабинеты (парсим строку с кабинетами через запятую)
+      const officesArray = profileData.officesText
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      
+      await socialApiService.updateStaffRooms(staffId, officesArray);
+
+      if (updateResult.success) {
+        await fetchWorkerData(true);
+        setShowProfileModal(false);
+      }
     } catch (err) {
       setError('Не удалось сохранить профиль');
       console.error('Profile save error:', err);
@@ -209,7 +186,7 @@ export const PersonalCabinet: React.FC = () => {
     }));
   };
 
-  const handleProfileDataChange = (field: keyof ProfileEditData, value: string) => {
+  const handleProfileDataChange = (field: keyof ProfileEditData, value: any) => {
     setProfileData(prev => ({
       ...prev,
       [field]: value
@@ -250,6 +227,10 @@ export const PersonalCabinet: React.FC = () => {
                 <span className="feature-icon"></span>
                 <span>Редактирование контактной информации</span>
               </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Управление кабинетами (можно указать несколько через запятую)</span>
+              </div>
             </div>
           </div>
 
@@ -266,11 +247,11 @@ export const PersonalCabinet: React.FC = () => {
               </div>
               <div className="step">
                 <span className="step-number">3</span>
-                <span>Сохраните изменения или отмените редактирование</span>
+                <span>Кабинеты можно указывать через запятую, например: "405, 416а, СП зал"</span>
               </div>
               <div className="step">
                 <span className="step-number">4</span>
-                <span>Следите за последней активностью внизу страницы</span>
+                <span>Сохраните изменения или отмените редактирование</span>
               </div>
             </div>
           </div>
@@ -294,9 +275,44 @@ export const PersonalCabinet: React.FC = () => {
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
-      <span>Обновить данные</span>
+      <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
     </button>
   );
+
+  if (loading && !workerData) {
+    return (
+      <div className="personal-cabinet">
+        <div className="cabinet-header">
+          <InfoIcon />
+          <RefreshButton />
+        </div>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+          Загрузка данных...
+        </div>
+      </div>
+    );
+  }
+
+  if (!workerData) {
+    return (
+      <div className="personal-cabinet">
+        <div className="cabinet-header">
+          <InfoIcon />
+          <RefreshButton />
+        </div>
+        <div className="error-state">
+          <div className="error-message">
+            <strong>Ошибка загрузки</strong>
+            <br />
+            {error || 'Не удалось загрузить данные пользователя'}
+          </div>
+          <button className="retry-button" onClick={handleRefresh}>
+            Повторить попытку
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="personal-cabinet">
@@ -306,7 +322,6 @@ export const PersonalCabinet: React.FC = () => {
       </div>
 
       <div className="personal-info-main">
-        {/* Левый блок - ФИО */}
         <div className="personal-info-section">
           <div className="info-column">
             <div className="info-item">
@@ -328,20 +343,19 @@ export const PersonalCabinet: React.FC = () => {
           </div>
         </div>
         
-        {/* Правый блок - Контактная информация */}
         <div className="personal-info-section">
           <div className="info-column">
             <div className="info-item">
               <span className="info-label">Эл. почта:</span> 
-              <span className="info-value">{workerData.email}</span> 
+              <span className="info-value">{workerData.email || 'Не указан'}</span> 
             </div>
             <div className="info-item">
               <span className="info-label">Телефон:</span> 
-              <span className="info-value">{workerData.phone}</span> 
+              <span className="info-value">{workerData.telephone || 'Не указан'}</span> 
             </div>
             <div className="info-item">
-              <span className="info-label">Кабинет:</span> 
-              <span className="info-value">{workerData.office}</span> 
+              <span className="info-label">Кабинеты:</span> 
+              <span className="info-value">{workerData.officesDisplay}</span> 
             </div>
             <div className="info-item">
               <span className="info-label">Отдел:</span> 
@@ -407,12 +421,6 @@ export const PersonalCabinet: React.FC = () => {
         )}
       </div>
 
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-          Загрузка данных...
-        </div>
-      )}
-      
       {error && (
         <div className="pc-error-message">
           {error}
@@ -424,9 +432,9 @@ export const PersonalCabinet: React.FC = () => {
         <div className="lk-modal-overlay" onClick={() => setShowPasswordModal(false)}>
           <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
-                <div className="lk-modal-icon">
-                  <img src="/social-icons/editing_icon.svg" alt="Смена пароля" />
-                </div>
+              <div className="lk-modal-icon">
+                <img src="/social-icons/editing_icon.svg" alt="Смена пароля" />
+              </div>
               <h3>Смена пароля</h3>
               <button 
                 className="pc-modal-close"
@@ -437,16 +445,6 @@ export const PersonalCabinet: React.FC = () => {
             </div>
 
             <div className="pc-modal-content">
-              <div className="pc-form-group">
-                <label>Текущий пароль</label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => handlePasswordDataChange('currentPassword', e.target.value)}
-                  className="pc-input"
-                  placeholder="Введите текущий пароль"
-                />
-              </div>
               <div className="pc-form-group">
                 <label>Новый пароль</label>
                 <input
@@ -493,9 +491,9 @@ export const PersonalCabinet: React.FC = () => {
         <div className="lk-modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pc-modal-header">
-                <div className="lk-modal-icon">
-                  <img src="/social-icons/editing_icon.svg" alt="Редактирование профиля" />
-                </div>
+              <div className="lk-modal-icon">
+                <img src="/social-icons/editing_icon.svg" alt="Редактирование профиля" />
+              </div>
               <h3>Редактирование профиля</h3>
               <button 
                 className="pc-modal-close"
@@ -520,20 +518,31 @@ export const PersonalCabinet: React.FC = () => {
                 <label>Телефон</label>
                 <input
                   type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => handleProfileDataChange('phone', e.target.value)}
+                  value={profileData.telephone}
+                  onChange={(e) => handleProfileDataChange('telephone', e.target.value)}
                   className="pc-input"
+                  placeholder="+7 (xxx) xxx-xx-xx"
                 />
               </div>
               
               <div className="pc-form-group">
-                <label>Кабинет</label>
+                <label>Кабинеты (через запятую)</label>
                 <input
                   type="text"
-                  value={profileData.office}
-                  onChange={(e) => handleProfileDataChange('office', e.target.value)}
+                  value={profileData.officesText}
+                  onChange={(e) => handleProfileDataChange('officesText', e.target.value)}
                   className="pc-input"
+                  placeholder="например: 405, 416а, СП зал"
                 />
+                <div className="form-hint">
+                  Укажите номера кабинетов через запятую. Доступные кабинеты:
+                  <div className="available-rooms-hint">
+                    {profileData.availableRooms.map(room => room.name).join(', ')}
+                  </div>
+                  <div className="form-hint-note">
+                    * Кабинеты можно выбрать только из списка доступных
+                  </div>
+                </div>
               </div>
               
               <div className="pc-modal-actions"> 
@@ -547,7 +556,7 @@ export const PersonalCabinet: React.FC = () => {
                 <button
                   className="pc-confirm-btn"
                   onClick={handleProfileSave}
-                  disabled={loading || !profileData.lastName || !profileData.firstName}
+                  disabled={loading}
                 >
                   {loading ? 'Сохранение...' : 'Сохранить изменения'}
                 </button>

@@ -639,3 +639,16 @@
 .disciplines-section {
   animation-delay: 0.2s;
 }
+
+.form-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.available-rooms-hint {
+  color: #002FA7;
+  font-size: 11px;
+  margin-top: 4px;
+  word-break: break-all;
+}

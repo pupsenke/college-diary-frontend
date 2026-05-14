@@ -11,7 +11,9 @@ import {
   type UpdateMarkGradeRequest,
   type UpdateMarkRequest,
   type ApiLessonType,
-  type StData
+  type StData,
+  type CertificationInfo,
+  type GroupInfo
 } from '../services/teacherApiService';
 import './TeacherPerformanceSection.css';
 
@@ -54,6 +56,7 @@ export interface ExamRecord {
   studentId: number;
   examType: 'Э' | 'ДЗ' | 'З' | '';
   grade: string;
+  isRetake?: boolean;
 }
 
 export interface TeacherPerformanceSectionProps {
@@ -187,12 +190,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     end: ''
   });
   const [lessonTypesData, setLessonTypesData] = useState<Record<string, LessonTypeInfo>>({});
-  const [globalExamType, setGlobalExamType] = useState<string>('');
 
   const [loadingLessonTypes, setLoadingLessonTypes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
   const [error, setError] = useState<string | null>(null);
+
+  const [certificationType, setCertificationType] = useState<CertificationInfo | null>(null);
+  const [loadingCertification, setLoadingCertification] = useState(false);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
+  const [savingExam, setSavingExam] = useState<number | null>(null);
+  const [examRetakeStatus, setExamRetakeStatus] = useState<Record<number, boolean>>({});
 
   // Новые состояния для управления датами
   const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
@@ -265,7 +273,88 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const examGrades = {
     'Э': ['5', '4', '3', '2', ''],
     'ДЗ': ['5', '4', '3', '2', ''],
-    'З': ['з', 'нз', '']
+    'З': ['5', '4', '3', '2', '']  // Только числа: 5,4,3 (зачет) и 2 (незачет)
+  };
+
+  // функция загрузки типа аттестации
+  const loadCertificationType = async (): Promise<void> => {
+    if (!idSt || !groupNumber) return;
+
+    setLoadingCertification(true);
+    try {
+      // Получаем ID группы из номера группы
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        console.warn('Не удалось определить ID группы для загрузки типа аттестации');
+        return;
+      }
+
+      // Инвалидируем кэш перед загрузкой (опционально)
+      teacherApiService.invalidateCertificationCache(idSt, groupId);
+
+      // Загружаем тип аттестации, передавая idSt и groupId
+      const certification = await teacherApiService.getCertificationType(idSt, groupId);
+      console.log('Тип аттестации загружен:', certification);
+      setCertificationType(certification);
+      
+      // 🔥 ВАЖНО: После загрузки типа аттестации загружаем существующие оценки
+      await loadExistingExamGrades();
+      
+    } catch (error) {
+      console.error('Ошибка загрузки типа аттестации:', error);
+    } finally {
+      setLoadingCertification(false);
+    }
+  };
+
+  useEffect(() => {
+    if (idSt && groupNumber) {
+      loadCertificationType();
+    }
+  }, [idSt, groupNumber]);
+
+  const loadExistingExamGrades = async (): Promise<void> => {
+    if (!idSt) return;
+    
+    try {
+      console.log('Загрузка существующих экзаменационных оценок для idSt:', idSt);
+      
+      const certificationMarks = await teacherApiService.getCertificationMarks(idSt);
+      
+      console.log('Получены экзаменационные оценки:', certificationMarks);
+      
+      certificationMarks.forEach(mark => {
+        const studentId = mark.id.idStudent;
+        const certificationId = mark.certification;
+        const isRetake = mark.isRetake;
+        
+        // Отображаем число: 5,4,3 (зачет) или 2 (незачет)
+        let displayGrade = '';
+        if (certificationId === 5) displayGrade = '5';
+        else if (certificationId === 4) displayGrade = '4';
+        else if (certificationId === 3) displayGrade = '3';
+        else if (certificationId === 2) displayGrade = '2';  // незачет = 2
+        else if (certificationId === 1) displayGrade = '1';
+        else if (certificationId === 0) displayGrade = '0';
+        
+        console.log(`Студент ${studentId}: certificationId=${certificationId} -> отображаем "${displayGrade}", пересдача=${isRetake}`);
+        
+        // Обновляем запись экзамена
+        updateExamRecord(studentId, { 
+          grade: displayGrade,
+          isRetake: isRetake 
+        });
+        
+        // Обновляем статус пересдачи
+        setExamRetakeStatus(prev => ({
+          ...prev,
+          [studentId]: isRetake
+        }));
+      });
+      
+    } catch (error) {
+      console.error('Ошибка загрузки экзаменационных оценок:', error);
+    }
   };
 
   // Функция для получения цвета оценки
@@ -1339,14 +1428,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       console.log('Все операции завершены успешно');
       
-      let successMessage = `Данные занятия успешно обновлены\nТип: ${dateModalData.typeMark}\nТема: ${dateModalData.comment || 'не указана'}\nОбновлено студентов: ${successfulUpdates}/${filteredStudents.length}`;
-      
-      if (idSupplement) {
-        successMessage += `\nSupplement ID: ${idSupplement}`;
-      }
-      
-      alert(successMessage);
-      
       setShowDateModal(null);
       setDateModalData({ typeMark: '', comment: '' });
       
@@ -1639,10 +1720,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       return record;
     }
     
+    // Используем тип из certificationType
+    const examType = certificationType?.shortCode as any || '';
+    
     return {
       id: Date.now() + Math.random(),
       studentId,
-      examType: globalExamType as any,
+      examType: examType,
       grade: ''
     };
   };
@@ -1686,10 +1770,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         newRecords[existingIndex] = { ...newRecords[existingIndex], ...updates };
         return newRecords;
       } else {
+        // Используем тип из certificationType
+        const examType = certificationType?.shortCode as any || '';
         return [...prev, {
           id: Date.now() + Math.random(),
           studentId,
-          examType: globalExamType as any,
+          examType: examType,
           grade: '',
           ...updates
         }];
@@ -1754,6 +1840,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         updateGradeRecord(editingCell.studentId, editingCell.date, { topic: editValue });
       } else if (editingCell.field === 'exam') {
         const examRecord = getExamRecord(editingCell.studentId);
+        // Используем examType из записи (который уже установлен из certificationType)
         const allowedGrades = examGrades[examRecord.examType as keyof typeof examGrades] || [];
         
         if (editValue === '' || allowedGrades.includes(editValue)) {
@@ -2502,15 +2589,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Обработка изменения глобального типа экзамена
-  const handleGlobalExamTypeChange = (examType: string): void => {
-    setGlobalExamType(examType);
-    
-    filteredStudents.forEach(student => {
-      updateExamRecord(student.id, { examType: examType as any });
-    });
-  };
-
   // Обработчик клика по кнопке "Выставить посещаемость"
   const handleSetAttendance = (): void => {
     if (onSetAttendance) {
@@ -2567,7 +2645,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     if (!grade) return 'exam-grade-empty';
     
     if (examType === 'З') {
-      return grade === 'з' ? 'exam-grade-pass' : 'exam-grade-fail';
+      // Для зачета: 5,4,3 - зеленый, 2 - красный
+      if (grade === '5' || grade === '4' || grade === '3') return 'exam-grade-pass';
+      if (grade === '2') return 'exam-grade-fail';
+      return 'exam-grade-empty';
     } else {
       const numericGrade = parseFloat(grade);
       if (numericGrade >= 4.5) return 'exam-grade-excellent';
@@ -2583,19 +2664,93 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   // Обработчик изменения оценки экзамена
-  const handleExamGradeChange = (studentId: number, newGrade: string): void => {
-    updateExamRecord(studentId, { grade: newGrade });
+  const handleExamGradeChange = async (studentId: number, newGrade: string): Promise<void> => {
+    const currentRetake = examRetakeStatus[studentId] || false;
+    await handleSaveExamGrade(studentId, newGrade, currentRetake);
+  };
+
+  const handleSaveExamGrade = async (studentId: number, grade: string, isRetake: boolean): Promise<void> => {
+    if (!idSt) {
+      console.error('idSt не доступен');
+      return;
+    }
+
+    console.log(`Сохранение экзамена: студент=${studentId}, оценка="${grade}", пересдача=${isRetake}`);
+
+    setSavingExam(studentId);
+    
+    try {
+      let certificationId: number | null = null;
+      
+      if (grade === '5') certificationId = 5;
+      else if (grade === '4') certificationId = 4;
+      else if (grade === '3') certificationId = 3;
+      else if (grade === '2') certificationId = 2;  // незачет
+      else if (grade === '1') certificationId = 1;
+      else if (grade === '0') certificationId = 0;
+      else if (grade === '') certificationId = null;
+      
+      console.log(`certificationId=${certificationId} для оценки "${grade}"`);
+      
+      const result = await teacherApiService.updateCertification(idSt, studentId, certificationId, isRetake);
+      
+      if (result.success) {
+        updateExamRecord(studentId, { grade, isRetake });
+        
+        setExamRetakeStatus(prev => ({
+          ...prev,
+          [studentId]: isRetake
+        }));
+        
+        console.log(`Экзаменационная оценка сохранена для студента ${studentId}: ${grade}, пересдача: ${isRetake}`);
+        
+        teacherApiService.invalidateStudentCache();
+        teacherApiService.invalidateMarksCache();
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения экзаменационной оценки:', error);
+      alert('Ошибка при сохранении экзаменационной оценки');
+    } finally {
+      setSavingExam(null);
+    }
   };
 
   // Обработчик клика по ячейке экзамена
   const handleExamCellClick = (studentId: number, currentGrade: string): void => {
-    if (globalExamType) {
-      setEditingCell({ studentId, date: '', field: 'exam' });
-      setEditValue(currentGrade);
-    } else {
-      alert('Сначала выберите тип экзамена в заголовке столбца');
+    // Если аттестация не назначена - запрещаем редактирование
+    if (certificationType?.type === 'none') {
+      alert('Аттестация не назначена, оценки выставить нельзя');
+      return;
     }
+    
+    // Проверяем, что тип экзамена определен
+    if (!certificationType?.shortCode) {
+      alert('Тип экзамена не определен. Подождите загрузки...');
+      return;
+    }
+    
+    // Разрешаем редактирование ТОЛЬКО оценки
+    setEditingCell({ studentId, date: '', field: 'exam' });
+    setEditValue(currentGrade);
   };
+
+  useEffect(() => {
+    if (idSt && groupNumber) {
+      loadCertificationType();
+    }
+  }, [idSt, groupNumber]);
+
+  useEffect(() => {
+    if (certificationType?.shortCode && students.length > 0) {
+      console.log('Синхронизация examType:', certificationType.shortCode);
+      students.forEach(student => {
+        const currentRecord = getExamRecord(student.id);
+        if (currentRecord.examType !== certificationType.shortCode) {
+          updateExamRecord(student.id, { examType: certificationType.shortCode as any });
+        }
+      });
+    }
+  }, [certificationType, students]);
 
   // Рендер заголовка даты с кнопками управления
   const renderDateHeader = (date: string, index: number): React.ReactElement => {
@@ -2680,23 +2835,31 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               {renderAddDateColumn()}
               
               <th className="column-average sticky-col-right highlight-col table-header-rowspan" rowSpan={2}>Средний балл</th>
-              <th className="column-exam sticky-col-right highlight-col table-header-rowspan" rowSpan={2}>
-                <div className="global-exam-header">
-                  <div>Экзамен</div>
-                  <select 
-                    value={globalExamType}
-                    onChange={(e) => handleGlobalExamTypeChange(e.target.value)}
-                    className="global-exam-select"
-                  >
-                    <option value=""></option>
-                    {examTypes.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </th>
+                <th className="column-exam sticky-col-right highlight-col table-header-rowspan" rowSpan={2}>
+                  <div className="global-exam-header">
+                    <div>Экзамен</div>
+                    {loadingCertification ? (
+                      <div className="certification-loading">
+                        <div className="loading-spinner-small"></div>
+                        <span>Загрузка...</span>
+                      </div>
+                    ) : certificationType && certificationType.type !== 'none' ? (
+                      <div className="certification-type-badge">
+                        {/* Показываем ТОЛЬКО shortCode (З, Э, ДЗ) */}
+                        <span className="certification-code">{certificationType.shortCode}</span>
+                        {/* displayText показываем как подсказку или отдельно, но не склеиваем */}
+                      </div>
+                    ) : certificationType && certificationType.type === 'none' ? (
+                      <div className="certification-none">
+                        <span>Отсутствует</span>
+                      </div>
+                    ) : (
+                      <div className="certification-error">
+                        <span>Ошибка загрузки</span>
+                      </div>
+                    )}
+                  </div>
+                </th>
             </tr>
           </thead>
           <tbody>
@@ -2832,10 +2995,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                         className={`exam-grade ${getExamGradeClass(examRecord.grade, examRecord.examType)}`}
                         onClick={() => handleExamCellClick(student.id, examRecord.grade)}
                         style={{
-                          backgroundColor: getGradeColor(examRecord.grade)
+                          backgroundColor: getGradeColor(examRecord.grade),
+                          opacity: savingExam === student.id ? 0.6 : 1,
+                          cursor: savingExam === student.id ? 'wait' : 'pointer'
                         }}
                       >
-                        {isEditingExam ? (
+                        {savingExam === student.id ? (
+                          <div className="exam-saving-spinner">
+                            <div className="loading-spinner-small"></div>
+                            <span>Сохранение...</span>
+                          </div>
+                        ) : isEditingExam ? (
                           <select
                             ref={examInputRef}
                             value={editValue}
@@ -2845,31 +3015,45 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                             }}
                             onBlur={handleSaveEdit}
                             className="exam-grade-select"
-                            style={{
-                              backgroundColor: 'transparent',
-                              border: 'none',
-                              textAlign: 'center',
-                              width: '100%',
-                              cursor: 'pointer'
-                            }}
+                            disabled={savingExam === student.id}
                           >
                             <option value="">-</option>
-                            {getAvailableExamGrades(examRecord.examType).map(grade => (
-                              <option key={grade} value={grade}>
-                                {grade === 'з' ? 'з' : 
-                                grade === 'нз' ? 'нз' : 
-                                grade || '-'}
-                              </option>
-                            ))}
+                            <option value="5">5 (Зачет)</option>
+                            <option value="4">4 (Зачет)</option>
+                            <option value="3">3 (Зачет)</option>
+                            <option value="2">2 (Незачет)</option>
                           </select>
                         ) : (
-                          <div className="exam-grade-value">
-                            {examRecord.grade ? (
-                              examRecord.grade === 'з' ? 'Зачет' : 
-                              examRecord.grade === 'нз' ? 'Незачет' : 
-                              examRecord.grade
-                            ) : '-'}
-                          </div>
+                          <>
+                            <div className="exam-grade-value">
+                              {examRecord.grade ? (
+                                examRecord.grade === '5' ? '5' : 
+                                examRecord.grade === '4' ? '4' : 
+                                examRecord.grade === '3' ? '3' : 
+                                examRecord.grade === '2' ? '2' : 
+                                examRecord.grade
+                              ) : '-'}
+                            </div>
+                            {examRecord.examType !== 'З' && examRecord.grade && examRecord.grade !== '' && (
+                              <label className="retake-checkbox-label" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={examRetakeStatus[student.id] || false}
+                                  onChange={async (e) => {
+                                    const newRetakeStatus = e.target.checked;
+                                    setExamRetakeStatus(prev => ({
+                                      ...prev,
+                                      [student.id]: newRetakeStatus
+                                    }));
+                                    await handleSaveExamGrade(student.id, examRecord.grade, newRetakeStatus);
+                                  }}
+                                  disabled={savingExam === student.id}
+                                  className="retake-checkbox"
+                                />
+                                <span className="retake-label">Пересдача</span>
+                              </label>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
