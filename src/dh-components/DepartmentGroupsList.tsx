@@ -213,7 +213,7 @@ const GroupMetrics: React.FC<{ group: GroupData }> = ({ group }) => {
         </span>
       </div>
       <div className="dgl-group-stat placeholder-stat">
-        <span className="dgl-stat-label">Посещ.:</span>
+        <span className="dgl-stat-label">Посещаемость:</span>
         <span className="dgl-stat-value demo-value">
           {displayAttendance.toFixed(1)}%
         </span>

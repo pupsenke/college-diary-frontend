@@ -1027,7 +1027,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
                             }}
                           >
                             {groupAverage > 0 ? groupAverage.toFixed(2) : '—'}
-                            <span className="dhm-demo-badge">ЗАГЛУШКА</span>
                           </div>
                         </div>
                       </div>
@@ -1171,12 +1170,14 @@ const getStudentAttendancePercent = (studentId: number): number => {
                               
                               const getPercentColor = (percent: number, hasData: boolean): string => {
                                 if (!hasData) return '#9ca3af';
-                                if (percent === 0) return '#ef4444';
-                                if (percent >= 90) return '#2cbb00';
-                                if (percent >= 75) return '#a5db28';
-                                if (percent >= 60) return '#f59e0b';
-                                return '#ef4444';
+                                if (percent === 0) return '#d1d5db';
+                                if (percent >= 75) return '#2cbb00';
+                                if (percent >= 55) return '#a5db28';
+                                if (percent >= 0) return '#f59e0b';
+                                return '#d1d5db';
                               };
+
+
                               
                               const bgColor = hasData ? getPercentColor(studentAttendancePercent, true) : '#d1d5db';
                               
@@ -1249,17 +1250,16 @@ const getStudentAttendancePercent = (studentId: number): number => {
                             style={{
                               backgroundColor: (() => {
                                 const percent = getGroupAttendancePercent();
-                                if (percent === 0) return '#ef4444';
+                                if (percent === 0) return '#d1d5db';
                                 if (percent >= 90) return '#2cbb00';
                                 if (percent >= 75) return '#a5db28';
                                 if (percent >= 60) return '#f59e0b';
-                                return '#ef4444';
+                                return '#d1d5db';
                               })(),
                               color: 'white'
                             }}
                           >
                             {getGroupAttendancePercent().toFixed(1)}%
-                            <span className="dhm-demo-badge">ЗАГЛУШКА</span>
                           </div>
                         </div>
                       </div>

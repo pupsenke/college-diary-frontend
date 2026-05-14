@@ -1540,7 +1540,6 @@
 }
 
 .dhm-average-value {
-  display: inline-block;
   padding: 8px 16px;
   border-radius: 12px;
   font-weight: 700;
@@ -2261,7 +2260,6 @@ body.modal-open {
 /* Демо-бейдж для значений */
 .dhm-average-value.demo {
   position: relative;
-  display: inline-flex;
   align-items: center;
   gap: 8px;
 }

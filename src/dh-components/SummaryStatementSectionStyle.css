@@ -317,15 +317,15 @@
 
 .dh-at-statement-table th,
 .dh-at-statement-table td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #9c9c9c81;
   padding: 6px 8px;
   text-align: center;
   vertical-align: middle;
 }
 
 .dh-at-statement-table th {
-  background: #012ea1b7;
-  color: white;
+  background: #ffffff72;
+  color: #012171;
   font-weight: 600;
   position: sticky;
   top: 0;
@@ -364,7 +364,7 @@
 }
 
 .dh-at-na-button {
-  background: #dc2626;
+  background: #002FA7;
   color: white;
   border: none;
   padding: 4px 8px;
@@ -470,6 +470,7 @@
   vertical-align: bottom !important;
   padding: 0 !important;
   border-right: 1px solid rgba(255, 255, 255, 0.3);
+
 }
 
 .dh-at-vertical-header:last-of-type {
@@ -486,7 +487,7 @@
   height: 60px;
   font-size: 9px;
   font-weight: 600;
-  color: white;
+  color: #012171;
   text-align: center;
   line-height: 1.2;
   word-break: break-word;
@@ -498,6 +499,7 @@
   -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   line-clamp: 4;
+  
 }
 
 /* Стили для разных длин названий */
