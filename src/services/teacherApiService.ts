@@ -292,6 +292,19 @@ export interface CertificationInfo {
   shortCode: string;   // 'З', 'Э', 'ДЗ' или ''
 }
 
+export interface SemesterMarkResponse {
+  idStudent: number;
+  certification: number | null;
+  isRetake: boolean;
+  initialCertification: number | null;
+}
+
+export interface SemesterMark extends SemesterMarkResponse {
+  lastName?: string;
+  firstName?: string;
+  middleName?: string;
+}
+
 export interface GroupInfo {
   id: number;
   numberGroup: number;
@@ -3545,20 +3558,24 @@ export const teacherApiService = {
     }
   },
 
-  // Получение всех оценок (включая экзаменационные)
-  async getAllMarks(): Promise<StudentMark[]> {
-    const cacheKey = 'all_marks';
+  // Получение итоговых (экзаменационных) оценок для группы
+  async getSemesterMarks(groupId: number, idSt: number): Promise<SemesterMark[]> {
+    const cacheKey = `semester_marks_${groupId}_${idSt}`;
     
-    const cached = cacheService.get<StudentMark[]>(cacheKey, { 
+    const cached = cacheService.get<SemesterMark[]>(cacheKey, { 
       ttl: CACHE_TTL.STUDENT_DATA 
     });
     
     if (cached) {
+      console.log('Using cached semester marks:', cached);
       return cached;
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/marks`, {
+      const url = `${API_BASE_URL}/api/v1/marks/groups/semester-marks/group?idGroup=${groupId}&idSt=${idSt}`;
+      console.log('Fetching semester marks:', url);
+      
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -3566,67 +3583,32 @@ export const teacherApiService = {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: StudentMark[] = await response.json();
+      const data: SemesterMarkResponse[] = await response.json();
+      console.log('Raw semester marks data from API:', data);
       
-      cacheService.set(cacheKey, data, { 
+      // Преобразуем в нужный формат
+      const transformedData: SemesterMark[] = data.map(item => ({
+        idStudent: item.idStudent,
+        certification: item.certification,
+        isRetake: item.isRetake,
+        initialCertification: item.initialCertification
+      }));
+      
+      cacheService.set(cacheKey, transformedData, { 
         ttl: CACHE_TTL.STUDENT_DATA 
       });
       
-      return data;
+      return transformedData;
     } catch (error) {
-      console.error('Error fetching all marks:', error);
+      console.error('Error fetching semester marks:', error);
       return [];
     }
-  },
-
-  // Получение экзаменационных оценок для конкретного idSt
-  async getCertificationMarks(idSt: number): Promise<StudentMark[]> {
-    const allMarks = await this.getAllMarks();
-    const filtered = allMarks.filter(mark => mark.id.idSt === idSt);
-    console.log(`getCertificationMarks для idSt=${idSt}: найдено ${filtered.length} записей`, filtered);
-    return filtered;
-  },
-
-  getCertificationGradeText(certificationId: number | null): string {
-    if (certificationId === null) return '';
-    
-    // Для зачета: 5,4,3 -> показываем число (5,4,3)
-    // Для незачета: 2 -> показываем "2"
-    const gradeMap: Record<number, string> = {
-      5: '5',   // 5 -> "5" (зачет)
-      4: '4',   // 4 -> "4" (зачет)
-      3: '3',   // 3 -> "3" (зачет)
-      2: '2',   // 2 -> "2" (незачет)
-      1: '1',   // 1 -> "1"
-      0: '0'    // 0 -> "0"
-    };
-    
-    const result = gradeMap[certificationId] || '';
-    console.log(`getCertificationGradeText: ${certificationId} -> "${result}"`);
-    return result;
-  },
-
-  // Преобразование текста оценки в ID
-  getCertificationGradeId(gradeText: string): number | null {
-    if (!gradeText) return null;
-    
-    const idMap: Record<string, number> = {
-      '5': 5,
-      '4': 4,
-      '3': 3,
-      '2': 2,   // 2 = незачет
-      '1': 1,
-      '0': 0,
-      'нз': 2,  // для обратной совместимости
-      'з': 5    // для обратной совместимости
-    };
-    
-    const result = idMap[gradeText] ?? null;
-    console.log(`getCertificationGradeId: "${gradeText}" -> ${result}`);
-    return result;
   },
 
   // Сохранение экзаменационной оценки
@@ -3655,6 +3637,7 @@ export const teacherApiService = {
         let errorText = '';
         try {
           errorText = await response.text();
+          console.error('Update certification error:', errorText);
         } catch (e) {
           errorText = 'Не удалось прочитать текст ошибки';
         }
@@ -3664,6 +3647,7 @@ export const teacherApiService = {
       // Инвалидируем кэш
       this.invalidateMarksCache();
       this.invalidateStudentCache();
+      this.invalidateSemesterMarksCache();
       
       return { success: true };
     } catch (error) {
@@ -3677,12 +3661,23 @@ export const teacherApiService = {
     cacheService.remove('all_marks');
   },
 
+  invalidateSemesterMarksCache(groupId?: number, idSt?: number): void {
+    if (groupId && idSt) {
+      cacheService.remove(`semester_marks_${groupId}_${idSt}`);
+    } else {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_semester_marks_')) {
+          cacheService.remove(key.replace('cache_', ''));
+        }
+      }
+    }
+  },
+  
   invalidateCertificationCache(idSt?: number, groupId?: number): void {
     if (idSt && groupId) {
-      // Удаляем конкретный ключ
       cacheService.remove(`certification_${idSt}_${groupId}`);
     } else {
-      // Удаляем все кэши аттестации
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes('cache_certification_')) {

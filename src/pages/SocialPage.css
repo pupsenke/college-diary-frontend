@@ -594,11 +594,14 @@ body.dh-theme-light .th-dropdown-department{
 
 .social-schedule-mini {
   background: linear-gradient(135deg, #002FA7, #5986f7);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 12px;
+  padding: 10px;
   color: white;
   box-shadow: 0 2px 6px rgba(0, 47, 167, 0.2);
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .social-schedule-row {
@@ -654,4 +657,184 @@ body.dh-theme-light .th-dropdown-department{
   background: white;
   color: #002FA7;
   font-weight: 700;
+}
+
+/* Подсказка для настройки расписания */
+.schedule-edit-hint {
+  font-size: 9px;
+  text-align: center;
+  margin-top: 6px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.social-schedule-mini {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.social-schedule-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.social-schedule-mini:hover .schedule-edit-hint {
+  opacity: 1;
+}
+
+
+.schedule-placeholder {
+  width: 100px;
+}
+
+/* Модальное окно настройки расписания */
+.schedule-config-modal {
+  max-width: 650px;
+  width: 90%;
+}
+
+.schedule-header {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e7ff;
+}
+
+.schedule-day-header {
+  text-align: center;
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+  padding: 8px;
+  background: #f0f4ff;
+  border-radius: 8px;
+}
+
+.schedule-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.schedule-room-row {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: #f8f9ff;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.schedule-room-row:hover {
+  background: #eef2ff;
+}
+
+.schedule-room-name {
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+  padding-left: 8px;
+}
+
+.schedule-room-days {
+  display: contents;
+}
+
+.schedule-day-checkbox {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.schedule-day-checkbox:hover {
+  border-color: #002FA7;
+  background: #e0e7ff;
+}
+
+.schedule-day-checkbox.checked {
+  background: #002FA7;
+  border-color: #002FA7;
+}
+
+.check-mark {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.schedule-note {
+  font-size: 12px;
+  color: #666;
+  margin-top: 16px;
+  padding: 8px;
+  background: #f0f4ff;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Адаптивность для модального окна */
+@media (max-width: 600px) {
+  .schedule-config-modal {
+    width: 95%;
+  }
+  
+  .schedule-header {
+    grid-template-columns: 80px repeat(5, 1fr);
+    gap: 4px;
+  }
+  
+  .schedule-room-row {
+    grid-template-columns: 80px repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+  }
+  
+  .schedule-room-name {
+    font-size: 12px;
+    padding-left: 4px;
+  }
+  
+  .schedule-day-checkbox {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .schedule-day-header {
+    font-size: 12px;
+    padding: 4px;
+  }
+  
+  .check-mark {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-day-checkbox {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .schedule-room-name {
+    font-size: 11px;
+  }
+  
+  .schedule-day-header {
+    font-size: 10px;
+  }
 }

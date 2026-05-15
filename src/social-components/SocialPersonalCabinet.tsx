@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { socialApiService, type SocialWorkerData, type Room } from '../services/socialApiService';
+import { socialApiService, type SocialWorkerData } from '../services/socialApiService';
 import './SocialPersonalCabinet.css';
 
 interface PasswordChangeData {
@@ -11,8 +11,6 @@ interface PasswordChangeData {
 interface ProfileEditData {
   email: string;
   telephone: string;
-  officesText: string;  // текст для ввода кабинетов через запятую
-  availableRooms: Room[];
 }
 
 export const PersonalCabinet: React.FC = () => {
@@ -31,16 +29,8 @@ export const PersonalCabinet: React.FC = () => {
 
   const [profileData, setProfileData] = useState<ProfileEditData>({
     email: '',
-    telephone: '',
-    officesText: '',
-    availableRooms: []
+    telephone: ''
   });
-
-  const [recentActivity] = useState([
-    { action: 'Обновлен профиль студента', details: 'Иванов А.С. (группа 2992)', time: 'Сегодня, 10:30' },
-    { action: 'Создан отчет по группе риска', details: 'Отчет за 1 семестр', time: 'Вчера, 15:45' },
-    { action: 'Проведена консультация', details: 'Студент Петрова М.И.', time: 'Вчера, 11:20' }
-  ]);
 
   const fetchWorkerData = async (forceRefresh = false) => {
     try {
@@ -97,15 +87,10 @@ export const PersonalCabinet: React.FC = () => {
 
   const handleProfileModalOpen = async () => {
     if (!workerData) return;
-
-    const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
-    const availableRooms = await socialApiService.getAvailableRoomsForStaff(staffId);
     
     setProfileData({
       email: workerData.email,
-      telephone: workerData.telephone,
-      officesText: workerData.offices.join(', '),
-      availableRooms: availableRooms
+      telephone: workerData.telephone
     });
     setShowProfileModal(true);
     setError(null);
@@ -153,19 +138,10 @@ export const PersonalCabinet: React.FC = () => {
 
       const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
       
-      // Обновляем email и телефон
       const updateResult = await socialApiService.updateStaffData(staffId, {
         email: profileData.email,
         telephone: profileData.telephone
       });
-
-      // Обновляем кабинеты (парсим строку с кабинетами через запятую)
-      const officesArray = profileData.officesText
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-      
-      await socialApiService.updateStaffRooms(staffId, officesArray);
 
       if (updateResult.success) {
         await fetchWorkerData(true);
@@ -186,7 +162,7 @@ export const PersonalCabinet: React.FC = () => {
     }));
   };
 
-  const handleProfileDataChange = (field: keyof ProfileEditData, value: any) => {
+  const handleProfileDataChange = (field: keyof ProfileEditData, value: string) => {
     setProfileData(prev => ({
       ...prev,
       [field]: value
@@ -227,10 +203,6 @@ export const PersonalCabinet: React.FC = () => {
                 <span className="feature-icon"></span>
                 <span>Редактирование контактной информации</span>
               </div>
-              <div className="feature-item">
-                <span className="feature-icon"></span>
-                <span>Управление кабинетами (можно указать несколько через запятую)</span>
-              </div>
             </div>
           </div>
 
@@ -247,11 +219,7 @@ export const PersonalCabinet: React.FC = () => {
               </div>
               <div className="step">
                 <span className="step-number">3</span>
-                <span>Кабинеты можно указывать через запятую, например: "405, 416а, СП зал"</span>
-              </div>
-              <div className="step">
-                <span className="step-number">4</span>
-                <span>Сохраните изменения или отмените редактирование</span>
+                <span>Сохраните изменения</span>
               </div>
             </div>
           </div>
@@ -387,38 +355,23 @@ export const PersonalCabinet: React.FC = () => {
           <label className="disciplines-label">Последняя активность:</label>
         </div>
         
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-            Загрузка активности...
-          </div>
-        ) : (
-          <div className="disciplines-list">
-            {recentActivity.length > 0 ? (
-              recentActivity.map((activity, index) => (
-                <div 
-                  key={index} 
-                  className="discipline-item"
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: '#002FA7', marginBottom: '4px' }}>
-                      {activity.action}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>
-                      {activity.details}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#666', minWidth: '100px', textAlign: 'right' }}>
-                    {activity.time}
-                  </div>
+        <div className="disciplines-list">
+          {recentActivity.map((activity, index) => (
+            <div key={index} className="discipline-item">
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: '#002FA7', marginBottom: '4px' }}>
+                  {activity.action}
                 </div>
-              ))
-            ) : (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                Нет данных об активности
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  {activity.details}
+                </div>
               </div>
-            )}
-          </div>
-        )}
+              <div style={{ fontSize: '12px', color: '#666', minWidth: '100px', textAlign: 'right' }}>
+                {activity.time}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -486,7 +439,7 @@ export const PersonalCabinet: React.FC = () => {
         </div>
       )}
 
-      {/* Модальное окно редактирования профиля */}
+      {/* Модальное окно редактирования профиля (только email и телефон) */}
       {showProfileModal && (
         <div className="lk-modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
@@ -525,26 +478,6 @@ export const PersonalCabinet: React.FC = () => {
                 />
               </div>
               
-              <div className="pc-form-group">
-                <label>Кабинеты (через запятую)</label>
-                <input
-                  type="text"
-                  value={profileData.officesText}
-                  onChange={(e) => handleProfileDataChange('officesText', e.target.value)}
-                  className="pc-input"
-                  placeholder="например: 405, 416а, СП зал"
-                />
-                <div className="form-hint">
-                  Укажите номера кабинетов через запятую. Доступные кабинеты:
-                  <div className="available-rooms-hint">
-                    {profileData.availableRooms.map(room => room.name).join(', ')}
-                  </div>
-                  <div className="form-hint-note">
-                    * Кабинеты можно выбрать только из списка доступных
-                  </div>
-                </div>
-              </div>
-              
               <div className="pc-modal-actions"> 
                 <button
                   className="pc-btn-secondary"
@@ -568,3 +501,10 @@ export const PersonalCabinet: React.FC = () => {
     </div>
   );
 };
+
+// recentActivity данные
+const recentActivity = [
+  { action: 'Обновлен профиль студента', details: 'Иванов А.С. (группа 2992)', time: 'Сегодня, 10:30' },
+  { action: 'Создан отчет по группе риска', details: 'Отчет за 1 семестр', time: 'Вчера, 15:45' },
+  { action: 'Проведена консультация', details: 'Студент Петрова М.И.', time: 'Вчера, 11:20' }
+];

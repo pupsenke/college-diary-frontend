@@ -189,43 +189,6 @@ export const socialApiService = {
     }
   },
 
-  // Получение свободных кабинетов (не закрепленных ни за кем)
-  async getFreeRooms(): Promise<Room[]> {
-    const cacheKey = 'free_rooms';
-    
-    const cached = cacheService.get<Room[]>(cacheKey, { 
-      ttl: CACHE_TTL.GROUP_DATA 
-    });
-    
-    if (cached) {
-      return cached;
-    }
-
-    try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/rooms/free`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: Room[] = await response.json();
-      
-      cacheService.set(cacheKey, data, { 
-        ttl: CACHE_TTL.GROUP_DATA 
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching free rooms:', error);
-      return [];
-    }
-  },
-
   // Получение кабинетов, закрепленных за сотрудником
   async getStaffRooms(staffId: number): Promise<Room[]> {
     const allRooms = await this.getAllRooms();
@@ -308,66 +271,6 @@ export const socialApiService = {
     }
   },
 
-  // Обновление списка кабинетов сотрудника
-  async updateStaffRooms(staffId: number, officeNames: string[]): Promise<{ success: boolean }> {
-    try {
-      // Получаем все существующие кабинеты
-      const allRooms = await this.getAllRooms();
-      
-      // Находим ID кабинетов по их названиям
-      const officeIdsToAssign: number[] = [];
-      for (const officeName of officeNames) {
-        const trimmedName = officeName.trim();
-        if (!trimmedName) continue;
-        
-        const room = allRooms.find(r => r.name === trimmedName);
-        if (room) {
-          officeIdsToAssign.push(room.id);
-        } else {
-          console.warn(`Кабинет с названием "${trimmedName}" не найден`);
-        }
-      }
-
-      // Получаем текущие кабинеты сотрудника
-      const currentRooms = await this.getStaffRooms(staffId);
-      const currentRoomIds = currentRooms.map(r => r.id);
-      
-      // Кабинеты для удаления (есть у сотрудника, но нет в новом списке)
-      const roomsToRemove = currentRoomIds.filter(id => !officeIdsToAssign.includes(id));
-      
-      // Кабинеты для добавления (есть в новом списке, но нет у сотрудника)
-      const roomsToAdd = officeIdsToAssign.filter(id => !currentRoomIds.includes(id));
-      
-      // Удаляем кабинеты (назначаем idStaffOwner = null)
-      for (const roomId of roomsToRemove) {
-        await fetchWithTimeout(`${API_BASE_URL}/api/v1/rooms/assign/${roomId}/null`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }).catch(err => console.error(`Error removing room ${roomId}:`, err));
-      }
-      
-      // Добавляем новые кабинеты
-      for (const roomId of roomsToAdd) {
-        await fetchWithTimeout(`${API_BASE_URL}/api/v1/rooms/assign/${roomId}/${staffId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }).catch(err => console.error(`Error adding room ${roomId}:`, err));
-      }
-
-      this.invalidateRoomsCache();
-      this.invalidateStaffCache(staffId);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating staff rooms:', error);
-      throw error;
-    }
-  },
-
   async changePassword(staffId: number, passwordData: PasswordChangeData): Promise<{ success: boolean }> {
     try {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/staffs/update`, {
@@ -396,24 +299,6 @@ export const socialApiService = {
     }
   },
 
-  // Получение доступных для выбора кабинетов (свободные + уже закрепленные за сотрудником)
-  async getAvailableRoomsForStaff(staffId: number): Promise<Room[]> {
-    const [freeRooms, staffRooms] = await Promise.all([
-      this.getFreeRooms(),
-      this.getStaffRooms(staffId)
-    ]);
-    
-    // Объединяем свободные кабинеты и уже закрепленные за сотрудником
-    const allAvailable = [...freeRooms];
-    for (const room of staffRooms) {
-      if (!allAvailable.some(r => r.id === room.id)) {
-        allAvailable.push(room);
-      }
-    }
-    
-    return allAvailable;
-  },
-
   invalidateStaffCache(staffId?: number): void {
     if (staffId) {
       cacheService.remove(`staff_${staffId}`);
@@ -423,7 +308,6 @@ export const socialApiService = {
 
   invalidateRoomsCache(): void {
     cacheService.remove('all_rooms');
-    cacheService.remove('free_rooms');
   },
 
   async refreshSocialWorkerData(staffId: number): Promise<SocialWorkerData | null> {

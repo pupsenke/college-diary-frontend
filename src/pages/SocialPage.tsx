@@ -4,6 +4,7 @@ import { PersonalCabinet } from '../social-components/SocialPersonalCabinet';
 import { GroupsSection } from '../social-components/SocialGroupsSection';
 import { ReportsSection } from '../social-components/SocialReportsSection';
 import { useUser } from '../context/UserContext';
+import { socialApiService } from '../services/socialApiService';
 import './SocialPage.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -14,11 +15,150 @@ export const SocialPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Кабинеты соц. педагога
+  const [offices, setOffices] = useState<string[]>([]);
+  
+  // Расписание: для каждого кабинета - массив дней
+  const [roomSchedule, setRoomSchedule] = useState<Record<string, string[]>>({});
+  
+  // Состояние модального окна
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
+  // Временное состояние для редактирования в модальном окне
+  const [tempSchedule, setTempSchedule] = useState<Record<string, string[]>>({});
+
+  // Дни недели
+  const weekDays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
+  const weekDaysShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'];
+
+  // Загружаем кабинеты и расписание соц. педагога
+  useEffect(() => {
+    const loadData = async () => {
+      const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
+      if (staffId) {
+        try {
+          const workerData = await socialApiService.getSocialWorkerData(staffId);
+          if (workerData && workerData.offices.length > 0) {
+            setOffices(workerData.offices);
+          }
+          
+          // Загружаем сохраненное расписание
+          const savedSchedule = localStorage.getItem(`room_schedule_${staffId}`);
+          if (savedSchedule) {
+            setRoomSchedule(JSON.parse(savedSchedule));
+          } else {
+            // Инициализируем пустое расписание
+            const emptySchedule: Record<string, string[]> = {};
+            workerData?.offices.forEach(office => {
+              emptySchedule[office] = [];
+            });
+            setRoomSchedule(emptySchedule);
+          }
+        } catch (error) {
+          console.error('Error loading data:', error);
+        }
+      }
+    };
+    loadData();
+  }, [user]);
+
   // Получаем текущий день недели для подсветки
   const getCurrentDay = () => {
     const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     const today = new Date().getDay();
     return days[today];
+  };
+
+  // Получение кабинета для конкретного дня
+  const getRoomForDay = (day: string): string => {
+    for (const [room, days] of Object.entries(roomSchedule)) {
+      if (days.includes(day)) {
+        return room;
+      }
+    }
+    return '';
+  };
+
+  // Получение сгруппированного расписания для отображения
+  const getGroupedSchedule = () => {
+    // Группируем дни по кабинетам
+    const grouped: Record<string, string[]> = {};
+    
+    weekDays.forEach(day => {
+      const room = getRoomForDay(day);
+      if (room) {
+        if (!grouped[room]) {
+          grouped[room] = [];
+        }
+        grouped[room].push(day);
+      }
+    });
+    
+  // Формируем массив для отображения
+    const scheduleParts: { days: string[], room: string }[] = [];
+    
+    Object.entries(grouped).forEach(([room, days]) => {
+      // Сортируем дни в правильном порядке
+      const dayOrder = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
+      const sortedDays = [...days].sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+      
+      // Преобразуем дни в короткие названия
+      const shortDays = sortedDays.map(day => {
+        if (day === 'Понедельник') return 'пн';
+        if (day === 'Вторник') return 'вт';
+        if (day === 'Среда') return 'ср';
+        if (day === 'Четверг') return 'чт';
+        if (day === 'Пятница') return 'пт';
+        return '';
+      }).filter(Boolean);
+      
+      scheduleParts.push({ 
+        days: shortDays, 
+        room 
+      });
+    });
+    
+    return scheduleParts;
+  };
+
+  // Открыть модальное окно настройки расписания
+  const handleOpenScheduleModal = () => {
+    setTempSchedule(JSON.parse(JSON.stringify(roomSchedule)));
+    setShowScheduleModal(true);
+  };
+
+  // Переключить день для кабинета
+  const toggleDayForRoom = (room: string, day: string) => {
+    setTempSchedule(prev => {
+      const currentDays = prev[room] || [];
+      if (currentDays.includes(day)) {
+        // Удаляем день
+        return {
+          ...prev,
+          [room]: currentDays.filter(d => d !== day)
+        };
+      } else {
+        // Добавляем день, но сначала удаляем этот день из других кабинетов
+        const newSchedule = { ...prev };
+        // Удаляем день из всех кабинетов
+        Object.keys(newSchedule).forEach(r => {
+          if (newSchedule[r]?.includes(day)) {
+            newSchedule[r] = newSchedule[r].filter(d => d !== day);
+          }
+        });
+        // Добавляем день в выбранный кабинет
+        newSchedule[room] = [...(newSchedule[room] || []), day];
+        return newSchedule;
+      }
+    });
+  };
+
+  // Сохранить расписание
+  const handleSaveSchedule = () => {
+    setRoomSchedule(tempSchedule);
+    const staffId = user?.id || parseInt(localStorage.getItem('user_id') || '0');
+    localStorage.setItem(`room_schedule_${staffId}`, JSON.stringify(tempSchedule));
+    setShowScheduleModal(false);
   };
 
   // Синхронизация активной вкладки с URL параметрами
@@ -53,10 +193,7 @@ export const SocialPage: React.FC = () => {
 
   useEffect(() => {
     if (!user) {
-      console.log('No user data, redirecting to login');
       navigate('/login');
-    } else {
-      console.log('User data in SocialPage:', user);
     }
   }, [user, navigate]);
 
@@ -125,6 +262,14 @@ export const SocialPage: React.FC = () => {
     );
   }
 
+  const currentDay = getCurrentDay();
+  const groupedSchedule = getGroupedSchedule();
+  
+  // Определяем, какой день сегодня для подсветки
+  const isToday = (dayName: string): boolean => {
+    return currentDay === dayName;
+  };
+
   return (
     <div className="social-container">
       <div className="social-background-animation">
@@ -178,18 +323,38 @@ export const SocialPage: React.FC = () => {
             </nav>
 
             <div className="social-sidebar-footer">
-              <div className="social-schedule-mini">
-                <div className="social-schedule-row">
-                  <span className="social-schedule-row-label">
-                    <span className={`social-schedule-day ${getCurrentDay() === 'Понедельник' || getCurrentDay() === 'Вторник' || getCurrentDay() === 'Четверг' || getCurrentDay() === 'Пятница' ? 'today' : ''}`}>пн-вт чт-пт</span>
-                    <span className={`social-schedule-day ${getCurrentDay() === 'Среда' ? 'today' : ''}`}>ср</span>
-                  </span>
-                  <span className="social-schedule-row-divider">|</span>
-                  <span className="social-schedule-row-rooms">
-                    <span className={`social-schedule-room-mini ${getCurrentDay() === 'Понедельник' || getCurrentDay() === 'Вторник' || getCurrentDay() === 'Четверг' || getCurrentDay() === 'Пятница' ? 'today' : ''}`}>405</span>
-                    <span className={`social-schedule-room-mini ${getCurrentDay() === 'Среда' ? 'today' : ''}`}>216А</span>
-                  </span>
-                </div>
+              {/* Блок расписания - кликабельный */}
+              <div className="social-schedule-mini" onClick={handleOpenScheduleModal}>
+                {groupedSchedule.length > 0 ? (
+                  groupedSchedule.map((item, idx) => (
+                    <div key={idx} className="social-schedule-row">
+                      <span className="social-schedule-row-label">
+                        <span className={`social-schedule-day ${item.days.some(day => {
+                          const dayMap: Record<string, string> = { 'пн': 'Понедельник', 'вт': 'Вторник', 'ср': 'Среда', 'чт': 'Четверг', 'пт': 'Пятница' };
+                          return currentDay === dayMap[day];
+                        }) ? 'today' : ''}`}>
+                          {item.days.join('-')}
+                        </span>
+                      </span>
+                      <span className="social-schedule-row-divider">|</span>
+                      <span className="social-schedule-row-rooms">
+                        <span className={`social-schedule-room-mini ${item.days.some(day => {
+                          const dayMap: Record<string, string> = { 'пн': 'Понедельник', 'вт': 'Вторник', 'ср': 'Среда', 'чт': 'Четверг', 'пт': 'Пятница' };
+                          return currentDay === dayMap[day];
+                        }) ? 'today' : ''}`}>
+                          {item.room}
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="social-schedule-row">
+                    <span className="social-schedule-row-label">
+                      <span className="social-schedule-day">нет расписания</span>
+                    </span>
+                  </div>
+                )}
+                <div className="schedule-edit-hint">✎ нажмите для настройки</div>
               </div>
             </div>
           </aside>
@@ -206,6 +371,75 @@ export const SocialPage: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Модальное окно настройки расписания */}
+      {showScheduleModal && (
+        <div className="lk-modal-overlay" onClick={() => setShowScheduleModal(false)}>
+          <div className="lk-modal schedule-config-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pc-modal-header">
+              <div className="lk-modal-icon">
+                <img src="/social-icons/editing_icon.svg" alt="Настройка расписания" />
+              </div>
+              <h3>Настройка расписания кабинетов</h3>
+              <button 
+                className="pc-modal-close"
+                onClick={() => setShowScheduleModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="pc-modal-content">
+              {/* Сверху - дни недели */}
+              <div className="schedule-header">
+                <div className="schedule-placeholder"></div>
+                {weekDays.map((day, idx) => (
+                  <div key={day} className="schedule-day-header">
+                    {weekDaysShort[idx]}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Снизу - кабинеты с выбором дней */}
+              <div className="schedule-rooms-list">
+                {offices.map(room => (
+                  <div key={room} className="schedule-room-row">
+                    <div className="schedule-room-name">{room}</div>
+                    {weekDays.map(day => (
+                      <div
+                        key={day}
+                        className={`schedule-day-checkbox ${tempSchedule[room]?.includes(day) ? 'checked' : ''}`}
+                        onClick={() => toggleDayForRoom(room, day)}
+                      >
+                        {tempSchedule[room]?.includes(day) && <span className="check-mark">✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="schedule-note">
+                * Каждый день может быть назначен только одному кабинету
+              </div>
+              
+              <div className="pc-modal-actions"> 
+                <button
+                  className="pc-btn-secondary"
+                  onClick={() => setShowScheduleModal(false)}
+                >
+                  Отмена
+                </button>
+                <button
+                  className="pc-confirm-btn"
+                  onClick={handleSaveSchedule}
+                >
+                  Сохранить расписание
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
