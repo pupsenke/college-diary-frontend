@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import './SocialReportsSection.css';
 
 interface ReportData {
@@ -8,9 +8,35 @@ interface ReportData {
   date: string;
 }
 
-interface ReportConfig {
-  type: 'orphans' | 'disabled' | null;
-  actualDate: string;
+interface Certificate {
+  fullInfo: string;
+  image: string | null;
+}
+
+interface DisabledStudent {
+  id: number;
+  fullName: string;
+  group: string;
+  direction: string;
+  certificate: Certificate;
+  statusWithGroup: string;
+  restrictions: string;
+  birthDate: string;
+  addressPhone: string;
+  educationPayment: string;
+}
+
+interface OrphanStudent {
+  id: number;
+  fullName: string;
+  group: string;
+  direction: string;
+  birthDate: string;
+  parentsInfo: string;
+  addressPhone: string;
+  registrationAddress: string;
+  guardian: string;
+  educationPayment: string;
 }
 
 const REPORT_TYPES = [
@@ -20,17 +46,6 @@ const REPORT_TYPES = [
     subtitle: 'и детях, оставшихся без попечения родителей',
     cardImg: '/social-icons/orphans_icon.svg',
     modalImg: '/social-icons/orphans_icon.svg',
-    columns: [
-      '№',
-      'ФИО',
-      'Направление/специальность',
-      'Дата рождения',
-      'Сведения о родителях',
-      'Адрес места жительства, телефон',
-      'Адрес регистрации',
-      'Опекун (ФИО, телефон, родство)',
-      'Форма обучения (очная/заочная/дистанционная), бюджет/платно'
-    ]
   },
   {
     key: 'disabled' as const,
@@ -38,41 +53,343 @@ const REPORT_TYPES = [
     subtitle: 'и лицах с ограниченными возможностями здоровья',
     cardImg: '/social-icons/disabled_icon.svg',
     modalImg: '/social-icons/disabled_icon.svg',
-    columns: [
-      '№',
-      'ФИО',
-      'Направление/специальность',
-      'Справка МСЭ (серия, №, дата, срок действия)',
-      'Статус (инвалид/ребенок-инвалид/инвалид с детства/ОВЗ), группа инвалидности',
-      'Вид ограничений (нозология)',
-      'Дата рождения',
-      'Адрес места жительства по справке МСЭ, телефон',
-      'Форма обучения (очная/заочная/дистанционная), бюджет/платно'
-    ]
   }
 ];
+
+const mockDisabledStudents: DisabledStudent[] = [
+  {
+    id: 1,
+    fullName: 'Алисеевич Кирилл Александрович',
+    group: '5922',
+    direction: '15.02.16 Технология машиностроения',
+    certificate: {
+      fullInfo: 'Серия МСЭ-2015 №2431238 от 31.10.2017, Справка до 10.02.2027',
+      image: null
+    },
+    statusWithGroup: 'ребенок-инвалид',
+    restrictions: 'соматика (диабет)',
+    birthDate: '10.02.2009',
+    addressPhone: 'г. Великий Новгород, ул. Московкая, д.30, корп.1, кв.96 +7 (911) 607-10-30',
+    educationPayment: 'очная, фед.бюджет'
+  },
+  {
+    id: 2,
+    fullName: 'Петрова Анна Сергеевна',
+    group: '5820',
+    direction: '09.02.07 Информационные системы',
+    certificate: {
+      fullInfo: 'Серия МСЭ-2018 №5678912 от 15.03.2020, Справка до 15.03.2028',
+      image: null
+    },
+    statusWithGroup: 'инвалид, II группа',
+    restrictions: 'нарушение слуха',
+    birthDate: '25.07.2010',
+    addressPhone: 'г. Великий Новгород, ул. Ленина, д.10, кв.5 +7 (911) 123-45-67',
+    educationPayment: 'очная, обл.бюджет'
+  }
+];
+
+const mockOrphanStudents: OrphanStudent[] = [
+  {
+    id: 1,
+    fullName: 'Андреев Иван Игоревич',
+    group: '5901',
+    direction: '11.01.02 Радиомеханик',
+    birthDate: '03.08.2009',
+    parentsInfo: 'Умерли оба родителя',
+    addressPhone: 'г. Великий Новгород, ул. Ворошилова, д.19, кв. 63 +7 (996) 067-98-99',
+    registrationAddress: 'г. Великий Новгород, ул. Ворошилова, д.19, кв. 63 (временно рег. до 18 лет) пос. Пролетарий, ул. Октябрьская, д. 18 (пост. рег.)',
+    guardian: 'Антонцева Светлана Сергеевна (бабушка)',
+    educationPayment: 'очная, обл.бюджет'
+  },
+  {
+    id: 2,
+    fullName: 'Сидорова Екатерина Дмитриевна',
+    group: '5821',
+    direction: '38.02.01 Экономика',
+    birthDate: '15.11.2010',
+    parentsInfo: 'Отец: Сидоров Д.А. (лишен прав), Мать: Сидорова Е.В. (в розыске)',
+    addressPhone: 'г. Великий Новгород, ул. Гагарина, д.5, кв.12 +7 (911) 234-56-78',
+    registrationAddress: 'г. Великий Новгород, ул. Гагарина, д.5, кв.12',
+    guardian: 'Сидорова М.И. (бабушка), тел: +7 (911) 345-67-89',
+    educationPayment: 'очная, фед.бюджет'
+  }
+];
+
+/* ===================================================================
+   Вынесенные модальные компоненты (не пересоздаются при ререндере)
+   =================================================================== */
+
+interface StudentsModalProps {
+  onClose: () => void;
+  studentSearchTerm: string;
+  setStudentSearchTerm: (v: string) => void;
+  renderCell: (value: string, type: 'disabled' | 'orphan', id: number, field: string, placeholder?: string) => React.ReactNode;
+}
+
+interface DisabledStudentsModalProps extends StudentsModalProps {
+  filteredDisabledStudents: DisabledStudent[];
+  updateCertificateInfo: (studentId: number, value: string) => void;
+  handleCertificateUpload: (studentId: number, file: File) => void;
+  setPreviewImage: (img: string | null) => void;
+}
+
+const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
+  onClose,
+  studentSearchTerm,
+  setStudentSearchTerm,
+  filteredDisabledStudents,
+  renderCell,
+  updateCertificateInfo,
+  handleCertificateUpload,
+  setPreviewImage,
+}) => {
+  return (
+    <>
+      <div className="reports-modal-overlay" onClick={onClose} />
+      <div className="students-modal wide-modal">
+        <div className="students-modal-header">
+          <h3>Дети-инвалиды и лица с ОВЗ</h3>
+          <button className="students-modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-search-box">
+          <input
+            type="text"
+            placeholder="Поиск по ФИО"
+            value={studentSearchTerm}
+            onChange={(e) => setStudentSearchTerm(e.target.value)}
+            className="modal-search-input"
+          />
+          <div className="modal-search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="10" cy="10" r="7"/>
+              <line x1="21" y1="21" x2="15" y2="15"/>
+            </svg>
+          </div>
+          {studentSearchTerm && (
+            <button className="modal-search-clear" onClick={() => setStudentSearchTerm('')}>✕</button>
+          )}
+        </div>
+
+        <div className="students-modal-table-wrapper">
+          <table className="students-table disabled-table">
+            <thead>
+              <tr>
+                <th className="col-num-header">№</th>
+                <th>ФИО</th>
+                <th>Группа</th>
+                <th>Направление/ специальность</th>
+                <th>Справка</th>
+                <th>Статус, группа инвалидности</th>
+                <th>Вид ограничений (нозология)</th>
+                <th>Дата рождения</th>
+                <th>Адрес места жительства, телефон</th>
+                <th>Форма обучения, бюджет/платно</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDisabledStudents.map((student, index) => (
+                <tr key={student.id}>
+                  <td className="col-num">{index + 1}</td>
+                  <td>{renderCell(student.fullName, 'disabled', student.id, 'fullName')}</td>
+                  <td>{renderCell(student.group, 'disabled', student.id, 'group')}</td>
+                  <td>{renderCell(student.direction, 'disabled', student.id, 'direction')}</td>
+                  <td className="certificate-cell">
+                    <div className="certificate-info">
+                      <div className="certificate-fields">
+                        {renderCell(student.certificate.fullInfo, 'disabled', student.id, 'certificate', 'Серия, номер, дата, срок действия')}
+                      </div>
+                      <div className="certificate-image-section">
+                        {student.certificate.image ? (
+                          <div className="certificate-preview">
+                            <img
+                              src={student.certificate.image}
+                              alt="Справка"
+                              className="certificate-thumb"
+                              onClick={() => setPreviewImage(student.certificate.image!)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <button
+                              className="certificate-change-btn"
+                              onClick={() => document.getElementById(`cert-input-${student.id}`)?.click()}
+                            >
+                              Изменить
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            className="certificate-upload-btn"
+                            onClick={() => document.getElementById(`cert-input-${student.id}`)?.click()}
+                          >
+                            Прикрепить фото справки
+                          </button>
+                        )}
+                        <input
+                          id={`cert-input-${student.id}`}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleCertificateUpload(student.id, e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td>{renderCell(student.statusWithGroup, 'disabled', student.id, 'statusWithGroup')}</td>
+                  <td>{renderCell(student.restrictions, 'disabled', student.id, 'restrictions')}</td>
+                  <td>{renderCell(student.birthDate, 'disabled', student.id, 'birthDate')}</td>
+                  <td>{renderCell(student.addressPhone, 'disabled', student.id, 'addressPhone')}</td>
+                  <td>{renderCell(student.educationPayment, 'disabled', student.id, 'educationPayment')}</td>
+                </tr>
+              ))}
+              {filteredDisabledStudents.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="empty-row">Студенты не найдены</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+};
+
+interface OrphanStudentsModalProps extends StudentsModalProps {
+  filteredOrphanStudents: OrphanStudent[];
+}
+
+const OrphanStudentsModal: React.FC<OrphanStudentsModalProps> = ({
+  onClose,
+  studentSearchTerm,
+  setStudentSearchTerm,
+  filteredOrphanStudents,
+  renderCell,
+}) => {
+  return (
+    <>
+      <div className="reports-modal-overlay" onClick={onClose} />
+      <div className="students-modal wide-modal">
+        <div className="students-modal-header">
+          <h3>Дети-сироты и оставшиеся без попечения родителей</h3>
+          <button className="students-modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-search-box">
+          <input
+            type="text"
+            placeholder="Поиск по ФИО"
+            value={studentSearchTerm}
+            onChange={(e) => setStudentSearchTerm(e.target.value)}
+            className="modal-search-input"
+          />
+          <div className="modal-search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="10" cy="10" r="7"/>
+              <line x1="21" y1="21" x2="15" y2="15"/>
+            </svg>
+          </div>
+          {studentSearchTerm && (
+            <button className="modal-search-clear" onClick={() => setStudentSearchTerm('')}>✕</button>
+          )}
+        </div>
+
+        <div className="students-modal-table-wrapper">
+          <table className="students-table orphan-table">
+            <thead>
+              <tr>
+                <th className="col-num-header">№</th>
+                <th>ФИО</th>
+                <th>Группа</th>
+                <th>Направление/ специальность</th>
+                <th>Дата рождения</th>
+                <th>Сведения о родителях</th>
+                <th>Адрес места жительства, телефон</th>
+                <th>Адрес регистрации</th>
+                <th>Опекун</th>
+                <th>Форма обучения, бюджет/платно</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrphanStudents.map((student, index) => (
+                <tr key={student.id}>
+                  <td className="col-num">{index + 1}</td>
+                  <td>{renderCell(student.fullName, 'orphan', student.id, 'fullName')}</td>
+                  <td>{renderCell(student.group, 'orphan', student.id, 'group')}</td>
+                  <td>{renderCell(student.direction, 'orphan', student.id, 'direction')}</td>
+                  <td>{renderCell(student.birthDate, 'orphan', student.id, 'birthDate')}</td>
+                  <td>{renderCell(student.parentsInfo, 'orphan', student.id, 'parentsInfo')}</td>
+                  <td>{renderCell(student.addressPhone, 'orphan', student.id, 'addressPhone')}</td>
+                  <td>{renderCell(student.registrationAddress, 'orphan', student.id, 'registrationAddress')}</td>
+                  <td>{renderCell(student.guardian, 'orphan', student.id, 'guardian')}</td>
+                  <td>{renderCell(student.educationPayment, 'orphan', student.id, 'educationPayment')}</td>
+                </tr>
+              ))}
+              {filteredOrphanStudents.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="empty-row">Студенты не найдены</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+};
+
+interface ImagePreviewModalProps {
+  previewImage: string;
+  onClose: () => void;
+}
+
+const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ previewImage, onClose }) => (
+  <>
+    <div className="reports-modal-overlay" onClick={onClose} />
+    <div className="image-preview-modal" onClick={(e) => e.stopPropagation()}>
+      <button className="image-preview-close" onClick={onClose}>✕</button>
+      <img src={previewImage} alt="Справка МСЭ" className="image-preview-full" />
+    </div>
+  </>
+);
+
+/* ===================================================================
+   Основной компонент
+   =================================================================== */
 
 export const ReportsSection: React.FC = () => {
   const [reports, setReports] = useState<ReportData[]>([
     { id: 1, name: 'Информация о детях-сиротах', type: 'orphans', date: '17.09.2025' },
     { id: 2, name: 'Информация о лицах с инвалидностью', type: 'disabled', date: '07.10.2025' },
-    { id: 3, name: 'Информация о детях-сиротах', type: 'orphans', date: '14.02.2026' },
-    { id: 4, name: 'Информация о лицах с инвалидностью', type: 'disabled', date: '14.02.2026' },
   ]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [previewType, setPreviewType] = useState<'orphans' | 'disabled' | null>(null);
-  
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [currentReportType, setCurrentReportType] = useState<'orphans' | 'disabled' | null>(null);
+
+  const [disabledStudents, setDisabledStudents] = useState<DisabledStudent[]>(mockDisabledStudents);
+  const [orphanStudents, setOrphanStudents] = useState<OrphanStudent[]>(mockOrphanStudents);
+
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [editingInfo, setEditingInfo] = useState<{
+    type: 'disabled' | 'orphan';
+    id: number;
+    field: string;
+  } | null>(null);
+
+  // === ПОИСК, ФИЛЬТР, СОРТИРОВКА ПО ОТЧЁТАМ ===
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'orphans' | 'disabled'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
-  const [config, setConfig] = useState<ReportConfig>({
-    type: null,
-    actualDate: new Date().toISOString().split('T')[0]
-  });
 
   const filteredReports = useMemo(() => {
     let result = [...reports];
@@ -104,39 +421,169 @@ export const ReportsSection: React.FC = () => {
     return result;
   }, [reports, searchTerm, typeFilter, sortBy, sortOrder]);
 
+  const filteredDisabledStudents = useMemo(() => {
+    if (!studentSearchTerm) return disabledStudents;
+    const term = studentSearchTerm.toLowerCase();
+    return disabledStudents.filter(s => s.fullName.toLowerCase().includes(term));
+  }, [disabledStudents, studentSearchTerm]);
+
+  const filteredOrphanStudents = useMemo(() => {
+    if (!studentSearchTerm) return orphanStudents;
+    const term = studentSearchTerm.toLowerCase();
+    return orphanStudents.filter(s => s.fullName.toLowerCase().includes(term));
+  }, [orphanStudents, studentSearchTerm]);
+
+  useEffect(() => {
+    if (showCreateModal || showStudentsModal || previewImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showCreateModal, showStudentsModal, previewImage]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   };
 
   const openCreateModal = (type: 'orphans' | 'disabled') => {
-    setConfig(prev => ({ ...prev, type }));
     setShowCreateModal(true);
+    setCurrentReportType(type);
+  };
+
+  const openStudentsModal = (type: 'orphans' | 'disabled') => {
+    setCurrentReportType(type);
+    setStudentSearchTerm('');
+    setShowStudentsModal(true);
   };
 
   const handleCreateSubmit = () => {
-    if (!config.type) return;
-    
+    if (!currentReportType) return;
+
     const newReport: ReportData = {
       id: Date.now(),
-      name: `Информация ${config.type === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`,
-      type: config.type,
+      name: `Информация ${currentReportType === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`,
+      type: currentReportType,
       date: new Date().toLocaleDateString('ru-RU'),
     };
-    
+
     setReports(prev => [newReport, ...prev]);
     setShowCreateModal(false);
-    setConfig({
-      type: null,
-      actualDate: new Date().toISOString().split('T')[0]
-    });
+    setCurrentReportType(null);
   };
 
   const handleDownload = (reportId: number) => {
     console.log(`Скачивание отчета #${reportId} в формате Word`);
   };
 
-  const activeReportType = REPORT_TYPES.find(r => r.key === config.type);
+  const startEditing = useCallback((type: 'disabled' | 'orphan', id: number, field: string, currentValue: string) => {
+    setEditingInfo({ type, id, field });
+    setEditingValue(currentValue);
+  }, []);
+
+  const saveEdit = useCallback(() => {
+    if (!editingInfo) return;
+
+    if (editingInfo.type === 'disabled') {
+      setDisabledStudents(prev => prev.map(student =>
+        student.id === editingInfo.id
+          ? (editingInfo.field === 'certificate'
+              ? { ...student, certificate: { ...student.certificate, fullInfo: editingValue } }
+              : { ...student, [editingInfo.field]: editingValue })
+          : student
+      ));
+    } else {
+      setOrphanStudents(prev => prev.map(student =>
+        student.id === editingInfo.id
+          ? { ...student, [editingInfo.field]: editingValue }
+          : student
+      ));
+    }
+    setEditingInfo(null);
+    setEditingValue('');
+  }, [editingInfo, editingValue]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingInfo(null);
+    setEditingValue('');
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  }, [saveEdit, cancelEdit]);
+
+  const updateCertificateInfo = useCallback((studentId: number, value: string) => {
+    setDisabledStudents(prev => prev.map(student =>
+      student.id === studentId
+        ? { ...student, certificate: { ...student.certificate, fullInfo: value } }
+        : student
+    ));
+  }, []);
+
+  const handleCertificateUpload = useCallback((studentId: number, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setDisabledStudents(prev => prev.map(student =>
+        student.id === studentId
+          ? { ...student, certificate: { ...student.certificate, image: e.target?.result as string } }
+          : student
+      ));
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const renderCell = useCallback((value: string, type: 'disabled' | 'orphan', id: number, field: string, placeholder?: string) => {
+    const isEditing = editingInfo?.type === type && editingInfo?.id === id && editingInfo?.field === field;
+
+    if (isEditing && field === 'certificate') {
+      return (
+        <textarea
+          value={editingValue}
+          onChange={(e) => setEditingValue(e.target.value)}
+          onBlur={saveEdit}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') cancelEdit();
+            else if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              saveEdit();
+            }
+          }}
+          className="edit-input certificate-textarea"
+          placeholder={placeholder}
+          autoFocus
+          rows={2}
+        />
+      );
+    }
+
+    if (isEditing) {
+      return (
+        <input
+          type="text"
+          value={editingValue}
+          onChange={(e) => setEditingValue(e.target.value)}
+          onBlur={saveEdit}
+          onKeyDown={handleKeyDown}
+          className="edit-input"
+          placeholder={placeholder}
+          autoFocus
+        />
+      );
+    }
+
+    return (
+      <div className="cell-content" onClick={() => startEditing(type, id, field, value)}>
+        {value || '—'}
+      </div>
+    );
+  }, [editingInfo, editingValue, startEditing, saveEdit, cancelEdit, handleKeyDown]);
 
   const InfoIcon = () => (
     <div className="info-icon-btn" tabIndex={0}>
@@ -161,28 +608,7 @@ export const ReportsSection: React.FC = () => {
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
-                <span>Скачивание отчетов в формате Word</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon"></span>
-                <span>Автоматическое формирование по всем группам</span>
-              </div>
-            </div>
-          </div>
-          <div className="info-section">
-            <h4>Как использовать</h4>
-            <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
-                <span>Выберите тип отчета из карточек</span>
-              </div>
-              <div className="step">
-                <span className="step-number">2</span>
-                <span>Укажите дату актуальности</span>
-              </div>
-              <div className="step">
-                <span className="step-number">3</span>
-                <span>Скачайте готовый отчет</span>
+                <span>Просмотр и редактирование списков студентов</span>
               </div>
             </div>
           </div>
@@ -192,13 +618,13 @@ export const ReportsSection: React.FC = () => {
   );
 
   const RefreshButton = () => (
-    <button 
+    <button
       className={`header-btn pc-refresh-btn ${refreshing ? 'pc-refreshing' : ''}`}
       onClick={handleRefresh}
       disabled={refreshing}
     >
-      <img 
-        src="/st-icons/upload_icon.svg" 
+      <img
+        src="/st-icons/upload_icon.svg"
         className={`pc-refresh-icon ${refreshing ? 'pc-refresh-spin' : ''}`}
         alt="Обновить"
       />
@@ -252,37 +678,25 @@ export const ReportsSection: React.FC = () => {
             </div>
             <div className="report-type-card-body">
               <div className="report-type-actions">
-                <button 
+                <button
                   className="reports-confirm-btn"
                   onClick={() => openCreateModal(type.key)}
                 >
                   Сформировать отчёт
                 </button>
-                <button 
-                  className="reports-btn-text"
-                  onClick={() => setPreviewType(previewType === type.key ? null : type.key)}
+                <button
+                  className="reports-btn-text students-list-btn"
+                  onClick={() => openStudentsModal(type.key)}
                 >
-                  {previewType === type.key ? 'Скрыть структуру' : 'Посмотреть структуру'}
+                  Список студентов
                 </button>
               </div>
             </div>
-
-            {previewType === type.key && (
-              <div className="report-structure-expand">
-                <ol className="report-structure-list">
-                  {type.columns.map((col, i) => (
-                    <li key={i}>
-                      <span className="report-structure-num">{i + 1}.</span>
-                      <span className="report-structure-text">{col}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
           </div>
         ))}
       </div>
 
+      {/* === ПАНЕЛЬ ПОИСКА, ФИЛЬТРА И СОРТИРОВКИ === */}
       <div className="reports-control-panel">
         <div className="reports-controls-top-row">
           <div className="reports-search-box">
@@ -311,7 +725,7 @@ export const ReportsSection: React.FC = () => {
               <select 
                 className="reports-filter-select"
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
+                onChange={(e) => setTypeFilter(e.target.value as 'all' | 'orphans' | 'disabled')}
               >
                 <option value="all">Все типы</option>
                 <option value="orphans">Дети-сироты</option>
@@ -328,7 +742,7 @@ export const ReportsSection: React.FC = () => {
               <select 
                 className="reports-sort-select"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
               >
                 <option value="date">По дате</option>
                 <option value="name">По названию</option>
@@ -354,11 +768,10 @@ export const ReportsSection: React.FC = () => {
         <div className="recent-reports-header">
           <h3>Недавние отчеты</h3>
           <div className="reports-count">
-            <img src="/social-icons/documents_icon.svg" alt="Фильтр" />
             <span>Показано: <strong>{filteredReports.length}</strong> из <strong>{reports.length}</strong></span>
           </div>
         </div>
-        
+
         <div className="recent-reports-table-container">
           <table className="reports-table">
             <thead>
@@ -373,39 +786,28 @@ export const ReportsSection: React.FC = () => {
             <tbody>
               {filteredReports.length > 0 ? (
                 filteredReports.map((report, index) => (
-                  <tr key={report.id} className="reports-row">
-                    <td className="reports-number-cell">{index + 1}.</td>
-                    <td className="reports-name-cell">
-                      <div className="reports-name-wrapper">
-                        <span className="reports-name">{report.name}</span>
-                      </div>
-                    </td>
+                  <tr key={report.id}>
+                    <td className="reports-number-cell">{index + 1}</td>
+                    <td className="reports-name-cell">{report.name}</td>
                     <td className="reports-type-cell">
                       <span className="reports-type-badge">
                         {report.type === 'orphans' ? 'Дети-сироты' : 'Дети-инвалиды'}
                       </span>
                     </td>
-                    <td className="reports-date-cell">
-                      <span className="reports-date">{report.date}</span>
-                    </td>
+                    <td className="reports-date-cell">{report.date}</td>
                     <td className="reports-actions-cell">
-                      <div className="reports-actions">
-                        <button 
-                          className="reports-action-btn word-btn"
-                          onClick={() => handleDownload(report.id)}
-                          title="Скачать Word"
-                        >
-                          Word
-                        </button>
-                      </div>
+                      <button
+                        className="reports-action-btn word-btn"
+                        onClick={() => handleDownload(report.id)}
+                      >
+                        Word
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="reports-empty-cell">
-                    Отчеты не найдены
-                  </td>
+                  <td colSpan={5} className="empty-row">Отчеты не найдены</td>
                 </tr>
               )}
             </tbody>
@@ -413,40 +815,42 @@ export const ReportsSection: React.FC = () => {
         </div>
       </div>
 
-      {showCreateModal && activeReportType && (
-        <div className="reports-modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="reports-modal" onClick={(e) => e.stopPropagation()}>
+      {/* Модальное окно создания отчета */}
+      {showCreateModal && (
+        <>
+          <div className="reports-modal-overlay" onClick={() => setShowCreateModal(false)} />
+          <div className="reports-modal create-modal" onClick={(e) => e.stopPropagation()}>
             <div className="reports-modal-header">
               <div className="reports-modal-header-content">
                 <div className="reports-modal-icon">
-                  <img src={activeReportType.modalImg} alt="" />
+                  <img src={currentReportType === 'orphans' ? REPORT_TYPES[0].modalImg : REPORT_TYPES[1].modalImg} alt="" />
                 </div>
                 <div>
                   <h3>Создание нового отчета</h3>
                   <p className="reports-modal-subtitle">
-                    {activeReportType.title}
+                    {currentReportType === 'orphans' ? 'Дети-сироты' : 'Дети-инвалиды'}
                   </p>
                 </div>
               </div>
-              <button 
-                className="reports-modal-close"
-                onClick={() => setShowCreateModal(false)}
-              >
-                ✕
-              </button>
+              <button className="reports-modal-close" onClick={() => setShowCreateModal(false)}>✕</button>
             </div>
-
-            <div className="reports-modal-content"> 
+            <div className="reports-modal-content">
               <div className="pc-form-group">
-                <label>Дата актуальности (по состоянию на)</label>
+                <label>Название отчета</label>
                 <input
-                  type="date"
+                  type="text"
                   className="pc-input-enhanced"
-                  value={config.actualDate}
-                  onChange={(e) => setConfig(prev => ({ ...prev, actualDate: e.target.value }))}
+                  placeholder="Введите название отчета"
+                  value={`Информация ${currentReportType === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`}
+                  readOnly
                 />
               </div>
-
+              <div className="pc-form-group">
+                <label>Дата формирования</label>
+                <div className="reports-format-static">
+                  <span className="reports-format-badge">{new Date().toLocaleDateString('ru-RU')}</span>
+                </div>
+              </div>
               <div className="pc-form-group">
                 <label>Формат экспорта</label>
                 <div className="reports-format-static">
@@ -454,24 +858,37 @@ export const ReportsSection: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <div className="reports-modal-actions">
-              <button
-                className="reports-btn-secondary"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="reports-confirm-btn"
-                onClick={handleCreateSubmit}
-                disabled={!config.actualDate}
-              >
-                Сформировать отчет
-              </button>
+              <button className="reports-btn-secondary" onClick={() => setShowCreateModal(false)}>Отмена</button>
+              <button className="reports-confirm-btn" onClick={handleCreateSubmit}>Сформировать отчет</button>
             </div>
           </div>
-        </div>
+        </>
+      )}
+
+      {showStudentsModal && currentReportType === 'disabled' && (
+        <DisabledStudentsModal
+          onClose={() => setShowStudentsModal(false)}
+          studentSearchTerm={studentSearchTerm}
+          setStudentSearchTerm={setStudentSearchTerm}
+          filteredDisabledStudents={filteredDisabledStudents}
+          renderCell={renderCell}
+          updateCertificateInfo={updateCertificateInfo}
+          handleCertificateUpload={handleCertificateUpload}
+          setPreviewImage={setPreviewImage}
+        />
+      )}
+      {showStudentsModal && currentReportType === 'orphans' && (
+        <OrphanStudentsModal
+          onClose={() => setShowStudentsModal(false)}
+          studentSearchTerm={studentSearchTerm}
+          setStudentSearchTerm={setStudentSearchTerm}
+          filteredOrphanStudents={filteredOrphanStudents}
+          renderCell={renderCell}
+        />
+      )}
+      {previewImage && (
+        <ImagePreviewModal previewImage={previewImage} onClose={() => setPreviewImage(null)} />
       )}
     </div>
   );

@@ -1,5 +1,3 @@
-/* ReportsSection.css */
-
 .reports-section {
   padding: 0;
   background: transparent;
@@ -61,12 +59,12 @@
   justify-content: center;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   flex-shrink: 0;
-  border: 1px solid #e2e8f0;
 }
 
 .reports-stat-icon img {
   width: 28px;
   height: 28px;
+  filter: brightness(0) invert(1);
 }
 
 .reports-stat-info {
@@ -182,46 +180,13 @@
   color: #002FA7;
 }
 
-/* Раскрывающаяся структура */
-.report-structure-expand {
-  padding: 0 24px 20px;
-  border-top: 1px solid #f1f5f9;
-  animation: expandIn 0.3s ease;
+.students-list-btn {
+  background: #f0f4ff !important;
+  color: #002FA7 !important;
 }
 
-@keyframes expandIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.report-structure-list {
-  margin: 16px 0 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.report-structure-list li {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #334155;
-}
-
-.report-structure-num {
-  font-weight: 700;
-  color: #002FA7;
-  min-width: 20px;
-}
-
-.report-structure-text {
-  line-height: 1.5;
+.students-list-btn:hover {
+  background: #e0e8ff !important;
 }
 
 /* Панель управления */
@@ -483,11 +448,6 @@
   opacity: 0.7;
 }
 
-.reports-count span {
-  color: #002FA7;
-  font-weight: 600;
-}
-
 .reports-count strong {
   font-weight: 700;
   color: #002FA7;
@@ -497,7 +457,6 @@
 .recent-reports-table-container {
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   border-radius: 12px;
   background: white;
   border: 1px solid #e2e8f0;
@@ -522,6 +481,10 @@
   vertical-align: middle;
 }
 
+.reports-name-column{
+  text-align: left;
+}
+
 .reports-table td {
   padding: 16px 12px;
   border-bottom: 1px solid #f1f5f9;
@@ -531,16 +494,10 @@
   vertical-align: middle;
 }
 
-.reports-table tbody tr {
-  cursor: default;
-  transition: background-color 0.2s ease;
-}
-
 .reports-table tbody tr:hover {
   background-color: #f8fafc;
 }
 
-/* Колонки таблицы */
 .reports-number-column {
   width: 50px;
   min-width: 50px;
@@ -548,50 +505,10 @@
   text-align: center;
 }
 
-.reports-name-column {
-  width: auto;
-  text-align: left;
-}
-
-.reports-type-column {
-  width: 150px;
-  text-align: left;
-}
-
-.reports-date-column {
-  width: 110px;
-  text-align: center;
-}
-
-.reports-actions-column {
-  width: 100px;
-  text-align: right;
-}
-
-/* Ячейки таблицы */
 .reports-number-cell {
   text-align: center;
   color: #64748b;
   font-weight: 500;
-  font-size: 14px;
-}
-
-.reports-name-cell {
-  padding: 12px 16px !important;
-}
-
-.reports-name-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.reports-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1e293b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .reports-type-badge {
@@ -603,20 +520,6 @@
   border-radius: 30px;
   white-space: nowrap;
   border: 1px solid rgba(0, 47, 167, 0.1);
-  letter-spacing: 0.3px;
-}
-
-.reports-date {
-  font-size: 14px;
-  color: #475569;
-  font-weight: 500;
-}
-
-/* Кнопки действий */
-.reports-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
 }
 
 .reports-action-btn {
@@ -635,71 +538,16 @@
   min-width: 70px;
 }
 
-.reports-action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-}
-
 .reports-action-btn.word-btn:hover {
   border-color: #002FA7;
   color: #002FA7;
   background: #f0f4ff;
 }
 
-/* Пустая ячейка */
 .reports-empty-cell {
   text-align: center;
   padding: 40px !important;
   color: #64748b;
-  font-size: 14px;
-}
-
-/* Единые стили для элементов форм */
-.pc-input-enhanced {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background: white;
-  box-sizing: border-box;
-  font-weight: 500;
-}
-
-.pc-input-enhanced:focus {
-  outline: none;
-  border-color: #002FA7;
-  box-shadow: 0 0 0 4px rgba(0, 47, 167, 0.1);
-}
-
-.pc-form-group {
-  margin-bottom: 20px;
-}
-
-.pc-form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 14px;
-}
-
-/* Статичный формат в модалке */
-.reports-format-static {
-  margin-top: 8px;
-}
-
-.reports-format-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  background: #f1f5f9;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
 }
 
 /* Модальные окна */
@@ -710,37 +558,50 @@
   right: 0;
   bottom: 0;
   background-color: rgba(50, 64, 124, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
   backdrop-filter: blur(4px);
-  animation: reports-modal-appear 0.2s ease-out;
+  z-index: 998;
+  animation: modalAppear 0.2s ease-out;
 }
 
-@keyframes reports-modal-appear {
+@keyframes modalAppear {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }
 
 .reports-modal {
   background: white;
   border-radius: 12px;
-  padding: 0;
   width: 90%;
   max-width: 550px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: reports-modal-appear 0.2s ease-out;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: modalSlideIn 0.2s ease-out;
   display: flex;
   flex-direction: column;
+}
+
+.reports-modal.create-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .reports-modal-header {
@@ -769,7 +630,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 
 .reports-modal-icon img {
@@ -789,30 +649,26 @@
   margin: 4px 0 0 0;
   font-size: 14px;
   opacity: 0.9;
-  font-weight: 400;
   color: white;
 }
 
 .reports-modal-close {
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 18px;
   cursor: pointer;
   color: white;
-  padding: 4px 8px;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .reports-modal-close:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
 }
 
 .reports-modal-content {
@@ -828,13 +684,265 @@
   border-top: 1px solid #f3f4f6;
   background: white;
   border-radius: 0 0 12px 12px;
-  position: sticky;
-  bottom: 0;
+}
+
+/* Стили для модального окна со студентами */
+.students-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 1300px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+.students-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
+}
+
+.students-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.students-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.students-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.students-modal-table-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* Таблица студентов - без горизонтального скролла */
+.students-table {
   width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.students-table th {
+  background: #f8fafc;
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #002FA7;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  font-size: 12px;
+}
+
+.students-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+/* Ширина колонок */
+.disabled-table th:nth-child(1),
+.disabled-table td:nth-child(1) { width: 40px; text-align: center; }
+.disabled-table th:nth-child(2) { width: 12%; }
+.disabled-table th:nth-child(3) { width: 7%; }
+.disabled-table th:nth-child(4) { width: 15%; }
+.disabled-table th:nth-child(5) { width: 18%; }
+.disabled-table th:nth-child(6) { width: 10%; }
+.disabled-table th:nth-child(7) { width: 10%; }
+.disabled-table th:nth-child(8) { width: 8%; }
+.disabled-table th:nth-child(9) { width: 12%; }
+.disabled-table th:nth-child(10) { width: 8%; }
+
+.orphan-table th:nth-child(1),
+.orphan-table td:nth-child(1) { width: 40px; text-align: center; }
+.orphan-table th:nth-child(2) { width: 10%; }
+.orphan-table th:nth-child(3) { width: 6%; }
+.orphan-table th:nth-child(4) { width: 12%; }
+.orphan-table th:nth-child(5) { width: 7%; }
+.orphan-table th:nth-child(6) { width: 12%; }
+.orphan-table th:nth-child(7) { width: 12%; }
+.orphan-table th:nth-child(8) { width: 15%; }
+.orphan-table th:nth-child(9) { width: 12%; }
+.orphan-table th:nth-child(10) { width: 8%; }
+
+.students-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.col-num {
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Редактируемые ячейки */
+.cell-content {
+  cursor: pointer;
+  padding: 4px 4px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.cell-content:hover {
+  background-color: #e0e8ff;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 2px solid #002FA7;
+  border-radius: 6px;
+  font-size: 12px;
+  background: white;
   box-sizing: border-box;
 }
 
-/* Кнопки в модальных окнах */
+.edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.certificate-textarea {
+  resize: none;
+  min-height: 40px;
+  font-family: inherit;
+}
+
+.certificate-input-small {
+  width: 80px;
+  padding: 2px 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+.certificate-image-section {
+  margin-top: 6px;
+}
+
+.certificate-upload-btn {
+  padding: 4px 8px;
+  background: #f0f4ff;
+  border: 1px dashed #002FA7;
+  border-radius: 6px;
+  color: #002FA7;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.certificate-upload-btn:hover {
+  background: #e0e8ff;
+}
+
+.certificate-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.certificate-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.certificate-change-btn {
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* Формы */
+.pc-form-group {
+  margin-bottom: 20px;
+}
+
+.pc-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.pc-input-enhanced {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.pc-input-enhanced:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 4px rgba(0, 47, 167, 0.1);
+}
+
+.reports-format-static {
+  margin-top: 8px;
+}
+
+.reports-format-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Кнопки */
 .reports-btn-secondary {
   padding: 12px 24px;
   background: white;
@@ -848,17 +956,10 @@
   min-width: 120px;
 }
 
-.reports-btn-secondary:hover:not(:disabled) {
+.reports-btn-secondary:hover {
   border-color: #002FA7;
   color: #002FA7;
   background: #f8fafc;
-}
-
-.reports-btn-secondary:disabled {
-  background: #f1f5f9;
-  border-color: #d1d5db;
-  color: #9ca3af;
-  cursor: not-allowed;
 }
 
 .reports-confirm-btn {
@@ -879,15 +980,55 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.reports-confirm-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
 .reports-confirm-btn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+}
+
+/* Инфо иконка */
+.info-icon-btn {
+  position: relative;
+  display: inline-block;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.pc-refresh-btn {
+  gap: 8px;
+}
+
+.pc-refresh-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.info-tooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  z-index: 100;
+  display: none;
+}
+
+.info-icon-btn:hover .info-tooltip {
+  display: block;
 }
 
 /* Адаптивность */
@@ -907,50 +1048,234 @@
   }
   
   .reports-modal {
-    width: 90%;
-    margin: 20px;
-    max-height: calc(100vh - 40px);
+    width: 95%;
   }
   
-  .reports-modal-header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+  .students-modal {
+    width: 98%;
+    max-height: 90vh;
   }
   
-  .reports-modal-icon {
-    align-self: flex-start;
+  .students-modal-header h3 {
+    font-size: 14px;
   }
   
-  .reports-modal-actions {
-    flex-direction: column;
-    padding: 16px;
+  .students-table {
+    font-size: 11px;
   }
   
-  .reports-btn-secondary,
-  .reports-confirm-btn {
-    width: 100%;
+  .students-table th,
+  .students-table td {
+    padding: 6px;
   }
 }
 
-@media (max-width: 480px) {
-  .reports-name {
-    max-width: 160px;
-    font-size: 12px;
+/* Модальное окно широкое */
+.students-modal.wide-modal {
+  width: 98%;
+  max-width: 1600px;
+}
+
+/* Поиск в модальном окне */
+.modal-search-box {
+  position: relative;
+  margin: 16px 24px 0 24px;
+}
+
+.modal-search-input {
+  width: 100%;
+  padding: 12px 20px 12px 44px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.modal-search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.modal-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+}
+
+.modal-search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 20px;
+}
+
+.modal-search-clear:hover {
+  background: #f1f5f9;
+  color: #002FA7;
+}
+
+/* Ширина колонок - узкий номер */
+.disabled-table .col-num-header,
+.orphan-table .col-num-header {
+  width: 45px;
+  text-align: center;
+}
+
+.disabled-table td.col-num,
+.orphan-table td.col-num {
+  width: 45px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Поле для справки - полная ширина */
+.certificate-fields .edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  background: white;
+  box-sizing: border-box;
+}
+
+.certificate-fields .edit-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Превью фото справки */
+.certificate-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.certificate-thumb:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Модальное окно для просмотра фото */
+.image-preview-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  z-index: 1000;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalAppear 0.2s ease-out;
+}
+
+.image-preview-full {
+  max-width: calc(90vw - 32px);
+  max-height: calc(90vh - 32px);
+  object-fit: contain;
+}
+
+.image-preview-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 32px;
+  height: 32px;
+  background: #002FA7;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.image-preview-close:hover {
+  background: #5986f7;
+  transform: scale(1.1);
+}
+
+/* Пустая строка в таблице */
+.empty-row {
+  text-align: center;
+  padding: 40px !important;
+  color: #64748b;
+}
+
+/* Упрощенная секция отчетов */
+.recent-reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.recent-reports-header h3 {
+  margin: 0;
+  color: #002FA7;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.reports-count {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.reports-count strong {
+  color: #002FA7;
+}
+
+/* Адаптация */
+@media (max-width: 1200px) {
+  .students-table {
+    min-width: 1000px;
+  }
+}
+
+@media (max-width: 768px) {
+  .students-modal.wide-modal {
+    width: 98%;
   }
   
-  .reports-type-badge {
-    padding: 4px 10px;
-    font-size: 11px;
+  .modal-search-box {
+    margin: 12px 16px 0 16px;
   }
   
-  .reports-date {
-    font-size: 12px;
+  .certificate-fields .edit-input {
+    font-size: 10px;
+    padding: 6px 8px;
   }
   
-  .reports-action-btn {
-    padding: 5px 10px;
-    font-size: 11px;
-    min-width: 60px;
+  .image-preview-modal {
+    width: 95%;
+    padding: 12px;
   }
 }
