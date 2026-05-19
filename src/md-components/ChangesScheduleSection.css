@@ -2,7 +2,7 @@
   padding: 24px 0px;
   max-width: 1400px;
   margin: 0 auto;
-  overflow: visible; /* Добавлено */
+  overflow: visible;
 }
 
 /* стили для блока фильтров */
@@ -12,9 +12,9 @@
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 32px;
-  overflow: visible; /* Добавлено */
-  position: relative; /* Добавлено */
-  z-index: 1; /* Добавлено */
+  overflow: visible;
+  position: relative; 
+  z-index: 1; 
 }
 
 .cs-actions-row {
@@ -29,18 +29,16 @@
   flex-wrap: wrap;
   gap: 20px;
   align-items: flex-end;
-  overflow: visible; /* Добавлено */
+  overflow: visible;
 }
-
-/* Удален дублирующийся блок .cs-filters */
 
 .cs-filter-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 200px;
-  position: relative; /* Добавлено для правильного позиционирования выпадающего списка */
-  overflow: visible; /* Добавлено */
+  position: relative; 
+  overflow: visible; 
 }
 
 .cs-filter-group label {
@@ -95,7 +93,7 @@
   overflow-y: visible;
   position: relative;
   width: 120%;
-  margin-left: -0,5%; /* Смещение влево на половину от (120% - 100%)/2 = 10% */
+  margin-left: -0,5%; 
   left: 50%;
   transform: translateX(-50%);
 }
@@ -127,8 +125,8 @@
   padding: 12px 8px;
   border-bottom: 1px solid #eef2f6;
   vertical-align: middle;
-  position: relative; /* Добавлено для правильного позиционирования */
-  overflow: visible; /* Добавлено */
+  position: relative; 
+  overflow: visible;
 }
 
 .cs-pair-row:hover {
@@ -151,8 +149,8 @@
 
 .cs-change-cell {
   min-width: 200px;
-  position: relative; /* Добавлено */
-  overflow: visible; /* Добавлено */
+  position: relative;
+  overflow: visible; 
 }
 
 .cs-change-select, .cs-room-select {
@@ -254,7 +252,7 @@
   padding: 24px 0px;
   max-width: 1400px;
   margin: 0 auto;
-  overflow: visible; /* Добавлено */
+  overflow: visible;
 }
 
 /* верхний блок */
@@ -271,7 +269,7 @@
   gap: 20px;
   width: 100%;
   box-sizing: border-box;
-  overflow: visible; /* Добавлено */
+  overflow: visible; 
 }
 
 .add-pair-date-info {
@@ -308,12 +306,12 @@
   padding: 24px;
   width: 100%;
   box-sizing: border-box;
-  overflow: visible; /* Добавлено */
+  overflow: visible; 
 }
 
 .add-pair-form {
   padding: 0;
-  overflow: visible; /* Добавлено */
+  overflow: visible;
 }
 
 .form-section {
@@ -321,7 +319,7 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  overflow: visible; /* Добавлено */
+  overflow: visible; 
 }
 
 .form-section h3 {
@@ -337,15 +335,15 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
   margin-bottom: 20px;
-  overflow: visible; /* Добавлено */
+  overflow: visible; 
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  position: relative; /* Добавлено для правильного позиционирования выпадающего списка */
-  overflow: visible; /* Добавлено */
+  position: relative;
+  overflow: visible;
 }
 
 .form-group label {
@@ -440,7 +438,7 @@
   position: relative;
   display: inline-block;
   width: 100%;
-  overflow: visible; /* Добавлено */
+  overflow: visible; 
 }
 
 .searchable-select-trigger {
@@ -457,7 +455,7 @@
 .searchable-select-label {
   flex: 1;
   text-align: left;
-  font-size: 14px; /* Исправлено с 10 на 14 */
+  font-size: 14px; 
 }
 
 .searchable-select-trigger:hover {
@@ -537,12 +535,10 @@
   opacity: 0.6;
 }
 
-/* Дополнительные стили для обеспечения видимости выпадающих списков */
 body {
   overflow-x: hidden;
 }
 
-/* Для случая, когда выпадающий список в модальном окне или с фиксированным позиционированием */
 .portal-dropdown {
   position: fixed !important;
   z-index: 10000 !important;
