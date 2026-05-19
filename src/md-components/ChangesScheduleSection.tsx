@@ -1,95 +1,19 @@
 import './ChangesScheduleSection.css';
 import React, { useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../constants/apiConstant';
-import { useNavigate } from 'react-router-dom'; 
-
-interface ApiGroup {
-  id: number;
-  numberGroup: number;
-  specialty: string;
-  course: number;
-}
-
-interface ApiSubject {
-  id: number;
-  subjectName: string;
-}
-
-interface ApiStaff {
-  id: number;
-  name: string;
-  lastName: string;
-  patronymic?: string;
-  staffPosition?: { id: number }[];
-}
-
-interface ApiSchedule {
-  id: number;
-  dayWeek: string;
-  typeWeek: string;
-  numPair: number;
-  room: string;
-  idSt: number;
-  idGroup: number;
-  subgroup: number | null;
-  replacement: boolean;
-  dateReplacement: string | null;
-}
-
-interface ApiSubjectTeacher {
-  id: number;
-  teachers: number[];
-  idSubject: number;
-  groups: number[];
-}
-
-interface TeacherGroupSubject {
-  idSt: number;
-  subjectName: string;
-  idGroups: number[];
-}
-
-interface TeacherOption {
-  id: number;
-  name: string;
-}
-
-interface SubjectOption {
-  id: number;
-  name: string;
-}
-
-interface SchedulePair {
-  id: number;
-  groupId: number;
-  groupNumber: number;
-  pairNumber: number;
-  room: string;
-  teacherId: number;
-  teacherName: string;
-  subjectId: number;
-  subjectName: string;
-  subgroup: number | null;
-  dayWeek: string;
-  typeWeek: string;
-}
-
-interface ReplacementRecord {
-  id: string;
-  date: string; 
-  displayDate: string;
-  groupNumber: number;
-  pairNumber: number;
-  subgroup: number | null;
-  subject: string;
-  teacher: string;
-  room: string;
-  type: 'notWillBe' | 'replacement';
-  newSubject?: string;
-  newTeacher?: string;
-  newRoom?: string;
-  createdAt: string;
-}
+import { useNavigate } from 'react-router-dom';
+import { methodistApiService } from '../services/methodistApiService';
+import type {
+  ApiGroup,
+  ApiSubject,
+  TeacherOption,
+  ApiRoom,
+  ApiSchedule,
+  ApiSubjectTeacher,
+  TeacherGroupSubject,
+  SchedulePair,
+  ReplacementRecord,
+  SubjectOption
+} from '../services/methodistApiService';
 
 // компонент выпадающего списка с поиском
 interface SearchableSelectProps {
@@ -167,7 +91,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       </button>
 
       {open && (
-        <div className="searchable-select-dropdown">
+        <div className="searchable-select-dropdown" style={{ position: 'absolute', zIndex: 1000 }}>
           <div style={{ padding: '8px', borderBottom: '1px solid #eef2f6' }}>
             <input
               ref={searchInputRef}
@@ -179,7 +103,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
-          <ul className="searchable-select-list">
+          <ul className="searchable-select-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
             {filtered.length > 0 ? (
               filtered.map(o => (
                 <li
@@ -215,6 +139,7 @@ export const ChangesSchedulePage: React.FC = () => {
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [subjects, setSubjects] = useState<ApiSubject[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [rooms, setRooms] = useState<ApiRoom[]>([]);
   const [schedule, setSchedule] = useState<ApiSchedule[]>([]);
   const [subjectTeachers, setSubjectTeachers] = useState<ApiSubjectTeacher[]>([]);
   const [teacherGroups, setTeacherGroups] = useState<TeacherGroupSubject[]>([]);
@@ -225,40 +150,97 @@ export const ChangesSchedulePage: React.FC = () => {
   const [selectedNewTeacher, setSelectedNewTeacher] = useState<{ [key: number]: number }>({});
   const [selectedNewSubject, setSelectedNewSubject] = useState<{ [key: number]: number }>({});
   const [selectedNewRoom, setSelectedNewRoom] = useState<{ [key: number]: string }>({});
+  const [roomSearchTerm, setRoomSearchTerm] = useState<string>('');
+  const [filteredRooms, setFilteredRooms] = useState<ApiRoom[]>([]);
+  const [roomOptions, setRoomOptions] = useState<{ id: number; name: string }[]>([]);
+  const [newTeacherSubjects, setNewTeacherSubjects] = useState<{ [key: number]: SubjectOption[] }>({});
 
-  const dbRooms = ['120', '123', '124', '127', '221', '226'];
+  // Загрузка предметов для выбранного нового преподавателя
+  useEffect(() => {
+    const loadSubjectsForNewTeacher = async () => {
+      const teacherIds = [...new Set(Object.values(selectedNewTeacher).filter(id => id !== 0 && id !== undefined))];
+      
+      for (const teacherId of teacherIds) {
+        if (newTeacherSubjects[teacherId]) continue;
+        
+        try {
+          const teacherGroupsData = await methodistApiService.getTeacherGroups(teacherId);
+          
+          const uniqueSubjects = new Map<number, string>();
+          teacherGroupsData.forEach(tg => {
+            if (!uniqueSubjects.has(tg.idSt)) {
+              uniqueSubjects.set(tg.idSt, tg.subjectName);
+            }
+          });
+          
+          const subjectsList = Array.from(uniqueSubjects.entries()).map(([id, name]) => ({
+            id,
+            name
+          })).sort((a, b) => a.name.localeCompare(b.name));
+          
+          setNewTeacherSubjects(prev => ({
+            ...prev,
+            [teacherId]: subjectsList
+          }));
+        } catch (error) {
+          console.error(`Ошибка загрузки предметов для преподавателя ${teacherId}:`, error);
+          setNewTeacherSubjects(prev => ({
+            ...prev,
+            [teacherId]: []
+          }));
+        }
+      }
+    };
+    
+    if (Object.keys(selectedNewTeacher).length > 0) {
+      loadSubjectsForNewTeacher();
+    }
+  }, [selectedNewTeacher, newTeacherSubjects]);
+
+  // Загрузка аудиторий
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const data = await methodistApiService.getRooms();
+        setRooms(data);
+        const options = await methodistApiService.getRoomOptions();
+        setRoomOptions(options);
+      } catch (error) {
+        console.error('Ошибка загрузки аудиторий:', error);
+      }
+    };
+    loadRooms();
+  }, []);
+
+  // фильтрация аудиторий по поиску
+  useEffect(() => {
+    if (roomSearchTerm.trim() === '') {
+      setFilteredRooms(rooms);
+    } else {
+      const filtered = rooms.filter(room =>
+        room.name.toLowerCase().includes(roomSearchTerm.toLowerCase())
+      );
+      setFilteredRooms(filtered);
+    }
+  }, [roomSearchTerm, rooms]);
 
   useEffect(() => {
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
-        const groupsRes = await fetch(`${API_BASE_URL}/api/v1/groups`);
-        if (!groupsRes.ok) throw new Error(`Ошибка загрузки групп: ${groupsRes.status}`);
-        setGroups(await groupsRes.json());
-
-        const subjectsRes = await fetch(`${API_BASE_URL}/api/v1/subjects`);
-        if (!subjectsRes.ok) throw new Error(`Ошибка загрузки предметов: ${subjectsRes.status}`);
-        setSubjects(await subjectsRes.json());
-
-        const stRes = await fetch(`${API_BASE_URL}/api/v1/st`);
-        if (!stRes.ok) throw new Error(`Ошибка загрузки данных st: ${stRes.status}`);
-        setSubjectTeachers(await stRes.json());
-
-        const teachersRes = await fetch(`${API_BASE_URL}/api/v1/staffs`);
-        if (!teachersRes.ok) throw new Error(`Ошибка загрузки преподавателей: ${teachersRes.status}`);
-        const teachersData: ApiStaff[] = await teachersRes.json();
-        const onlyTeachers = teachersData
-          .filter(st => st.staffPosition?.some(pos => pos.id === 9))
-          .map(st => ({
-            id: st.id,
-            name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim()
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setTeachers(onlyTeachers);
-
-        const scheduleRes = await fetch(`${API_BASE_URL}/api/v1/schedule`);
-        if (!scheduleRes.ok) throw new Error(`Ошибка загрузки расписания: ${scheduleRes.status}`);
-        setSchedule(await scheduleRes.json());
+        const [groupsData, subjectsData, subjectTeachersData, teachersData, scheduleData] = await Promise.all([
+          methodistApiService.getGroups(),
+          methodistApiService.getSubjects(),
+          methodistApiService.getSubjectTeachers(),
+          methodistApiService.getTeachers(),
+          methodistApiService.getSchedule()
+        ]);
+        
+        setGroups(groupsData);
+        setSubjects(subjectsData);
+        setSubjectTeachers(subjectTeachersData);
+        setTeachers(teachersData);
+        setSchedule(scheduleData);
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
       } finally {
@@ -270,11 +252,13 @@ export const ChangesSchedulePage: React.FC = () => {
 
   useEffect(() => {
     const loadTeacherGroups = async () => {
-      if (!selectedTeacher) { setTeacherGroups([]); return; }
+      if (!selectedTeacher) { 
+        setTeacherGroups([]); 
+        return; 
+      }
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/st/teacherGroups/${selectedTeacher}`);
-        if (!res.ok) throw new Error(`Ошибка загрузки данных teacherGroups: ${res.status}`);
-        setTeacherGroups(await res.json());
+        const data = await methodistApiService.getTeacherGroups(selectedTeacher as number);
+        setTeacherGroups(data);
       } catch (e: any) {
         console.error(e);
         setTeacherGroups([]);
@@ -286,8 +270,7 @@ export const ChangesSchedulePage: React.FC = () => {
   useEffect(() => {
     if (selectedDate) {
       const date = new Date(selectedDate);
-      const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
-      setWeekType(weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя');
+      setWeekType(methodistApiService.getWeekType(date));
     }
   }, [selectedDate]);
 
@@ -299,13 +282,14 @@ export const ChangesSchedulePage: React.FC = () => {
     return subjectTeachers.find(st => st.id === idSt)?.idSubject || 0;
   };
 
-  const getDayWeekForApi = (date: Date): string => {
-    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-    return days[date.getDay()];
+  // получение предметов для выбранного преподавателя
+  const getSubjectsForTeacher = (teacherId: number): SubjectOption[] => {
+    if (!teacherId) return [];
+    if (newTeacherSubjects[teacherId]) {
+      return newTeacherSubjects[teacherId];
+    }
+    return [];
   };
-
-  const getAllSubjects = (): SubjectOption[] =>
-    subjects.map(s => ({ id: s.id, name: s.subjectName })).sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     if (!selectedTeacher || !selectedDate || teacherGroups.length === 0) {
@@ -315,9 +299,8 @@ export const ChangesSchedulePage: React.FC = () => {
     setLoading(true);
 
     const date = new Date(selectedDate);
-    const dayWeekForApi = getDayWeekForApi(date);
-    const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
-    const typeWeek = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
+    const dayWeekForApi = methodistApiService.getDayWeekForApi(date);
+    const typeWeek = methodistApiService.getWeekType(date);
     const teacherIdStValues = teacherGroups.map(tg => tg.idSt);
     const allTeacherGroupIds = teacherGroups.flatMap(tg => tg.idGroups);
 
@@ -359,9 +342,7 @@ export const ChangesSchedulePage: React.FC = () => {
 
   const saveReplacementToStorage = (pair: SchedulePair, type: 'notWillBe' | 'replacement', replacementData?: any) => {
     if (!selectedDate) return;
-    const storageKey = 'scheduleReplacements';
-    const existingData = localStorage.getItem(storageKey);
-    const replacements: ReplacementRecord[] = existingData ? JSON.parse(existingData) : [];
+    
     const newReplacement: ReplacementRecord = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       date: selectedDate,
@@ -375,13 +356,14 @@ export const ChangesSchedulePage: React.FC = () => {
       type,
       createdAt: new Date().toISOString()
     };
+    
     if (type === 'replacement' && replacementData) {
       newReplacement.newSubject = replacementData.newSubject;
       newReplacement.newTeacher = replacementData.newTeacher;
       newReplacement.newRoom = replacementData.newRoom;
     }
-    replacements.push(newReplacement);
-    localStorage.setItem(storageKey, JSON.stringify(replacements));
+    
+    methodistApiService.saveReplacement(newReplacement);
   };
 
   const handleSetNotWillBe = (pairId: number) => {
@@ -396,10 +378,20 @@ export const ChangesSchedulePage: React.FC = () => {
   const handleSaveReplacement = (pairId: number) => {
     const pair = filteredPairs.find(p => p.id === pairId);
     if (pair) {
-      const subjectName = subjects.find(s => s.id === selectedNewSubject[pairId])?.subjectName || '';
-      const teacherName = teachers.find(t => t.id === selectedNewTeacher[pairId])?.name || '';
-      saveReplacementToStorage(pair, 'replacement', { newSubject: subjectName, newTeacher: teacherName, newRoom: selectedNewRoom[pairId] });
+      const teacherId = selectedNewTeacher[pairId];
+      const teacherSubjects = getSubjectsForTeacher(teacherId || 0);
+      const selectedSubjectIdSt = selectedNewSubject[pairId];
+      const subjectOption = teacherSubjects.find(s => s.id === selectedSubjectIdSt);
+      const subjectName = subjectOption?.name || '';
+      const teacherName = teachers.find(t => t.id === teacherId)?.name || '';
+
+      saveReplacementToStorage(pair, 'replacement', { 
+        newSubject: subjectName, 
+        newTeacher: teacherName, 
+        newRoom: selectedNewRoom[pairId] 
+      });
     }
+
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
     const n = { ...selectedNewTeacher };
     delete n[pairId];
@@ -464,70 +456,73 @@ export const ChangesSchedulePage: React.FC = () => {
               <tr>
                 <th>№ группы</th>
                 <th>№ пары</th>
-                <th>Подгруппа</th>
+                <th>п/г</th>
                 <th>Предмет</th>
                 <th>Аудитория</th>
                 <th>Преподаватель</th>
                 <th>Тип недели</th>
-                <th>Новый предмет</th>
                 <th>Новый преподаватель</th>
+                <th>Новый предмет</th>
                 <th>Новая ауд.</th>
                 <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {filteredPairs.map(pair => {
-                const allSubjects = getAllSubjects();
+                const teacherSubjects = getSubjectsForTeacher(selectedNewTeacher[pair.id] || 0);
                 return (
                   <tr key={pair.id} className="cs-pair-row">
                     <td>{pair.groupNumber}</td>
                     <td>{pair.pairNumber}</td>
-                    <td>{pair.subgroup || '-'}</td>
+                    <td>{pair.subgroup || '—'}</td>
                     <td className="cs-subject-cell">{pair.subjectName}</td>
                     <td>{pair.room}</td>
                     <td><div className="cs-teacher-name">{pair.teacherName}</div></td>
                     <td>{pair.typeWeek}</td>
                     <td>
                       <div className="cs-change-cell">
-                        <select
-                          className="cs-change-select"
-                          value={selectedNewSubject[pair.id] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? Number(e.target.value) : 0;
-                            setSelectedNewSubject(prev => ({ ...prev, [pair.id]: value }));
-                          }}>
-                          <option value="">Выберите предмет</option>
-                          {allSubjects.map(subject => (
-                            <option key={subject.id} value={subject.id}>{subject.name}</option>
-                          ))}
-                        </select>
+                        <SearchableSelect
+                          value={selectedNewTeacher[pair.id] || ''}
+                          onChange={(value) => {
+                            const val = value ? Number(value) : 0;
+                            setSelectedNewTeacher(prev => ({ ...prev, [pair.id]: val }));
+                            setSelectedNewSubject(prev => ({ ...prev, [pair.id]: 0 }));
+                          }}
+                          options={teachers.filter(t => t.id !== pair.teacherId)}
+                          placeholder="Выберите преподавателя"
+                        />
                       </div>
                     </td>
                     <td>
                       <div className="cs-change-cell">
-                        <select
-                          className="cs-change-select"
-                          value={selectedNewTeacher[pair.id] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? Number(e.target.value) : 0;
-                            setSelectedNewTeacher(prev => ({ ...prev, [pair.id]: value }));
-                            setSelectedNewSubject(prev => ({ ...prev, [pair.id]: 0 }));
-                          }}>
-                          <option value="">Выберите преподавателя</option>
-                          {teachers.filter(t => t.id !== pair.teacherId).map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
+                        <SearchableSelect
+                          value={selectedNewSubject[pair.id] || ''}
+                          onChange={(value) => {
+                            const val = value ? Number(value) : 0;
+                            setSelectedNewSubject(prev => ({ ...prev, [pair.id]: val }));
+                          }}
+                          options={teacherSubjects}
+                          placeholder="Выберите предмет"
+                          disabled={!selectedNewTeacher[pair.id]}
+                        />
                       </div>
                     </td>
                     <td>
-                      <select
-                        className="cs-room-select"
-                        value={selectedNewRoom[pair.id] || ''}
-                        onChange={(e) => setSelectedNewRoom(prev => ({ ...prev, [pair.id]: e.target.value }))}>
-                        <option value="">Ауд.</option>
-                        {dbRooms.map(room => <option key={room} value={room}>{room}</option>)}
-                      </select>
+                      <div className="cs-change-cell">
+                        <SearchableSelect
+                          value={(() => {
+                            const room = rooms.find(r => r.name === (selectedNewRoom[pair.id] || ''));
+                            return room ? room.id : '';
+                          })()}
+                          onChange={(value) => {
+                            const roomId = value ? Number(value) : 0;
+                            const room = rooms.find(r => r.id === roomId);
+                            setSelectedNewRoom(prev => ({ ...prev, [pair.id]: room?.name || '' }));
+                          }}
+                          options={roomOptions}
+                          placeholder="Выберите аудиторию"
+                        />
+                      </div>
                     </td>
                     <td>
                       <div className="cs-actions">
@@ -561,9 +556,10 @@ export const AddPairPage: React.FC = () => {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
-  const [subjects, setSubjects] = useState<ApiSubject[]>([]);
-  const [schedule, setSchedule] = useState<ApiSchedule[]>([]);
-
+  const [rooms, setRooms] = useState<ApiRoom[]>([]);
+  const [teacherSubjects, setTeacherSubjects] = useState<SubjectOption[]>([]);
+  const [roomOptions, setRoomOptions] = useState<{ id: number; name: string }[]>([]);
+  
   const [selectedGroup, setSelectedGroup] = useState<number | ''>('');
   const [selectedPair, setSelectedPair] = useState<number | ''>('');
   const [selectedTeacher, setSelectedTeacher] = useState<number | ''>('');
@@ -573,32 +569,69 @@ export const AddPairPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [weekType, setWeekType] = useState<string>('');
 
-  const dbRooms = ['120', '123', '124', '127', '221', '226'];
   const subgroups = [1, 2];
+
+  // загрузка аудиторий
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const data = await methodistApiService.getRooms();
+        setRooms(data);
+        const options = await methodistApiService.getRoomOptions();
+        setRoomOptions(options);
+      } catch (error) {
+        console.error('Ошибка загрузки аудиторий:', error);
+      }
+    };
+    loadRooms();
+  }, []);
+
+  // загрузка предметов для выбранного преподавателя
+  useEffect(() => {
+    const loadTeacherSubjects = async () => {
+      if (!selectedTeacher || !selectedGroup) {
+        setTeacherSubjects([]);
+        return;
+      }
+
+      try {
+        const data = await methodistApiService.getGroupSubjects(selectedGroup as number);
+        
+        const uniqueSubjects = new Map<number, string>();
+        
+        data
+          .filter(item => item.teachers.some((t: any) => t.idTeacher === selectedTeacher))
+          .forEach(item => {
+            if (!uniqueSubjects.has(item.idSubject)) {
+              uniqueSubjects.set(item.idSubject, item.nameSubject);
+            }
+          });
+        
+        const filtered = Array.from(uniqueSubjects.entries()).map(([id, name]) => ({
+          id,
+          name
+        })).sort((a, b) => a.name.localeCompare(b.name));
+        
+        setTeacherSubjects(filtered);
+      } catch (error) {
+        console.error('Ошибка загрузки предметов для преподавателя:', error);
+        setTeacherSubjects([]);
+      }
+    };
+    loadTeacherSubjects();
+  }, [selectedTeacher, selectedGroup]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const groupsRes = await fetch(`${API_BASE_URL}/api/v1/groups`);
-        setGroups(await groupsRes.json());
-
-        const teachersRes = await fetch(`${API_BASE_URL}/api/v1/staffs`);
-        const teachersData: ApiStaff[] = await teachersRes.json();
-        const onlyTeachers = teachersData
-          .filter(st => st.staffPosition?.some(pos => pos.id === 9))
-          .map(st => ({
-            id: st.id,
-            name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim()
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setTeachers(onlyTeachers);
-
-        const subjectsRes = await fetch(`${API_BASE_URL}/api/v1/subjects`);
-        const subjectsData: ApiSubject[] = await subjectsRes.json();
-        setSubjects(subjectsData);
-
-        const scheduleRes = await fetch(`${API_BASE_URL}/api/v1/schedule`);
-        setSchedule(await scheduleRes.json());
+        const [groupsData, teachersData, scheduleData] = await Promise.all([
+          methodistApiService.getGroups(),
+          methodistApiService.getTeachers(),
+          methodistApiService.getSchedule()
+        ]);
+        
+        setGroups(groupsData);
+        setTeachers(teachersData);
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
       }
@@ -609,30 +642,27 @@ export const AddPairPage: React.FC = () => {
   useEffect(() => {
     if (selectedDate) {
       const date = new Date(selectedDate);
-      const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
-      setWeekType(weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя');
+      setWeekType(methodistApiService.getWeekType(date));
     }
   }, [selectedDate]);
 
-  const getDayWeekForApi = (date: Date): string => {
-    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-    return days[date.getDay()];
-  };
-
-  const getAvailablePairs = (): { numPair: number; time: string }[] => {
+  const getAvailablePairs = async (): Promise<{ numPair: number; time: string }[]> => {
     if (!selectedGroup || !selectedDate) return [];
+    
     const date = new Date(selectedDate);
-    const dayWeekForApi = getDayWeekForApi(date);
-    const weekNumber = Math.ceil((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
-    const typeWeek = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
-    const occupiedPairs = schedule
+    const dayWeekForApi = methodistApiService.getDayWeekForApi(date);
+    const typeWeek = methodistApiService.getWeekType(date);
+    
+    const scheduleData = await methodistApiService.getScheduleByGroup(selectedGroup as number);
+    
+    const occupiedPairs = scheduleData
       .filter(item =>
-        item.idGroup === selectedGroup &&
         item.dayWeek === dayWeekForApi &&
         (item.typeWeek === 'Общая' || item.typeWeek === typeWeek) &&
         !item.replacement
       )
       .map(item => item.numPair);
+    
     const allPairs = [
       { numPair: 1, time: '8:30 - 10:10' },
       { numPair: 2, time: '10:20 - 12:00' },
@@ -642,21 +672,37 @@ export const AddPairPage: React.FC = () => {
       { numPair: 6, time: '18:45 - 20:05' },
       { numPair: 7, time: '20:05 - 21:45' }
     ];
+    
     return allPairs.filter(pair => !occupiedPairs.includes(pair.numPair));
   };
 
-  const availablePairs = getAvailablePairs();
+  const [availablePairs, setAvailablePairs] = useState<{ numPair: number; time: string }[]>([]);
 
-  const handleSave = () => {
+  useEffect(() => {
+    const loadAvailablePairs = async () => {
+      const pairs = await getAvailablePairs();
+      setAvailablePairs(pairs);
+    };
+    loadAvailablePairs();
+  }, [selectedGroup, selectedDate]);
+
+  const handleSave = async () => {
     if (!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom || !selectedDate) return;
+    
     const group = groups.find(g => g.id === selectedGroup);
     const teacher = teachers.find(t => t.id === selectedTeacher);
-    const subject = subjects.find(s => s.id === selectedSubject);
-    if (!group || !teacher || !subject) return;
+    
+    if (!group || !teacher) return;
 
-    const storageKey = 'scheduleReplacements';
-    const existingData = localStorage.getItem(storageKey);
-    const replacements: ReplacementRecord[] = existingData ? JSON.parse(existingData) : [];
+    // получение idSt для выбранного предмета и преподавателя
+    const groupSubjects = await methodistApiService.getGroupSubjects(selectedGroup as number);
+    const subjectData = groupSubjects.find(s => s.idSubject === selectedSubject);
+    
+    if (!subjectData) {
+      alert('Не удалось найти информацию о предмете');
+      return;
+    }
+
     const newReplacement: ReplacementRecord = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       date: selectedDate,
@@ -668,20 +714,17 @@ export const AddPairPage: React.FC = () => {
       teacher: '—',
       room: '—',
       type: 'replacement',
-      newSubject: subject.subjectName,
+      newSubject: subjectData.nameSubject,
       newTeacher: teacher.name,
       newRoom: selectedRoom,
       createdAt: new Date().toISOString()
     };
-    replacements.push(newReplacement);
-    localStorage.setItem(storageKey, JSON.stringify(replacements));
+    
+    methodistApiService.saveReplacement(newReplacement);
     navigate('/metodist/changes');
   };
 
-  // Опции предметов для SearchableSelect
-  const subjectOptions = subjects
-    .map(s => ({ id: s.id, name: s.subjectName }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const isDateSelected = !!selectedDate;
 
   return (
     <div className="add-pair-container">
@@ -713,7 +756,8 @@ export const AddPairPage: React.FC = () => {
                 <select
                   value={selectedGroup}
                   onChange={(e) => { setSelectedGroup(Number(e.target.value)); setSelectedPair(''); }}
-                  className="form-control">
+                  className="form-control"
+                  disabled={!isDateSelected}>
                   <option value="">Выберите группу</option>
                   {groups.map(group => (
                     <option key={group.id} value={group.id}>
@@ -729,7 +773,7 @@ export const AddPairPage: React.FC = () => {
                   value={selectedPair}
                   onChange={(e) => setSelectedPair(Number(e.target.value))}
                   className="form-control"
-                  disabled={!selectedGroup}>
+                  disabled={!selectedGroup || !isDateSelected}>
                   <option value="">Выберите пару</option>
                   {availablePairs.map(pair => (
                     <option key={pair.numPair} value={pair.numPair}>
@@ -737,7 +781,7 @@ export const AddPairPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                {selectedGroup && availablePairs.length === 0 && (
+                {selectedGroup && availablePairs.length === 0 && isDateSelected && (
                   <div className="form-hint warning">Нет свободных пар на выбранную дату</div>
                 )}
               </div>
@@ -749,7 +793,8 @@ export const AddPairPage: React.FC = () => {
                 <select
                   value={selectedSubgroup}
                   onChange={(e) => setSelectedSubgroup(e.target.value ? Number(e.target.value) : '')}
-                  className="form-control">
+                  className="form-control"
+                  disabled={!isDateSelected}>
                   <option value="">Нет</option>
                   {subgroups.map(num => <option key={num} value={num}>{num} подгруппа</option>)}
                 </select>
@@ -764,9 +809,13 @@ export const AddPairPage: React.FC = () => {
                 <label>Преподаватель <span className="required">*</span></label>
                 <SearchableSelect
                   value={selectedTeacher}
-                  onChange={(val) => setSelectedTeacher(val)}
+                  onChange={(val) => {
+                    setSelectedTeacher(val);
+                    setSelectedSubject('');
+                  }}
                   options={teachers}
                   placeholder="Выберите преподавателя"
+                  disabled={!isDateSelected}
                 />
               </div>
 
@@ -775,8 +824,9 @@ export const AddPairPage: React.FC = () => {
                 <SearchableSelect
                   value={selectedSubject}
                   onChange={(val) => setSelectedSubject(val)}
-                  options={subjectOptions}
+                  options={teacherSubjects}
                   placeholder="Выберите предмет"
+                  disabled={!selectedTeacher || !isDateSelected}
                 />
               </div>
             </div>
@@ -784,13 +834,20 @@ export const AddPairPage: React.FC = () => {
             <div className="form-row">
               <div className="form-group">
                 <label>Аудитория <span className="required">*</span></label>
-                <select
-                  value={selectedRoom}
-                  onChange={(e) => setSelectedRoom(e.target.value)}
-                  className="form-control">
-                  <option value="">Выберите аудиторию</option>
-                  {dbRooms.map(room => <option key={room} value={room}>{room}</option>)}
-                </select>
+                <SearchableSelect
+                  value={(() => {
+                    const room = rooms.find(r => r.name === selectedRoom);
+                    return room ? room.id : '';
+                  })()}
+                  onChange={(value) => {
+                    const roomId = value ? Number(value) : 0;
+                    const room = rooms.find(r => r.id === roomId);
+                    setSelectedRoom(room?.name || '');
+                  }}
+                  options={roomOptions}
+                  placeholder="Выберите аудиторию"
+                  disabled={!isDateSelected}
+                />
               </div>
             </div>
           </div>
@@ -800,7 +857,7 @@ export const AddPairPage: React.FC = () => {
             <button
               className="btn btn-primary"
               onClick={handleSave}
-              disabled={!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom}>
+              disabled={!selectedGroup || !selectedPair || !selectedTeacher || !selectedSubject || !selectedRoom || !isDateSelected}>
               Сохранить пару
             </button>
           </div>

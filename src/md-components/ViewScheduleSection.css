@@ -189,20 +189,6 @@
   border-top: none;
 }
 
- /* замены */
-.v-replacement-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: #ef4444;
-  color: white;
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 12px;
-  text-transform: uppercase;
-}
-
 /* нет занятий */
 .v-no-lessons {
   background: rgba(0, 47, 167, 0.05);

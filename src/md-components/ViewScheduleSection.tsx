@@ -1,26 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ViewScheduleSection.css';
-import { API_BASE_URL } from '../constants/apiConstant';
-
-type ApiLesson = {
-  id: number;
-  dayWeek: string;
-  typeWeek: string;
-  numPair: number;
-  room: number | null;
-  idSt: number;
-  idGroup: number;
-  subgroup: number | null;
-  replacement: boolean;
-  idSubject: number;
-  nameSubject: string;
-  idTeacher: number | null;
-  lastnameTeacher: string | null;
-  nameTeacher: string | null;
-  patronymicTeacher: string | null;
-  numberGroup: number;
-};
+import { methodistApiService } from '../services/methodistApiService';
+import type { ApiScheduleItem } from '../services/methodistApiService';
 
 type Lesson = {
   id: number;
@@ -48,34 +30,11 @@ type GroupedSlot = {
   lessons: Lesson[];
 };
 
-const pairTimes: Record<number, { start: string; end: string }> = {
-  1: { start: '8:30', end: '10:10' },
-  2: { start: '10:20', end: '12:00' },
-  3: { start: '12:45', end: '14:25' },
-  4: { start: '14:35', end: '16:15' },
-  5: { start: '16:25', end: '18:05' },
-  6: { start: '18:15', end: '19:55' },
-  7: { start: '20:05', end: '21:45' },
-  8: { start: '21:55', end: '23:35' },
-};
-
-// определение верхней/нижней недели
-const getCurrentWeekType = (): 'upper' | 'lower' => {
-  const today = new Date();
-  const startOfAcademicYear = new Date(2025, 8, 1);
-  const diffTime = today.getTime() - startOfAcademicYear.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weekNumber = Math.floor(diffDays / 7) + 1;
-  return weekNumber % 2 === 1 ? 'upper' : 'lower';
-};
-
-// конвертации времени в минуты
 const timeToMinutes = (time: string): number => {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 };
 
-// группировка пар по времени
 const groupLessonsByTime = (lessons: Lesson[]): GroupedSlot[] => {
   const groups: Record<string, GroupedSlot> = {};
   
@@ -96,30 +55,26 @@ const groupLessonsByTime = (lessons: Lesson[]): GroupedSlot[] => {
   );
 };
 
-// получение дней недели
-const getWeekDays = (): string[] => {
-  return ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-};
-
-// преобразование API данных
-const transformApiData = (apiData: ApiLesson[], weekDays: string[]): DaySchedule[] => {
+const transformApiData = (apiData: ApiScheduleItem[], weekDays: string[]): DaySchedule[] => {
   return weekDays.map((weekday) => {
     const dayLessons = apiData
       .filter(lesson => lesson.dayWeek === weekday)
       .map(lesson => {
-        const pairTime = pairTimes[lesson.numPair];
-        if (!pairTime) return null;
+        const pairTime = methodistApiService.getPairTime(lesson.numPair);
+        if (!pairTime.start) return null;
 
         let teacher: string | undefined = undefined;
         if (lesson.lastnameTeacher && lesson.nameTeacher) {
-          const nameInitial = lesson.nameTeacher[0] || '';
-          const patronymicInitial = lesson.patronymicTeacher ? lesson.patronymicTeacher[0] : '';
-          teacher = `${lesson.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
+          teacher = methodistApiService.formatTeacherName(
+            lesson.lastnameTeacher,
+            lesson.nameTeacher,
+            lesson.patronymicTeacher
+          );
         }
         
         let room: string = 'ауд. -';
-        if (lesson.room !== null)  {
-          room = `ауд. ${lesson.room}`;
+        if (lesson.room !== null) {
+          room = methodistApiService.formatRoom(lesson.room);
         }
         
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
@@ -127,7 +82,7 @@ const transformApiData = (apiData: ApiLesson[], weekDays: string[]): DaySchedule
           ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
           : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
 
-        const lessonData: Lesson = {
+        return {
           id: lesson.id,
           startTime: pairTime.start,
           endTime: pairTime.end,
@@ -140,8 +95,6 @@ const transformApiData = (apiData: ApiLesson[], weekDays: string[]): DaySchedule
           typeWeek: lesson.typeWeek,
           replacement: lesson.replacement
         };
-        
-        return lessonData;
       })
       .filter((lesson): lesson is NonNullable<typeof lesson> => lesson !== null);
     
@@ -153,7 +106,6 @@ const transformApiData = (apiData: ApiLesson[], weekDays: string[]): DaySchedule
   });
 };
 
-// фильтрация по типу недели
 const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | 'lower' | 'common'): DaySchedule[] => {
   return schedule.map(day => ({
     ...day,
@@ -167,7 +119,7 @@ const filterScheduleByWeekType = (schedule: DaySchedule[], weekType: 'upper' | '
 
 export const ViewScheduleSection: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedWeek, setSelectedWeek] = useState<'upper' | 'lower'>(getCurrentWeekType());
+  const [selectedWeek, setSelectedWeek] = useState<'upper' | 'lower'>(methodistApiService.getCurrentWeekType());
   const [scheduleData, setScheduleData] = useState<DaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,7 +134,7 @@ export const ViewScheduleSection: React.FC = () => {
 
   // получение дней недели
   useEffect(() => {
-    const days = getWeekDays();
+    const days = methodistApiService.getWeekDays();
     setWeekDays(days);
   }, []);
 
@@ -194,13 +146,7 @@ export const ViewScheduleSection: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_BASE_URL}/api/v1/schedule/group/${selectedGroup}`);
-        
-        if (!response.ok) {
-          throw new Error('Ошибка загрузки расписания');
-        }
-        
-        const apiData: ApiLesson[] = await response.json();
+        const apiData = await methodistApiService.getScheduleByGroup(Number(selectedGroup));
         const transformedData = transformApiData(apiData, weekDays);
         const filteredData = filterScheduleByWeekType(transformedData, selectedWeek);
         setScheduleData(filteredData);
@@ -223,12 +169,7 @@ export const ViewScheduleSection: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/v1/schedule/group/${selectedGroup}`);
-      
-      if (!response.ok) {
-        throw new Error('Ошибка загрузки расписания');
-      }
-      const apiData: ApiLesson[] = await response.json();
+      const apiData = await methodistApiService.getScheduleByGroup(Number(selectedGroup));
       const transformedData = transformApiData(apiData, weekDays);
       const filteredData = filterScheduleByWeekType(transformedData, selectedWeek);
       setScheduleData(filteredData);
@@ -341,12 +282,6 @@ export const ViewScheduleSection: React.FC = () => {
                                   </div>
                                 )}
                               </div>
-                              
-                              {lesson.replacement && (
-                                <div className="v-replacement-badge">
-                                  Замена
-                                </div>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -386,12 +321,6 @@ export const ViewScheduleSection: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          
-                          {slot.lessons[0].replacement && (
-                            <div className="v-replacement-badge">
-                              Замена
-                            </div>
-                          )}
                         </div>
                       </div>
                     )

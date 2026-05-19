@@ -205,8 +205,35 @@
   color: #dc3545;
 }
 
-@media (max-width: 1024px) {
-  .rd-content {
-    grid-template-columns: 1fr;
-  }
+.rd-save-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e5ec;
+}
+
+.rd-save-btn {
+  background: #002FA7;
+  border: 1px solid #002FA7;
+  border-radius: 6px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  gap: 6px;
+  transition: all 0.2s;
+  width: 130px;
+  height: 38px;
+}
+
+.rd-save-btn:hover:not(:disabled) {
+  background: #001f7a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.rd-save-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
 }

@@ -1,40 +1,10 @@
 import './ViewSection.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../constants/apiConstant';
+import { methodistApiService } from '../services/methodistApiService';
+import type { ApiGroup, ApiScheduleItem } from '../services/methodistApiService';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-
-interface ApiGroup {
-  id: number;
-  numberGroup: number;
-  admissionYear: number;
-  idCurator: number;
-  course: number;
-  formEducation: string;
-  profile: string;
-  specialty: string;
-}
-
-interface ApiScheduleItem {
-  id: number;
-  dayWeek: string;
-  typeWeek: string;
-  numPair: number;
-  room: string | null;
-  idSt: number;
-  idSubject: number;
-  nameSubject: string;
-  idTeacher: number | null;
-  lastnameTeacher: string | null;
-  nameTeacher: string | null;
-  patronymicTeacher: string | null;
-  idGroup: number;
-  numberGroup: number;
-  subgroup: number | null;
-  replacement: boolean;
-  dateReplacement: string | null;
-}
 
 const EXPORT_CONFIG = {
   academicYear: '2025-2026',
@@ -54,28 +24,13 @@ const pairTimeMap: Record<number, string> = {
 
 const weekDaysOrder = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
-const formatTeacherName = (item: ApiScheduleItem): string => {
-  if (!item.lastnameTeacher || !item.nameTeacher) {
-    return '';
-  }
-  const firstName = item.nameTeacher.charAt(0) + '.';
-  const patronymic = item.patronymicTeacher && item.patronymicTeacher.length > 0 
-    ? item.patronymicTeacher.charAt(0) + '.' 
-    : '';
-  return `${item.lastnameTeacher} ${firstName}${patronymic}`.trim();
-};
-
-const formatRoom = (item: ApiScheduleItem): string => {
-  if (!item.room) return '';
-  if (item.room.includes('НовГУ') || item.room.includes('НовГу')) {
-    return item.room;
-  }
-  return `ауд.${item.room}`;
-};
-
 const formatSingleItem = (item: ApiScheduleItem): string => {
-  const teacher = formatTeacherName(item);
-  const room = formatRoom(item);
+  const teacher = methodistApiService.formatTeacherName(
+    item.lastnameTeacher,
+    item.nameTeacher,
+    item.patronymicTeacher
+  );
+  const room = methodistApiService.formatRoom(item.room);
   const subgroup = item.subgroup ? `п/г ${item.subgroup}` : '';
   const parts = [item.nameSubject];
   if (subgroup) parts.push(subgroup);
@@ -118,11 +73,7 @@ const formatCellWithWeekSeparation = (items: ApiScheduleItem[]): { upperContent:
   
   const hasSeparation = (upperContent !== '' && lowerContent !== '' && upperContent !== lowerContent);
   
-  return {
-    upperContent,
-    lowerContent,
-    hasSeparation
-  };
+  return { upperContent, lowerContent, hasSeparation };
 };
 
 const filterActualSchedule = (items: ApiScheduleItem[]): ApiScheduleItem[] => {
@@ -212,13 +163,7 @@ const buildScheduleTableData = (
 // основная функция экспорта
 const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
   try {
-    console.log(`Начинаем экспорт расписания для группы ${groupNumber}...`);
-    
-    const response = await fetch(`${API_BASE_URL}/api/v1/schedule/group/${groupId}`);
-    if (!response.ok) {
-      throw new Error(`Ошибка загрузки расписания: ${response.status}`);
-    }
-    const data: ApiScheduleItem[] = await response.json();
+    const data = await methodistApiService.getScheduleByGroup(groupId);
     const actualSchedule = filterActualSchedule(data);
     
     if (actualSchedule.length === 0) {
@@ -245,37 +190,31 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
     
     // шапка таблицы
     worksheet.mergeCells('C1:C1');
-    const cell1 = worksheet.getCell('C1');
-    cell1.value = 'УТВЕРЖДАЮ';
-    cell1.font = headerFont;
+    worksheet.getCell('C1').value = 'УТВЕРЖДАЮ';
+    worksheet.getCell('C1').font = headerFont;
     
     worksheet.mergeCells('C2:C2');
-    const cell2 = worksheet.getCell('C2');
-    cell2.value = 'Директор ПТИ______________В.А.Шульцев';
-    cell2.font = normalFont;
+    worksheet.getCell('C2').value = 'Директор ПТИ______________В.А.Шульцев';
+    worksheet.getCell('C2').font = normalFont;
     
     worksheet.mergeCells('C3:C3');
-    const cell3 = worksheet.getCell('C3');
-    cell3.value = EXPORT_CONFIG.approvalDate;
-    cell3.font = normalFont;
+    worksheet.getCell('C3').value = EXPORT_CONFIG.approvalDate;
+    worksheet.getCell('C3').font = normalFont;
     
     worksheet.mergeCells('C4:C4');
-    const cell4 = worksheet.getCell('C4');
-    cell4.value = 'РАСПИСАНИЕ ЗАНЯТИЙ';
-    cell4.font = headerFont;
+    worksheet.getCell('C4').value = 'РАСПИСАНИЕ ЗАНЯТИЙ';
+    worksheet.getCell('C4').font = headerFont;
     
     worksheet.mergeCells('C5:C5');
-    const cell5 = worksheet.getCell('C5');
-    cell5.value = `${EXPORT_CONFIG.academicYear} учебный год, ${EXPORT_CONFIG.semester} семестр`;
-    cell5.font = normalFont;
+    worksheet.getCell('C5').value = `${EXPORT_CONFIG.academicYear} учебный год, ${EXPORT_CONFIG.semester} семестр`;
+    worksheet.getCell('C5').font = normalFont;
     
     worksheet.mergeCells('C6:C6');
     worksheet.getCell('C6').value = '';
     
     worksheet.mergeCells('C7:C7');
-    const cell7 = worksheet.getCell('C7');
-    cell7.value = groupNumber.toString();
-    cell7.font = boldFont;
+    worksheet.getCell('C7').value = groupNumber.toString();
+    worksheet.getCell('C7').font = boldFont;
     
     // заполнение таблицы расписанием с восьмой ячейки
     let currentRow = 8;
@@ -291,17 +230,8 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
         for (let col = 1; col <= 3; col++) {
           const cell = upperRow.getCell(col);
           cell.font = normalFont;
-          cell.alignment = {
-            vertical: 'top',
-            wrapText: true,
-            horizontal: col === 2 ? 'center' : 'left'
-          };
-          cell.border = {
-            top: { style: 'thin' },
-            bottom: { style: 'thin' },
-            left: { style: 'thin' },
-            right: { style: 'thin' }
-          };
+          cell.alignment = { vertical: 'top', wrapText: true, horizontal: col === 2 ? 'center' : 'left' };
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         }
         
         if (item.day !== '') {
@@ -319,17 +249,8 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
         for (let col = 1; col <= 3; col++) {
           const cell = lowerRow.getCell(col);
           cell.font = normalFont;
-          cell.alignment = {
-            vertical: 'top',
-            wrapText: true,
-            horizontal: col === 2 ? 'center' : 'left'
-          };
-          cell.border = {
-            top: { style: 'thin' },
-            bottom: { style: 'thin' },
-            left: { style: 'thin' },
-            right: { style: 'thin' }
-          };
+          cell.alignment = { vertical: 'top', wrapText: true, horizontal: col === 2 ? 'center' : 'left' };
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         }
         
         currentRow++;
@@ -343,17 +264,8 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
         for (let col = 1; col <= 3; col++) {
           const cell = row.getCell(col);
           cell.font = normalFont;
-          cell.alignment = {
-            vertical: 'top',
-            wrapText: true,
-            horizontal: col === 2 ? 'center' : 'left'
-          };
-          cell.border = {
-            top: { style: 'thin' },
-            bottom: { style: 'thin' },
-            left: { style: 'thin' },
-            right: { style: 'thin' }
-          };
+          cell.alignment = { vertical: 'top', wrapText: true, horizontal: col === 2 ? 'center' : 'left' };
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         }
         
         if (item.day !== '') {
@@ -365,10 +277,9 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
     }
     
     const signatureRow = worksheet.getRow(currentRow + 1);
-    const signatureCell = signatureRow.getCell(3);
-    signatureCell.value = 'Зам. директора по УМ и ВР________Л.Н. Иванова';
-    signatureCell.font = normalFont;
-    signatureCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    signatureRow.getCell(3).value = 'Зам. директора по УМ и ВР________Л.Н. Иванова';
+    signatureRow.getCell(3).font = normalFont;
+    signatureRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'left' };
     
     // объединение ячеек дня недели по вертикали
     let mergeStartRow = -1;
@@ -393,15 +304,8 @@ const exportScheduleToExcel = async (groupId: number, groupNumber: string) => {
     
     // сохранение файла
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    });
-    
-    const fileName = `${groupNumber}.xlsx`;
-    saveAs(blob, fileName);
-    
-    console.log(`Расписание для группы ${groupNumber} успешно экспортировано!`);
-    
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `${groupNumber}.xlsx`);
   } catch (error) {
     console.error('Ошибка экспорта:', error);
   }
@@ -421,11 +325,7 @@ export const ViewSectionPage: React.FC = () => {
       setLoading(true);
       setLoadError('');
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/groups`);
-        if (!res.ok) {
-          throw new Error(`Ошибка загрузки групп: ${res.status}`);
-        }
-        const data: ApiGroup[] = await res.json();
+        const data = await methodistApiService.getGroups();
         setGroups(data);
       } catch (e: any) {
         console.error(e);
@@ -507,9 +407,7 @@ export const ViewSectionPage: React.FC = () => {
             <select
               id="course-filter"
               value={selectedCourse}
-              onChange={(e) =>
-                setSelectedCourse(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))
-              }
+              onChange={(e) => setSelectedCourse(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
               className="course-filter">
               <option value="all">Все курсы</option>
               {courses.map(course => (
@@ -534,17 +432,8 @@ export const ViewSectionPage: React.FC = () => {
           </div>
         </div>
 
-        {loading && (
-          <div className="status-banner">
-            Загрузка групп...
-          </div>
-        )}
-
-        {loadError && (
-          <div className="status-banner error">
-            {loadError}
-          </div>
-        )}
+        {loading && <div className="status-banner">Загрузка групп...</div>}
+        {loadError && <div className="status-banner error">{loadError}</div>}
 
         {!loading && !loadError && (
           <div className="groups-container">
@@ -553,9 +442,9 @@ export const ViewSectionPage: React.FC = () => {
               .map(([course, courseGroups]) => (
                 <div key={course} className="course-section">
                   <h2 className="course-title">{course} курс</h2>
-                  <ul className="groups-list">
+                  <ul className="v-groups-list">
                     {courseGroups.map(group => (
-                      <li key={group.id} className="group-item">
+                      <li key={group.id} className="v-group-item">
                         <div className="group-info">
                           <span className="group-code">{group.numberGroup}</span>
                           <span className="group-name">{group.specialty}</span>
