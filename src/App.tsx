@@ -16,78 +16,78 @@ import { ChangesSchedulePage, AddPairPage } from './md-components/ChangesSchedul
 import { ViewScheduleSection } from './md-components/ViewScheduleSection';
 import { ReplacementDocumentsPage } from './md-components/ReplacementDocumentsPage';
 import { PersonalCabinet } from './md-components/PersonalCabinetMetodist';
-
-
+import TeacherToRoom from './md-components/TeacherToRoom'; // Изменено: убраны фигурные скобки
 
 function App() {
   return (
     <UserProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            
-            <Route 
-              path="/student/*" 
-              element={
-                <ProtectedRoute requiredUserType="student">
-                  <StudentPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/teacher/*" 
-              element={
-                <ProtectedRoute requiredUserType="teacher">
-                  <CacheProvider>
-                    <TeacherPage />
-                  </CacheProvider>
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/metodist" 
-              element={
-                <ProtectedRoute requiredUserType="metodist">
-                  <MetodistPage />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={null} />
-              <Route path="edit-schedule" element={<EditSchedulePage />} />
-              <Route path="view-groups" element={<ViewSectionPage />} />
-              <Route path="view-groups/view-schedule" element={<ViewScheduleSection />} />
-              <Route path="changes" element={<ChangesSchedulePage />} />
-              <Route path="/metodist/changes/replacement-documents" element={<ReplacementDocumentsPage />} />
-              <Route path="changes/add-pair" element={<AddPairPage />} />
-              <Route path="personal-cabinet" element={<PersonalCabinet />} />
-            </Route>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          
+          <Route 
+            path="/student/*" 
+            element={
+              <ProtectedRoute requiredUserType="student">
+                <StudentPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/teacher/*" 
+            element={
+              <ProtectedRoute requiredUserType="teacher">
+                <CacheProvider>
+                  <TeacherPage />
+                </CacheProvider>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/metodist" 
+            element={
+              <ProtectedRoute requiredUserType="metodist">
+                <MetodistPage />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/metodist/edit-schedule" replace />} />
+            <Route path="edit-schedule" element={<EditSchedulePage />} />
+            <Route path="view-groups" element={<ViewSectionPage />} />
+            <Route path="view-groups/view-schedule" element={<ViewScheduleSection />} />
+            <Route path="changes" element={<ChangesSchedulePage />} />
+            <Route path="changes/replacement-documents" element={<ReplacementDocumentsPage />} />
+            <Route path="changes/add-pair" element={<AddPairPage />} />
+            <Route path="personal-cabinet" element={<PersonalCabinet />} />
+            <Route path="teacher-to-room" element={<TeacherToRoom />} />
+          </Route>
 
-            <Route 
-              path="/departmentHead/*" 
-              element={
-                <ProtectedRoute requiredUserType="departmentHead">
-                  <DepartmentHeadPage />
-                </ProtectedRoute>
-              } 
-            />
+          <Route 
+            path="/departmentHead/*" 
+            element={
+              <ProtectedRoute requiredUserType="departmentHead">
+                <DepartmentHeadPage />
+              </ProtectedRoute>
+            } 
+          />
 
-            <Route 
-              path="/social/*" 
-              element={
-                <ProtectedRoute requiredUserType="social">
-                  <SocialPage />
-                </ProtectedRoute>
-              } 
-            />
+          <Route 
+            path="/social/*" 
+            element={
+              <ProtectedRoute requiredUserType="social">
+                <SocialPage />
+              </ProtectedRoute>
+            } 
+          />
 
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Router>
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
     </UserProvider>
   );
 }
