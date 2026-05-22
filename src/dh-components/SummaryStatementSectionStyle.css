@@ -1369,3 +1369,67 @@
     flex: 1;
   }
 }
+
+
+
+/* ============================================
+   ВКЛАДКИ ДЛЯ МОДАЛЬНОГО ОКНА АТТЕСТАЦИИ
+   ============================================ */
+
+/* Контейнер вкладок */
+.dh-at-attestation-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 24px;
+}
+
+/* Кнопка вкладки */
+.dh-at-tab-btn {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.dh-at-tab-btn:hover {
+  color: #002FA7;
+}
+
+.dh-at-tab-btn.active {
+  color: #002FA7;
+}
+
+.dh-at-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #002FA7;
+  border-radius: 2px;
+}
+
+/* Модальное окно для аттестации (немного шире) */
+.dh-at-attestation-modal {
+  max-width: 550px;
+  width: 100%;
+}
+
+/* Адаптивность для вкладок */
+@media (max-width: 480px) {
+  .dh-at-attestation-tabs {
+    padding: 0 16px;
+  }
+  
+  .dh-at-tab-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}

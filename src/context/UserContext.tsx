@@ -55,6 +55,7 @@ interface UserContextType {
   isLoading: boolean;
   logout: () => void;
   userId: number | null;
+  isLeader: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);

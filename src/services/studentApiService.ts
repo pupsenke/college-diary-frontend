@@ -39,6 +39,7 @@ export interface StudentData {
   address?: string;
   email?: string;
   numberGroup?: number;
+  isLeader?: boolean;
 }
 
 // Интерфейсы для успеваемости

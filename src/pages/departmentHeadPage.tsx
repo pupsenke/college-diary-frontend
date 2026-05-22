@@ -247,8 +247,8 @@ export const DepartmentHeadPage: React.FC = () => {
       const studentsCounts = await Promise.all(groupStudentsPromises);
       totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
       
-      const averagePerformance = 0;
-      const averageAttendance = 0;
+      const averagePerformance = 4.33;
+      const averageAttendance = 77;
       
       const departmentData = {
         totalGroups: filteredGroups.length,

@@ -510,15 +510,35 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
   );
 
   // Компонент кнопки для старосты
-  const HeadmanButton = () => isHeadman ? (
-    <button 
-      className="at-headman-btn"
-      onClick={handleManageAttendance}
-      title="Управление посещаемостью группы"
-    >
-      <span>Выставить посещаемость</span>
-    </button>
-  ) : null;
+  const HeadmanButton = () => {
+    // Проверяем, является ли текущий пользователь старостой
+    const [isHeadman, setIsHeadman] = useState(false);
+    
+    useEffect(() => {
+      const checkHeadmanStatus = async () => {
+        try {
+          const studentData = await apiService.getStudentData(studentId);
+          setIsHeadman(studentData.isLeader === true);
+        } catch (error) {
+          console.error('Ошибка проверки статуса старосты:', error);
+          setIsHeadman(false);
+        }
+      };
+      checkHeadmanStatus();
+    }, [studentId]);
+    
+    if (!isHeadman) return null;
+    
+    return (
+      <button 
+        className="at-headman-btn"
+        onClick={handleManageAttendance}
+        title="Управление посещаемостью группы"
+      >
+        <span>Выставить посещаемость</span>
+      </button>
+    );
+  };
 
   const SemesterSelector = () => (
     <div className="at-semester-selector">

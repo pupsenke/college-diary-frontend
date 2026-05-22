@@ -262,7 +262,12 @@ export const StudentPage: React.FC = () => {
 
     switch (activeTab) {
       case 'attendance':
-        return <AttendanceSection studentId={student.id}/>;
+        return (
+          <AttendanceSection 
+            studentId={student.id}
+            groupNumber={student.numberGroup?.toString()}
+          />
+        );
       case 'performance':
         return <PerformanceSection studentId={student.id} />;
       case 'personal':
