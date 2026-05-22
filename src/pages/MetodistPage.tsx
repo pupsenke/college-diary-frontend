@@ -31,6 +31,10 @@ export const MetodistPage: React.FC = () => {
     navigate('/metodist/changes');
   };
 
+    const handleTeacherToRoomClick = () => {
+    navigate('/metodist/teacher-to-room');
+  };
+
   const isHomePage = location.pathname === '/metodist' || location.pathname === '/metodist/';
 
   return (
@@ -90,6 +94,18 @@ export const MetodistPage: React.FC = () => {
                     </div>
                     <h3 className="md-button-title">Оформление замен</h3>
                     <p className="md-button-desc">Управление заменами преподавателей</p>
+                  </button>
+                  <button 
+                    className="md-button"
+                    onClick={handleTeacherToRoomClick}>
+                    <div className="md-button-icon-container">
+                      <img 
+                        src="/md-icons/room_icon.svg" 
+                        alt="Привязка преподавателя к аудитории" 
+                        className="md-button-icon"/>
+                    </div>
+                    <h3 className="md-button-title">Аудитории</h3>
+                    <p className="md-button-desc">Привязка преподавателей к аудитории</p>
                   </button>
                 </div>
               </main>

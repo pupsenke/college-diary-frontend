@@ -208,7 +208,7 @@
 
 .week-label {
   font-weight: 600;
-  font-size: 10px;
+  font-size: 11px;
   color: #666;
   margin-bottom: 2px;
 }
@@ -228,7 +228,7 @@
   white-space: normal;
   word-wrap: break-word;
   line-height: 1.1;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .pair-teacher {
@@ -237,13 +237,14 @@
   white-space: normal;
   word-wrap: break-word;
   line-height: 1.1;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .pair-room {
   color: #666;
   font-style: italic;
-  font-size: 9px;
+  font-size: 10px;
+  margin-bottom: 10px;
 }
 
 .add-pair-btn {
@@ -328,8 +329,11 @@
 
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 5px;
 }
 
 .room-btn {
@@ -340,20 +344,26 @@
   color: #333;
   font-weight: 500;
   cursor: pointer;
-  position: relative;
   transition: all 0.3s;
+  min-width: 60px;
 }
 
 .room-btn:hover:not(.active):not(:disabled) {
   border-color: #002FA7;
   color: #002FA7;
   background: #f8f9fa;
+  transform: translateY(-2px);
 }
 
 .room-btn.active {
   background: #002FA7;
   color: white;
   border-color: #002FA7;
+}
+
+.room-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .room-btn.teacher-room {
@@ -363,11 +373,6 @@
 .room-btn.teacher-room:hover:not(.active):not(:disabled) {
   border-color: #28a745;
   color: #28a745;
-}
-
-.room-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .room-badge {
@@ -380,6 +385,54 @@
   padding: 2px 6px;
   border-radius: 10px;
 }
+
+.show-more-btn, .show-less-btn {
+  grid-column: span 2;
+  background: #f8f9fa !important;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.show-more-btn:hover {
+  background: #e8f0ff !important;
+  border-color: #002FA7 !important;
+  color: #002FA7 !important;
+}
+
+.show-less-btn:hover {
+  background: #ffe8e8 !important;
+  border-color: #dc3545 !important;
+  color: #dc3545 !important;
+}
+
+.subgroup-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.subgroup-btn {
+  padding: 8px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.subgroup-btn:hover:not(.active) {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.subgroup-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
 
 /* чекбоксы для выбора недели */
 .week-checkbox-group {
@@ -487,4 +540,13 @@
   padding: 20px;
   color: #999;
   font-style: italic;
+}
+
+.subgroup-label {
+  color: #027008;
+  margin-bottom: 2px;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3;
+  font-size: 10px;
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../constants/apiConstant';
+import { methodistApiService, ApiStaff } from '../services/methodistApiService';
 import { useUser } from '../context/UserContext';
 import './PersonalCabinetMetodist.css';
 
@@ -20,9 +20,22 @@ interface Group {
   course: number;
 }
 
+const mapApiStaffToStaff = (api: ApiStaff): Staff => {
+  return {
+    id: api.id,
+    lastName: api.lastName,
+    name: api.name,
+    patronymic: api.patronymic ?? '',
+    login: api.login ?? '',
+    email: api.email ?? '',
+    staffPosition: api.staffPosition ?? [],
+  };
+};
+
 export const PersonalCabinet: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
+
   const [staff, setStaff] = useState<Staff | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -38,12 +51,10 @@ export const PersonalCabinet: React.FC = () => {
 
   const loadStaffData = async (id: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setStaff(data);
-        setNewEmail(data.email || '');
-      }
+      const data = await methodistApiService.getStaffById(id);
+      const mapped = mapApiStaffToStaff(data);
+      setStaff(mapped);
+      setNewEmail(mapped.email || '');
     } catch (err) {
       console.error(err);
     } finally {
@@ -53,11 +64,8 @@ export const PersonalCabinet: React.FC = () => {
 
   const loadGroups = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/groups`);
-      if (res.ok) {
-        const data = await res.json();
-        setGroups(data);
-      }
+      const data = await methodistApiService.getGroups();
+      setGroups(data);
     } catch (err) {
       console.error(err);
     }
@@ -65,24 +73,19 @@ export const PersonalCabinet: React.FC = () => {
 
   const updateEmail = async () => {
     if (!staff || !newEmail.trim()) return;
+
     setSaving(true);
     try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/staffs/update`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: staff.id, email: newEmail })
-        });
-
-        if (res.ok) {
-        setStaff(prev => prev ? { ...prev, email: newEmail } : null);
-        setIsEditingEmail(false);
-        }
+      const updatedStaffApi = await methodistApiService.updateStaffEmail(staff.id, newEmail);
+      const mapped = mapApiStaffToStaff(updatedStaffApi);
+      setStaff(mapped);
+      setIsEditingEmail(false);
     } catch (err) {
-        console.error(err);
+      console.error(err);
     } finally {
-        setSaving(false);
+      setSaving(false);
     }
-    };
+  };
 
   const groupsByCourse = groups.reduce((acc, group) => {
     if (!acc[group.course]) acc[group.course] = [];
@@ -95,12 +98,13 @@ export const PersonalCabinet: React.FC = () => {
   return (
     <div className="personal-cabinet-container">
       <div className="cabinet-content">
-        {/* Информация о методисте */}
         <div className="info-card">
           <div className="card-header">
-            <button className="back-button" onClick={() => navigate('/metodist')}>← Назад</button>
+            <button className="back-button" onClick={() => navigate('/metodist')}>
+              ← Назад
+            </button>
           </div>
-          
+
           {staff && (
             <div className="staff-info-wrapper">
               <div className="info-column">
@@ -108,61 +112,77 @@ export const PersonalCabinet: React.FC = () => {
                   <label>Фамилия</label>
                   <div className="field-value">{staff.lastName}</div>
                 </div>
+
                 <div className="info-field">
                   <label>Имя</label>
                   <div className="field-value">{staff.name}</div>
                 </div>
+
                 <div className="info-field">
                   <label>Отчество</label>
                   <div className="field-value">{staff.patronymic || '—'}</div>
                 </div>
+
                 <div className="info-field">
                   <label>Должность</label>
-                  <div className="field-value">{staff.staffPosition.map(p => p.name).join(', ')}</div>
+                  <div className="field-value">
+                    {staff.staffPosition.length > 0
+                      ? staff.staffPosition.map(p => p.name).join(', ')
+                      : '—'}
+                  </div>
                 </div>
               </div>
 
               <div className="info-column">
                 <div className="info-field">
                   <label>Логин</label>
-                  <div className="field-value">{staff.login}</div>
+                  <div className="field-value">{staff.login || '—'}</div>
                 </div>
+
                 <div className="info-field">
                   <label>Электронная почта</label>
                   <div className="email-display">
                     <div className="field-value email-value">
                       {staff.email || 'Не заполнено'}
                     </div>
+
                     {!isEditingEmail && (
-                      <button 
+                      <button
                         onClick={() => setIsEditingEmail(true)}
-                        className="edit-email-btn">
+                        className="edit-email-btn"
+                      >
                         Изменить
                       </button>
                     )}
                   </div>
+
                   {isEditingEmail && (
                     <div className="email-edit">
                       <input
                         type="email"
                         value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
+                        onChange={e => setNewEmail(e.target.value)}
                         placeholder="Введите email"
                         className="email-input"
-                        autoFocus/>
+                        autoFocus
+                      />
+
                       <div className="email-edit-actions">
-                        <button 
-                          onClick={updateEmail} 
+                        <button
+                          onClick={updateEmail}
                           disabled={saving}
-                          className="save-email-btn">
+                          className="save-email-btn"
+                        >
                           {saving ? 'Сохранение...' : 'Сохранить'}
                         </button>
-                        <button 
+
+                        <button
                           onClick={() => {
                             setIsEditingEmail(false);
                             setNewEmail(staff.email || '');
                           }}
-                          className="cancel-email-btn">
+                          className="cancel-email-btn"
+                        >
                           Отмена
                         </button>
                       </div>
