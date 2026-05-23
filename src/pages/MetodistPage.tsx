@@ -31,8 +31,12 @@ export const MetodistPage: React.FC = () => {
     navigate('/metodist/changes');
   };
 
-    const handleTeacherToRoomClick = () => {
+  const handleTeacherToRoomClick = () => {
     navigate('/metodist/teacher-to-room');
+  };
+
+  const handleNotesTeacherClick = () => {
+    navigate('/metodist/notes-teacher');
   };
 
   const isHomePage = location.pathname === '/metodist' || location.pathname === '/metodist/';
@@ -57,55 +61,41 @@ export const MetodistPage: React.FC = () => {
                     Управление расписанием, группами и заменами преподавателей
                   </p>
                 </div>
-                
-                <div className="md-buttons-row">
-                  <button 
-                    className="md-button"
-                    onClick={handleEditScheduleClick}>
+                <div className="md-buttons-grid">
+                  <button className="md-button" onClick={handleEditScheduleClick}>
                     <div className="md-button-icon-container">
-                      <img 
-                        src="/md-icons/edit_icon.svg" 
-                        alt="Редактировать" 
-                        className="md-button-icon"/>
+                      <img src="/md-icons/edit_icon.svg" alt="Редактировать" className="md-button-icon"/>
                     </div>
                     <h3 className="md-button-title">Редактировать расписание</h3>
                     <p className="md-button-desc">Изменение учебного расписания групп</p>
                   </button>
-                  <button 
-                    className="md-button"
-                    onClick={handleViewGroupsClick}>
+                  <button className="md-button" onClick={handleViewGroupsClick}>
                     <div className="md-button-icon-container">
-                      <img 
-                        src="/md-icons/view_icon.svg" 
-                        alt="Просмотр" 
-                        className="md-button-icon"/>
+                      <img src="/md-icons/view_icon.svg" alt="Просмотр" className="md-button-icon"/>
                     </div>
                     <h3 className="md-button-title">Просмотр групп</h3>
                     <p className="md-button-desc">Отображение списка учебных групп</p>
                   </button>
-                  <button 
-                    className="md-button"
-                    onClick={handleChangesClick}>
+                  <button className="md-button" onClick={handleChangesClick}>
                     <div className="md-button-icon-container">
-                      <img 
-                        src="/md-icons/change_icon.svg" 
-                        alt="Замены" 
-                        className="md-button-icon"/>
+                      <img src="/md-icons/change_icon.svg" alt="Замены" className="md-button-icon"/>
                     </div>
                     <h3 className="md-button-title">Оформление замен</h3>
                     <p className="md-button-desc">Управление заменами преподавателей</p>
                   </button>
-                  <button 
-                    className="md-button"
-                    onClick={handleTeacherToRoomClick}>
+                  <button className="md-button" onClick={handleTeacherToRoomClick}>
                     <div className="md-button-icon-container">
-                      <img 
-                        src="/md-icons/room_icon.svg" 
-                        alt="Привязка преподавателя к аудитории" 
-                        className="md-button-icon"/>
+                      <img src="/md-icons/room_icon.svg" alt="Аудитории" className="md-button-icon"/>
                     </div>
                     <h3 className="md-button-title">Аудитории</h3>
                     <p className="md-button-desc">Привязка преподавателей к аудитории</p>
+                  </button>
+                  <button className="md-button" onClick={handleNotesTeacherClick}>
+                    <div className="md-button-icon-container">
+                      <img src="/md-icons/room_icon.svg" alt="Заметки" className="md-button-icon"/>
+                    </div>
+                    <h3 className="md-button-title">Заметки</h3>
+                    <p className="md-button-desc">Добавление примечаний к составлению расписания</p>
                   </button>
                 </div>
               </main>

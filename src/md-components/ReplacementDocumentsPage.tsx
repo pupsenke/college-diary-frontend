@@ -689,10 +689,10 @@ export const ReplacementDocumentsPage: React.FC = () => {
                   ) : currentDateHasServerFile ? (
                     <div className="rd-document-saved">
                       <p className="rd-saved-message">
-                        Изменения за эту дату уже сохранены на сервере.
+                        Изменения за эту дату уже сохранены на сервере
                       </p>
                       <p className="rd-saved-hint">
-                        Документ доступен для скачивания в верхней панели.
+                        Документ доступен для скачивания в верхней панели
                       </p>
                     </div>
                   ) : (

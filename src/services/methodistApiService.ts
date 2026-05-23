@@ -26,6 +26,7 @@ export interface ApiStaff {
   staffPosition?: { id: number; name: string }[];
   login?: string;
   email?: string;
+  note?: string;
 }
 
 export interface ApiRoom {
@@ -198,6 +199,15 @@ class MethodistApiService {
         name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim()
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // обновление заметки преподавателя
+  async updateStaffNote(id: number, note: string): Promise<ApiStaff> {
+    const response = await axios.patch<ApiStaff>(`${this.baseUrl}/api/v1/staffs/update`, {
+      id,
+      note
+    });
+    return response.data;
   }
 
   // предметы 

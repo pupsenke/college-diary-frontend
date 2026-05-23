@@ -16,7 +16,8 @@ import { ChangesSchedulePage, AddPairPage } from './md-components/ChangesSchedul
 import { ViewScheduleSection } from './md-components/ViewScheduleSection';
 import { ReplacementDocumentsPage } from './md-components/ReplacementDocumentsPage';
 import { PersonalCabinet } from './md-components/PersonalCabinetMetodist';
-import TeacherToRoom from './md-components/TeacherToRoom'; // Изменено: убраны фигурные скобки
+import TeacherToRoom from './md-components/TeacherToRoom';
+import { NotesTeacher } from './md-components/NotesTeacher';
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             <Route path="changes/add-pair" element={<AddPairPage />} />
             <Route path="personal-cabinet" element={<PersonalCabinet />} />
             <Route path="teacher-to-room" element={<TeacherToRoom />} />
+            <Route path="/metodist/notes-teacher" element={<NotesTeacher />} />
           </Route>
 
           <Route 
