@@ -340,11 +340,19 @@ export const ChangesSchedulePage: React.FC = () => {
     setLoading(false);
   }, [selectedTeacher, selectedDate, schedule, groups, teachers, teacherGroups, subjectTeachers, filterType, startPair, endPair]);
 
+  // генерация уникального ID для записи замены
+  const generateReplacementId = (): string => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${performance.now()}`;
+  };
+
   const saveReplacementToStorage = (pair: SchedulePair, type: 'notWillBe' | 'replacement', replacementData?: any) => {
     if (!selectedDate) return;
     
     const newReplacement: ReplacementRecord = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateReplacementId(),
       date: selectedDate,
       displayDate: new Date(selectedDate).toLocaleDateString('ru-RU'),
       groupNumber: pair.groupNumber,
@@ -366,13 +374,30 @@ export const ChangesSchedulePage: React.FC = () => {
     methodistApiService.saveReplacement(newReplacement);
   };
 
+  // очистка состояния по идентификатору пары
+  const cleanupPairState = (pairId: number) => {
+    setSelectedNewTeacher(prev => {
+      const next = { ...prev };
+      delete next[pairId];
+      return next;
+    });
+    setSelectedNewSubject(prev => {
+      const next = { ...prev };
+      delete next[pairId];
+      return next;
+    });
+    setSelectedNewRoom(prev => {
+      const next = { ...prev };
+      delete next[pairId];
+      return next;
+    });
+  };
+
   const handleSetNotWillBe = (pairId: number) => {
     const pair = filteredPairs.find(p => p.id === pairId);
     if (pair) saveReplacementToStorage(pair, 'notWillBe');
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
-    const n = { ...selectedNewTeacher };
-    delete n[pairId];
-    setSelectedNewTeacher(n);
+    cleanupPairState(pairId);
   };
 
   const handleSaveReplacement = (pairId: number) => {
@@ -393,9 +418,7 @@ export const ChangesSchedulePage: React.FC = () => {
     }
 
     setFilteredPairs(prev => prev.filter(p => p.id !== pairId));
-    const n = { ...selectedNewTeacher };
-    delete n[pairId];
-    setSelectedNewTeacher(n);
+    cleanupPairState(pairId);
   };
 
   if (initialLoading) return <div className="cs-loading">Загрузка данных...</div>;
@@ -694,34 +717,41 @@ export const AddPairPage: React.FC = () => {
     
     if (!group || !teacher) return;
 
-    // получение idSt для выбранного предмета и преподавателя
-    const groupSubjects = await methodistApiService.getGroupSubjects(selectedGroup as number);
-    const subjectData = groupSubjects.find(s => s.idSubject === selectedSubject);
-    
-    if (!subjectData) {
-      alert('Не удалось найти информацию о предмете');
-      return;
-    }
+    try {
+      const groupSubjects = await methodistApiService.getGroupSubjects(selectedGroup as number);
+      const subjectData = groupSubjects.find(s => s.idSubject === selectedSubject);
+      
+      if (!subjectData) {
+        alert('Не удалось найти информацию о предмете');
+        return;
+      }
 
-    const newReplacement: ReplacementRecord = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      date: selectedDate,
-      displayDate: new Date(selectedDate).toLocaleDateString('ru-RU'),
-      groupNumber: group.numberGroup,
-      pairNumber: selectedPair as number,
-      subgroup: selectedSubgroup || null,
-      subject: '—',
-      teacher: '—',
-      room: '—',
-      type: 'replacement',
-      newSubject: subjectData.nameSubject,
-      newTeacher: teacher.name,
-      newRoom: selectedRoom,
-      createdAt: new Date().toISOString()
-    };
-    
-    methodistApiService.saveReplacement(newReplacement);
-    navigate('/metodist/changes');
+      const newReplacement: ReplacementRecord = {
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        date: selectedDate,
+        displayDate: new Date(selectedDate).toLocaleDateString('ru-RU'),
+        groupNumber: group.numberGroup,
+        pairNumber: selectedPair as number,
+        subgroup: selectedSubgroup || null,
+        subject: '—',
+        teacher: '—',
+        room: '—',
+        type: 'replacement',
+        newSubject: subjectData.nameSubject,
+        newTeacher: teacher.name,
+        newRoom: selectedRoom,
+        createdAt: new Date().toISOString()
+      };
+      
+      methodistApiService.saveReplacement(newReplacement);
+      
+      // небольшая задержка для гарантированной записи в localStorage
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate('/metodist/changes');
+    } catch (error) {
+      console.error('Ошибка при сохранении пары:', error);
+      alert('Не удалось сохранить пару');
+    }
   };
 
   const isDateSelected = !!selectedDate;

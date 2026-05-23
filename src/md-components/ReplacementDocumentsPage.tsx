@@ -15,16 +15,13 @@ interface GroupedReplacements {
 
 export const ReplacementDocumentsPage: React.FC = () => {
   const navigate = useNavigate();
-
   const [groupedReplacements, setGroupedReplacements] = useState<GroupedReplacements>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
   const [serverFiles, setServerFiles] = useState<PathTypeResponse[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
-
   const [groupsCache, setGroupsCache] = useState<ApiGroup[] | null>(null);
   const [groupSubjectsCache, setGroupSubjectsCache] = useState<Record<number, ApiSubjectWithTeachers[]>>({});
 
@@ -32,6 +29,24 @@ export const ReplacementDocumentsPage: React.FC = () => {
     loadReplacements();
     loadServerFiles();
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const loadReplacements = () => {
     const replacements = methodistApiService.getReplacements();
@@ -98,7 +113,6 @@ export const ReplacementDocumentsPage: React.FC = () => {
         
         setSuccessMessage(`Документ "${fileName}" успешно удалён`);
         
-        setTimeout(() => setSuccessMessage(null), 3000);
       } catch (e: any) {
         console.error('Ошибка при удалении файла:', e);
         const errorMsg = e.response?.data?.message || e.message || 'Неизвестная ошибка';
@@ -114,7 +128,6 @@ export const ReplacementDocumentsPage: React.FC = () => {
       methodistApiService.deleteReplacement(id);
       loadReplacements();
       setSuccessMessage('Запись о замене успешно удалена');
-      setTimeout(() => setSuccessMessage(null), 3000);
     }
   };
 
@@ -124,7 +137,6 @@ export const ReplacementDocumentsPage: React.FC = () => {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      weekday: 'long',
     });
   };
 
@@ -268,6 +280,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
     if (!records || records.length === 0) return;
 
     setError(null);
+    const savedIds: string[] = [];
     
     for (const record of records) {
       try {
@@ -284,18 +297,17 @@ export const ReplacementDocumentsPage: React.FC = () => {
         }
 
         if (!idInfo) {
-          console.error('Пропускаем запись', record);
+          console.warn('Пропускаем запись (не найдена связь)', record);
           continue;
         }
 
         const d = new Date(record.date);
-        const dayWeek = d.toLocaleDateString('ru-RU', { weekday: 'long' });
-        const dayWeekFormatted = dayWeek.charAt(0).toUpperCase() + dayWeek.slice(1);
+        const dayWeek = methodistApiService.getDayWeekForApi(d);
         const weekNumber = getWeekNumber(d);
         const typeWeekFormatted = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
 
         await methodistApiService.saveSchedule({
-          dayWeek: dayWeekFormatted,
+          dayWeek,
           typeWeek: typeWeekFormatted,
           numPair: record.pairNumber,
           room: record.newRoom || null,
@@ -303,11 +315,20 @@ export const ReplacementDocumentsPage: React.FC = () => {
           idGroup: idInfo.idGroup,
           subgroup: record.subgroup,
           replacement: true,
+          dateReplacement: record.date,
+          isIgnored: false,
         });
+        savedIds.push(record.id);
       } catch (e) {
         console.error('Ошибка при сохранении пары', record, e);
         setError(`Ошибка при сохранении замены для группы ${record.groupNumber}, ${record.pairNumber} пары`);
       }
+    }
+    
+    // очистка только сохранённых записей из локального хранилища
+    if (savedIds.length > 0) {
+      methodistApiService.deleteReplacementsByIds(savedIds);
+      loadReplacements(); 
     }
   };
 
@@ -383,8 +404,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
 
       const templateResponse = await fetch('/templates/replacement_template.docx');
       if (!templateResponse.ok) {
-        setError('Не удалось загрузить шаблон документа.');
-        return null;
+        throw new Error(`HTTP ${templateResponse.status}: ${templateResponse.statusText}`);
       }
       const templateArrayBuffer = await templateResponse.arrayBuffer();
 
@@ -405,7 +425,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
       return generatedDoc;
     } catch (error) {
       console.error('Ошибка при создании документа:', error);
-      setError('Не удалось создать документ.');
+      setError(`Не удалось создать документ: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       return null;
     }
   };
@@ -425,7 +445,6 @@ export const ReplacementDocumentsPage: React.FC = () => {
       setSuccessMessage(`Документ за ${formatDisplayDate(date)} успешно сохранён на сервер!`);
       await loadServerFiles();
       
-      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (e: any) {
       console.error('Ошибка при загрузке документа', e);
       const errorMessage = e.response?.data?.message || e.message || 'Неизвестная ошибка';
@@ -458,7 +477,47 @@ export const ReplacementDocumentsPage: React.FC = () => {
     }
   };
 
+  // парсинг даты из имени файла сервера (формат: ДД.ММ.ГГГГ → ГГГГ-ММ-ДД)
+  const parseDateFromFileName = (fileName: string): string | null => {
+    const match = fileName.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    if (match) {
+      const [, day, month, year] = match;
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  };
+
+  // получение всех уникальных дат (из локального хранилища и с сервера)
+  const getAllAvailableDates = (): string[] => {
+    const localDates = Object.keys(groupedReplacements);
+    const serverDates = serverFiles
+      .map(file => parseDateFromFileName(file.nameFile))
+      .filter((date): date is string => date !== null);
+    
+    const allDates = [...new Set([...localDates, ...serverDates])];
+    return allDates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  };
+
+  // проверка есть ли серверный файл для даты
+  const getServerFileForDate = (date: string): PathTypeResponse | undefined => {
+    return serverFiles.find(file => parseDateFromFileName(file.nameFile) === date);
+  };
+
+  // обработчик выбора даты - обновляет и selectedDate, и selectedFileId
+  const handleSelectDate = (date: string) => {
+    setSelectedDate(date);
+    const serverFile = getServerFileForDate(date);
+    if (serverFile) {
+      setSelectedFileId(serverFile.id);
+    } else {
+      setSelectedFileId(null);
+    }
+  };
+
   const selectedFile = selectedFileId ? serverFiles.find(f => f.id === selectedFileId) || null : null;
+  const availableDates = getAllAvailableDates();
+  const currentDateHasLocalChanges = selectedDate && groupedReplacements[selectedDate]?.length > 0;
+  const currentDateHasServerFile = selectedDate && getServerFileForDate(selectedDate);
 
   return (
     <div className="rd-container">
@@ -474,124 +533,173 @@ export const ReplacementDocumentsPage: React.FC = () => {
         </button>
       </div>
 
-      {error && <div className="rd-error-message">{error}</div>}
-      {successMessage && <div className="rd-success-message">{successMessage}</div>}
+      {error && <div className="md-error-message">{error}</div>}
+      {successMessage && <div className="md-success-message">{successMessage}</div>}
 
       <div className="rd-content-block">
-        {serverFiles.length === 0 ? (
+        {availableDates.length === 0 ? (
           <div className="rd-empty">
-            <p>Нет сохраненных документов</p>
+            <p>Нет изменений для отображения</p>
           </div>
         ) : (
           <div className="rd-content">
             <div className="rd-sidebar">
               <h3>Документы по датам</h3>
               <ul className="rd-date-list">
-                {serverFiles.map(file => (
-                  <li
-                    key={file.id}
-                    className={`rd-date-item ${selectedFileId === file.id ? 'active' : ''}`}
-                    onClick={() => setSelectedFileId(file.id)}>
-                    <span className="rd-date-text">{file.nameFile}</span>
-                    <button
-                      className="rd-delete-btn"
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDeleteDocument(file.id, file.nameFile);
-                      }}
-                      disabled={deletingFileId === file.id}
-                      title="Удалить документ">
-                      {deletingFileId === file.id ? '...' : '×'}
-                    </button>
-                  </li>
-                ))}
+                {availableDates.map(date => {
+                  const serverFile = getServerFileForDate(date);
+                  const hasLocalChanges = groupedReplacements[date]?.length > 0;
+                  const isSelected = selectedDate === date;
+                  
+                  return (
+                    <li
+                      key={serverFile?.id || date}
+                      className={`rd-date-item ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleSelectDate(date)}>
+                      <span className="rd-date-text">
+                        {formatDate(date)}
+                        {serverFile && !hasLocalChanges && (
+                          <span className="status-badge saved">сохранено</span>
+                        )}
+                        {hasLocalChanges && !serverFile && (
+                          <span className="status-badge pending">черновик</span>
+                        )}
+                        {hasLocalChanges && serverFile && (
+                          <span className="status-badge edited">изменено</span>
+                        )}
+                      </span>
+                      {serverFile && (
+                        <button
+                          className="rd-delete-btn"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDeleteDocument(serverFile.id, serverFile.nameFile);
+                          }}
+                          disabled={deletingFileId === serverFile.id}
+                          title="Удалить документ">
+                          {deletingFileId === serverFile.id ? '...' : '×'}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
             <div className="rd-main">
-              {selectedDate && groupedReplacements[selectedDate] && (
+              {selectedDate && (
                 <div className="rd-document">
                   <div className="rd-document-header">
                     <h2>Изменения в расписании на {formatDate(selectedDate)}</h2>
+                    <div className="rd-status-indicators">
+                      {currentDateHasServerFile && (
+                        <span className="status-indicator saved">
+                          Документ сохранён на сервере
+                        </span>
+                      )}
+                      {currentDateHasLocalChanges && (
+                        <span className="status-indicator pending">
+                          Есть несохранённые изменения
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {Object.entries(
-                    groupedReplacements[selectedDate].reduce((acc, record) => {
-                      if (!acc[record.groupNumber]) acc[record.groupNumber] = [];
-                      acc[record.groupNumber].push(record);
-                      return acc;
-                    }, {} as { [key: number]: ReplacementRecord[] })
-                  )
-                    .sort(([a], [b]) => Number(a) - Number(b))
-                    .map(([groupNum, records]) => (
-                      <div key={groupNum} className="rd-group">
-                        <h3>Группа {groupNum}</h3>
-                        <table className="rd-table">
-                          <thead>
-                            <tr>
-                              <th>№ пары</th>
-                              <th>Дисциплина по расписанию, Ф.И.О. преподавателя</th>
-                              <th>Изменения</th>
-                              <th>Ауд.</th>
-                              <th></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {records
-                              .sort((a, b) => a.pairNumber - b.pairNumber)
-                              .map(record => {
-                                const subjectInfo = record.subgroup
-                                  ? `${record.subject}, п/г ${record.subgroup}, ${record.teacher}`
-                                  : `${record.subject}, ${record.teacher}`;
-                                const roomInfo = record.room !== '—' && record.room !== '' ? `, ауд.${record.room}` : '';
-                                const fullSubjectInfo = subjectInfo + roomInfo;
+                  {currentDateHasLocalChanges ? (
+                    <>
+                      {Object.entries(
+                        groupedReplacements[selectedDate].reduce((acc, record) => {
+                          if (!acc[record.groupNumber]) acc[record.groupNumber] = [];
+                          acc[record.groupNumber].push(record);
+                          return acc;
+                        }, {} as { [key: number]: ReplacementRecord[] })
+                      )
+                        .sort(([a], [b]) => Number(a) - Number(b))
+                        .map(([groupNum, records]) => (
+                          <div key={groupNum} className="rd-group">
+                            <h3>Группа {groupNum}</h3>
+                            <table className="rd-table">
+                              <thead>
+                                <tr>
+                                  <th>№ пары</th>
+                                  <th>Дисциплина по расписанию, Ф.И.О. преподавателя</th>
+                                  <th>Изменения</th>
+                                  <th>Ауд.</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {records
+                                  .sort((a, b) => a.pairNumber - b.pairNumber)
+                                  .map(record => {
+                                    const subjectInfo = record.subgroup
+                                      ? `${record.subject}, п/г ${record.subgroup}, ${record.teacher}`
+                                      : `${record.subject}, ${record.teacher}`;
+                                    const roomInfo = record.room !== '—' && record.room !== '' ? `, ауд.${record.room}` : '';
+                                    const fullSubjectInfo = subjectInfo + roomInfo;
 
-                                let changesInfo = '';
-                                if (record.type === 'notWillBe') {
-                                  changesInfo = 'Не будет';
-                                } else if (record.newSubject || record.newTeacher || record.newRoom) {
-                                  const changes = [];
-                                  if (record.newSubject) changes.push(record.newSubject);
-                                  if (record.newTeacher) changes.push(record.newTeacher);
-                                  if (record.newRoom && record.newRoom !== '—' && record.newRoom !== '') {
-                                    changes.push(`ауд.${record.newRoom}`);
-                                  }
-                                  changesInfo = changes.join(', ');
-                                }
+                                    let changesInfo = '';
+                                    if (record.type === 'notWillBe') {
+                                      changesInfo = 'Не будет';
+                                    } else if (record.newSubject || record.newTeacher || record.newRoom) {
+                                      const changes = [];
+                                      if (record.newSubject) changes.push(record.newSubject);
+                                      if (record.newTeacher) changes.push(record.newTeacher);
+                                      if (record.newRoom && record.newRoom !== '—' && record.newRoom !== '') {
+                                        changes.push(`ауд.${record.newRoom}`);
+                                      }
+                                      changesInfo = changes.join(', ');
+                                    }
 
-                                return (
-                                  <tr key={record.id}>
-                                    <td style={{ textAlign: 'center' }}>{record.pairNumber}</td>
-                                    <td>{fullSubjectInfo}</td>
-                                    <td>{changesInfo}</td>
-                                    <td style={{ textAlign: 'center' }}>{record.newRoom || '—'}</td>
-                                    <td style={{ textAlign: 'center' }}>
-                                      <button
-                                        className="rd-record-delete"
-                                        onClick={() => handleDeleteRecord(record.id)}
-                                        title="Удалить запись">
-                                        ×
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                          </tbody>
-                        </table>
+                                    return (
+                                      <tr key={record.id}>
+                                        <td style={{ textAlign: 'center' }}>{record.pairNumber}</td>
+                                        <td>{fullSubjectInfo}</td>
+                                        <td>{changesInfo}</td>
+                                        <td style={{ textAlign: 'center' }}>{record.newRoom || '—'}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                          <button
+                                            className="rd-record-delete"
+                                            onClick={() => handleDeleteRecord(record.id)}
+                                            title="Удалить запись">
+                                            ×
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+
+                      <div className="rd-document-actions">
+                        <button
+                          className="rd-save-btn"
+                          onClick={async () => {
+                            if (!selectedDate) return;
+                            await saveScheduleForDate(selectedDate);
+                            await uploadDocumentFile(selectedDate);
+                            handleSelectDate(selectedDate);
+                          }}>
+                          Сохранить
+                        </button>
                       </div>
-                    ))}
-
-                  <div className="rd-document-actions">
-                    <button
-                      className="rd-save-btn"
-                      onClick={async () => {
-                        if (!selectedDate) return;
-                        await saveScheduleForDate(selectedDate);
-                        await uploadDocumentFile(selectedDate);
-                      }}>
-                      Сохранить изменения
-                    </button>
-                  </div>
+                    </>
+                  ) : currentDateHasServerFile ? (
+                    <div className="rd-document-saved">
+                      <p className="rd-saved-message">
+                        Изменения за эту дату уже сохранены на сервере.
+                      </p>
+                      <p className="rd-saved-hint">
+                        Документ доступен для скачивания в верхней панели.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rd-empty">
+                      <p>Нет изменений для этой даты</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

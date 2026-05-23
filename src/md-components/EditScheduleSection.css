@@ -1,11 +1,14 @@
-  .edit-schedule-page {
+.edit-schedule-page {
   background-color: white;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  width: 110%;
   max-width: 1900px;
   margin: 20px auto;
   min-height: 400px;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .edit-schedule-main {
@@ -16,7 +19,7 @@
 .edit-schedule-panel {
   background: white;
   border-radius: 10px;
-  padding: 30px;
+  padding: 30px 0px 30px 0px;
 }
 
 /* верхняя панель */
@@ -108,6 +111,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
 }
 
 .grid-header {
@@ -274,10 +278,12 @@
   line-height: 1.4;
 }
 
+/* первая строка - преподаватели, предметы, аудитории */
 .edit-controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr); /* три равные колонки */
   gap: 30px;
+  margin-bottom: 30px; /* отступ от второй строки */
 }
 
 .control-group h4 {
@@ -405,6 +411,27 @@
   color: #dc3545 !important;
 }
 
+/* вторая строка - подгруппы и чекбоксы недели */
+.second-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* две равные колонки */
+  gap: 30px;
+  margin-top: 0;
+}
+
+.subgroup-control {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.subgroup-control h4 {
+  color: #002FA7;
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
 .subgroup-buttons {
   display: flex;
   gap: 10px;
@@ -433,10 +460,22 @@
   border-color: #002FA7;
 }
 
-
 /* чекбоксы для выбора недели */
+.week-control {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.week-control h4 {
+  color: #002FA7;
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
 .week-checkbox-group {
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .week-checkboxes {
@@ -472,11 +511,10 @@
 
 /* кнопки действий */
 .action-buttons {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: 15px;
-  margin-top: 20px;
+  margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #e0e0e0;
 }
@@ -512,6 +550,28 @@
   background: #001f7a;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* стили для поиска */

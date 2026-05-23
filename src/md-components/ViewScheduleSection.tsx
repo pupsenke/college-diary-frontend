@@ -61,9 +61,14 @@ const transformApiData = (apiData: ApiScheduleItem[], weekDays: string[]): DaySc
       .filter(lesson => lesson.dayWeek === weekday)
       .map(lesson => {
         const pairTime = methodistApiService.getPairTime(lesson.numPair);
-        if (!pairTime.start) return null;
+        // если время пары не найдено, пропускаем урок
+        if (!pairTime || !pairTime.start) {
+          console.warn(`Не найдено время для пары №${lesson.numPair}`, lesson);
+          return null;
+        }
 
         let teacher: string | undefined = undefined;
+        // проверка наличия данных преподавателя
         if (lesson.lastnameTeacher && lesson.nameTeacher) {
           teacher = methodistApiService.formatTeacherName(
             lesson.lastnameTeacher,
@@ -73,11 +78,14 @@ const transformApiData = (apiData: ApiScheduleItem[], weekDays: string[]): DaySc
         }
         
         let room: string = 'ауд. -';
-        if (lesson.room !== null) {
+        // обработка null/undefined аудитории
+        if (lesson.room != null && lesson.room !== '') {
           room = methodistApiService.formatRoom(lesson.room);
         }
         
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
+        
+        // отображение замен с визуальным маркером
         const subjectName = lesson.replacement 
           ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
           : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
@@ -141,7 +149,11 @@ export const ViewScheduleSection: React.FC = () => {
   // загрузка расписания
   useEffect(() => {
     const fetchSchedule = async () => {
-      if (!selectedGroup) return;
+      // группа должна быть выбрана и дни недели загружены
+      if (!selectedGroup || weekDays.length === 0) {
+        console.log('ViewSchedule: ожидание данных (group:', selectedGroup, 'weekDays:', weekDays.length, ')');
+        return;
+      }
       
       try {
         setLoading(true);
@@ -151,16 +163,13 @@ export const ViewScheduleSection: React.FC = () => {
         const filteredData = filterScheduleByWeekType(transformedData, selectedWeek);
         setScheduleData(filteredData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Произошла ошибка');
-        console.error('Ошибка загрузки расписания:', err);
+        const errorMsg = err instanceof Error ? err.message : 'Произошла ошибка';
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }
     };
-
-    if (selectedGroup && weekDays.length > 0) {
-      fetchSchedule();
-    }
+    fetchSchedule();
   }, [selectedGroup, weekDays, selectedWeek]);
 
   // обновление данных
@@ -337,6 +346,9 @@ export const ViewScheduleSection: React.FC = () => {
           <div className="v-empty-schedule">
             <h3>Расписание не найдено</h3>
             <p>Для группы {selectedGroup} нет расписания на выбранную неделю</p>
+            <button onClick={refreshData} className="v-retry-button" style={{ marginTop: '16px' }}>
+              Обновить
+            </button>
           </div>
         )}
       </div>

@@ -766,7 +766,7 @@ export const ScheduleSection: React.FC = () => {
   }
   return (
     <div className="schedule-section">
-      <div className="schedule-header">
+      <div className="schedule-header-week">
         <div className="week-info">
         </div>
         <div className="week-type-tabs">

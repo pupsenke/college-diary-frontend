@@ -120,6 +120,7 @@ export interface ApiScheduleItem {
   subgroup: number | null;
   replacement: boolean;
   dateReplacement: string | null;
+  isIgnored?: boolean;
 }
 
 export interface ApiSubjectWithTeachers {
@@ -152,6 +153,7 @@ export interface SaveSchedulePayload {
   subgroup: number | null;
   replacement: boolean;
   dateReplacement?: string | null;
+  isIgnored?: boolean;
 }
 
 // сервис
@@ -246,8 +248,44 @@ class MethodistApiService {
   }
 
   async saveSchedule(payload: SaveSchedulePayload): Promise<ApiSchedule> {
-    const response = await axios.post<ApiSchedule>(`${this.baseUrl}/api/v1/schedule/save`, payload);
+    const response = await axios.post<ApiSchedule>(`${this.baseUrl}/api/v1/schedule/save`, {
+      ...payload,
+      dateReplacement: payload.dateReplacement || null,
+      isIgnored: payload.isIgnored !== undefined ? payload.isIgnored : false // ✅ По умолчанию isIgnored: false
+    });
     return response.data;
+  }
+
+  // удаление занятия
+  async deleteSchedule(scheduleId: number): Promise<void> {
+    try {
+      await axios.delete(`${this.baseUrl}/api/v1/schedule/delete/${scheduleId}`);
+    } catch (error) {
+      console.error(`Ошибка при удалении занятия с ID ${scheduleId}:`, error);
+      throw error;
+    }
+  }
+
+  // обновление флага isIgnored
+  async updateScheduleIgnored(scheduleId: number, isIgnored: boolean): Promise<any> {
+    try {
+      const response = await axios.patch(`${this.baseUrl}/api/v1/schedule/update-ignored/${scheduleId}`, {
+        isIgnored
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Ошибка при обновлении флага ignored для занятия с ID ${scheduleId}:`, error);
+      throw error;
+    }
+  }
+
+  // получение расписания группы с фильтрацией по isIgnored
+  async getScheduleByGroupWithIgnored(groupId: number): Promise<ApiScheduleItem[]> {
+    const response = await axios.get<ApiScheduleItem[]>(
+      `${this.baseUrl}/api/v1/schedule/group/${groupId}`
+    );
+    // фильтруем занятия, оставляем только те, у которых isIgnored: false
+    return response.data.filter(item => item.isIgnored === false);
   }
 
   // файлы (Path) 
@@ -295,7 +333,6 @@ class MethodistApiService {
   }
 
   // замены (LocalStorage)
-
   private getStorageKey(): string {
     return 'scheduleReplacements';
   }
@@ -321,12 +358,25 @@ class MethodistApiService {
     localStorage.setItem(this.getStorageKey(), JSON.stringify(filtered));
   }
 
+  // удаление замен по массиву ID
+  deleteReplacementsByIds(ids: string[]): void {
+    const replacements = this.getReplacements();
+    const filtered = replacements.filter(r => !ids.includes(r.id));
+    localStorage.setItem(this.getStorageKey(), JSON.stringify(filtered));
+  }
+
+  // очистка замен по дате
+  clearReplacementsByDate(date: string): void {
+    const replacements = this.getReplacements();
+    const filtered = replacements.filter(r => r.date !== date);
+    localStorage.setItem(this.getStorageKey(), JSON.stringify(filtered));
+  }
+
   clearReplacements(): void {
     localStorage.removeItem(this.getStorageKey());
   }
 
   // вспомогательные методы
-
   getDayWeekForApi(date: Date): string {
     const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     return days[date.getDay()];

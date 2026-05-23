@@ -21,9 +21,11 @@ type ApiScheduleItem = {
   patronymicTeacher: string;
   idGroup: number;
   subgroup?: number | null;
+  isIgnored?: boolean;
 };
 
 type PairData = {
+  id?: number; // добавляем id занятия
   teacher: string;
   teacherId?: number;
   subject: string;
@@ -60,6 +62,7 @@ export const EditSchedulePage: React.FC = () => {
   const [loadingSchedule, setLoadingSchedule] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [teachers, setTeachers] = useState<{ id: number; name: string }[]>([]);
   const [rooms, setRooms] = useState<ApiRoom[]>([]);
@@ -72,6 +75,7 @@ export const EditSchedulePage: React.FC = () => {
   const [roomSearchTerm, setRoomSearchTerm] = useState<string>('');
   const [visibleRoomsCount, setVisibleRoomsCount] = useState<number>(4);
   const [showAllRooms, setShowAllRooms] = useState<boolean>(false);
+  const [currentEditingScheduleId, setCurrentEditingScheduleId] = useState<number | null>(null);
 
   const daysOfWeek = methodistApiService.getWeekDays();
   const pairTimes = [
@@ -207,7 +211,7 @@ export const EditSchedulePage: React.FC = () => {
     setVisibleRoomsCount(4);
   }, [roomSearchTerm, rooms]);
 
-  // загрузка расписания по id группы
+  // загрузка расписания по id группы (только с isIgnored: false)
   const loadScheduleForGroup = async (groupId: number | null) => {
     if (!groupId) {
       setSchedule({});
@@ -218,16 +222,20 @@ export const EditSchedulePage: React.FC = () => {
     setLoadError('');
     try {
       const data = await methodistApiService.getScheduleByGroup(groupId);
+      
+      // фильтруем занятия, оставляем только те, у которых isIgnored === false
+      const filteredData = data.filter(item => item.isIgnored !== true);
 
       const newSchedule: Record<string, PairData[]> = {};
 
-      data.forEach(item => {
+      filteredData.forEach(item => {
         const day = item.dayWeek;
         const pairNumber = item.numPair;
         
         if (!day || !pairNumber) return;
 
         const base: PairData = {
+          id: item.id,
           teacher: (item.lastnameTeacher && item.nameTeacher) 
             ? `${item.lastnameTeacher} ${item.nameTeacher} ${item.patronymicTeacher || ''}`.trim() 
             : '',
@@ -283,6 +291,7 @@ export const EditSchedulePage: React.FC = () => {
     setRoomSearchTerm('');
     setShowAllRooms(false);
     setVisibleRoomsCount(4);
+    setCurrentEditingScheduleId(null);
     loadScheduleForGroup(id);
     if (id) {
       localStorage.setItem('selectedGroupForEdit', String(id));
@@ -312,6 +321,56 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedRoom(roomName);
   };
 
+  const handleDeletePair = async () => {
+    if (!currentEditingScheduleId) {
+      alert('Не найден ID занятия для удаления');
+      return;
+    }
+
+    if (!window.confirm('Вы уверены, что хотите удалить это занятие?')) {
+      return;
+    }
+
+    setDeleting(true);
+    
+    try {
+      // пробуем удалить занятие
+      await methodistApiService.deleteSchedule(currentEditingScheduleId);
+      alert('Занятие успешно удалено');
+      
+      // перезагружаем расписание
+      if (selectedGroupId) {
+        await loadScheduleForGroup(selectedGroupId);
+      }
+      
+      // очищаем форму редактирования
+      cancelEdit();
+      
+    } catch (deleteError: any) {
+      // если удаление не удалось (например, 409 Conflict), пробуем обновить флаг isIgnored
+      console.log('Удаление невозможно, пробуем обновить флаг isIgnored...');
+      
+      try {
+        await methodistApiService.updateScheduleIgnored(currentEditingScheduleId, true);
+        alert('Занятие помечено как игнорируемое и скрыто из расписания');
+        
+        // перезагружаем расписание
+        if (selectedGroupId) {
+          await loadScheduleForGroup(selectedGroupId);
+        }
+        
+        // очищаем форму редактирования
+        cancelEdit();
+        
+      } catch (patchError: any) {
+        console.error('Ошибка при обновлении флага isIgnored:', patchError);
+        alert('Не удалось удалить или скрыть занятие. Попробуйте позже.');
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const savePair = async () => {
     if (!selectedGroupId || !selectedDay || !selectedPair || !selectedIdSt || !selectedRoom) {
       alert('Заполните все поля (преподаватель, предмет, аудитория)');
@@ -326,7 +385,7 @@ export const EditSchedulePage: React.FC = () => {
     setSaving(true);
     
     try {
-      const subgroupValue = selectedSubgroupType === null ? null : selectedTeacherId;
+      const subgroupValue = selectedSubgroupType === null ? null : selectedSubgroupType;
       
       if (upperWeekChecked && lowerWeekChecked) {
         await methodistApiService.saveSchedule({
@@ -339,24 +398,6 @@ export const EditSchedulePage: React.FC = () => {
           subgroup: subgroupValue,
           replacement: false
         });
-        
-        const commonKey = `${selectedGroupId}-${selectedDay}-${selectedPair}-common`;
-        setSchedule(prev => ({
-          ...prev,
-          [commonKey]: [{ 
-            teacher: selectedTeacher,
-            teacherId: selectedTeacherId || undefined,
-            subject: selectedSubject,
-            subjectId: selectedSubjectId || undefined,
-            idSt: selectedIdSt,
-            room: selectedRoom,
-            time: pairTimes.find(p => p.number === selectedPair)?.time || '',
-            week: 'upper',
-            typeWeek: 'Общая',
-            idGroup: selectedGroupId,
-            subgroup: subgroupValue
-          }]
-        }));
       } else {
         if (upperWeekChecked) {
           await methodistApiService.saveSchedule({
@@ -369,24 +410,6 @@ export const EditSchedulePage: React.FC = () => {
             subgroup: subgroupValue,
             replacement: false
           });
-          
-          const upperKey = `${selectedGroupId}-${selectedDay}-${selectedPair}-upper`;
-          setSchedule(prev => ({
-            ...prev,
-            [upperKey]: [{ 
-              teacher: selectedTeacher,
-              teacherId: selectedTeacherId || undefined,
-              subject: selectedSubject,
-              subjectId: selectedSubjectId || undefined,
-              idSt: selectedIdSt,
-              room: selectedRoom,
-              time: pairTimes.find(p => p.number === selectedPair)?.time || '',
-              week: 'upper',
-              typeWeek: 'Верхняя',
-              idGroup: selectedGroupId,
-              subgroup: subgroupValue
-            }]
-          }));
         }
 
         if (lowerWeekChecked) {
@@ -400,42 +423,14 @@ export const EditSchedulePage: React.FC = () => {
             subgroup: subgroupValue,
             replacement: false
           });
-          
-          const lowerKey = `${selectedGroupId}-${selectedDay}-${selectedPair}-lower`;
-          setSchedule(prev => ({
-            ...prev,
-            [lowerKey]: [{ 
-              teacher: selectedTeacher,
-              teacherId: selectedTeacherId || undefined,
-              subject: selectedSubject,
-              subjectId: selectedSubjectId || undefined,
-              idSt: selectedIdSt,
-              room: selectedRoom,
-              time: pairTimes.find(p => p.number === selectedPair)?.time || '',
-              week: 'lower',
-              typeWeek: 'Нижняя',
-              idGroup: selectedGroupId,
-              subgroup: subgroupValue
-            }]
-          }));
         }
       }
 
-      setSelectedTeacher('');
-      setSelectedTeacherId(null);
-      setSelectedSubject('');
-      setSelectedSubjectId(null);
-      setSelectedIdSt(null);
-      setSelectedRoom('');
-      setSelectedSubgroupType(null);
-      setSelectedPair(null);
-      setUpperWeekChecked(true);
-      setLowerWeekChecked(true);
-      setTeacherSearchTerm('');
-      setSubjectSearchTerm('');
-      setRoomSearchTerm('');
-      setShowAllRooms(false);
-      setVisibleRoomsCount(4);
+      // перезагружаем расписание после сохранения
+      await loadScheduleForGroup(selectedGroupId);
+      
+      cancelEdit();
+      alert('Изменения успешно сохранены');
       
     } catch (e: any) {
       console.error('Ошибка сохранения:', e);
@@ -454,6 +449,7 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedRoom('');
     setSelectedSubgroupType(null);
     setSelectedPair(null);
+    setSelectedDay('');
     setUpperWeekChecked(true);
     setLowerWeekChecked(true);
     setTeacherSearchTerm('');
@@ -461,6 +457,7 @@ export const EditSchedulePage: React.FC = () => {
     setRoomSearchTerm('');
     setShowAllRooms(false);
     setVisibleRoomsCount(4);
+    setCurrentEditingScheduleId(null);
   };
 
   const getPairData = (day: string, pairNumber: number): PairCellData => {
@@ -522,6 +519,7 @@ export const EditSchedulePage: React.FC = () => {
       setSelectedSubgroupType(commonPair.subgroup === null ? null : (commonPair.subgroup === 1 || commonPair.subgroup === 2 ? commonPair.subgroup : null));
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
+      setCurrentEditingScheduleId(commonPair.id || null);
     } else if (pairData.upper || pairData.lower) {
       const sourcePair = pairData.upper || pairData.lower;
       if (sourcePair) {
@@ -532,6 +530,7 @@ export const EditSchedulePage: React.FC = () => {
         setSelectedIdSt(sourcePair.idSt || null);
         setSelectedRoom(sourcePair.room);
         setSelectedSubgroupType(sourcePair.subgroup === null ? null : (sourcePair.subgroup === 1 || sourcePair.subgroup === 2 ? sourcePair.subgroup : null));
+        setCurrentEditingScheduleId(sourcePair.id || null);
       }
       setUpperWeekChecked(!!pairData.upper);
       setLowerWeekChecked(!!pairData.lower);
@@ -545,6 +544,7 @@ export const EditSchedulePage: React.FC = () => {
       setSelectedSubgroupType(null);
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
+      setCurrentEditingScheduleId(null);
     }
     
     setTeacherSearchTerm('');
@@ -647,9 +647,9 @@ export const EditSchedulePage: React.FC = () => {
             </div>
           )}
 
-          {saving && (
+          {(saving || deleting) && (
             <div className="status-banner">
-              Сохранение расписания...
+              {saving ? 'Сохранение расписания...' : 'Удаление занятия...'}
             </div>
           )}
 
@@ -835,14 +835,20 @@ export const EditSchedulePage: React.FC = () => {
                 </div>
 
                 <div className="action-buttons">
-                  <button className="cancel-btn" onClick={cancelEdit} disabled={saving}>
-                    Отменить действие
+                  <button 
+                    className="delete-btn" 
+                    onClick={handleDeletePair}
+                    disabled={saving || deleting || !currentEditingScheduleId}>
+                    {deleting ? 'Удаление...' : 'Удалить'}
+                  </button>
+                  <button className="cancel-btn" onClick={cancelEdit} disabled={saving || deleting}>
+                    Отменить
                   </button>
                   <button 
                     className="save-btn" 
                     onClick={savePair}
-                    disabled={saving || !selectedTeacherId || !selectedSubjectId || !selectedRoom}>
-                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                    disabled={saving || deleting || !selectedTeacherId || !selectedSubjectId || !selectedRoom}>
+                    {saving ? 'Сохранение...' : 'Сохранить'}
                   </button>
                 </div>
               </div>
