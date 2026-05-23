@@ -269,7 +269,10 @@ export const PersonalCabinetSection: React.FC<PersonalCabinetSectionProps> = ({ 
   return (
     <div className="dh-pc-section dh-pc-personal-section">
       <div className="dh-pc-section-header">
-        <h1 className="dh-pc-section-title">Личный кабинет</h1>
+        <div className="dss-header-left">
+          <h2 className="dss-title">Личный кабинет</h2>
+          <p className="dss-subtitle">Просмотр ваших персональных данных</p>
+        </div>
       </div>
 
       <div className="dh-pc-main-content">
@@ -394,20 +397,6 @@ export const PersonalCabinetSection: React.FC<PersonalCabinetSectionProps> = ({ 
             </div>
             
             <form className="dh-pc-password-form" onSubmit={handlePasswordSubmit}>
-              <div className="dh-pc-form-field">
-                <label htmlFor="currentPassword">Текущий пароль</label>
-                <input
-                  type="password"
-                  id="currentPassword"
-                  name="currentPassword"
-                  value={passwordForm.currentPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="Введите текущий пароль"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              
               <div className="dh-pc-form-field">
                 <label htmlFor="newPassword">Новый пароль</label>
                 <input

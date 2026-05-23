@@ -556,7 +556,7 @@ const PersonalCabinetComponent: React.FC = () => {
                 <span>{userData.address || 'Не указано'}</span>
               )}
             </div>
-            <div className="pc-info-item">
+            {/* <div className="pc-info-item">
               <label>СНИЛС</label>
               {isEditing && isStudent ? (
                 <textarea
@@ -597,7 +597,7 @@ const PersonalCabinetComponent: React.FC = () => {
               ) : (
                 <span>{userData.address || 'Не указано'}</span>
               )}
-            </div>
+            </div> */}
           </div>
 
           {isStudent && (

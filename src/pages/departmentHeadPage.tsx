@@ -107,7 +107,7 @@ export const DepartmentHeadPage: React.FC = () => {
   const [leftPanelView, setLeftPanelView] = useState<LeftPanelView>('department');
   const [showDepartmentGroups, setShowDepartmentGroups] = useState(true);
   const [selectedDepartmentGroupId, setSelectedDepartmentGroupId] = useState<number | null>(null);
-  const [activeDepartmentTab, setActiveDepartmentTab] = useState<'groups' | 'scholarship'>('groups');
+  const [activeDepartmentTab, setActiveDepartmentTab] = useState<'groups' | 'scholarship' | 'personal'>('groups');
   const [onlineStatus, setOnlineStatus] = useState(true);
   const [usingCache, setUsingCache] = useState(false);
   const [showPersonalCabinet, setShowPersonalCabinet] = useState(false);
@@ -247,13 +247,24 @@ export const DepartmentHeadPage: React.FC = () => {
       const studentsCounts = await Promise.all(groupStudentsPromises);
       totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
       
-      const averagePerformance = 4.33;
-      const averageAttendance = 77;
+      // **НОВЫЙ ЗАПРОС: получаем средний балл и посещаемость по отделению**
+      let averagePerformance = 4.33; // значение по умолчанию
+      let averageAttendance = 77; // значение по умолчанию
+      
+      try {
+        const overallStats = await headApiService.getOverallStats();
+        averagePerformance = overallStats.averageGrade;
+        averageAttendance = overallStats.attendancePercentage;
+        console.log('Получена общая статистика:', overallStats);
+      } catch (statsError) {
+        console.error('Ошибка при получении общей статистики:', statsError);
+        // Используем значения по умолчанию
+      }
       
       const departmentData = {
         totalGroups: filteredGroups.length,
         totalStudents: totalStudents,
-        name: 'Отделение информационных технологий',
+        name: 'Отделение |||',
         specialities: ['09.02.07 Информационные системы и программирование'],
         totalTeachers: 24,
         averagePerformance: averagePerformance,
@@ -266,7 +277,7 @@ export const DepartmentHeadPage: React.FC = () => {
       console.error('Ошибка при загрузке информации об отделении:', error);
       throw error;
     }
-  }, []); 
+  }, []);
 
   const { 
     data: departmentInfo, 
@@ -399,6 +410,7 @@ export const DepartmentHeadPage: React.FC = () => {
   };
 
   const handleOpenPersonalCabinet = () => {
+    setActiveDepartmentTab('personal'); 
     setShowPersonalCabinet(true);
     setActiveDetailTab('personalCabinet');
     setSelectedGroupId(null);
@@ -407,6 +419,7 @@ export const DepartmentHeadPage: React.FC = () => {
   };
 
   const handleClosePersonalCabinet = () => {
+    setActiveDepartmentTab('groups'); 
     setShowPersonalCabinet(false);
     setActiveDetailTab('departmentGroups');
     setShowDepartmentGroups(true);
@@ -435,8 +448,8 @@ export const DepartmentHeadPage: React.FC = () => {
     );
   };
 
-  const MetricPlaceholder = ({ label, value, isPercentage = false }: { label: string; value: number; isPercentage?: boolean }) => (
-    <div className="dhp-metric-card placeholder">
+  const MetricPlaceholder = ({ label, value, isPercentage = false, isRealData = false }: { label: string; value: number; isPercentage?: boolean; isRealData?: boolean }) => (
+    <div className="dhp-metric-card">
       <div className="dhp-metric-header">
         <span className="dhp-metric-title">{label}</span>
       </div>
@@ -451,7 +464,7 @@ export const DepartmentHeadPage: React.FC = () => {
           ></div>
         </div>
       </div>
-      <div className="dhp-metric-note">* демонстрационные данные</div>
+      {!isRealData && <div className="dhp-metric-note">* демонстрационные данные</div>}
     </div>
   );
 
@@ -540,6 +553,7 @@ export const DepartmentHeadPage: React.FC = () => {
                 <span className="dhp-quick-link-title">Информация о группах</span>
                 <span className="dhp-quick-link-description">Просмотр всех групп отделения</span>
               </div>
+              <span className="dhp-quick-link-arrow">→</span>
             </button>
             
             <button 
@@ -547,9 +561,21 @@ export const DepartmentHeadPage: React.FC = () => {
               onClick={handleShowDepartmentScholarship}
             >
               <div className="dhp-quick-link-content">
-                <span className="dhp-quick-link-title">Стипендия</span>
+                <span className="dhp-quick-link-title">Стипендии</span>
                 <span className="dhp-quick-link-description">Статистика по стипендиям</span>
               </div>
+              <span className="dhp-quick-link-arrow">→</span>
+            </button>
+
+            <button 
+              className={`dhp-quick-link-btn ${activeDepartmentTab === 'personal' ? 'active' : ''}`}
+              onClick={handleOpenPersonalCabinet}
+            >
+              <div className="dhp-quick-link-content">
+                <span className="dhp-quick-link-title">Личный кабинет</span>
+                <span className="dhp-quick-link-description">Просмотр персональных данных</span>
+              </div>
+              <span className="dhp-quick-link-arrow">→</span>
             </button>
           </div>
         </>
@@ -802,33 +828,10 @@ export const DepartmentHeadPage: React.FC = () => {
                   {leftPanelView === 'department' ? renderDepartmentView() : renderGroupsView()}
                 </div>
               </div>
-
-              {/* Кнопка личного кабинета под левой панелью */}
-              <div className="dhp-personal-cabinet-button-container">
-                <button 
-                  className={`dhp-personal-cabinet-btn ${showPersonalCabinet ? 'active' : ''}`}
-                  onClick={handleOpenPersonalCabinet}
-                >
-                  <span className="dhp-personal-cabinet-text">Личный кабинет</span>
-                </button>
-              </div>
             </div>
 
             {/* Правая колонка: детальная панель */}
             <div className="dhp-detail-panel">
-              {/* Кнопка закрытия личного кабинета */}
-              {showPersonalCabinet && (
-                <div className="dhp-personal-cabinet-close-bar">
-                  <button 
-                    className="dhp-personal-cabinet-close-btn"
-                    onClick={handleClosePersonalCabinet}
-                  >
-                    <span className="dhp-close-icon">✕</span>
-                    <span>Закрыть личный кабинет</span>
-                  </button>
-                </div>
-              )}
-
               {leftPanelView === 'groups' && selectedGroupId !== null && !showPersonalCabinet && (
                 <div className="dhp-detail-tabs">
                  { (['group', 'summary', 'scholarship', 'session', 'diploma'] as DetailTabType[]).map((tab) => (

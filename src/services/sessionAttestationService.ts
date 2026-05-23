@@ -52,183 +52,223 @@ export class SessionAttestationService {
 <meta charset="UTF-8">
 <title>Аттестационная ведомость</title>
 <style>
-  @page {
-    size: A4;
-    margin: 2cm 1.5cm 2cm 3cm;
-  }
-  body {
-    font-family: 'Times New Roman', Times, serif;
-    margin: 0;
-    padding: 0;
-    background: white;
-  }
-  .document {
-    width: 100%;
-  }
-  /* Шапка документа */
-  .university-text {
-    font-size: 11pt;
-    line-height: 1.2;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-  }
-  .college-title {
-    font-size: 11pt;
-    font-weight: bold;
-    line-height: 1.2;
-    text-align: center;
-    margin-top: 4px;
-    margin-bottom: 16px;
-  }
-  /* Заголовок с номером и датой */
-  .title-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 12px;
-  }
-  .attestation-title {
-    font-size: 14pt;
-    font-weight: bold;
-    line-height: 1.2;
-  }
-  .attestation-number {
-    font-size: 14pt;
-    font-weight: bold;
-    line-height: 1.2;
-    text-decoration: none;
-    flex: 1;
-    text-align: center;
-  }
-  .attestation-date {
-    font-size: 14px;
-    font-weight: bold;
-    line-height: 1.2;
-    text-align: right;
-    min-width: 150px;
-  }
-  /* Строка с формой аттестации и семестром */
-  .form-semester-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 8px;
-  }
-  .attestation-form {
-    font-size: 14px;
-    text-decoration: underline;
-    line-height: 1.2;
-  }
-  .semester-text {
-    font-size: 14px;
-    font-weight: bold;
-    line-height: 1.2;
-    text-align: right;
-  }
-  /* Остальные строки */
-  .normal-text {
-    font-size: 14px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-  }
-  .underline-text {
-    text-decoration: underline;
-    font-size: 14px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-  }
-  .small-text {
-    font-size: 8pt;
-    line-height: 1.2;
-    margin-bottom: 8px;
-  }
-  .course-group {
-    font-size: 14px;
-    line-height: 1.2;
-    margin-top: 8px;
-    margin-bottom: 16px;
-  }
-  /* Таблица */
-  .attestation-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 12px 0;
-    table-layout: fixed;
-  }
-  .attestation-table th,
-  .attestation-table td {
-    border: 1px solid #000000;
-    word-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
-  }
-  .attestation-table th {
-    font-size: 12px;
-    font-weight: bold;
-    line-height: 1;
-    text-align: center;
-    background-color: transparent;
-    padding: 6px 3px;
-    vertical-align: middle;
-  }
-  .attestation-table td {
-    font-size: 14px;
-    line-height: 0.5;
-    padding: 6px 4px;
-  }
-  /* Подвал */
-  .footer-note {
-    font-size: 8pt;
-    line-height: 1.2;
-    margin-top: 8px;
-    margin-bottom: 16px;
-  }
-  .signature-date-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-  }
-  .date-field {
-    font-size: 14px;
-    line-height: 1.2;
-  }
-  .grades-summary {
-    text-align: right;
-  }
-  .grades-line {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    font-size: 14px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-  }
-  .teacher-signature-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14pt;
-    line-height: 1;
-  }
-  .chief-signature {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 40px;
-    font-size: 12pt;
-    line-height: 1;
-  }
-  .signature-right {
-    text-align: right;
-  }
-  .bold {
-    font-weight: bold;
-  }
-  .underline {
-    text-decoration: underline;
-  }
+          @page {
+            size: A4 portrait;
+            margin: 15mm 20mm 15mm 25mm;
+          }
+
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.3;
+            background: white;
+            padding: 0;
+            margin: 0;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+              margin: 0;
+            }
+            table {
+              page-break-inside: auto;
+            }
+            tr {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            thead {
+              display: table-header-group;
+            }
+          }
+
+          .document {
+            width: 100%;
+          }
+
+          .university-text {
+            font-size: 10pt;
+            line-height: 1.2;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+          }
+
+          .college-title {
+            font-size: 10pt;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+            margin-top: 3px;
+            margin-bottom: 12px;
+          }
+
+          .title-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+          }
+
+          .attestation-title {
+            font-size: 13pt;
+            font-weight: bold;
+            line-height: 1.2;
+          }
+
+          .attestation-number {
+            font-size: 12pt;
+            line-height: 1.2;
+            flex: 1;
+            text-align: center;
+          }
+
+          .attestation-date {
+            font-size: 12pt;
+            line-height: 1.2;
+            text-align: right;
+            min-width: 150px;
+          }
+
+          .semester-text {
+            font-size: 12pt;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: right;
+          }
+
+          .form-semester-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+          }
+
+          .attestation-form {
+            font-size: 12pt;
+            text-decoration: underline;
+            line-height: 1.2;
+          }
+
+          .normal-text {
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 3px;
+          }
+
+          .small-text {
+            font-size: 8pt;
+            line-height: 1.2;
+            margin-bottom: 6px;
+            color: #333;
+          }
+
+          .course-group {
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-top: 6px;
+            margin-bottom: 12px;
+          }
+
+          .attestation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            table-layout: fixed;
+            font-size: 10pt;
+          }
+
+          .attestation-table th,
+          .attestation-table td {
+            border: 1px solid #000000;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
+
+          .attestation-table th {
+            font-size: 9pt;
+            font-weight: bold;
+            line-height: 1.1;
+            text-align: center;
+            background-color: transparent;
+            padding: 4px 3px;
+            vertical-align: middle;
+          }
+
+          .attestation-table td {
+            font-size: 11pt;
+            line-height: 0.9;
+            padding: 2px 2px;
+            vertical-align: middle;
+          }
+
+          .footer-note {
+            font-size: 8pt;
+            line-height: 1.2;
+            margin-top: 6px;
+            margin-bottom: 12px;
+          }
+
+          .signature-date-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+
+          .date-field {
+            font-size: 11pt;
+            line-height: 1.2;
+          }
+
+          .grades-summary {
+            text-align: right;
+          }
+
+          .grades-line {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 2px;
+          }
+
+          .teacher-signature-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 8px;
+          }
+
+          .chief-signature {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 30px;
+            font-size: 11pt;
+            line-height: 1.3;
+          }
+
+          .bold {
+            font-weight: bold;
+          }
+
+          .underline {
+            text-decoration: underline;
+          }
 </style>
 </head>
 <body>
@@ -268,10 +308,10 @@ export class SessionAttestationService {
     <thead>
       <tr>
         <th rowspan="2" style="width:6%;">№ п/п</th>
-        <th rowspan="2" style="width:24%;">Ф.И.О.</th>
-        <th rowspan="2" style="width:14%;">Отметка о допуске</th>
+        <th rowspan="2" style="width:30%;">Ф.И.О.</th>
+        <th rowspan="2" style="width:12%;">Отметка о допуске</th>
         <th rowspan="2" style="width:8%;">Оценка</th>
-        <th rowspan="2" style="width:14%;">Подпись преподавателя</th>
+        <th rowspan="2" style="width:10%;">Подпись преподавателя</th>
         <th colspan="3" style="text-align:center; width:34%;">Пересдача</th>
       </tr>
       <tr>

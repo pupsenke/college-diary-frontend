@@ -96,7 +96,7 @@
 }
 
 .dhm-section-title {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #002FA7;
   margin: 0;
@@ -539,7 +539,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
 }
 
 .dhm-group-stats {
@@ -559,7 +559,7 @@
 }
 
 .dhm-stat-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #64748b;
   font-weight: 500;
   margin-bottom: 4px;

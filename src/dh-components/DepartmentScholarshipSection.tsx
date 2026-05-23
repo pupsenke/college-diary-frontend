@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { headApiService, StudentInfo } from '../services/headApiService';
+import { headApiService, StudentInfo, ScholarshipCategory } from '../services/headApiService';
 import './DepartmentScholarshipSectionStyle.css';
 
 interface DepartmentScholarshipStats {
@@ -40,6 +40,8 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
   const [groupStudents, setGroupStudents] = useState<StudentInfo[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<StudentInfo | null>(null);
+  const [groupScholarshipCategories, setGroupScholarshipCategories] = useState<ScholarshipCategory[]>([]);
+  const [loadingGroupData, setLoadingGroupData] = useState(false);
   
   // Состояния для экспорта
   const [showExportModal, setShowExportModal] = useState(false);
@@ -47,41 +49,39 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
 
-  // Функция для генерации случайных оценок студента (демо-режим)
-  const generateStudentGrades = (studentId: number, groupId: number): { count5: number; count4: number; count3: number; avg: number } => {
-    const seed = (studentId * groupId * 12345) % 100;
-    const gradesCount = 8 + Math.floor(seed % 5);
-    let count5 = 0, count4 = 0, count3 = 0;
-    
-    for (let i = 0; i < gradesCount; i++) {
-      const random = (seed * (i + 1)) % 10;
-      if (random < 1) count3++;
-      else if (random < 4) count4++;
-      else count5++;
+  // **Функция для получения категорий стипендий группы (из второго кода)**
+  const loadGroupScholarshipCategories = async (groupId: number): Promise<ScholarshipCategory[]> => {
+    try {
+      const categories = await headApiService.getStudentsByScholarshipCategories(groupId);
+      return categories;
+    } catch (error) {
+      console.error(`Ошибка при загрузке категорий стипендий для группы ${groupId}:`, error);
+      return [];
     }
-    
-    const total = count5 + count4 + count3;
-    const avg = total > 0 ? (count5 * 5 + count4 * 4 + count3 * 3) / total : 0;
-    
-    return { count5, count4, count3, avg };
   };
 
-  // Определение типа стипендии по среднему баллу
-  const getScholarshipType = (avg: number): 'excellent' | 'good-excellent' | 'good' | 'none' => {
-    if (avg >= 4.8) return 'excellent';
-    if (avg >= 4.0) return 'good-excellent';
-    if (avg >= 3.5) return 'good';
+  // **Функция для получения категории студента**
+  const getStudentCategory = (studentFullName: string, categories: ScholarshipCategory[]): string => {
+    for (const category of categories) {
+      if (category.students.includes(studentFullName)) {
+        return category.category;
+      }
+    }
     return 'none';
   };
 
-  const getScholarshipTypeName = (type: string): string => {
-    const types = {
-      excellent: 'Стипендия +50% (только 5)',
-      'good-excellent': 'Стипендия +25% (4-5)',
-      good: 'Стандартная стипендия (только 4)',
-      none: 'Не получает стипендию'
-    };
-    return types[type as keyof typeof types] || types.none;
+  // **Функция для получения студентов по типу стипендии**
+  const getStudentsByType = (categoryType: string, studentsList: StudentInfo[], categories: ScholarshipCategory[]): StudentInfo[] => {
+    const category = categories.find(c => c.category === categoryType);
+    if (!category) return [];
+    
+    return studentsList.filter(student => 
+      category.students.includes(getStudentFullName(student))
+    );
+  };
+
+  const getStudentFullName = (student: StudentInfo): string => {
+    return `${student.lastName} ${student.name} ${student.patronymic}`;
   };
 
   const loadDepartmentScholarshipStats = async () => {
@@ -90,7 +90,12 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
       const groups = await headApiService.getGroups();
       const filteredGroups = groups.filter(g => g.specialty === "09.02.07 Информационные системы и программирование");
       
-      const byCourse: DepartmentScholarshipStats['byCourse'] = { 1: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 2: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 3: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 4: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 } };
+      const byCourse: DepartmentScholarshipStats['byCourse'] = { 
+        1: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 
+        2: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 
+        3: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 }, 
+        4: { total: 0, excellent: 0, goodExcellent: 0, good: 0, none: 0 } 
+      };
       const byGroup: DepartmentScholarshipStats['byGroup'] = [];
       let totalStudents = 0;
       let totalExcellent = 0;
@@ -99,17 +104,23 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
       let totalNone = 0;
 
       for (const group of filteredGroups) {
+        // **Получаем студентов группы**
         const students = await headApiService.getGroupStudents(group.id);
+        
+        // **ВНЕДРЕННЫЙ ЗАПРОС: получаем категории стипендий для группы из второго кода**
+        const scholarshipCategories = await loadGroupScholarshipCategories(group.id);
+        
         let groupExcellent = 0, groupGoodExcellent = 0, groupGood = 0, groupNone = 0;
         
         for (const student of students) {
-          const { avg } = generateStudentGrades(student.id, group.id);
-          const type = getScholarshipType(avg);
+          const studentFullName = getStudentFullName(student);
+          // **Определяем тип стипендии студента на основе полученных категорий**
+          const category = getStudentCategory(studentFullName, scholarshipCategories);
           
-          switch (type) {
-            case 'excellent': groupExcellent++; break;
-            case 'good-excellent': groupGoodExcellent++; break;
-            case 'good': groupGood++; break;
+          switch (category) {
+            case '5': groupExcellent++; break;
+            case '4-5': groupGoodExcellent++; break;
+            case '4': groupGood++; break;
             default: groupNone++;
           }
         }
@@ -136,7 +147,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
           goodExcellent: groupGoodExcellent,
           good: groupGood,
           none: groupNone,
-          coveragePercent: ((groupExcellent + groupGoodExcellent + groupGood) / students.length) * 100
+          coveragePercent: students.length > 0 ? ((groupExcellent + groupGoodExcellent + groupGood) / students.length) * 100 : 0
         });
       }
 
@@ -156,39 +167,64 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     }
   };
 
+  // **Функция для открытия модального окна с детальной информацией о группе**
+  const handleGroupClick = async (groupId: number) => {
+    setLoadingGroupData(true);
+    try {
+      const students = await headApiService.getGroupStudents(groupId);
+      setGroupStudents(students);
+      setSelectedGroup(groupId);
+      
+      // **ВНЕДРЕННЫЙ ЗАПРОС: получаем категории стипендий для выбранной группы**
+      const categories = await loadGroupScholarshipCategories(groupId);
+      setGroupScholarshipCategories(categories);
+      
+      setShowGroupModal(true);
+    } catch (error) {
+      console.error('Ошибка загрузки студентов группы:', error);
+    } finally {
+      setLoadingGroupData(false);
+    }
+  };
+
+  // **Функция для получения категории студента в модальном окне**
+  const getModalStudentCategory = (studentFullName: string): string => {
+    return getStudentCategory(studentFullName, groupScholarshipCategories);
+  };
+
+  // **Функция для получения названия категории стипендии**
+  const getScholarshipTypeName = (category: string): string => {
+    const types: Record<string, string> = {
+      '5': 'Повышенная стипендия (+50%)',
+      '4-5': 'Повышенная стипендия (+25%)',
+      '4': 'Стандартная стипендия',
+      'none': 'Не получает стипендию'
+    };
+    return types[category] || types.none;
+  };
+
+  // **Функция для получения цвета категории стипендии**
+  const getScholarshipColor = (category: string): string => {
+    const colors: Record<string, string> = {
+      '5': '#10b981',
+      '4-5': '#3b82f6',
+      '4': '#f59e0b',
+      'none': '#ef4444'
+    };
+    return colors[category] || colors.none;
+  };
+
   useEffect(() => {
     loadDepartmentScholarshipStats();
   }, []);
 
   const filteredGroups = stats?.byGroup.filter(g => selectedCourse === 'all' || g.course === selectedCourse) || [];
 
-  const handleGroupClick = async (groupId: number) => {
-    try {
-      const students = await headApiService.getGroupStudents(groupId);
-      setGroupStudents(students);
-      setSelectedGroup(groupId);
-      setShowGroupModal(true);
-    } catch (error) {
-      console.error('Ошибка загрузки студентов группы:', error);
-    }
-  };
-
-  const getStudentFullName = (student: StudentInfo) => {
-    return `${student.lastName} ${student.name} ${student.patronymic}`;
-  };
-
   // Генерация данных для экспорта
   const generateExportData = () => {
+    // ... (код экспорта остается без изменений)
     const currentYear = new Date().getFullYear();
-    const groupName = "Отделение информационных технологий";
-    
-    // Группируем студентов по типам стипендий по курсам
-    const getStudentsByTypeAndCourse = (type: string, course: number) => {
-      const groups = stats?.byGroup.filter(g => g.course === course) || [];
-      const students: string[] = [];
-      // Здесь нужно собрать студентов, но для экспорта используем только статистику
-      return students;
-    };
+    const groupName = "Отделение |||";
     
     let html = `<!DOCTYPE html>
 <html lang="ru">
@@ -257,21 +293,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
             border-top: 2px solid #000;
             font-weight: bold;
             background-color: #f8fafc;
-        }
-        .student-list {
-            list-style: none;
-            margin: 0;
-            padding-left: 0;
-        }
-        .student-list li {
-            margin-bottom: 4px;
-            padding-left: 20px;
-            position: relative;
-        }
-        .student-list li:before {
-            content: "•";
-            position: absolute;
-            left: 5px;
         }
         .signature {
             margin-top: 45px;
@@ -441,13 +462,12 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
           <h2 className="dss-title">Статистика стипендий по отделению</h2>
           <p className="dss-subtitle">Информация о назначении государственной академической стипендии</p>
         </div>
-        <button className="dss-export-btn" onClick={handleExport}>
+        {/* <button className="dss-export-btn" onClick={handleExport}>
           Экспорт ведомости
-        </button>
+        </button> */}
       </div>
 
       {/* Карточки с общей статистикой */}
-        
       <div className="dss-stats-cards">
         <div className="dss-stat-card">
           <div className="dss-stat-value">{stats.coveragePercent.toFixed(1)}%</div>
@@ -551,8 +571,8 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
             </thead>
             <tbody>
               {filteredGroups.map(group => (
-                <tr key={group.groupId} onClick={() => handleGroupClick(group.groupId)} className="dss-group-row">
-                  <td className="dss-group-name">Группа {group.groupName} </td>
+                <tr key={group.groupId} onClick={() => handleGroupClick(group.groupId)} className="dss-group-row" style={{ cursor: 'pointer' }}>
+                  <td className="dss-group-name">Группа {group.groupName}</td>
                   <td>{group.course}</td>
                   <td>{group.total}</td>
                   <td className="dss-cell-excellent">{group.excellent}</td>
@@ -571,7 +591,164 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
         </div>
       </div>
 
-      {/* Модальное окно экспорта */}
+      {/* **Модальное окно с детальной информацией о группе** */}
+      {showGroupModal && (
+        <div className="dss-modal-overlay" onClick={() => setShowGroupModal(false)}>
+          <div className="dss-group-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dss-modal-header">
+              <h3>Стипендии группы</h3>
+              <button className="dss-modal-close" onClick={() => setShowGroupModal(false)}>×</button>
+            </div>
+            <div className="dss-modal-content">
+              {loadingGroupData ? (
+                <div className="dss-loading-small">
+                  <div className="dss-loading-spinner-small"></div>
+                  <p>Загрузка данных...</p>
+                </div>
+              ) : (
+                <div className="dss-group-details">
+                  <div className="dss-group-info-header">
+                    <h4>Всего студентов: {groupStudents.length}</h4>
+                  </div>
+                  
+                  <div className="dss-scholarship-categories">
+                    {/* Категория: Повышенная стипендия (+50%) */}
+                    <div className="dss-category-block excellent">
+                      <div className="dss-category-title">
+                        <span className="dss-category-badge excellent"></span>
+                        <span>Повышенная стипендия (+50%)</span>
+                        <span className="dss-category-count">
+                          {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '5').length}
+                        </span>
+                      </div>
+                      <div className="dss-category-students">
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '5').map((student, idx) => (
+                          <div 
+                            key={student.id} 
+                            className="dss-student-item"
+                            onClick={() => setSelectedStudentForDetails(student)}
+                          >
+                            {getStudentFullName(student)}
+                          </div>
+                        ))}
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '5').length === 0 && (
+                          <div className="dss-empty-category">Нет студентов</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Категория: Повышенная стипендия (+25%) */}
+                    <div className="dss-category-block goodexcellent">
+                      <div className="dss-category-title">
+                        <span className="dss-category-badge goodexcellent"></span>
+                        <span>Повышенная стипендия (+25%)</span>
+                        <span className="dss-category-count">
+                          {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4-5').length}
+                        </span>
+                      </div>
+                      <div className="dss-category-students">
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4-5').map((student, idx) => (
+                          <div 
+                            key={student.id} 
+                            className="dss-student-item"
+                            onClick={() => setSelectedStudentForDetails(student)}
+                          >
+                            {getStudentFullName(student)}
+                          </div>
+                        ))}
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4-5').length === 0 && (
+                          <div className="dss-empty-category">Нет студентов</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Категория: Стандартная стипендия */}
+                    <div className="dss-category-block good">
+                      <div className="dss-category-title">
+                        <span className="dss-category-badge good"></span>
+                        <span>Стандартная стипендия</span>
+                        <span className="dss-category-count">
+                          {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4').length}
+                        </span>
+                      </div>
+                      <div className="dss-category-students">
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4').map((student, idx) => (
+                          <div 
+                            key={student.id} 
+                            className="dss-student-item"
+                            onClick={() => setSelectedStudentForDetails(student)}
+                          >
+                            {getStudentFullName(student)}
+                          </div>
+                        ))}
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === '4').length === 0 && (
+                          <div className="dss-empty-category">Нет студентов</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Категория: Не получают стипендию */}
+                    <div className="dss-category-block none">
+                      <div className="dss-category-title">
+                        <span className="dss-category-badge none"></span>
+                        <span>Не получают стипендию</span>
+                        <span className="dss-category-count">
+                          {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === 'none').length}
+                        </span>
+                      </div>
+                      <div className="dss-category-students">
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === 'none').map((student, idx) => (
+                          <div 
+                            key={student.id} 
+                            className="dss-student-item"
+                            onClick={() => setSelectedStudentForDetails(student)}
+                          >
+                            {getStudentFullName(student)}
+                          </div>
+                        ))}
+                        {groupStudents.filter(s => getModalStudentCategory(getStudentFullName(s)) === 'none').length === 0 && (
+                          <div className="dss-empty-category">Нет студентов</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* **Модальное окно с детальной информацией о студенте** */}
+      {selectedStudentForDetails && (
+        <div className="dss-modal-overlay" onClick={() => setSelectedStudentForDetails(null)}>
+          <div className="dss-student-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dss-modal-header">
+              <h3>Информация о студенте</h3>
+              <button className="dss-modal-close" onClick={() => setSelectedStudentForDetails(null)}>×</button>
+            </div>
+            <div className="dss-modal-content">
+              <div className="dss-student-info">
+                <div className="dss-student-field">
+                  <span className="dss-field-label">ФИО:</span>
+                  <span className="dss-field-value">{getStudentFullName(selectedStudentForDetails)}</span>
+                </div>
+                <div className="dss-student-field">
+                  <span className="dss-field-label">Категория стипендии:</span>
+                  <span 
+                    className="dss-field-value dss-scholarship-type"
+                    style={{ color: getScholarshipColor(getModalStudentCategory(getStudentFullName(selectedStudentForDetails))) }}
+                  >
+                    {getScholarshipTypeName(getModalStudentCategory(getStudentFullName(selectedStudentForDetails)))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно экспорта
       {showExportModal && (
         <div className="dss-modal-overlay" onClick={() => setShowExportModal(false)}>
           <div className="dss-export-modal" onClick={(e) => e.stopPropagation()}>
@@ -607,7 +784,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

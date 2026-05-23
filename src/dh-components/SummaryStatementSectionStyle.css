@@ -1433,3 +1433,33 @@
     font-size: 13px;
   }
 }
+
+
+
+
+
+
+.dh-at-btn-print {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: 1px solid #8aa3c4b8;
+    background: white;
+  color: #002FA7;
+}
+
+.dh-at-btn-print:hover {
+  transform: translateY(-1px);
+  
+}
+
+/* Стили для скрытия колонок при печати */
+@media print {
+  .scholarship-col-print,
+  .grades-count-col-print {
+    display: none !important;
+  }
+}

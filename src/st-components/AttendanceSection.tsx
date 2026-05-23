@@ -1258,74 +1258,76 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         )}
 
         {activeTab === 'subjects' && (
-          <div className="at-tab-content">
-            <div className="at-subject-detail-container">
-              <div className="at-subject-selector">
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="at-select"
-                >
-                  <option value="">Выберите предмет</option>
-                  {subjects.map(subject => (
-                    <option key={subject} value={subject}>{subject}</option>
-                  ))}
-                </select>
-              </div>
+  <div className="at-tab-content">
+    <div className="at-subject-detail-container">
+      <div className="at-subject-selector">
+        <select
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          className="at-select"
+        >
+          <option value="">Выберите предмет</option>
+          {subjects.map(subject => (
+            <option key={subject} value={subject}>{subject}</option>
+          ))}
+        </select>
+      </div>
 
-              {selectedSubjectData ? (
-                <div className="at-subject-detail">
-                  <div className="at-detail-header">
-                    <h2>{selectedSubjectData.subject}</h2>
-                    <div className="at-subject-meta">
-                      <span className="at-meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
-                      <span className="at-meta-item">Посещаемость: {selectedSubjectData.percent}%</span>
-                    </div>
-                  </div>
-
-                  <div className="at-attendance-timeline">
-                    {selectedSubjectData.reasonStatus?.map((detail, index) => (
-                      <div key={`detail-${detail.idLesson}-${index}`} className="at-timeline-item">
-                        <div className="at-timeline-content"
-                        onClick={() => handleAttendanceClick(
-                                selectedSubjectData.subject,
-                                detail.status,
-                                detail.idLesson,
-                                detail.date,
-                                detail.teacher,
-                                detail.comment
-                              )}>
-                          <div className="at-attendance-header">
-                            
-                          </div>
-                          <div className="at-attendance-details">
-                            
-                            <span 
-                              className="at-attendance-value"
-                              style={{ 
-                                backgroundColor: getStatusColor(detail.status)
-                              }}
-                              
-                            >
-                              {detail.status || '-'}
-                            </span>
-                            <span className="at-attendance-date">{formatDate(detail.date)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="at-no-subject-selected">
-                  <div className="at-empty-state">
-                    <p>Для просмотра детальной информации выберите предмет из списка</p>
-                  </div>
-                </div>
-              )}
+      {selectedSubjectData ? (
+        <div className="at-subject-detail">
+          <div className="at-detail-header">
+            <h2>{selectedSubjectData.subject}</h2>
+            <div className="at-subject-meta">
+              <span className="at-meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
+              <span className="at-meta-item">Посещаемость: {selectedSubjectData.percent}%</span>
             </div>
           </div>
-        )}
+
+          {/* ОБНОВЛЕННАЯ СЕКЦИЯ - статусы посещения в виде сетки */}
+          <div className="at-attendance-timeline">
+            <div className="at-attendance-grid">
+              {selectedSubjectData.reasonStatus?.map((detail, index) => (
+                <div 
+                  key={`detail-${detail.idLesson}-${index}`} 
+                  className="at-attendance-grid-item"
+                  onClick={() => handleAttendanceClick(
+                    selectedSubjectData.subject,
+                    detail.status,
+                    detail.idLesson,
+                    detail.date,
+                    detail.teacher,
+                    detail.comment
+                  )}
+                >
+                  <div 
+                    className="at-attendance-grid-status"
+                    style={{ backgroundColor: getStatusColor(detail.status) }}
+                  >
+                    <span className="at-status-letter">{detail.status || '?'}</span>
+                  </div>
+                  <div className="at-attendance-grid-date">
+                    {formatDate(detail.date)}
+                  </div>
+                  {detail.status === 'у' && detail.comment && (
+                    <div className="at-attendance-grid-comment" title={detail.comment}>
+                      *
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="at-no-subject-selected">
+          <div className="at-empty-state">
+            <p>Для просмотра детальной информации выберите предмет из списка</p>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {activeTab === 'analytics' && renderAnalytics()}
       </div>

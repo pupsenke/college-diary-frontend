@@ -107,7 +107,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
         date: date,
         attestationForm: attestationForm,
         semester: semester,
-        teacherName: selectedTeacher ? `${selectedTeacher.teacherLastName} ${selectedTeacher.teacherName.charAt(0)}.${selectedTeacher.teacherPatronymic ? selectedTeacher.teacherPatronymic.charAt(0) + '.' : ''}` : 'Не указан',
+        teacherName: selectedTeacher ? `${selectedTeacher.teacherLastName} ${selectedTeacher.teacherName} ${selectedTeacher.teacherPatronymic ? selectedTeacher.teacherPatronymic : ''}` : 'Не указан',
         subject: selectedSubject?.subjectName || 'Не указан',
         specialityCode: groupInfo?.specialty?.split(' ')[0] || '09.02.07',
         specialityName: groupInfo?.specialty || 'Информационные системы и программирование',
@@ -115,7 +115,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
         group: `${groupInfo?.numberGroup || groupId}`,
         students: students.map((student, index) => ({
           number: index + 1,
-          fullName: `${student.lastName} ${student.name.charAt(0)}.${student.patronymic ? student.patronymic.charAt(0) + '.' : ''}`,
+          fullName: `${student.lastName} ${student.name} ${student.patronymic ? student.patronymic : ''}`,
           fullNameOriginal: `${student.lastName} ${student.name} ${student.patronymic}`
         })),
         headName: "Голубева Г.А."
@@ -135,6 +135,373 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
     }
   };
 
+  // **ФУНКЦИЯ ПЕЧАТИ**
+  const handlePrint = () => {
+    if (!groupInfo || students.length === 0) return;
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.width = '0px';
+    printFrame.style.height = '0px';
+    printFrame.style.border = 'none';
+    document.body.appendChild(printFrame);
+
+    const printDocument = printFrame.contentWindow?.document;
+    if (!printDocument) return;
+
+    const selectedTeacher = getSelectedTeacher();
+    const selectedSubject = subjects.find(s => s.subjectId === selectedSubjectId);
+
+    const attestationFormText = attestationForm === 'exam' ? 'экзамен' : 
+                                attestationForm === 'credit' ? 'зачёт' : 'дифференцированный зачет';
+
+    const academicYear = `${selectedYear}-${selectedYear + 1}`;
+    const romanSemester = semester === 7 ? 'VII' : 'VIII';
+
+    const teacherName = selectedTeacher 
+      ? `${selectedTeacher.teacherLastName} ${selectedTeacher.teacherName} ${selectedTeacher.teacherPatronymic ? selectedTeacher.teacherPatronymic : ''}`
+      : 'Не указан';
+
+    const subjectName = selectedSubject?.subjectName || 'Не указан';
+    const specialty = groupInfo?.specialty || '09.02.07 Информационные системы и программирование';
+    const course = groupInfo?.course || 4;
+    const groupName = `${groupInfo?.numberGroup || groupId}`;
+
+    // Build student rows HTML
+    const studentRows = students.map((student, index) => {
+      const fullName = `${student.lastName} ${student.name} ${student.patronymic ? student.patronymic : ''}`;
+      return `
+        <tr>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">${index + 1}</td>
+          <td style="border:1px solid #000000;padding:4px 6px;vertical-align:middle;font-size:11pt;">${fullName}</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+          <td style="border:1px solid #000000;padding:4px 6px;text-align:center;vertical-align:middle;font-size:11pt;">&nbsp;</td>
+        </tr>
+      `;
+    }).join('');
+
+    printDocument.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Аттестационная ведомость - ${groupName}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 15mm 20mm 15mm 25mm;
+          }
+
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.3;
+            background: white;
+            padding: 0;
+            margin: 0;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+              margin: 0;
+            }
+            table {
+              page-break-inside: auto;
+            }
+            tr {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            thead {
+              display: table-header-group;
+            }
+          }
+
+          .document {
+            width: 100%;
+          }
+
+          .university-text {
+            font-size: 10pt;
+            line-height: 1.2;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+          }
+
+          .college-title {
+            font-size: 10pt;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+            margin-top: 3px;
+            margin-bottom: 12px;
+          }
+
+          .title-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+          }
+
+          .attestation-title {
+            font-size: 13pt;
+            font-weight: bold;
+            line-height: 1.2;
+          }
+
+          .attestation-number {
+            font-size: 12pt;
+            line-height: 1.2;
+            flex: 1;
+            text-align: center;
+          }
+
+          .attestation-date {
+            font-size: 12pt;
+            line-height: 1.2;
+            text-align: right;
+            min-width: 150px;
+          }
+
+          .semester-text {
+            font-size: 12pt;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: right;
+          }
+
+          .form-semester-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+          }
+
+          .attestation-form {
+            font-size: 12pt;
+            text-decoration: underline;
+            line-height: 1.2;
+          }
+
+          .normal-text {
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 3px;
+          }
+
+          .small-text {
+            font-size: 8pt;
+            line-height: 1.2;
+            margin-bottom: 6px;
+            color: #333;
+          }
+
+          .course-group {
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-top: 6px;
+            margin-bottom: 12px;
+          }
+
+          .attestation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            table-layout: fixed;
+            font-size: 10pt;
+          }
+
+          .attestation-table th,
+          .attestation-table td {
+            border: 1px solid #000000;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
+
+          .attestation-table th {
+            font-size: 9pt;
+            font-weight: bold;
+            line-height: 1.1;
+            text-align: center;
+            background-color: transparent;
+            padding: 4px 3px;
+            vertical-align: middle;
+          }
+
+          .attestation-table td {
+            font-size: 11pt;
+            line-height: 1.2;
+            padding: 4px 4px;
+            vertical-align: middle;
+          }
+
+          .footer-note {
+            font-size: 8pt;
+            line-height: 1.2;
+            margin-top: 6px;
+            margin-bottom: 12px;
+          }
+
+          .signature-date-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+
+          .date-field {
+            font-size: 11pt;
+            line-height: 1.2;
+          }
+
+          .grades-summary {
+            text-align: right;
+          }
+
+          .grades-line {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 2px;
+          }
+
+          .teacher-signature-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-bottom: 8px;
+          }
+
+          .chief-signature {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 30px;
+            font-size: 11pt;
+            line-height: 1.3;
+          }
+
+          .bold {
+            font-weight: bold;
+          }
+
+          .underline {
+            text-decoration: underline;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="document">
+          <div class="university-text">Министерство науки и высшего образования Российской Федерации</div>
+          <div class="university-text">Федеральное государственное бюджетное образовательное учреждение</div>
+          <div class="university-text">высшего образования</div>
+          <div class="university-text">«Новгородский государственный университет имени Ярослава Мудрого»</div>
+          <div class="university-text">ПОЛИТЕХНИЧЕСКИЙ ИНСТИТУТ</div>
+          <div class="college-title">ПОЛИТЕХНИЧЕСКИЙ КОЛЛЕДЖ</div>
+
+          <div class="title-line">
+            <span class="attestation-title">Аттестационная ведомость</span>
+            <span class="attestation-number">№ __________</span>
+            <span class="attestation-date">Дата __________</span>
+          </div>
+
+          <div class="form-semester-line">
+            <span class="attestation-form">${attestationFormText}</span>
+            <span class="semester-text">Семестр ${romanSemester}</span>
+          </div>
+
+          <div class="small-text">Вид промежуточной аттестации: экзамен, зачет, дифференцированный зачет</div>
+
+          <div class="normal-text"><u>${teacherName}</u></div>
+          <div class="small-text">Фамилия И.О. преподавателя, проводящего аттестацию</div>
+
+          <div class="normal-text">Дисциплина <u>${subjectName}</u></div>
+          <div class="small-text">(МДК, учебная или производственная практика)</div>
+
+          <div class="normal-text">Специальность <u>${specialty}</u></div>
+          <div class="small-text">Код, наименование</div>
+
+          <div class="course-group">Курс ${course} Группа ${groupName}</div>
+
+          <table class="attestation-table" cellspacing="0" cellpadding="0">
+            <thead>
+              <tr>
+                <th rowspan="2" style="width:6%;">№ п/п</th>
+                <th rowspan="2" style="width:24%;">Ф.И.О.</th>
+                <th rowspan="2" style="width:14%;">Отметка о допуске</th>
+                <th rowspan="2" style="width:8%;">Оценка</th>
+                <th rowspan="2" style="width:14%;">Подпись преподавателя</th>
+                <th colspan="3" style="text-align:center; width:34%;">Пересдача</th>
+              </tr>
+              <tr>
+                <th style="width:11%;">Оценка</th>
+                <th style="width:11%;">Дата</th>
+                <th style="width:12%;">Подпись ответств. лица</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${studentRows}
+            </tbody>
+          </table>
+
+          <div class="footer-note">
+            * Оценки проставляются цифрами и в скобках прописью
+          </div>
+
+          <div class="signature-date-container">
+            <div class="date-field">«__________» ______________20__г.</div>
+            <div class="grades-summary">
+              <div class="grades-line"><span>Итого оценок:</span><span>5 __________</span></div>
+              <div class="grades-line"><span></span><span>4 __________</span></div>
+              <div class="grades-line"><span></span><span>3 __________</span></div>
+              <div class="grades-line"><span></span><span>2 __________</span></div>
+              <div class="grades-line"><span></span><span>1 __________</span></div>
+              <div class="grades-line"><span></span><span>Не аттестовано __________</span></div>
+            </div>
+          </div>
+
+          <div class="teacher-signature-line">
+            <span>Подпись преподавателя ________________________</span>
+          </div>
+
+          <div class="chief-signature">
+            <span>Зам. директора по УМ и ВР/ зав.уч.частью /зав.отделением ____________ /Голубева Г.А.</span>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+
+    printDocument.close();
+
+    printFrame.contentWindow?.focus();
+    printFrame.contentWindow?.print();
+
+    setTimeout(() => {
+      document.body.removeChild(printFrame);
+    }, 1000);
+  };
+
   if (loading) {
     return (
       <div className="sas-loading-container">
@@ -147,8 +514,26 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
   return (
     <div className="sas-container">
       <div className="sas-header">
-        <h2>Аттестационная ведомость</h2>
-        <p className="sas-subtitle">Формирование документов для промежуточной аттестации</p>
+        <div className="sas-header-left">
+          <h2>Аттестационная ведомость</h2>
+          <p className="sas-subtitle">Формирование документов для аттестации студентов</p>
+        </div>
+        <div className="sas-actions">
+          <button 
+            className="sas-export-btn"
+            onClick={handleExport}
+            disabled={exporting || students.length === 0}
+          >
+            {exporting ? 'Формирование документа...' : 'Сохранить DOCX'}
+          </button>
+          <button 
+            className="sas-print-btn"
+            onClick={handlePrint}
+            disabled={students.length === 0}
+          >
+            Печать
+          </button>
+        </div>
       </div>
 
       <div className="sas-form">
@@ -254,16 +639,6 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="sas-actions">
-          <button 
-            className="sas-export-btn"
-            onClick={handleExport}
-            disabled={exporting || students.length === 0}
-          >
-            {exporting ? 'Формирование документа...' : 'Сформировать ведомость'}
-          </button>
         </div>
       </div>
     </div>

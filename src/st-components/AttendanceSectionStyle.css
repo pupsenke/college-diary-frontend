@@ -7,7 +7,7 @@ body.at-modal-open {
 
 /* Основные стили */
 .at-attendance-section {
-  min-height: 100vh;
+  min-height: 50vh;
   background: white;
   font-family: 'Montserrat', sans-serif !important;
   color: #1f2937;
@@ -1178,5 +1178,133 @@ body.at-modal-open {
   .at-headman-icon {
     width: 20px;
     height: 20px;
+  }
+}
+
+
+
+/* ===== ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ ДЕТАЛЬНОЙ ИНФОРМАЦИИ О ПРЕДМЕТЕ ===== */
+
+.at-attendance-timeline {
+  margin-top: 30px;
+}
+
+/* Сетка для отображения статусов */
+.at-attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Карточка каждого занятия */
+.at-attendance-grid-item {
+  background: white;
+  border-radius: 16px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.at-attendance-grid-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 47, 167, 0.2);
+}
+
+/* Кружок со статусом */
+.at-attendance-grid-status {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.at-attendance-grid-item:hover .at-attendance-grid-status {
+  transform: scale(1.05);
+}
+
+.at-status-letter {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+}
+
+/* Дата занятия */
+.at-attendance-grid-date {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 8px;
+  word-break: break-word;
+}
+
+/* Иконка комментария */
+.at-attendance-grid-comment {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 24px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  color: #f59e0b;
+  font-weight: 500;
+
+}
+
+.at-attendance-grid-comment:hover {
+  opacity: 1;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .at-attendance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .at-attendance-grid-status {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .at-status-letter {
+    font-size: 22px;
+  }
+  
+  .at-attendance-grid-date {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .at-attendance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+    padding: 12px;
+  }
+  
+  .at-attendance-grid-status {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .at-status-letter {
+    font-size: 20px;
   }
 }

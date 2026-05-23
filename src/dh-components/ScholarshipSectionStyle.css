@@ -661,23 +661,20 @@
 }
 
 .schs-export-btn {
-  padding: 10px 24px;
-  background: white;
-  color: #002FA7;
-  border: 1px solid #002FA7;
+  padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 14px;
+  border: 1px solid #8aa3c4b8;
+    background: white;
+  color: #002FA7;
+  justify-content: end;
 }
 
 .schs-export-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0, 47, 167, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Категории студентов */
@@ -723,7 +720,7 @@
   font-size: 20px;
 }
 
-.category-name {
+.schs-category-name {
   flex: 1;
   font-size: 13px;
 }
@@ -1097,4 +1094,27 @@
   .grade-stat-label {
     font-size: 10px;
   }
+}
+
+
+.schs-doc-buttons {
+    display: flex;
+  gap: 8px;
+}
+
+.schs-print-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: 1px solid #8aa3c4b8;
+    background: white;
+  color: #002FA7;
+  margin-left: 8px;
+}
+
+.schs-print-btn:hover {
+  transform: translateY(-1px);
 }

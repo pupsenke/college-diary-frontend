@@ -605,8 +605,11 @@ const getStudentAttendancePercent = (studentId: number): number => {
   if (attendanceData.length > 0 && attendanceDates.length > 0) {
     const studentAttendances = attendanceData.filter(a => a.studentId === studentId);
     if (studentAttendances.length === 0) return -1;
+    
     const presentCount = studentAttendances.filter(a => a.status === 'п').length;
-    return (presentCount / studentAttendances.length) * 100;
+    const totalLessons = studentAttendances.length;
+    
+    return (presentCount / totalLessons) * 100;
   }
   return -1;
 };
@@ -651,17 +654,19 @@ const getStudentAttendancePercent = (studentId: number): number => {
   const displayedStudents = showAllStudents ? filteredStudents : filteredStudents.slice(0, 5);
 
   // Получаем уникальные предметы для выбора
-  const uniqueSubjects = subjectsWithTeachers.reduce((acc: SubjectTeacher[], item: SubjectTeacher) => {
-    if (!acc.find(s => s.subjectId === item.subjectId)) {
-      acc.push(item);
-    }
-    return acc;
-  }, []);
+  const uniqueSubjects = subjectsWithTeachers
+    .reduce((acc: SubjectTeacher[], item: SubjectTeacher) => {
+      if (!acc.find(s => s.subjectId === item.subjectId)) {
+        acc.push(item);
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => a.subjectName.localeCompare(b.subjectName, 'ru'));
 
   // Получаем преподавателей для выбранного предмета
-  const teachersForSubject = subjectsWithTeachers.filter(
-    s => s.subjectId === selectedSubjectTeacher?.subjectId
-  );
+  const teachersForSubject = [...subjectsWithTeachers
+  .filter(s => s.subjectId === selectedSubjectTeacher?.subjectId)
+].sort((a, b) => a.teacherLastName.localeCompare(b.teacherLastName, 'ru'));
 
   const handleSubjectChange = (subjectTeacher: SubjectTeacher | null) => {
     setSelectedSubjectTeacher(subjectTeacher);
@@ -795,18 +800,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
                     <div className="dhm-detail-label">Год поступления</div>
                     <div className="dhm-detail-value">{groupInfo.admissionYear}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Метрики с заглушками 0 */}
-              <div className="dhm-group-metrics">
-                <div className="dhm-metric-card-small">
-                  <div className="dhm-metric-label">Средний балл группы</div>
-                  <div className="dhm-metric-value">4.2</div>
-                </div>
-                <div className="dhm-metric-card-small">
-                  <div className="dhm-metric-label">Посещаемость группы</div>
-                  <div className="dhm-metric-value">72.6%</div>
                 </div>
               </div>
 
@@ -1015,20 +1008,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
                             })}
                           </tbody>
                         </table>
-                      </div>
-
-                      <div className="dhm-group-average-footer">
-                        <div className="dhm-group-average">
-                          <div className="dhm-average-label">Средний балл группы</div>
-                          <div
-                            className="dhm-average-value demo"
-                            style={{
-                              backgroundColor: getGradeColor(groupAverage || null)
-                            }}
-                          >
-                            {groupAverage > 0 ? groupAverage.toFixed(2) : '—'}
-                          </div>
-                        </div>
                       </div>
                     </>
                   )}
@@ -1240,28 +1219,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
                             })}
                           </tbody>
                         </table>
-                      </div>
-                      
-                      <div className="dhm-group-average-footer">
-                        <div className="dhm-group-average">
-                          <div className="dhm-average-label">Общая посещаемость группы</div>
-                          <div
-                            className="dhm-average-value demo"
-                            style={{
-                              backgroundColor: (() => {
-                                const percent = getGroupAttendancePercent();
-                                if (percent === 0) return '#d1d5db';
-                                if (percent >= 90) return '#2cbb00';
-                                if (percent >= 75) return '#a5db28';
-                                if (percent >= 60) return '#f59e0b';
-                                return '#d1d5db';
-                              })(),
-                              color: 'white'
-                            }}
-                          >
-                            {getGroupAttendancePercent().toFixed(1)}%
-                          </div>
-                        </div>
                       </div>
                     </>
                   )}

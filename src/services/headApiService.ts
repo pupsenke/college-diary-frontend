@@ -182,6 +182,12 @@ export interface ScholarshipCategory {
   students: string[];
 }
 
+// Интерфейс для общей статистики студентов
+export interface OverallStats {
+  averageGrade: number;
+  attendancePercentage: number;
+}
+
 export const headApiService = {
   // Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
@@ -1306,6 +1312,28 @@ export const headApiService = {
     } catch (error) {
       console.error('Ошибка при получении студентов по категориям стипендии:', error);
       throw error;
+    }
+  },
+  // Получение общей статистики по всем студентам (средний балл и посещаемость)
+  async getOverallStats(): Promise<OverallStats> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/students/overall-stats`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка получения общей статистики: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Ошибка при получении общей статистики студентов:', error);
+      // Возвращаем значения по умолчанию при ошибке
+      return { averageGrade: 0, attendancePercentage: 0 };
     }
   }
 };

@@ -77,7 +77,7 @@ body.dh-theme-light .dhp-container {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 850px;
+  height: 925px;
   margin-bottom: 15px;
 }
 
@@ -1127,6 +1127,8 @@ body.dh-theme-light .dhp-container {
   font-weight: 700;
   color: #002FA7;
   margin: 0 0 16px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .dhp-department-stats {
@@ -1213,6 +1215,7 @@ body.dh-theme-light .dhp-container {
   font-size: 13px;
   font-weight: 600;
   color: #002FA7;
+  
 }
 
 .dhp-metric-value {
@@ -1658,6 +1661,7 @@ body.dh-theme-light .dhp-container {
 
 .dhp-left-column {
   width: 400px;
+  height: 900px;
 }
 
 
@@ -1754,7 +1758,7 @@ body.dh-theme-light .dhp-container {
 .dhp-main-layout {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 130px);
   overflow: hidden;
 }
 
@@ -1815,5 +1819,123 @@ body.dh-theme-light .dhp-container {
 
   .dhp-personal-cabinet-icon {
     font-size: 18px;
+  }
+}
+
+
+
+
+
+/* Быстрые ссылки/кнопки */
+.dhp-quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dhp-quick-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.dhp-quick-link-btn:hover {
+  transform: translateX(4px);
+  border-color: #002FA7;
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.1);
+  background: #f8fafc;
+}
+
+/* Активное состояние для кнопок */
+.dhp-quick-link-btn.active {
+  background: #f0f7ff;
+  border-color: #002FA7;
+  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.1);
+}
+
+.dhp-quick-link-btn.active .dhp-quick-link-title {
+  color: #002FA7;
+}
+
+.dhp-quick-link-btn.active .dhp-quick-link-arrow {
+  color: #002FA7;
+  transform: translateX(4px);
+}
+
+.dhp-quick-link-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.dhp-quick-link-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dhp-quick-link-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+.dhp-quick-link-description {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dhp-quick-link-arrow {
+  font-size: 20px;
+  color: #64748b;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.dhp-quick-link-btn:hover .dhp-quick-link-arrow {
+  transform: translateX(4px);
+  color: #002FA7;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .dhp-quick-link-btn {
+    padding: 12px 16px;
+  }
+  
+  .dhp-quick-link-icon {
+    font-size: 28px;
+  }
+  
+  .dhp-quick-link-title {
+    font-size: 14px;
+  }
+  
+  .dhp-quick-link-description {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dhp-quick-link-btn {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .dhp-quick-link-icon {
+    font-size: 24px;
+  }
+  
+  .dhp-quick-link-arrow {
+    margin-left: auto;
   }
 }

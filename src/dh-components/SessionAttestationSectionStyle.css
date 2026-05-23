@@ -150,40 +150,54 @@
 }
 
 /* Кнопка экспорта */
-.sas-actions {
+.sas-header {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.sas-export-btn {
-  padding: 10px 24px;
-  background: white;
+.sas-header-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.sas-header-left h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
   color: #002FA7;
-  border: 1px solid #002FA7;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+}
+
+.sas-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.sas-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
-.sas-export-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0, 47, 167, 0.3);
-  background: #002FA7;
-  color: white;
+.sas-export-btn, .sas-print-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 14px;
+  border: 1px solid #8aa3c4b8;
+  background: white;
+  color: #002FA7;
+  white-space: nowrap;
+  margin-left: 8px;
 }
 
-.sas-export-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 /* Загрузка */
 .sas-loading-container {

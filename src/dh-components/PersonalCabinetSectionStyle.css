@@ -3,22 +3,19 @@
 /* Основные стили секции */
 .dh-pc-section {
   background: transparent;
-  padding: 0;
+  padding: 20;
   overflow: hidden;
 }
 
 .dh-pc-personal-section {
   width: 100%;
+  padding: 20px;
 }
 
 /* Заголовок секции */
 .dh-pc-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 0 8px 24px 8px;
+  margin-bottom: 20px;
+  margin-left: 4px;
 }
 
 .dh-pc-section-title {
