@@ -529,7 +529,7 @@ const PersonalCabinetComponent: React.FC = () => {
               )}
             </div>
             <div className="pc-info-item">
-              <label>Телефон</label>
+              <label>Немер телефона</label>
               {isEditing && isStudent ? (
                 <input
                   type="tel"
@@ -550,6 +550,48 @@ const PersonalCabinetComponent: React.FC = () => {
                   onChange={(e) => handleChange('address', e.target.value)}
                   className="pc-textarea"
                   placeholder="Введите адрес проживания"
+                  rows={3}
+                />
+              ) : (
+                <span>{userData.address || 'Не указано'}</span>
+              )}
+            </div>
+            <div className="pc-info-item">
+              <label>СНИЛС</label>
+              {isEditing && isStudent ? (
+                <textarea
+                  value={userData.address}
+                  onChange={(e) => handleChange('address', e.target.value)}
+                  className="pc-textarea"
+                  placeholder="Введите СНИЛС"
+                  rows={3}
+                />
+              ) : (
+                <span>{userData.address || 'Не указано'}</span>
+              )}
+            </div>
+            <div className="pc-info-item">
+              <label>ФИО родителя</label>
+              {isEditing && isStudent ? (
+                <textarea
+                  value={userData.address}
+                  onChange={(e) => handleChange('address', e.target.value)}
+                  className="pc-textarea"
+                  placeholder="Введите СНИЛС"
+                  rows={3}
+                />
+              ) : (
+                <span>{userData.address || 'Не указано'}</span>
+              )}
+            </div>
+            <div className="pc-info-item">
+              <label>Номер телефона родителя</label>
+              {isEditing && isStudent ? (
+                <textarea
+                  value={userData.address}
+                  onChange={(e) => handleChange('address', e.target.value)}
+                  className="pc-textarea"
+                  placeholder="Введите СНИЛС"
                   rows={3}
                 />
               ) : (

@@ -66,12 +66,20 @@ interface SummaryStatementSectionProps {
 
 interface AttestationFormData {
   attestationForm: string;
-  teacherName: string;
-  headName: string;
+  teacherName: string; // Преподаватель, ведущий дисциплину
+  headName: string; // Заведующий отделением
   courseworkTopic: string;
   attestationNumber: string;
   attestationDate: string;
+  // Поля для комиссии
+  commissionTeacher1: string; // Член комиссии №1 (председатель)
+  commissionTeacher2: string; // Член комиссии №2
+  commissionTeacher3: string; // Член комиссии №3 (опционально)
+  commissionDeadline: string;
+  regularDeadline: string;
 }
+// Тип направления
+type AttestationType = 'regular' | 'commission';
 
 export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = ({ groupId, onClose }) => {
   const [groupStatement, setGroupStatement] = useState<GroupStatement | null>(null);
@@ -82,6 +90,8 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
   const [selectedNAStudent, setSelectedNAStudent] = useState<StudentGrade | null>(null);
   const [selectedNASubject, setSelectedNASubject] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  // Активная вкладка в модальном окне
+  const [activeAttestationTab, setActiveAttestationTab] = useState<AttestationType>('regular');
 
   // Фильтры год и семестр
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -94,7 +104,12 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     headName: 'Голубева Г.А.',
     courseworkTopic: '',
     attestationNumber: '',
-    attestationDate: new Date().toISOString().split('T')[0]
+    attestationDate: new Date().toISOString().split('T')[0],
+    commissionTeacher1: '',
+    commissionTeacher2: '',
+    commissionTeacher3: '',
+    commissionDeadline: '',
+    regularDeadline: ''
   });
 
   const attestationForms = ['зачет', 'дифф. зачет', 'экзамен', 'курсовой проект'];
@@ -203,15 +218,19 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       worksheet.getCell(`A${titleRow + 2}`).font = { size: 11, name: 'Times New Roman' };
       worksheet.getCell(`A${titleRow + 2}`).alignment = { horizontal: 'left', vertical: 'middle' };
 
-      // === 2. ШАПКА ТАБЛИЦЫ - ПЕРВАЯ СТРОКА (строка 12) ===
+            // === 2. ШАПКА ТАБЛИЦЫ - ПЕРВАЯ СТРОКА (строка 12) ===
       const headerRow1 = titleRow + 4;
       const firstHeaderRow = worksheet.getRow(headerRow1);
       firstHeaderRow.height = 40;
 
+      // Объединяем A12:A13 и B12:B13 (вертикально)
+      worksheet.mergeCells(headerRow1, 1, headerRow1 + 1, 1);
+      worksheet.mergeCells(headerRow1, 2, headerRow1 + 1, 2);
+
       firstHeaderRow.getCell(1).value = '№ п/п';
       firstHeaderRow.getCell(2).value = 'Фамилия, имя, отчество студента';
 
-      // Объединение ячеек для дисциплин
+      // Объединение ячеек для дисциплин (только по горизонтали в первой строке)
       worksheet.mergeCells(headerRow1, 3, headerRow1, 2 + subjectCount);
       firstHeaderRow.getCell(3).value = 'Наименование дисциплины (МДК)/ форма аттестации';
 
@@ -237,9 +256,9 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       const secondHeaderRow = worksheet.getRow(headerRow2);
       secondHeaderRow.height = 200;
 
-      // A13 и B13 - без голубого фона
+      // A13 и B13 уже объединены с A12 и B12, поэтому не нужно их отдельно обрабатывать
+      // Но нужно добавить границы для нижней части объединенных ячеек
       const cellA13 = secondHeaderRow.getCell(1);
-      cellA13.value = '';
       cellA13.border = {
         top: { style: 'thin', color: { argb: 'FF000000' } },
         left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -248,7 +267,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       };
 
       const cellB13 = secondHeaderRow.getCell(2);
-      cellB13.value = '';
       cellB13.border = {
         top: { style: 'thin', color: { argb: 'FF000000' } },
         left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -313,7 +331,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
 
       worksheet.mergeCells(headerRow1, totalAbsentCol, headerRow2, totalAbsentCol);
       const totalAbsentHeaderCell = worksheet.getCell(headerRow1, totalAbsentCol);
-      totalAbsentHeaderCell.value = 'Пропуски\nзанятий\nвсего';
+      totalAbsentHeaderCell.value = 'Пропуски\nзанятий\nвсего / ч.';
       totalAbsentHeaderCell.alignment = {
         horizontal: 'center',
         vertical: 'middle',
@@ -330,7 +348,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
 
       worksheet.mergeCells(headerRow1, unjustifiedCol, headerRow2, unjustifiedCol);
       const unjustifiedHeaderCell = worksheet.getCell(headerRow1, unjustifiedCol);
-      unjustifiedHeaderCell.value = 'в т. ч. по\nнеуважит.\nпричинам';
+      unjustifiedHeaderCell.value = 'в т. ч. по\nнеуважит.\nпричинам / ч.';
       unjustifiedHeaderCell.alignment = {
         horizontal: 'center',
         vertical: 'middle',
@@ -480,7 +498,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
         if (rowFill) row.getCell(behaviorCol).fill = rowFill;
 
         // Пропуски всего
-        row.getCell(totalAbsentCol).value = student.absencesTotal;
+        row.getCell(totalAbsentCol).value = student.absencesTotal * 2;
         row.getCell(totalAbsentCol).alignment = { horizontal: 'center', vertical: 'middle' };
         row.getCell(totalAbsentCol).font = { size: 10, name: 'Times New Roman' };
         row.getCell(totalAbsentCol).border = {
@@ -492,7 +510,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
         if (rowFill) row.getCell(totalAbsentCol).fill = rowFill;
 
         // Пропуски неуважительные
-        row.getCell(unjustifiedCol).value = student.absencesUnjustified;
+        row.getCell(unjustifiedCol).value = student.absencesUnjustified * 2;
         row.getCell(unjustifiedCol).alignment = { horizontal: 'center', vertical: 'middle' };
         row.getCell(unjustifiedCol).font = { size: 10, name: 'Times New Roman' };
         row.getCell(unjustifiedCol).border = {
@@ -668,8 +686,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       const group = groups.find(g => g.id === groupId);
       if (!group) throw new Error('Группа не найдена');
       
-      // Если API поддерживает параметры года и семестра:
-      // const reportData = await headApiService.getGroupReport(groupId, selectedYear, selectedSemester);
       const reportData = await headApiService.getGroupReport(groupId);
       
       if (!reportData || !reportData.subjectNames || !reportData.studentsData || !reportData.studentsData[0]) {
@@ -764,8 +780,14 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       headName: 'Голубева Г.А.',
       courseworkTopic: '',
       attestationNumber: '',
-      attestationDate: new Date().toISOString().split('T')[0]
+      attestationDate: new Date().toISOString().split('T')[0],
+      commissionTeacher1: '',
+      commissionTeacher2: '',
+      commissionTeacher3: '',
+      commissionDeadline: '',
+      regularDeadline: '' 
     });
+    setActiveAttestationTab('regular');
     setIsNAModalOpen(true);
   };
 
@@ -775,13 +797,15 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     return { day: date.getDate(), month: months[date.getMonth()], year: date.getFullYear() };
   };
 
-  const generateAttestationDocument = async () => {
+  // Генерация обычного направления
+  const generateRegularAttestationDocument = async () => {
     if (!selectedNAStudent || !groupStatement || !selectedNASubject) return;
     setIsGenerating(true);
     try {
       const subjectName = selectedNASubject.split(',')[0];
       const specialtyMatch = groupStatement.specialty.match(/(\d+\.\d+\.\d+)\s+(.+)/);
       const currentDate = formatDateForDocument(attestationFormData.attestationDate);
+      
       const templateData = {
         attestationForm: attestationFormData.attestationForm,
         semester: groupStatement.semester,
@@ -797,11 +821,27 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
         attestationNumber: attestationFormData.attestationNumber || '_______',
         attestationDay: currentDate.day,
         attestationMonth: currentDate.month,
-        attestationYear: currentDate.year
+        attestationYear: currentDate.year,
+        // Добавляем срок сдачи для обычной аттестации
+        regularDeadline: attestationFormData.regularDeadline || '_________________________'
       };
+      
+      // Проверяем существование шаблона
       const response = await fetch('/templates/attestation_direction_template.docx');
-      if (!response.ok) throw new Error('Ошибка загрузки шаблона');
+      if (!response.ok) {
+        throw new Error(`Шаблон не найден: ${response.status}`);
+      }
+      
       const arrayBuffer = await response.arrayBuffer();
+      
+      // Проверяем, что файл действительно является zip архивом
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B;
+      
+      if (!isZip) {
+        throw new Error('Файл шаблона поврежден или имеет неверный формат');
+      }
+      
       const zip = new PizZip(arrayBuffer);
       const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
       doc.render(templateData);
@@ -830,9 +870,107 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       setIsNAModalOpen(false);
     } catch (error) {
       console.error('Ошибка создания документа:', error);
-      setError('Не удалось создать документ направления на аттестацию');
+      setError(`Не удалось создать документ направления на аттестацию: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Генерация направления на аттестацию комиссией
+  const generateCommissionAttestationDocument = async () => {
+    if (!selectedNAStudent || !groupStatement || !selectedNASubject) return;
+    setIsGenerating(true);
+    try {
+      const subjectName = selectedNASubject.split(',')[0];
+      const specialtyMatch = groupStatement.specialty.match(/(\d+\.\d+\.\d+)\s+(.+)/);
+      const currentDate = formatDateForDocument(attestationFormData.attestationDate);
+      
+      // Формируем строку с комиссией (только заполненные члены)
+      const commissionMembers = [
+        attestationFormData.commissionTeacher1,
+        attestationFormData.commissionTeacher2,
+        attestationFormData.commissionTeacher3
+      ].filter(name => name && name.trim() !== '');
+      
+      const commissionList = commissionMembers.length > 0 
+        ? commissionMembers.map((name, idx) => `${idx + 1}. ${name}`).join('\n')
+        : '1. _________________________';
+      
+      const templateData = {
+        attestationForm: attestationFormData.attestationForm,
+        semester: groupStatement.semester,
+        studentName: selectedNAStudent.name,
+        specialityCode: specialtyMatch ? specialtyMatch[1] : '',
+        specialityName: specialtyMatch ? specialtyMatch[2] : groupStatement.specialty,
+        course: groupStatement.course,
+        group: groupStatement.groupNumber,
+        subject: subjectName,
+        courseworkTopic: attestationFormData.courseworkTopic || '_________________________',
+        headName: attestationFormData.headName,
+        attestationNumber: attestationFormData.attestationNumber || '_______',
+        attestationDay: currentDate.day,
+        attestationMonth: currentDate.month,
+        attestationYear: currentDate.year,
+        commissionMembers: commissionList,
+        commissionDeadline: attestationFormData.commissionDeadline || '_________________________',
+        teacherName: attestationFormData.teacherName || '_________________________' // Преподаватель, ведущий дисциплину
+      };
+      
+      // Проверяем существование шаблона для комиссии
+      const response = await fetch('/templates/attestation_commission_template.docx');
+      if (!response.ok) {
+        throw new Error(`Шаблон для комиссии не найден: ${response.status}. Создайте файл attestation_commission_template.docx в папке public/templates/`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Проверяем, что файл действительно является zip архивом
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B;
+      
+      if (!isZip) {
+        throw new Error('Файл шаблона для комиссии поврежден или имеет неверный формат');
+      }
+      
+      const zip = new PizZip(arrayBuffer);
+      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      doc.render(templateData);
+      const blob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      saveAs(blob, `Направление_на_аттестацию_комиссией_${selectedNAStudent.name.replace(/\s+/g, '_')}_${subjectName}.docx`);
+      
+      const updatedGroup = { ...groupStatement };
+      const student = updatedGroup.students.find(s => s.id === selectedNAStudent.id);
+      if (student) {
+        student.grades.set(selectedNASubject, '');
+        if (!student.naSubjects) student.naSubjects = new Set();
+        student.naSubjects.add(selectedNASubject);
+        let five = 0, four = 0, three = 0, sum = 0, count = 0;
+        Array.from(student.grades.values()).forEach(grade => {
+          const gradeStr = grade.toString();
+          if (gradeStr === '5') five++;
+          else if (gradeStr === '4') four++;
+          else if (gradeStr === '3') three++;
+          const num = parseFloat(gradeStr);
+          if (!isNaN(num) && num >= 2 && num <= 5) { sum += num; count++; }
+        });
+        student.gradesCount = { five, four, three };
+        student.average = count > 0 ? parseFloat((sum / count).toFixed(1)) : 0;
+      }
+      setGroupStatement(updatedGroup);
+      setIsNAModalOpen(false);
+    } catch (error) {
+      console.error('Ошибка создания документа для комиссии:', error);
+      setError(`Не удалось создать документ направления на аттестацию комиссией: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateAttestationDocument = async () => {
+    if (activeAttestationTab === 'regular') {
+      await generateRegularAttestationDocument();
+    } else {
+      await generateCommissionAttestationDocument();
     }
   };
 
@@ -861,7 +999,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     return student.naSubjects?.has(subjectKey) || false;
   };
 
-  // Обработчики фильтров
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
   };
@@ -890,7 +1027,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     <div className="dh-at-statement-wrapper" style={{ height: '100%', overflow: 'auto' }}>
       <div className="dh-at-statement-header">
         <div className="dh-at-statement-actions">
-          {/* Фильтры год и семестр */}
           <div className="dh-at-filters-left">
             <div className="dh-at-filter-group">
               <label className="dh-at-filter-label">Год:</label>
@@ -992,33 +1128,154 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
                 <div className="dh-at-stat-item"><span>Есть «3»</span><span className="dh-at-stat-value">{statistics.hasThree} чел.</span></div>
                 <div className="dh-at-stat-item"><span>н/а</span><span className="dh-at-stat-value dh-at-na-stat">{statistics.naCount} чел.</span></div>
               </div>
-            </td></tr></tfoot>
+            </td></tr>
+            </tfoot>
           </table>
         </div>
       </div>
+
+      {/* Модальное окно с вкладками */}
       {isNAModalOpen && selectedNAStudent && (
         <div className="dh-at-modal-overlay" onClick={() => setIsNAModalOpen(false)}>
-          <div className="dh-at-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="dh-at-modal-header"><h3>Направление на аттестацию</h3><button className="dh-at-modal-close" onClick={() => setIsNAModalOpen(false)}>×</button></div>
+          <div className="dh-at-modal-content dh-at-attestation-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dh-at-modal-header">
+              <h3>Направление на аттестацию</h3>
+              <button className="dh-at-modal-close" onClick={() => setIsNAModalOpen(false)}>×</button>
+            </div>
+            
+            {/* Вкладки */}
+            <div className="dh-at-attestation-tabs">
+              <button 
+                className={`dh-at-tab-btn ${activeAttestationTab === 'regular' ? 'active' : ''}`}
+                onClick={() => setActiveAttestationTab('regular')}
+              >
+                Обычная аттестация
+              </button>
+              <button 
+                className={`dh-at-tab-btn ${activeAttestationTab === 'commission' ? 'active' : ''}`}
+                onClick={() => setActiveAttestationTab('commission')}
+              >
+                Аттестация комиссией
+              </button>
+            </div>
+
             <div className="dh-at-modal-body">
-              <div className="dh-at-na-info"><p>Студент: <strong>{selectedNAStudent.name}</strong></p><p>Предмет: <strong>{selectedNASubject.split(',')[0]}</strong></p></div>
-              <div className="dh-at-form-group"><label>Форма аттестации *</label>
-                <select value={attestationFormData.attestationForm} onChange={(e) => setAttestationFormData({...attestationFormData, attestationForm: e.target.value})} className="dh-at-input">
+              <div className="dh-at-na-info">
+                <p>Студент: <strong>{selectedNAStudent.name}</strong></p>
+                <p>Предмет: <strong>{selectedNASubject.split(',')[0]}</strong></p>
+              </div>
+
+              {/* Общие поля для обеих вкладок */}
+              <div className="dh-at-form-group">
+                <label>Форма аттестации *</label>
+                <select 
+                  value={attestationFormData.attestationForm} 
+                  onChange={(e) => setAttestationFormData({...attestationFormData, attestationForm: e.target.value})} 
+                  className="dh-at-input"
+                >
                   {attestationForms.map(form => <option key={form} value={form}>{form}</option>)}
                 </select>
               </div>
-              <div className="dh-at-form-group"><label>Преподаватель (ФИО) *</label>
-                <input type="text" value={attestationFormData.teacherName} onChange={(e) => setAttestationFormData({...attestationFormData, teacherName: e.target.value})} className="dh-at-input" placeholder="Введите ФИО преподавателя" required />
-              </div>
-              <div className="dh-at-form-group"><label>Заведующий отделением *</label>
-                <select value={attestationFormData.headName} onChange={(e) => setAttestationFormData({...attestationFormData, headName: e.target.value})} className="dh-at-input">
+
+              <div className="dh-at-form-group">
+                <label>Заведующий отделением *</label>
+                <select 
+                  value={attestationFormData.headName} 
+                  onChange={(e) => setAttestationFormData({...attestationFormData, headName: e.target.value})} 
+                  className="dh-at-input"
+                >
                   {headOptions.map(head => <option key={head} value={head}>{head}</option>)}
                 </select>
               </div>
+
+              {/* Поля для обычной аттестации */}
+              {activeAttestationTab === 'regular' && (
+                <>
+                  <div className="dh-at-form-group">
+                    <label>Преподаватель (ФИО) *</label>
+                    <input 
+                      type="text" 
+                      value={attestationFormData.teacherName} 
+                      onChange={(e) => setAttestationFormData({...attestationFormData, teacherName: e.target.value})} 
+                      className="dh-at-input" 
+                      placeholder="Введите ФИО преподавателя" 
+                      required 
+                    />
+                  </div>
+
+                  {/* НОВОЕ ПОЛЕ - Срок сдачи */}
+                  <div className="dh-at-form-group">
+                    <label>Срок сдачи (до)</label>
+                    <input 
+                      type="text" 
+                      value={attestationFormData.regularDeadline} 
+                      onChange={(e) => setAttestationFormData({...attestationFormData, regularDeadline: e.target.value})} 
+                      className="dh-at-input" 
+                      placeholder="Например: 25.12.2024" 
+                    />
+                  </div>
+
+                  {attestationFormData.attestationForm === 'курсовой проект' && (
+                    <div className="dh-at-form-group">
+                      <label>Тема курсового проекта</label>
+                      <textarea 
+                        value={attestationFormData.courseworkTopic} 
+                        onChange={(e) => setAttestationFormData({...attestationFormData, courseworkTopic: e.target.value})} 
+                        className="dh-at-textarea" 
+                        placeholder="Введите тему курсового проекта" 
+                        rows={2}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Поля для аттестации комиссией */}
+              {activeAttestationTab === 'commission' && (
+                <>
+                  <div className="dh-at-form-group">
+                    <label>Преподаватель, который ведет дисциплину *</label>
+                    <input 
+                      type="text" 
+                      value={attestationFormData.teacherName} 
+                      onChange={(e) => setAttestationFormData({...attestationFormData, teacherName: e.target.value})} 
+                      className="dh-at-input" 
+                      placeholder="Введите ФИО преподавателя" 
+                      required 
+                    />
+                  </div>
+                  <div className="dh-at-form-group">
+                    <label>Председатель комиссии *</label>
+                    <input 
+                      type="text" 
+                      value={attestationFormData.commissionTeacher2} 
+                      onChange={(e) => setAttestationFormData({...attestationFormData, commissionTeacher2: e.target.value})} 
+                      className="dh-at-input" 
+                      placeholder="Введите ФИО члена комиссии" 
+                    />
+                  </div>
+
+                  <div className="dh-at-form-group">
+                    <label>Срок аттестации (до)</label>
+                    <input 
+                      type="text" 
+                      value={attestationFormData.commissionDeadline} 
+                      onChange={(e) => setAttestationFormData({...attestationFormData, commissionDeadline: e.target.value})} 
+                      className="dh-at-input" 
+                      placeholder="Например: 25.12.2024" 
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
             <div className="dh-at-modal-footer">
               <button className="dh-at-btn-secondary" onClick={() => setIsNAModalOpen(false)}>Отмена</button>
-              <button className="dh-at-btn-primary" onClick={generateAttestationDocument} disabled={isGenerating || !attestationFormData.teacherName}>
+              <button 
+                className="dh-at-btn-primary" 
+                onClick={generateAttestationDocument} 
+                disabled={isGenerating || (activeAttestationTab === 'regular' && !attestationFormData.teacherName) || (activeAttestationTab === 'commission' && !attestationFormData.teacherName)}
+              >
                 {isGenerating ? 'Формирование...' : 'Создать направление'}
               </button>
             </div>

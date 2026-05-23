@@ -19,6 +19,7 @@ interface UserWithRoles {
   lastNameGenitive?: string | null;
   nameGenitive?: string | null;
   patronymicGenitive?: string | null;
+  isLeader?: boolean;
   roles: Array<{
     type: 'student' | 'teacher' | 'metodist' | 'departmentHead' | 'social';
     position?: string;
@@ -27,6 +28,7 @@ interface UserWithRoles {
     numberGroup?: number;
     department?: string;
     office?: string;
+    isLeader?: boolean;
   }>;
 }
 
@@ -241,7 +243,8 @@ export const LoginPage: React.FC = () => {
           roles.push({
             type: 'student',
             idGroup: studentData.idGroup,
-            numberGroup: numberGroup
+            numberGroup: numberGroup,
+            isLeader: studentData.isLeader || false
           });
 
           userBaseData = {
@@ -256,7 +259,8 @@ export const LoginPage: React.FC = () => {
             address: studentData.address || "",
             lastNameGenitive: studentData.lastNameGenitive || null,
             nameGenitive: studentData.nameGenitive || null,
-            patronymicGenitive: studentData.patronymicGenitive || null
+            patronymicGenitive: studentData.patronymicGenitive || null,
+            isLeader: studentData.isLeader || false 
           };
         }
       } catch (studentError) {
@@ -349,7 +353,8 @@ export const LoginPage: React.FC = () => {
               userType: 'student' as const,
               lastNameGenitive: userBaseData.lastNameGenitive || userBaseData.lastName || null,
               nameGenitive: userBaseData.nameGenitive || userBaseData.name || null,
-              patronymicGenitive: userBaseData.patronymicGenitive || userBaseData.patronymic || null
+              patronymicGenitive: userBaseData.patronymicGenitive || userBaseData.patronymic || null,
+              isLeader: selectedRole.isLeader || false 
             };
           } else {
             userData = {
