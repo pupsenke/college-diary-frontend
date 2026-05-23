@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './CuratorSection.css';
 import { CuratorGroupDetails } from './CuratorGroupDetails';
+import { teacherApiService, CuratorGroupStats, StudentPerformance, GroupInfo, GroupLeader, StudentInfo, SocialCategory, GroupSocialStats } from '../services/teacherApiService';
 
 interface Student {
   id: number;
@@ -17,10 +18,12 @@ interface Student {
   education?: string;
   phone?: string;
   email?: string;
+  birthDate?: string;
 }
 
 interface SocialPortraitItem {
   category: string;
+  categoryId: number;
   students: {
     id: number;
     name: string;
@@ -38,12 +41,14 @@ interface Group {
   monitor: {
     name: string;
     appointedDate: string;
-    phone: string;
-    email: string;
+    phones: string[];
+    emails: string[];
   };
   students: Student[];
   socialPortrait: SocialPortraitItem[];
 }
+
+let socialCategoriesCache: SocialCategory[] | null = null;
 
 export const CuratorSection: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
@@ -52,80 +57,250 @@ export const CuratorSection: React.FC = () => {
   const [courseFilter, setCourseFilter] = useState('all');
   const [sortBy, setSortBy] = useState('group');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCacheWarning, setShowCacheWarning] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
   
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [showMonitorModal, setShowMonitorModal] = useState(false);
-  const [showSocialModal, setShowSocialModal] = useState(false);
   const [selectedStudentForSocial, setSelectedStudentForSocial] = useState<Student | null>(null);
   const [socialFormData, setSocialFormData] = useState({
     category: '',
     childrenBirthYears: '',
     address: '',
-    education: ''
+    education: '',
+    phone: '',
+    email: '',
+    birthDate: ''
   });
 
-  const [groups] = useState<Group[]>([
-    {
-      id: 1,
-      number: "2992",
-      specialty: "Информационные системы и программирование",
-      course: 4,
-      studentsCount: 25,
-      averageAttendance: 94,
-      averageGrade: 4.3,
-      monitor: {
-        name: 'Шевякова Алина Ильинична',
-        appointedDate: '01.09.2023',
-        phone: '+7 (999) 123-45-67',
-        email: 'a.shew@edu.ru'
-      },
-      students: [
-        { id: 1, name: 'Шевякова Алина Ильинична', attendance: 98, math: 5.0, programming: 4.8, databases: 4.9, average: 4.9, status: 'active', address: 'ул. Мира, д. 15', education: 'Бюджет' },
-        { id: 2, name: 'Иванова Мария Сергеевна', attendance: 95, math: 4.7, programming: 4.9, databases: 4.8, average: 4.8, status: 'active', category: 'Многодетная семья', childrenBirthYears: '2018,2020', address: 'ул. Ленина, д. 5', education: 'Бюджет' },
-        { id: 3, name: 'Петров Дмитрий Иванович', attendance: 85, math: 3.8, programming: 4.2, databases: 3.9, average: 4.0, status: 'active', address: 'пр. Кочетова, д. 42', education: 'Платная' },
-        { id: 4, name: 'Сидорова Анна Владимировна', attendance: 92, math: 4.5, programming: 4.6, databases: 4.4, average: 4.5, status: 'academic', category: 'Дети-сироты', address: 'ул. Пушкина, д. 10', education: 'Бюджет' },
-        { id: 5, name: 'Козлов Игорь Николаевич', attendance: 78, math: 3.5, programming: 3.8, databases: 3.2, average: 3.5, status: 'inactive', category: 'Студенты с ОВЗ', address: 'ул. Гагарина, д. 8', education: 'Бюджет' }
-      ],
-      socialPortrait: [
-        { 
-          category: 'Дети-сироты', 
-          students: [{ id: 4, name: 'Сидорова Анна Владимировна' }] 
-        },
-        { 
-          category: 'Студенты с ОВЗ', 
-          students: [{ id: 5, name: 'Козлов Игорь Николаевич' }] 
-        },
-        { 
-          category: 'Из многодетных семей', 
-          students: [{ id: 2, name: 'Иванова Мария Сергеевна' }] 
-        }
-      ]
-    },
-    {
-      id: 2,
-      number: "4992",
-      specialty: "Информационные системы и программирование",
-      course: 2,
-      studentsCount: 26,
-      averageAttendance: 89,
-      averageGrade: 3.9,
-      monitor: {
-        name: 'Иванова Мария Сергеевна',
-        appointedDate: '01.09.2022',
-        phone: '+7 (999) 234-56-78',
-        email: 'm.ivanova@edu.ru'
-      },
-      students: [
-        { id: 6, name: 'Иванова Мария Сергеевна', attendance: 96, math: 4.9, programming: 4.8, databases: 4.7, average: 4.8, status: 'active', address: 'ул. Ленина, д. 5', education: 'Бюджет' },
-        { id: 7, name: 'Петров Дмитрий Иванович', attendance: 88, math: 4.0, programming: 4.3, databases: 4.1, average: 4.1, status: 'active', address: 'пр. Кочетова, д. 42', education: 'Платная' },
-        { id: 8, name: 'Сидорова Анна Владимировна', attendance: 90, math: 4.4, programming: 4.5, databases: 4.2, average: 4.4, status: 'active', address: 'ул. Пушкина, д. 10', education: 'Бюджет' }
-      ],
-      socialPortrait: []
+  const getCurrentUserId = (): number | null => {
+    const storedUserId = localStorage.getItem('teacher_id');
+    if (storedUserId) {
+      return parseInt(storedUserId);
     }
-  ]);
+    return null;
+  };
+
+  const fetchCuratorGroups = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const currentUserId = getCurrentUserId();
+      if (!currentUserId) {
+        setError('Не удалось определить текущего пользователя');
+        setLoading(false);
+        return;
+      }
+      
+      const curatorGroups = await teacherApiService.getCuratorGroups(currentUserId);
+      
+      if (!curatorGroups || curatorGroups.length === 0) {
+        setGroups([]);
+        setLoading(false);
+        return;
+      }
+
+    const mappedGroups: Group[] = curatorGroups.map((g: CuratorGroupStats) => ({
+      id: g.groupNumber,
+      number: g.groupNumber.toString(),
+      specialty: g.specialty,
+      course: g.course,
+      studentsCount: g.studentsCount,
+      averageAttendance: g.attendancePercentage,
+      averageGrade: g.averageGrade,
+      monitor: {
+        name: g.leadersFio || '',
+        appointedDate: '',
+        phones: [],
+        emails: []
+      },
+      students: [],
+      socialPortrait: []
+    }));
+
+      setGroups(mappedGroups);
+    } catch (err) {
+      console.error('Ошибка:', err);
+      setError('Не удалось загрузить данные');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCuratorGroups();
+  }, []);
+
+  const fetchGroupDetails = async (group: Group) => {
+    setLoading(true);
+    
+    try {
+      const groupInfo = await teacherApiService.getGroupInfoByNumber(group.number);
+      
+      if (!groupInfo) {
+        setError('Не удалось найти информацию о группе');
+        setLoading(false);
+        return;
+      }
+      
+      const realGroupId = groupInfo.id;
+      
+      const groupStats = await teacherApiService.getCuratorGroupStats(realGroupId);
+      
+      if (!groupStats) {
+        setError('Не удалось загрузить статистику группы');
+        setLoading(false);
+        return;
+      }
+      
+      const [studentsPerformance, studentsInfo, socialStats] = await Promise.all([
+        teacherApiService.getGroupStudentsPerformance(realGroupId),
+        teacherApiService.getGroupStudentsInfo(realGroupId),
+        teacherApiService.getGroupSocialStats(realGroupId)
+      ]);
+
+      const studentsDetailsPromises = studentsInfo.map(student => 
+        teacherApiService.getStudentDetails(student.id)
+      );
+      const studentsDetails = await Promise.all(studentsDetailsPromises);
+
+      let allCategories = socialCategoriesCache;
+      if (!allCategories) {
+        allCategories = await teacherApiService.getSocialCategories();
+        socialCategoriesCache = allCategories;
+      }
+
+      const socialPromises = socialStats.map(async (stat) => {
+        const category = allCategories!.find(c => c.id === stat.id);
+        if (!category) return null;
+
+        const studentsInCategory = await teacherApiService.getStudentsInSocialCategoryFormatted(
+          realGroupId, 
+          stat.id
+        );
+        
+        const uniqueStudents = Array.from(
+          new Map(studentsInCategory.map(s => [s.id, s])).values()
+        );
+
+        return {
+          category: category.name,
+          categoryId: category.id,
+          students: uniqueStudents.map(s => ({
+            id: s.id,
+            name: s.fio
+          }))
+        };
+      });
+
+      const socialPortraitItems = (await Promise.all(socialPromises))
+        .filter((item): item is SocialPortraitItem => item !== null);
+
+      const studentsMap = new Map(studentsInfo.map(s => [s.id, s]));
+      const detailsMap = new Map(studentsDetails.map(d => d ? [d.id, d] : [null, null]));
+      
+      const students: Student[] = studentsPerformance.map(perf => {
+        const info = studentsMap.get(perf.id);
+        const details = detailsMap.get(perf.id);
+        
+        return {
+          id: perf.id,
+          name: `${perf.lastName} ${perf.firstName} ${perf.patronymic || ''}`.trim(),
+          attendance: perf.attendanceCount,
+          math: perf.averageGrade,
+          programming: perf.averageGrade,
+          databases: perf.averageGrade,
+          average: perf.averageGrade,
+          status: 'active',
+          address: details?.address || info?.address || '',
+          education: details?.educationBasis || info?.educationBasis || '',
+          phone: details?.telephone || info?.telephone || '',
+          email: details?.email || info?.email || '',
+          birthDate: details?.birthDate || info?.birthDate || ''
+        };
+      });
+
+      const leaders = await teacherApiService.getGroupLeader(realGroupId);
+      
+      const leaderNames = groupStats.leadersFio?.split(/[,，、]/).map((n: string) => n.trim()).filter(Boolean) || [];
+      const leaderContacts = leaderNames.map((name: string) => {
+        const student = students.find(s => s.name === name);
+        return {
+          phone: student?.phone || '',
+          email: student?.email || ''
+        };
+      });
+
+      setSelectedGroup({
+        ...group,
+        id: realGroupId,
+        studentsCount: groupStats.studentsCount,
+        averageAttendance: groupStats.attendancePercentage,
+        averageGrade: groupStats.averageGrade,
+        students,
+        socialPortrait: socialPortraitItems,
+        monitor: {
+          name: groupStats.leadersFio || '',
+          appointedDate: new Date().toLocaleDateString('ru-RU'),
+          phones: leaderContacts.map((c: { phone: string }) => c.phone),
+          emails: leaderContacts.map((c: { email: string }) => c.email)
+        }
+      });
+    } catch (error) {
+      console.error('Ошибка загрузки деталей группы:', error);
+      setError('Не удалось загрузить данные группы');
+      setSelectedGroup(group);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeMonitor = async (newMonitorNames: string[]) => {
+    if (!selectedGroup) return;
+    
+    try {
+      const groupId = selectedGroup.id;
+      
+      const updatePromises = selectedGroup.students.map(async (s: Student) => {
+        const isLeader = newMonitorNames.includes(s.name);
+        return teacherApiService.updateStudent({
+          id: s.id,
+          isLeader: isLeader
+        });
+      });
+      
+      await Promise.all(updatePromises);
+      
+      const phones: string[] = [];
+      const emails: string[] = [];
+      
+      for (const monitorName of newMonitorNames) {
+        const student = selectedGroup.students.find(s => s.name === monitorName);
+        if (student) {
+          phones.push(student.phone || '');
+          emails.push(student.email || '');
+        }
+      }
+      
+      setSelectedGroup({
+        ...selectedGroup,
+        monitor: {
+          ...selectedGroup.monitor,
+          name: newMonitorNames.join(', '),
+          appointedDate: new Date().toLocaleDateString('ru-RU'),
+          phones: phones,
+          emails: emails
+        }
+      });
+      
+      teacherApiService.invalidateGroupLeaderCache(groupId);
+      teacherApiService.invalidateStudentCache();
+    } catch (error) {
+      console.error('Ошибка смены старосты:', error);
+      alert('Не удалось сменить старосту. Попробуйте позже.');
+    }
+  };
 
   const filteredGroups = useMemo(() => {
     let result = [...groups];
@@ -186,41 +361,33 @@ export const CuratorSection: React.FC = () => {
     return result;
   }, [groups, searchTerm, courseFilter, sortBy, sortOrder]);
 
+  const formatNumber = (value: number, decimals: number = 1): string => {
+    return value.toFixed(decimals);
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    teacherApiService.invalidateSocialCache();
+    teacherApiService.invalidateStudentCache();
+    teacherApiService.invalidateGroupLeaderCache();
+    teacherApiService.invalidateTeacherCache();
+    fetchCuratorGroups().finally(() => {
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 500);
+    });
   };
 
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
-  const handleGroupClick = (group: Group) => {
-    setSelectedGroup(group);
+  const handleGroupClick = async (group: Group) => {
+    await fetchGroupDetails(group);
   };
 
   const handleBackToGroups = () => {
     setSelectedGroup(null);
-  };
-
-  const handleChangeMonitor = (newMonitorName: string) => {
-    if (selectedGroup) {
-      const newMonitor = selectedGroup.students.find(s => s.name === newMonitorName);
-      if (newMonitor) {
-        setSelectedGroup({
-          ...selectedGroup,
-          monitor: {
-            ...selectedGroup.monitor,
-            name: newMonitor.name,
-            appointedDate: new Date().toLocaleDateString('ru-RU'),
-            phone: selectedGroup.monitor.phone,
-            email: selectedGroup.monitor.email
-          }
-        });
-      }
-    }
   };
 
   const handleOpenSocialModal = (student: Student) => {
@@ -229,32 +396,11 @@ export const CuratorSection: React.FC = () => {
       category: student.category || '',
       childrenBirthYears: student.childrenBirthYears || '',
       address: student.address || '',
-      education: student.education || ''
+      education: student.education || '',
+      phone: student.phone || '',
+      email: student.email || '',
+      birthDate: student.birthDate || ''
     });
-    setShowSocialModal(true);
-  };
-
-  const handleSaveSocialData = () => {
-    if (selectedGroup && selectedStudentForSocial) {
-      const updatedStudents = selectedGroup.students.map(s => 
-        s.id === selectedStudentForSocial.id 
-          ? { 
-              ...s, 
-              category: socialFormData.category,
-              childrenBirthYears: socialFormData.childrenBirthYears,
-              address: socialFormData.address,
-              education: socialFormData.education
-            }
-          : s
-      );
-      
-      setSelectedGroup({
-        ...selectedGroup,
-        students: updatedStudents
-      });
-      
-      setShowSocialModal(false);
-    }
   };
 
   const InfoIcon = ({ title, description }: { title: string; description: string }) => (
@@ -401,7 +547,7 @@ export const CuratorSection: React.FC = () => {
           <div className="curator-card-metric">
             <div className="curator-metric-header">
               <span className="curator-metric-label">Посещаемость</span>
-              <span className="curator-metric-value">{group.averageAttendance}%</span>
+              <span className="curator-metric-value">{formatNumber(group.averageAttendance)}%</span>
             </div>
             <div className="curator-metric-progress">
               <div 
@@ -414,12 +560,12 @@ export const CuratorSection: React.FC = () => {
           <div className="curator-card-metric">
             <div className="curator-metric-header">
               <span className="curator-metric-label">Успеваемость</span>
-              <span className="curator-metric-value">{group.averageGrade}</span>
+              <span className="curator-metric-value">{group.averageGrade.toFixed(1)}</span>
             </div>
             <div className="curator-metric-progress">
               <div 
                 className="curator-metric-progress-fill" 
-                style={{ width: `${group.averageGrade * 20}%`, background: '#002FA7' }}
+                style={{ width: `${Math.min(group.averageGrade * 20, 100)}%`, background: '#002FA7' }}
               ></div>
             </div>
           </div>
@@ -428,7 +574,13 @@ export const CuratorSection: React.FC = () => {
         <div className="curator-card-headman">
           <div className="curator-headman-item">
             <span className="curator-headman-label">Староста</span>
-            <span className="curator-headman-value">{group.monitor.name}</span>
+            <div className="curator-headman-value">
+              {group.monitor.name.split(/[,，、]/).map((name, idx) => (
+                <div key={idx} className="curator-monitor-name-line">
+                  {name.trim()}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -454,7 +606,11 @@ export const CuratorSection: React.FC = () => {
             </div>
             <div className="curator-list-detail">
               <span className="curator-detail-label">Староста:</span>
-              <span className="curator-detail-value">{group.monitor.name}</span>
+              <div className="curator-detail-value-multiline">
+                {group.monitor.name.split(/[,，、]/).map((name, idx) => (
+                  <div key={idx}>{name.trim()}</div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -463,7 +619,7 @@ export const CuratorSection: React.FC = () => {
           <div className="curator-list-metric">
             <div className="curator-list-metric-header">
               <span>Посещаемость</span>
-              <span>{group.averageAttendance}%</span>
+              <span>{formatNumber(group.averageAttendance)}%</span>
             </div>
             <div className="curator-list-progress">
               <div 
@@ -476,12 +632,12 @@ export const CuratorSection: React.FC = () => {
           <div className="curator-list-metric">
             <div className="curator-list-metric-header">
               <span>Успеваемость</span>
-              <span>{group.averageGrade}</span>
+              <span>{group.averageGrade.toFixed(1)}</span>
             </div>
             <div className="curator-list-progress">
               <div 
                 className="curator-list-progress-fill" 
-                style={{ width: `${group.averageGrade * 20}%`, background: '#002FA7' }}
+                style={{ width: `${Math.min(group.averageGrade * 20, 100)}%`, background: '#002FA7' }}
               ></div>
             </div>
           </div>
@@ -490,9 +646,19 @@ export const CuratorSection: React.FC = () => {
     );
   };
 
+  const renderEmptyState = () => {
+    if (loading) return null;
+    
+    return (
+      <div className="curator-empty-state">
+        <p>За вами не назначены кураторские группы</p>
+        <p className="curator-empty-subtitle">Данный функционал отсутствует для вас</p>
+      </div>
+    );
+  };
+
   return (
     <div className="curator-groups-section">
-      {/* Шапка отображается ТОЛЬКО когда нет выбранной группы */}
       {!selectedGroup && (
         <div className="curator-cabinet-header">
           <InfoIcon 
@@ -502,12 +668,6 @@ export const CuratorSection: React.FC = () => {
           <div className="curator-header-actions">
             <RefreshButton />
           </div>
-        </div>
-      )}
-
-      {showCacheWarning && (
-        <div className="curator-cache-warning">
-          <span>Используются кэшированные данные. Обновите данные для получения актуальной информации.</span>
         </div>
       )}
 
@@ -523,100 +683,111 @@ export const CuratorSection: React.FC = () => {
           onBack={handleBackToGroups}
           onChangeMonitor={handleChangeMonitor}
           onOpenSocialModal={handleOpenSocialModal}
+          onSocialPortraitSaved={() => {
+            if (selectedGroup) {
+              teacherApiService.invalidateSocialCache();
+              teacherApiService.invalidateStudentCache();
+              fetchGroupDetails(selectedGroup);
+            }
+          }}
         />
       ) : (
         <>
-          <div className="curator-control-panel-enhanced">
-            <div className="curator-controls-top-row">
-              <div className="curator-search-box-enhanced">
-                <input
-                  type="text"
-                  placeholder="Поиск по номеру группы, специальности или старосте..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="curator-search-input-enhanced"
-                />
-                <div className="curator-search-icon">
-                  <img src="/social-icons/search_icon.svg" alt="Поиск" />
-                </div>
-              </div>
-              
-              <div className="curator-view-toggle">
-                <button 
-                  className={`curator-view-btn ${viewMode === 'cards' ? 'curator-view-active' : ''}`}
-                  onClick={() => setViewMode('cards')}
-                  title="Карточки"
-                >
-                  <img src="/social-icons/cards_icon.svg" alt="Карточки" />
-                  <span>Карточки</span>
-                </button>
-                <button 
-                  className={`curator-view-btn ${viewMode === 'list' ? 'curator-view-active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                  title="Список"
-                >
-                  <img src="/social-icons/list_icon.svg" alt="Список" />
-                  <span>Список</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="curator-controls-bottom-row">
-              <div className="curator-sort-controls-enhanced">
-                <div className="curator-sort-group">
-                  <label className="curator-sort-label">Сортировка:</label>
-                  <select 
-                    className="curator-filter-select-enhanced curator-sort-select" 
-                    value={sortBy} 
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="group">По номеру группы</option>
-                    <option value="course">По курсу</option>
-                    <option value="specialty">По специальности</option>
-                    <option value="students">По кол-ву студентов</option>
-                    <option value="attendance">По посещаемости</option>
-                    <option value="performance">По успеваемости</option>
-                  </select>
-                  <div className="curator-sort-buttons">
-                    <button 
-                      className="curator-sort-order-btn"
-                      onClick={toggleSortOrder}
-                      title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
-                    >
-                      <img className="curator-sort-order-icon"
-                        src={sortOrder === 'asc' ? "/social-icons/sort_asc_icon.svg" : "/social-icons/sort_desc_icon.svg"} 
-                        alt="Направление сортировки" 
-                      />
-                      <span>{sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}</span>
-                    </button>
+          {groups.length > 0 && (
+            <div className="curator-control-panel-enhanced">
+              <div className="curator-controls-top-row">
+                <div className="curator-search-box-enhanced">
+                  <input
+                    type="text"
+                    placeholder="Поиск по номеру группы, специальности или старосте..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="curator-search-input-enhanced"
+                  />
+                  <div className="curator-search-icon">
+                    <img src="/social-icons/search_icon.svg" alt="Поиск" />
                   </div>
                 </div>
+                
+                <div className="curator-view-toggle">
+                  <button 
+                    className={`curator-view-btn ${viewMode === 'cards' ? 'curator-view-active' : ''}`}
+                    onClick={() => setViewMode('cards')}
+                    title="Карточки"
+                  >
+                    <img src="/social-icons/cards_icon.svg" alt="Карточки" />
+                    <span>Карточки</span>
+                  </button>
+                  <button 
+                    className={`curator-view-btn ${viewMode === 'list' ? 'curator-view-active' : ''}`}
+                    onClick={() => setViewMode('list')}
+                    title="Список"
+                  >
+                    <img src="/social-icons/list_icon.svg" alt="Список" />
+                    <span>Список</span>
+                  </button>
+                </div>
               </div>
-              
-              <div className="curator-course-filter-right">
-                <label className="curator-filter-label">Курс</label>
-                <select 
-                  className="curator-filter-select-enhanced curator-course-select" 
-                  value={courseFilter} 
-                  onChange={(e) => setCourseFilter(e.target.value)}
-                >
-                  <option value="all">Все курсы</option>
-                  <option value="1">1 курс</option>
-                  <option value="2">2 курс</option>
-                  <option value="3">3 курс</option>
-                  <option value="4">4 курс</option>
-                </select>
+
+              <div className="curator-controls-bottom-row">
+                <div className="curator-sort-controls-enhanced">
+                  <div className="curator-sort-group">
+                    <label className="curator-sort-label">Сортировка:</label>
+                    <select 
+                      className="curator-filter-select-enhanced curator-sort-select" 
+                      value={sortBy} 
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="group">По номеру группы</option>
+                      <option value="course">По курсу</option>
+                      <option value="specialty">По специальности</option>
+                      <option value="students">По кол-ву студентов</option>
+                      <option value="attendance">По посещаемости</option>
+                      <option value="performance">По успеваемости</option>
+                    </select>
+                    <div className="curator-sort-buttons">
+                      <button 
+                        className="curator-sort-order-btn"
+                        onClick={toggleSortOrder}
+                        title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
+                      >
+                        <img className="curator-sort-order-icon"
+                          src={sortOrder === 'asc' ? "/social-icons/sort_asc_icon.svg" : "/social-icons/sort_desc_icon.svg"} 
+                          alt="Направление сортировки" 
+                        />
+                        <span>{sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="curator-course-filter-right">
+                  <label className="curator-filter-label">Курс</label>
+                  <select 
+                    className="curator-filter-select-enhanced curator-course-select" 
+                    value={courseFilter} 
+                    onChange={(e) => setCourseFilter(e.target.value)}
+                  >
+                    <option value="all">Все курсы</option>
+                    <option value="1">1 курс</option>
+                    <option value="2">2 курс</option>
+                    <option value="3">3 курс</option>
+                    <option value="4">4 курс</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="curator-content-section">
             <div className="curator-section-header">
               <h4>Кураторские группы</h4>
-              <div className="curator-groups-count">
-                <img src="/social-icons/filter_icon.svg" alt="Фильтр" />
-                <span>Показано: <strong>{filteredGroups.length}</strong> из <strong>{groups.length}</strong></span>
-              </div>
+              {groups.length > 0 && (
+                <div className="curator-groups-count">
+                  <img src="/social-icons/filter_icon.svg" alt="Фильтр" />
+                  <span>Показано: <strong>{filteredGroups.length}</strong> из <strong>{groups.length}</strong></span>
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -624,6 +795,8 @@ export const CuratorSection: React.FC = () => {
                 <div className="curator-loading-spinner"></div>
                 <p>Загрузка групп...</p>
               </div>
+            ) : groups.length === 0 ? (
+              renderEmptyState()
             ) : filteredGroups.length === 0 ? (
               <div className="curator-empty-state">
                 <p>Группы не найдены</p>
@@ -650,103 +823,6 @@ export const CuratorSection: React.FC = () => {
             )}
           </div>
         </>
-      )}
-
-      {/* Модальное окно заполнения социальных данных */}
-      {showSocialModal && selectedStudentForSocial && (
-        <div className="curator-modal-overlay" onClick={() => setShowSocialModal(false)}>
-          <div className="curator-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="curator-modal-header">
-              <div className="curator-modal-header-content">
-                <div className="curator-modal-icon">
-                  <img src="/social-icons/categories_icon.svg" alt="Социальные данные" />
-                </div>
-                <div>
-                  <h3>Заполнение социальных данных</h3>
-                  <p className="curator-modal-subtitle">{selectedStudentForSocial.name}</p>
-                </div>
-              </div>
-              <button className="curator-modal-close" onClick={() => setShowSocialModal(false)}>
-                ×
-              </button>
-            </div>
-
-            <div className="curator-modal-content">
-              <div className="curator-form-group">
-                <label>Социальная категория</label>
-                <select 
-                  className="curator-select"
-                  value={socialFormData.category}
-                  onChange={(e) => setSocialFormData({...socialFormData, category: e.target.value})}
-                >
-                  <option value="">Выберите категорию</option>
-                  <option value="Дети-сироты">Дети-сироты</option>
-                  <option value="Дети из многодетных семей">Дети из многодетных семей</option>
-                  <option value="Инвалиды и лица с ОВЗ">Инвалиды и лица с ОВЗ</option>
-                  <option value="Малообеспеченные семьи">Малообеспеченные семьи</option>
-                  <option value="Мигранты и беженцы">Мигранты и беженцы</option>
-                  <option value="Студенты в трудной жизненной ситуации">Студенты в трудной жизненной ситуации</option>
-                  <option value="Студенты группы риска">Студенты группы риска</option>
-                  <option value="Одаренные дети">Одаренные дети</option>
-                </select>
-              </div>
-
-              {socialFormData.category === 'Дети из многодетных семей' && (
-                <div className="curator-form-group">
-                  <label>Года рождения всех детей в семье</label>
-                  <input
-                    type="text"
-                    className="curator-input"
-                    placeholder="Например: 2018, 2020, 2022"
-                    value={socialFormData.childrenBirthYears}
-                    onChange={(e) => setSocialFormData({...socialFormData, childrenBirthYears: e.target.value})}
-                  />
-                  <small className="curator-form-hint">Укажите года рождения через запятую</small>
-                </div>
-              )}
-
-              <div className="curator-form-group">
-                <label>Адрес проживания</label>
-                <input
-                  type="text"
-                  className="curator-input"
-                  placeholder="Введите адрес"
-                  value={socialFormData.address}
-                  onChange={(e) => setSocialFormData({...socialFormData, address: e.target.value})}
-                />
-              </div>
-
-              <div className="curator-form-group">
-                <label>Основа обучения</label>
-                <select 
-                  className="curator-select"
-                  value={socialFormData.education}
-                  onChange={(e) => setSocialFormData({...socialFormData, education: e.target.value})}
-                >
-                  <option value="">Выберите основу</option>
-                  <option value="Бюджет">Бюджет</option>
-                  <option value="Платная">Платная</option>
-                  <option value="Целевая">Целевая</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="curator-modal-actions">
-              <button
-                className="curator-btn-secondary"
-                onClick={() => setShowSocialModal(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="curator-confirm-btn"
-                onClick={handleSaveSocialData}
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -522,8 +522,13 @@
   border: 1px solid rgba(0, 47, 167, 0.1);
 }
 
+.reports-actions-cell .reports-action-btn {
+  display: inline-flex;
+  margin: 0 4px;
+}
+
 .reports-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 8px 16px;
@@ -536,6 +541,11 @@
   transition: all 0.2s ease;
   color: #475569;
   min-width: 70px;
+}
+
+.reports-table td.reports-actions-cell {
+  white-space: nowrap;
+  padding: 12px 8px;
 }
 
 .reports-action-btn.word-btn:hover {
@@ -1277,5 +1287,212 @@
   .image-preview-modal {
     width: 95%;
     padding: 12px;
+  }
+}
+
+.reports-actions-cell {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.reports-action-btn.delete-btn:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #dc26264d;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Стили для валидации */
+.edit-input.validation-error {
+  border-color: rgb(102, 60, 25);
+  background-color: #fef2f2;
+}
+
+.edit-input.validation-error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  border-color: #b88441;
+}
+
+.validation-error-message {
+  font-size: 11px;
+  color: #b88441;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.validation-error-message::before {
+  content: '⚠';
+  font-size: 10px;
+}
+
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.loading-overlay::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #002FA7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Анимация обновления */
+.pc-refreshing {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.pc-refresh-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Стили для загрузки сертификата */
+.certificate-upload-btn {
+  padding: 6px 12px;
+  background: #f0f4ff;
+  border: 1px dashed #002FA7;
+  border-radius: 8px;
+  color: #002FA7;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.certificate-upload-btn:hover {
+  background: #e0e8ff;
+  border-style: solid;
+}
+
+.certificate-change-btn {
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.certificate-change-btn:hover {
+  background: #e2e8f0;
+  color: #002FA7;
+}
+
+.certificate-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.certificate-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.certificate-thumb:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Улучшенные стили для редактируемых ячеек */
+.cell-content {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  min-height: 20px;
+  line-height: 1.4;
+}
+
+.cell-content:hover {
+  background-color: #e0e8ff;
+  color: #002FA7;
+}
+
+.cell-content:empty::before {
+  content: '—';
+  color: #94a3b8;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 2px solid #002FA7;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  box-sizing: border-box;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.certificate-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+/* Стили для пустых состояний */
+.empty-row {
+  text-align: center;
+  padding: 40px !important;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Адаптация модальных окон */
+@media (max-width: 768px) {
+  .students-modal.wide-modal {
+    width: 98%;
+    max-height: 90vh;
+  }
+
+  .students-modal-header h3 {
+    font-size: 14px;
+  }
+
+  .students-table {
+    font-size: 11px;
+  }
+
+  .students-table th,
+  .students-table td {
+    padding: 6px 4px;
+  }
+
+  .certificate-thumb {
+    width: 40px;
+    height: 40px;
   }
 }

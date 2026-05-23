@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { socialApiService, type SocialWorkerData } from '../services/socialApiService';
+import { socialApiService, type SocialWorkerData, type SocialCategoryStat } from '../services/socialApiService';
 import './SocialPersonalCabinet.css';
 
 interface PasswordChangeData {
@@ -16,11 +16,13 @@ interface ProfileEditData {
 export const PersonalCabinet: React.FC = () => {
   const { user } = useUser();
   const [workerData, setWorkerData] = useState<SocialWorkerData | null>(null);
+  const [categoryStats, setCategoryStats] = useState<SocialCategoryStat[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const [passwordData, setPasswordData] = useState<PasswordChangeData>({
     newPassword: '',
@@ -66,14 +68,28 @@ export const PersonalCabinet: React.FC = () => {
     }
   };
 
+  const fetchCategoryStats = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await socialApiService.getSocialCategoriesStats();
+      setCategoryStats(stats);
+    } catch (err) {
+      console.error('Error fetching category stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchWorkerData();
+      fetchCategoryStats();
     }
   }, [user]);
 
   const handleRefresh = async () => {
     await fetchWorkerData(true);
+    await fetchCategoryStats();
   };
 
   const handlePasswordModalOpen = () => {
@@ -180,7 +196,7 @@ export const PersonalCabinet: React.FC = () => {
           <div className="info-header">
             <div className="info-title">
               <h3>Личный кабинет социального педагога</h3>
-              <p>Здесь вы можете просмотреть свои личные данные, изменить пароль, а также ознакомиться с последней активностью.</p>
+              <p>Здесь вы можете просмотреть свои личные данные, изменить пароль, а также ознакомиться со сводкой по социальным категориям.</p>
             </div>
           </div>
           
@@ -197,7 +213,7 @@ export const PersonalCabinet: React.FC = () => {
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
-                <span>Просмотр последней активности</span>
+                <span>Сводка по социальным категориям</span>
               </div>
               <div className="feature-item">
                 <span className="feature-icon"></span>
@@ -246,6 +262,18 @@ export const PersonalCabinet: React.FC = () => {
       <span>{refreshing ? 'Обновление...' : 'Обновить данные'}</span>
     </button>
   );
+
+  // Функция для получения цвета категории
+  const getCategoryColor = (index: number): string => {
+    const colors = [
+      '#1e3a5f', '#2e5984', '#4a7fb5', '#6b9bd1',
+      '#8ab6d6', '#5a6c7d', '#7a8fa3', '#9ab0c4'
+    ];
+    return colors[index % colors.length];
+  };
+
+  // Сортируем категории по количеству студентов (по убыванию)
+  const sortedCategories = [...categoryStats].sort((a, b) => b.studentsCount - a.studentsCount);
 
   if (loading && !workerData) {
     return (
@@ -350,28 +378,33 @@ export const PersonalCabinet: React.FC = () => {
         </button>
       </div>
 
-      <div className="disciplines-section">
-        <div className="disciplines-header">
-          <label className="disciplines-label">Последняя активность:</label>
+      {/* Сводка по социальным категориям */}
+      <div className="social-category-section">
+        <div className="section-header-modern">
+          <div className="header-title">
+            <h3>Социальные категории</h3>
+          </div>
+          {statsLoading && <div className="loading-spinner-small"></div>}
         </div>
         
-        <div className="disciplines-list">
-          {recentActivity.map((activity, index) => (
-            <div key={index} className="discipline-item">
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: '#002FA7', marginBottom: '4px' }}>
-                  {activity.action}
-                </div>
-                <div style={{ fontSize: '13px', color: '#666' }}>
-                  {activity.details}
-                </div>
+        {sortedCategories.length > 0 ? (
+          <div className="category-chips-container">
+            {sortedCategories.map((stat, index) => (
+              <div key={stat.categoryName} className="category-chip">
+                <div 
+                  className="category-chip-color" 
+                  style={{ background: getCategoryColor(index) }}
+                />
+                <span className="category-chip-name">{stat.categoryName}</span>
+                <span className="category-chip-count">{stat.studentsCount}</span>
               </div>
-              <div style={{ fontSize: '12px', color: '#666', minWidth: '100px', textAlign: 'right' }}>
-                {activity.time}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-categories">
+            <p>Нет данных по социальным категориям</p>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -439,7 +472,7 @@ export const PersonalCabinet: React.FC = () => {
         </div>
       )}
 
-      {/* Модальное окно редактирования профиля (только email и телефон) */}
+      {/* Модальное окно редактирования профиля */}
       {showProfileModal && (
         <div className="lk-modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="lk-modal" onClick={(e) => e.stopPropagation()}>
@@ -501,10 +534,3 @@ export const PersonalCabinet: React.FC = () => {
     </div>
   );
 };
-
-// recentActivity данные
-const recentActivity = [
-  { action: 'Обновлен профиль студента', details: 'Иванов А.С. (группа 2992)', time: 'Сегодня, 10:30' },
-  { action: 'Создан отчет по группе риска', details: 'Отчет за 1 семестр', time: 'Вчера, 15:45' },
-  { action: 'Проведена консультация', details: 'Студент Петрова М.И.', time: 'Вчера, 11:20' }
-];

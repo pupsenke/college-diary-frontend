@@ -2,6 +2,11 @@ import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
 import { API_BASE_URL } from '../constants/apiConstant';
 
+function deduplicateByKey<T>(array: T[], key: keyof T): T[] {
+  if (!array || !Array.isArray(array)) return [];
+  return Array.from(new Map(array.map(item => [item[key], item])).values());
+}
+
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
@@ -350,6 +355,91 @@ export interface SupplementInfo {
   id: number;
   comment: string;
   typeMark?: string;
+}
+
+// Интерфейсы для кураторских групп
+export interface CuratorGroupStats {
+  groupNumber: number;
+  course: number;
+  specialty: string;
+  studentsCount: number;
+  totalSocialCategories: number;
+  leadersFio: string;
+  curatorFio: string;
+  averageGrade: number;
+  attendancePercentage: number;
+}
+
+export interface StudentPerformance {
+  id: number;
+  lastName: string;
+  firstName: string;
+  patronymic: string;
+  averageGrade: number;
+  attendanceCount: number;
+}
+export interface GroupLeader {
+  fio: string;
+  telephone: string | null;
+  email: string | null;
+}
+
+export interface StudentInfo {
+  id: number;
+  lastName: string;
+  name: string;
+  patronymic: string;
+  lastNameGenitive: string | null;
+  nameGenitive: string | null;
+  patronymicGenitive: string | null;
+  idGroup: number;
+  login: string;
+  telephone: string | null;
+  birthDate: string | null;
+  address: string | null;
+  email: string | null;
+  code: string | null;
+  isLeader: boolean;
+  educationBasis: string | null;
+}
+
+export interface SocialCategory {
+  id: number;
+  name: string;
+}
+
+export interface StudentSocialInfo {
+  id: number;
+  fio: string;
+}
+
+export interface GroupSocialStats {
+  id: number;
+  name: string;
+  count: number;
+}
+
+export interface StudentDetails {
+  id?: number;
+  birthDate: string | null;
+  telephone: string | null;
+  email: string | null;
+  address: string | null;
+  educationBasis: string | null;
+  socialCategories: {
+    categoryName: string;
+    categoryData: string;
+  }[];
+}
+
+export interface UpdateStudentRequest {
+  id: number;
+  isLeader?: boolean;
+  address?: string | null;
+  educationBasis?: string | null;
+  telephone?: string | null;
+  email?: string | null;
+  birthDate?: string | null;
 }
 
 
@@ -926,21 +1016,15 @@ export const teacherApiService = {
   // Функция для инвалидации кэша студентов
   invalidateStudentCache(groupId?: number, idSt?: number, idTeacher?: number): void {
     if (groupId && idSt && idTeacher) {
-      // Удаляем конкретный ключ
       cacheService.remove(`group_students_${groupId}_${idSt}_${idTeacher}`);
     } else {
       // Удаляем все кэши студентов
-      const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.includes('cache_group_students_')) {
-          keysToRemove.push(key.replace('cache_', ''));
+        if (key && (key.includes('cache_group_students_') || key.includes('cache_student_details_'))) {
+          cacheService.remove(key.replace('cache_', ''));
         }
       }
-      
-      keysToRemove.forEach(key => {
-        cacheService.remove(key);
-      });
     }
   },
 
@@ -3685,5 +3769,494 @@ export const teacherApiService = {
         }
       }
     }
-  }
+  },
+
+
+  // КУРАТОРЫ
+
+  // Получение групп, где пользователь является куратором
+  async getCuratorGroups(curatorId: number): Promise<CuratorGroupStats[]> {
+    const cacheKey = `curator_groups_${curatorId}`;
+    const cached = cacheService.get<CuratorGroupStats[]>(cacheKey, { ttl: CACHE_TTL.GROUP_DATA });
+    if (cached) return cached;
+
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/api/v1/groups/stats/curator/${curatorId}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: CuratorGroupStats[] = await response.json();
+      cacheService.set(cacheKey, data, { ttl: CACHE_TTL.GROUP_DATA });
+      return data;
+    } catch (error) {
+      console.error('Error fetching curator groups:', error);
+      return [];
+    }
+  },
+
+  async getStudentDetails(studentId: number): Promise<StudentDetails | null> {
+    const cacheKey = `student_details_${studentId}`;
+    const cached = cacheService.get<StudentDetails>(cacheKey, { ttl: CACHE_TTL.STUDENT_DATA });
+    if (cached) return cached;
+
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/api/v1/students/details/${studentId}`, 
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: StudentDetails = await response.json();
+      
+      if (data.socialCategories && Array.isArray(data.socialCategories)) {
+        data.socialCategories = deduplicateByKey(data.socialCategories, 'categoryName');
+      }
+      
+      cacheService.set(cacheKey, data, { ttl: CACHE_TTL.STUDENT_DATA });
+      return data;
+    } catch (error) {
+      console.error(`Error fetching student details ${studentId}:`, error);
+      return null;
+    }
+  },
+
+  // Получение статистики группы куратора
+  async getCuratorGroupStats(groupId: number): Promise<CuratorGroupStats | null> {
+    const cacheKey = `curator_group_stats_${groupId}`;
+    
+    const cached = cacheService.get<CuratorGroupStats>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/stats/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: CuratorGroupStats = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.GROUP_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching group stats for group ${groupId}:`, error);
+      return null;
+    }
+  },
+
+  // Получение списка студентов с успеваемостью
+  async getGroupStudentsPerformance(groupId: number): Promise<StudentPerformance[]> {
+    const cacheKey = `group_students_performance_${groupId}`;
+    
+    const cached = cacheService.get<StudentPerformance[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/group/${groupId}/performance`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: StudentPerformance[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching students performance for group ${groupId}:`, error);
+      return [];
+    }
+  },
+
+  // Получение информации о группе по номеру
+  async getGroupInfoByNumber(groupNumber: string): Promise<GroupInfo | null> {
+    const cacheKey = `group_info_by_number_${groupNumber}`;
+    
+    const cached = cacheService.get<GroupInfo>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/number/${groupNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: GroupInfo[] = await response.json();
+      const groupInfo = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      
+      if (groupInfo) {
+        cacheService.set(cacheKey, groupInfo, { 
+          ttl: CACHE_TTL.GROUP_DATA 
+        });
+      }
+      
+      return groupInfo;
+    } catch (error) {
+      console.error(`Error fetching group info for number ${groupNumber}:`, error);
+      return null;
+    }
+  },
+
+  // Получение старосты группы
+  async getGroupLeader(groupId: number): Promise<GroupLeader | null> {
+    const cacheKey = `group_leader_${groupId}`;
+    
+    const cached = cacheService.get<GroupLeader>(cacheKey, { 
+      ttl: CACHE_TTL.GROUP_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/group/${groupId}/leaders`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: GroupLeader[] = await response.json();
+      const leader = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      
+      if (leader) {
+        cacheService.set(cacheKey, leader, { 
+          ttl: CACHE_TTL.GROUP_DATA 
+        });
+      }
+      
+      return leader;
+    } catch (error) {
+      console.error(`Error fetching group leader for group ${groupId}:`, error);
+      return null;
+    }
+  },
+
+  // Получение подробной информации о студентах группы
+  async getGroupStudentsInfo(groupId: number): Promise<StudentInfo[]> {
+    const cacheKey = `group_students_info_${groupId}`;
+    
+    const cached = cacheService.get<StudentInfo[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/group/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: StudentInfo[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching students info for group ${groupId}:`, error);
+      return [];
+    }
+  },
+
+  // Получение социальных категорий
+  async getSocialCategories(): Promise<SocialCategory[]> {
+    const cacheKey = 'social_categories_all';
+    
+    const cached = cacheService.get<SocialCategory[]>(cacheKey, { 
+      ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/social-categories`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: SocialCategory[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching social categories:', error);
+      return [];
+    }
+  },
+
+  // Получение статистики социальных категорий группы
+  async getGroupSocialStats(groupId: number): Promise<GroupSocialStats[]> {
+    const cacheKey = `group_social_stats_${groupId}`;
+    
+    const cached = cacheService.get<GroupSocialStats[]>(cacheKey, { 
+      ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/student-social-categories/group-stats/${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: GroupSocialStats[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching group social stats for group ${groupId}:`, error);
+      return [];
+    }
+  },
+
+  // Получение студентов в социальной категории
+  async getStudentsInSocialCategoryFormatted(groupId: number, categoryId: number): Promise<StudentSocialInfo[]> {
+    const cacheKey = `group_social_category_formatted_${groupId}_${categoryId}`;
+    
+    const cached = cacheService.get<StudentSocialInfo[]>(cacheKey, { 
+      ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/student-social-categories/students/${groupId}/${categoryId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: StudentSocialInfo[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.SOCIAL_DATA || 3600000 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching students in social category:`, error);
+      return [];
+    }
+  },
+
+  // Сохранение социальной категории студента
+  async saveStudentSocialCategory(
+    idStudent: number, 
+    idCategory: number, 
+    data: Record<string, string>
+  ): Promise<{ success: boolean }> {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/student-social-categories/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idStudent,
+          idCategory,
+          data
+        }),
+      });
+
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        throw new Error(`Ошибка сохранения социальной категории: ${response.status} - ${errorText}`);
+      }
+
+      // Инвалидируем кэш
+      this.invalidateSocialCache();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving student social category:', error);
+      throw error;
+    }
+  },
+
+  // Обновление данных студента
+  async updateStudent(updateData: UpdateStudentRequest): Promise<{ success: boolean }> {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        throw new Error(`Ошибка обновления студента: ${response.status} - ${errorText}`);
+      }
+
+      this.invalidateStudentDetailsCache(updateData.id);
+      this.invalidateStudentCache();
+      if (updateData.isLeader !== undefined) {
+        this.invalidateGroupLeaderCache();
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating student:', error);
+      throw error;
+    }
+  },
+
+  // Инвалидация кэша социальных данных
+  invalidateSocialCache(): void {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('cache_social_') || key.includes('cache_group_social_'))) {
+        cacheService.remove(key.replace('cache_', ''));
+      }
+    }
+    cacheService.remove('social_categories_all');
+  },
+
+  // Инвалидация кэша старосты
+  invalidateGroupLeaderCache(groupId?: number): void {
+    if (groupId) {
+      cacheService.remove(`group_leader_${groupId}`);
+    } else {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cache_group_leader_')) {
+          cacheService.remove(key.replace('cache_', ''));
+        }
+      }
+    }
+  },
+
+  invalidateStudentDetailsCache(studentId: number): void {
+    cacheService.remove(`student_details_${studentId}`);
+  },
 };

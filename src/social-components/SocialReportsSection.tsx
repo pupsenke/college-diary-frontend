@@ -1,43 +1,56 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import './SocialReportsSection.css';
+import { socialApiService, OrphanStudentApi, DisabledStudentApi, CertificateFile } from '../services/socialApiService';
+import { API_BASE_URL } from '../constants/apiConstant';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import { saveAs } from 'file-saver';
 
 interface ReportData {
   id: number;
   name: string;
   type: 'orphans' | 'disabled';
   date: string;
-}
-
-interface Certificate {
-  fullInfo: string;
-  image: string | null;
+  fileId: number;
+  fileName: string;
 }
 
 interface DisabledStudent {
   id: number;
-  fullName: string;
-  group: string;
-  direction: string;
-  certificate: Certificate;
-  statusWithGroup: string;
-  restrictions: string;
-  birthDate: string;
-  addressPhone: string;
-  educationPayment: string;
+  fio: string;
+  numberGroup: number;
+  specialty: string;
+  certificate: {
+    fullInfo: string;
+    images: Array<{ fileId: number; url: string; fileName: string }>;
+  };
+  status: string | null;
+  limitationType: string | null;
+  birthDate: string | null;
+  address: string | null;
+  telephone: string | null;
+  educationForm: string | null;
+  idGroup: number;
+  idStudent: number;
 }
 
 interface OrphanStudent {
   id: number;
-  fullName: string;
-  group: string;
-  direction: string;
-  birthDate: string;
-  parentsInfo: string;
-  addressPhone: string;
-  registrationAddress: string;
-  guardian: string;
-  educationPayment: string;
+  fio: string;
+  numberGroup: number;
+  specialty: string;
+  birthDate: string | null;
+  parentInfo: string | null;
+  telephone: string | null;
+  registrationAddress: string | null;
+  guardian: string | null;
+  educationForm: string | null;
+  idGroup: number;
+  idStudent: number;
 }
+
+// Кэш для специальностей групп
+const groupSpecialtyCache = new Map<number, string>();
 
 const REPORT_TYPES = [
   {
@@ -46,6 +59,8 @@ const REPORT_TYPES = [
     subtitle: 'и детях, оставшихся без попечения родителей',
     cardImg: '/social-icons/orphans_icon.svg',
     modalImg: '/social-icons/orphans_icon.svg',
+    templateFile: '/templates/orphans.docx',
+    reportType: 'сироты' as const
   },
   {
     key: 'disabled' as const,
@@ -53,72 +68,10 @@ const REPORT_TYPES = [
     subtitle: 'и лицах с ограниченными возможностями здоровья',
     cardImg: '/social-icons/disabled_icon.svg',
     modalImg: '/social-icons/disabled_icon.svg',
+    templateFile: '/templates/invalid.docx',
+    reportType: 'инвалиды' as const
   }
 ];
-
-const mockDisabledStudents: DisabledStudent[] = [
-  {
-    id: 1,
-    fullName: 'Алисеевич Кирилл Александрович',
-    group: '5922',
-    direction: '15.02.16 Технология машиностроения',
-    certificate: {
-      fullInfo: 'Серия МСЭ-2015 №2431238 от 31.10.2017, Справка до 10.02.2027',
-      image: null
-    },
-    statusWithGroup: 'ребенок-инвалид',
-    restrictions: 'соматика (диабет)',
-    birthDate: '10.02.2009',
-    addressPhone: 'г. Великий Новгород, ул. Московкая, д.30, корп.1, кв.96 +7 (911) 607-10-30',
-    educationPayment: 'очная, фед.бюджет'
-  },
-  {
-    id: 2,
-    fullName: 'Петрова Анна Сергеевна',
-    group: '5820',
-    direction: '09.02.07 Информационные системы',
-    certificate: {
-      fullInfo: 'Серия МСЭ-2018 №5678912 от 15.03.2020, Справка до 15.03.2028',
-      image: null
-    },
-    statusWithGroup: 'инвалид, II группа',
-    restrictions: 'нарушение слуха',
-    birthDate: '25.07.2010',
-    addressPhone: 'г. Великий Новгород, ул. Ленина, д.10, кв.5 +7 (911) 123-45-67',
-    educationPayment: 'очная, обл.бюджет'
-  }
-];
-
-const mockOrphanStudents: OrphanStudent[] = [
-  {
-    id: 1,
-    fullName: 'Андреев Иван Игоревич',
-    group: '5901',
-    direction: '11.01.02 Радиомеханик',
-    birthDate: '03.08.2009',
-    parentsInfo: 'Умерли оба родителя',
-    addressPhone: 'г. Великий Новгород, ул. Ворошилова, д.19, кв. 63 +7 (996) 067-98-99',
-    registrationAddress: 'г. Великий Новгород, ул. Ворошилова, д.19, кв. 63 (временно рег. до 18 лет) пос. Пролетарий, ул. Октябрьская, д. 18 (пост. рег.)',
-    guardian: 'Антонцева Светлана Сергеевна (бабушка)',
-    educationPayment: 'очная, обл.бюджет'
-  },
-  {
-    id: 2,
-    fullName: 'Сидорова Екатерина Дмитриевна',
-    group: '5821',
-    direction: '38.02.01 Экономика',
-    birthDate: '15.11.2010',
-    parentsInfo: 'Отец: Сидоров Д.А. (лишен прав), Мать: Сидорова Е.В. (в розыске)',
-    addressPhone: 'г. Великий Новгород, ул. Гагарина, д.5, кв.12 +7 (911) 234-56-78',
-    registrationAddress: 'г. Великий Новгород, ул. Гагарина, д.5, кв.12',
-    guardian: 'Сидорова М.И. (бабушка), тел: +7 (911) 345-67-89',
-    educationPayment: 'очная, фед.бюджет'
-  }
-];
-
-/* ===================================================================
-   Вынесенные модальные компоненты (не пересоздаются при ререндере)
-   =================================================================== */
 
 interface StudentsModalProps {
   onClose: () => void;
@@ -131,8 +84,36 @@ interface DisabledStudentsModalProps extends StudentsModalProps {
   filteredDisabledStudents: DisabledStudent[];
   updateCertificateInfo: (studentId: number, value: string) => void;
   handleCertificateUpload: (studentId: number, file: File) => void;
-  setPreviewImage: (img: string | null) => void;
+  handleCertificateDownload: (fileId: number, fileName: string) => void;
+  handleCertificateDelete: (studentId: number, fileId: number) => void;
+  loading: boolean;
 }
+
+const validatePhone = (phone: string): boolean => {
+  if (!phone || phone === '' || phone === '—') return true;
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length === 11;
+};
+
+const validateFIO = (fio: string): boolean => {
+  if (fio === '' || fio === '—') return true;
+  const words = fio.trim().split(/\s+/);
+  return words.length >= 2;
+};
+
+const validateField = (field: string, value: string): { isValid: boolean; error?: string } => {
+  if (field === 'telephone' || field === 'phone') {
+    if (value && value !== '—' && !validatePhone(value)) {
+      return { isValid: false, error: 'Введите корректный номер телефона' };
+    }
+  }
+  if (field === 'fio') {
+    if (value && value !== '—' && !validateFIO(value)) {
+      return { isValid: false, error: 'ФИО должно содержать минимум фамилию и имя' };
+    }
+  }
+  return { isValid: true };
+};
 
 const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
   onClose,
@@ -142,7 +123,9 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
   renderCell,
   updateCertificateInfo,
   handleCertificateUpload,
-  setPreviewImage,
+  handleCertificateDownload,
+  handleCertificateDelete,
+  loading
 }) => {
   return (
     <>
@@ -173,86 +156,95 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
         </div>
 
         <div className="students-modal-table-wrapper">
-          <table className="students-table disabled-table">
-            <thead>
-              <tr>
-                <th className="col-num-header">№</th>
-                <th>ФИО</th>
-                <th>Группа</th>
-                <th>Направление/ специальность</th>
-                <th>Справка</th>
-                <th>Статус, группа инвалидности</th>
-                <th>Вид ограничений (нозология)</th>
-                <th>Дата рождения</th>
-                <th>Адрес места жительства, телефон</th>
-                <th>Форма обучения, бюджет/платно</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDisabledStudents.map((student, index) => (
-                <tr key={student.id}>
-                  <td className="col-num">{index + 1}</td>
-                  <td>{renderCell(student.fullName, 'disabled', student.id, 'fullName')}</td>
-                  <td>{renderCell(student.group, 'disabled', student.id, 'group')}</td>
-                  <td>{renderCell(student.direction, 'disabled', student.id, 'direction')}</td>
-                  <td className="certificate-cell">
-                    <div className="certificate-info">
-                      <div className="certificate-fields">
-                        {renderCell(student.certificate.fullInfo, 'disabled', student.id, 'certificate', 'Серия, номер, дата, срок действия')}
-                      </div>
-                      <div className="certificate-image-section">
-                        {student.certificate.image ? (
-                          <div className="certificate-preview">
-                            <img
-                              src={student.certificate.image}
-                              alt="Справка"
-                              className="certificate-thumb"
-                              onClick={() => setPreviewImage(student.certificate.image!)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <button
-                              className="certificate-change-btn"
-                              onClick={() => document.getElementById(`cert-input-${student.id}`)?.click()}
-                            >
-                              Изменить
-                            </button>
-                          </div>
-                        ) : (
+          {loading ? (
+            <div className="loading-overlay">Загрузка данных...</div>
+          ) : (
+            <table className="students-table disabled-table">
+              <thead>
+                <tr>
+                  <th className="col-num-header">№</th>
+                  <th>ФИО</th>
+                  <th>Группа</th>
+                  <th>Направление/ специальность</th>
+                  <th>Справка</th>
+                  <th>Статус, группа инвалидности</th>
+                  <th>Вид ограничений (нозология)</th>
+                  <th>Дата рождения</th>
+                  <th>Адрес места жительства, телефон</th>
+                  <th>Форма обучения, бюджет/платно</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDisabledStudents.map((student, index) => (
+                  <tr key={student.id}>
+                    <td className="col-num">{index + 1}</td>
+                    <td>{renderCell(student.fio || '—', 'disabled', student.id, 'fio')}</td>
+                    <td>{renderCell(student.numberGroup?.toString() || '—', 'disabled', student.id, 'numberGroup')}</td>
+                    <td>{renderCell(student.specialty || '—', 'disabled', student.id, 'specialty')}</td>
+                    <td className="certificate-cell">
+                      <div className="certificate-info">
+                        <div className="certificate-fields">
+                          {renderCell(student.certificate.fullInfo, 'disabled', student.id, 'certificate', 'Серия, номер, дата, срок действия')}
+                        </div>
+                        <div className="certificate-images-section">
+                          {student.certificate.images.length > 0 && (
+                            <div className="certificate-images-list">
+                              {student.certificate.images.map((img, idx) => (
+                                <div key={img.fileId} className="certificate-image-item">
+                                  <span className="certificate-filename">{img.fileName || `Справка ${idx + 1}`}</span>
+                                  <div className="certificate-image-actions">
+                                    <button
+                                      className="certificate-download-btn"
+                                      onClick={() => handleCertificateDownload(img.fileId, img.fileName)}
+                                      title="Скачать"
+                                    >
+                                    </button>
+                                    <button
+                                      className="certificate-delete-btn"
+                                      onClick={() => handleCertificateDelete(student.id, img.fileId)}
+                                      title="Удалить"
+                                    >
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <button
                             className="certificate-upload-btn"
                             onClick={() => document.getElementById(`cert-input-${student.id}`)?.click()}
                           >
-                            Прикрепить фото справки
+                            Прикрепить справку
                           </button>
-                        )}
-                        <input
-                          id={`cert-input-${student.id}`}
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleCertificateUpload(student.id, e.target.files[0]);
-                            }
-                          }}
-                        />
+                          <input
+                            id={`cert-input-${student.id}`}
+                            type="file"
+                            accept="image/*,application/pdf"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleCertificateUpload(student.id, e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>{renderCell(student.statusWithGroup, 'disabled', student.id, 'statusWithGroup')}</td>
-                  <td>{renderCell(student.restrictions, 'disabled', student.id, 'restrictions')}</td>
-                  <td>{renderCell(student.birthDate, 'disabled', student.id, 'birthDate')}</td>
-                  <td>{renderCell(student.addressPhone, 'disabled', student.id, 'addressPhone')}</td>
-                  <td>{renderCell(student.educationPayment, 'disabled', student.id, 'educationPayment')}</td>
-                </tr>
-              ))}
-              {filteredDisabledStudents.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="empty-row">Студенты не найдены</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    </td>
+                    <td>{renderCell(student.status || '—', 'disabled', student.id, 'status')}</td>
+                    <td>{renderCell(student.limitationType || '—', 'disabled', student.id, 'limitationType')}</td>
+                    <td>{renderCell(student.birthDate || '—', 'disabled', student.id, 'birthDate')}</td>
+                    <td>{renderCell(student.address || '—', 'disabled', student.id, 'address')}</td>
+                    <td>{renderCell(student.educationForm || '—', 'disabled', student.id, 'educationForm')}</td>
+                  </tr>
+                ))}
+                {filteredDisabledStudents.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="empty-row">Студенты не найдены</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>
@@ -261,6 +253,7 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
 
 interface OrphanStudentsModalProps extends StudentsModalProps {
   filteredOrphanStudents: OrphanStudent[];
+  loading: boolean;
 }
 
 const OrphanStudentsModal: React.FC<OrphanStudentsModalProps> = ({
@@ -269,6 +262,7 @@ const OrphanStudentsModal: React.FC<OrphanStudentsModalProps> = ({
   setStudentSearchTerm,
   filteredOrphanStudents,
   renderCell,
+  loading
 }) => {
   return (
     <>
@@ -299,85 +293,65 @@ const OrphanStudentsModal: React.FC<OrphanStudentsModalProps> = ({
         </div>
 
         <div className="students-modal-table-wrapper">
-          <table className="students-table orphan-table">
-            <thead>
-              <tr>
-                <th className="col-num-header">№</th>
-                <th>ФИО</th>
-                <th>Группа</th>
-                <th>Направление/ специальность</th>
-                <th>Дата рождения</th>
-                <th>Сведения о родителях</th>
-                <th>Адрес места жительства, телефон</th>
-                <th>Адрес регистрации</th>
-                <th>Опекун</th>
-                <th>Форма обучения, бюджет/платно</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrphanStudents.map((student, index) => (
-                <tr key={student.id}>
-                  <td className="col-num">{index + 1}</td>
-                  <td>{renderCell(student.fullName, 'orphan', student.id, 'fullName')}</td>
-                  <td>{renderCell(student.group, 'orphan', student.id, 'group')}</td>
-                  <td>{renderCell(student.direction, 'orphan', student.id, 'direction')}</td>
-                  <td>{renderCell(student.birthDate, 'orphan', student.id, 'birthDate')}</td>
-                  <td>{renderCell(student.parentsInfo, 'orphan', student.id, 'parentsInfo')}</td>
-                  <td>{renderCell(student.addressPhone, 'orphan', student.id, 'addressPhone')}</td>
-                  <td>{renderCell(student.registrationAddress, 'orphan', student.id, 'registrationAddress')}</td>
-                  <td>{renderCell(student.guardian, 'orphan', student.id, 'guardian')}</td>
-                  <td>{renderCell(student.educationPayment, 'orphan', student.id, 'educationPayment')}</td>
-                </tr>
-              ))}
-              {filteredOrphanStudents.length === 0 && (
+          {loading ? (
+            <div className="loading-overlay">Загрузка данных...</div>
+          ) : (
+            <table className="students-table orphan-table">
+              <thead>
                 <tr>
-                  <td colSpan={10} className="empty-row">Студенты не найдены</td>
+                  <th className="col-num-header">№</th>
+                  <th>ФИО</th>
+                  <th>Группа</th>
+                  <th>Направление/ специальность</th>
+                  <th>Дата рождения</th>
+                  <th>Сведения о родителях</th>
+                  <th>Адрес места жительства, телефон</th>
+                  <th>Адрес регистрации</th>
+                  <th>Опекун</th>
+                  <th>Форма обучения, бюджет/платно</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredOrphanStudents.map((student, index) => (
+                  <tr key={student.id}>
+                    <td className="col-num">{index + 1}</td>
+                    <td>{renderCell(student.fio || '—', 'orphan', student.id, 'fio')}</td>
+                    <td>{renderCell(student.numberGroup?.toString() || '—', 'orphan', student.id, 'numberGroup')}</td>
+                    <td>{renderCell(student.specialty || '—', 'orphan', student.id, 'specialty')}</td>
+                    <td>{renderCell(student.birthDate || '—', 'orphan', student.id, 'birthDate')}</td>
+                    <td>{renderCell(student.parentInfo || '—', 'orphan', student.id, 'parentInfo')}</td>
+                    <td>{renderCell(student.telephone || '—', 'orphan', student.id, 'telephone')}</td>
+                    <td>{renderCell(student.registrationAddress || '—', 'orphan', student.id, 'registrationAddress')}</td>
+                    <td>{renderCell(student.guardian || '—', 'orphan', student.id, 'guardian')}</td>
+                    <td>{renderCell(student.educationForm || '—', 'orphan', student.id, 'educationForm')}</td>
+                  </tr>
+                ))}
+                {filteredOrphanStudents.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="empty-row">Студенты не найдены</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>
   );
 };
 
-interface ImagePreviewModalProps {
-  previewImage: string;
-  onClose: () => void;
-}
-
-const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ previewImage, onClose }) => (
-  <>
-    <div className="reports-modal-overlay" onClick={onClose} />
-    <div className="image-preview-modal" onClick={(e) => e.stopPropagation()}>
-      <button className="image-preview-close" onClick={onClose}>✕</button>
-      <img src={previewImage} alt="Справка МСЭ" className="image-preview-full" />
-    </div>
-  </>
-);
-
-/* ===================================================================
-   Основной компонент
-   =================================================================== */
-
 export const ReportsSection: React.FC = () => {
-  const [reports, setReports] = useState<ReportData[]>([
-    { id: 1, name: 'Информация о детях-сиротах', type: 'orphans', date: '17.09.2025' },
-    { id: 2, name: 'Информация о лицах с инвалидностью', type: 'disabled', date: '07.10.2025' },
-  ]);
-
+  const [reports, setReports] = useState<ReportData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [currentReportType, setCurrentReportType] = useState<'orphans' | 'disabled' | null>(null);
 
-  const [disabledStudents, setDisabledStudents] = useState<DisabledStudent[]>(mockDisabledStudents);
-  const [orphanStudents, setOrphanStudents] = useState<OrphanStudent[]>(mockOrphanStudents);
+  const [disabledStudents, setDisabledStudents] = useState<DisabledStudent[]>([]);
+  const [orphanStudents, setOrphanStudents] = useState<OrphanStudent[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
   const [editingValue, setEditingValue] = useState<string>('');
   const [editingInfo, setEditingInfo] = useState<{
     type: 'disabled' | 'orphan';
@@ -385,11 +359,259 @@ export const ReportsSection: React.FC = () => {
     field: string;
   } | null>(null);
 
-  // === ПОИСК, ФИЛЬТР, СОРТИРОВКА ПО ОТЧЁТАМ ===
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'orphans' | 'disabled'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [newReportName, setNewReportName] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [validationError, setValidationError] = useState<{ field: string; error: string } | null>(null);
+
+  // Загрузка сохраненных отчетов с сервера
+  const loadSavedReports = useCallback(async () => {
+    try {
+      const [orphansReports, disabledReports] = await Promise.all([
+        socialApiService.getReportsByType('сироты'),
+        socialApiService.getReportsByType('инвалиды')
+      ]);
+
+      const formattedReports: ReportData[] = [
+        ...orphansReports.map(report => ({
+          id: report.id,
+          name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' '),
+          type: 'orphans' as const,
+          date: new Date().toLocaleDateString('ru-RU'),
+          fileId: report.id,
+          fileName: report.nameFile
+        })),
+        ...disabledReports.map(report => ({
+          id: report.id,
+          name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' '),
+          type: 'disabled' as const,
+          date: new Date().toLocaleDateString('ru-RU'),
+          fileId: report.id,
+          fileName: report.nameFile
+        }))
+      ];
+
+      setReports(formattedReports);
+    } catch (error) {
+      console.error('Error loading saved reports:', error);
+    }
+  }, []);
+
+  // Получение специальности группы по номеру
+  const getGroupSpecialty = useCallback(async (groupNumber: number): Promise<string> => {
+    if (groupSpecialtyCache.has(groupNumber)) {
+      return groupSpecialtyCache.get(groupNumber)!;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/groups/stats/curator/88`);
+      if (response.ok) {
+        const groupsData = await response.json();
+        const group = groupsData.find((g: any) => g.groupNumber === groupNumber);
+        if (group && group.specialty) {
+          groupSpecialtyCache.set(groupNumber, group.specialty);
+          return group.specialty;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching group specialty:', error);
+    }
+    return '';
+  }, []);
+
+  // Получение данных студента по ID
+  const getStudentDetails = useCallback(async (studentId: number): Promise<{
+    telephone?: string;
+    address?: string;
+    educationBasis?: string;
+    birthDate?: string;
+    lastName?: string;
+    firstName?: string;
+    patronymic?: string;
+  } | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/students/id/${studentId}`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          telephone: data.telephone,
+          address: data.address,
+          educationBasis: data.educationBasis,
+          birthDate: data.birthDate,
+          lastName: data.lastName,
+          firstName: data.name,
+          patronymic: data.patronymic
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+    }
+    return null;
+  }, []);
+
+  const loadOrphans = useCallback(async () => {
+    try {
+      const data = await socialApiService.getOrphans();
+      
+      const enrichedOrphans = await Promise.all(data.map(async (item) => {
+        let fio = item.fio;
+        let specialty = item.specialty;
+        let telephone = item.telephone;
+        let registrationAddress = item.registrationAddress;
+        let birthDate = item.birthDate;
+        let educationForm = item.educationForm;
+
+        if (!fio || fio === 'null' || fio === '—') {
+          const studentDetails = await getStudentDetails(item.idStudent);
+          if (studentDetails) {
+            const lastName = studentDetails.lastName || '';
+            const firstName = studentDetails.firstName || '';
+            const patronymic = studentDetails.patronymic || '';
+            fio = `${lastName} ${firstName} ${patronymic}`.trim();
+            
+            if (!telephone && studentDetails.telephone) telephone = studentDetails.telephone;
+            if (!registrationAddress && studentDetails.address) registrationAddress = studentDetails.address;
+            if ((!birthDate || birthDate === 'null') && studentDetails.birthDate) {
+              birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+            }
+            if ((!educationForm || educationForm === 'null') && studentDetails.educationBasis) {
+              educationForm = studentDetails.educationBasis;
+            }
+          }
+        }
+
+        // Если нет специальности, получаем из группы
+        if (!specialty || specialty === 'null') {
+          const groupSpecialty = await getGroupSpecialty(item.numberGroup);
+          if (groupSpecialty) specialty = groupSpecialty;
+        }
+
+        return {
+          id: item.id,
+          fio: fio || '—',
+          numberGroup: item.numberGroup,
+          specialty: specialty || '—',
+          birthDate: birthDate || '—',
+          parentInfo: item.parentInfo || '—',
+          telephone: telephone || '—',
+          registrationAddress: registrationAddress || '—',
+          guardian: item.guardian || '—',
+          educationForm: educationForm || '—',
+          idGroup: item.idGroup,
+          idStudent: item.idStudent
+        };
+      }));
+
+      setOrphanStudents(enrichedOrphans);
+    } catch (error) {
+      console.error('Error loading orphans:', error);
+    }
+  }, [getStudentDetails, getGroupSpecialty]);
+
+  const loadInvalids = useCallback(async () => {
+    try {
+      const invalidsData = await socialApiService.getInvalids();
+      let certificates: CertificateFile[] = [];
+      
+      try {
+        certificates = await socialApiService.getCertificates();
+      } catch (certErr) {
+        console.warn('Не удалось загрузить сертификаты:', certErr);
+      }
+
+      const certMap = new Map<number, CertificateFile[]>();
+      certificates.forEach(cert => {
+        if (cert.idStudent) {
+          if (!certMap.has(cert.idStudent)) {
+            certMap.set(cert.idStudent, []);
+          }
+          certMap.get(cert.idStudent)!.push(cert);
+        }
+      });
+
+      const enrichedInvalids = await Promise.all(invalidsData.map(async (item) => {
+        let fio = item.fio;
+        let specialty = item.specialty;
+        let telephone = item.telephone;
+        let address = item.address;
+        let birthDate = item.birthDate;
+        let educationForm = item.educationForm;
+
+        if (!fio || fio === 'null' || fio === '—') {
+          const studentDetails = await getStudentDetails(item.idStudent);
+          if (studentDetails) {
+            const lastName = studentDetails.lastName || '';
+            const firstName = studentDetails.firstName || '';
+            const patronymic = studentDetails.patronymic || '';
+            fio = `${lastName} ${firstName} ${patronymic}`.trim();
+            
+            if ((!telephone || telephone === 'null') && studentDetails.telephone) telephone = studentDetails.telephone;
+            if ((!address || address === 'null') && studentDetails.address) address = studentDetails.address;
+            if ((!birthDate || birthDate === 'null') && studentDetails.birthDate) {
+              birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+            }
+            if ((!educationForm || educationForm === 'null') && studentDetails.educationBasis) {
+              educationForm = studentDetails.educationBasis;
+            }
+          }
+        }
+
+        if (!specialty || specialty === 'null') {
+          const groupSpecialty = await getGroupSpecialty(item.numberGroup);
+          if (groupSpecialty) specialty = groupSpecialty;
+        }
+
+        const studentCerts = certMap.get(item.idStudent) || [];
+        const images = studentCerts.map(cert => ({
+          fileId: cert.id,
+          url: socialApiService.getFileUrl(cert.id),
+          fileName: cert.nameFile || `справка_${cert.id}`
+        }));
+
+        return {
+          id: item.id,
+          fio: fio || '—',
+          numberGroup: item.numberGroup,
+          specialty: specialty || '—',
+          certificate: {
+            fullInfo: item.certificate || '',
+            images: images
+          },
+          status: item.status || '—',
+          limitationType: item.limitationType || '—',
+          birthDate: birthDate || '—',
+          address: address || '—',
+          telephone: telephone || '—',
+          educationForm: educationForm || '—',
+          idGroup: item.idGroup,
+          idStudent: item.idStudent
+        };
+      }));
+
+      setDisabledStudents(enrichedInvalids);
+    } catch (error) {
+      console.error('Error loading invalids:', error);
+      setDisabledStudents([]);
+    }
+  }, [getStudentDetails, getGroupSpecialty]);
+
+  const loadAllData = useCallback(async () => {
+    setLoadingStudents(true);
+    try {
+      await Promise.all([loadOrphans(), loadInvalids(), loadSavedReports()]);
+    } catch (error) {
+      console.error('Error loading all data:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [loadOrphans, loadInvalids, loadSavedReports]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
   const filteredReports = useMemo(() => {
     let result = [...reports];
@@ -424,17 +646,17 @@ export const ReportsSection: React.FC = () => {
   const filteredDisabledStudents = useMemo(() => {
     if (!studentSearchTerm) return disabledStudents;
     const term = studentSearchTerm.toLowerCase();
-    return disabledStudents.filter(s => s.fullName.toLowerCase().includes(term));
+    return disabledStudents.filter(s => s.fio.toLowerCase().includes(term));
   }, [disabledStudents, studentSearchTerm]);
 
   const filteredOrphanStudents = useMemo(() => {
     if (!studentSearchTerm) return orphanStudents;
     const term = studentSearchTerm.toLowerCase();
-    return orphanStudents.filter(s => s.fullName.toLowerCase().includes(term));
+    return orphanStudents.filter(s => s.fio.toLowerCase().includes(term));
   }, [orphanStudents, studentSearchTerm]);
 
   useEffect(() => {
-    if (showCreateModal || showStudentsModal || previewImage) {
+    if (showCreateModal || showStudentsModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -442,14 +664,20 @@ export const ReportsSection: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showCreateModal, showStudentsModal, previewImage]);
+  }, [showCreateModal, showStudentsModal]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    socialApiService.invalidateAllReportsCache();
+    groupSpecialtyCache.clear();
+    await loadAllData();
+    setTimeout(() => setRefreshing(false), 500);
   };
 
   const openCreateModal = (type: 'orphans' | 'disabled') => {
+    setNewReportName(
+      `Информация ${type === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`
+    );
     setShowCreateModal(true);
     setCurrentReportType(type);
   };
@@ -460,51 +688,252 @@ export const ReportsSection: React.FC = () => {
     setShowStudentsModal(true);
   };
 
-  const handleCreateSubmit = () => {
-    if (!currentReportType) return;
+    const generateWordReport = async (type: 'orphans' | 'disabled', customName?: string) => {
+    setIsGenerating(true);
+    try {
+      const reportType = REPORT_TYPES.find(t => t.key === type);
+      if (!reportType) return;
 
-    const newReport: ReportData = {
-      id: Date.now(),
-      name: `Информация ${currentReportType === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`,
-      type: currentReportType,
-      date: new Date().toLocaleDateString('ru-RU'),
-    };
+      const templateResponse = await fetch(reportType.templateFile);
+      if (!templateResponse.ok) {
+        throw new Error(`Шаблон не найден: ${reportType.templateFile}`);
+      }
+      const templateBlob = await templateResponse.blob();
+      const templateArrayBuffer = await templateBlob.arrayBuffer();
 
-    setReports(prev => [newReport, ...prev]);
-    setShowCreateModal(false);
-    setCurrentReportType(null);
+      const zip = new PizZip(templateArrayBuffer);
+      const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+      });
+
+      const currentDate = new Date();
+      const currentDateStr = currentDate.toLocaleDateString('ru-RU');
+      const currentDateLong = currentDate.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      if (type === 'orphans') {
+        const students = orphanStudents.map((s, index) => ({
+          num: index + 1,
+          fio: s.fio || '',
+          numberGroup: s.numberGroup || '',
+          specialty: s.specialty || '',
+          birthDate: s.birthDate || '',
+          parentInfo: s.parentInfo || '',
+          telephone: s.telephone || '',
+          registrationAddress: s.registrationAddress || '',
+          guardian: s.guardian || '',
+          educationForm: s.educationForm || ''
+        }));
+
+        doc.setData({
+          reportDate: currentDateLong,
+          students: students
+        });
+      } else {
+        const students = disabledStudents.map((s, index) => ({
+          num: index + 1,
+          fio: s.fio || '',
+          numberGroup: s.numberGroup || '',
+          specialty: s.specialty || '',
+          certificate: s.certificate.fullInfo || '',
+          status: s.status || '',
+          limitationType: s.limitationType || '',
+          birthDate: s.birthDate || '',
+          address: s.address || '',
+          telephone: s.telephone || '',
+          educationForm: s.educationForm || ''
+        }));
+
+        doc.setData({
+          reportDate: currentDateStr,
+          students: students
+        });
+      }
+
+      doc.render();
+      const out = doc.getZip().generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+
+      const fileName = `${customName || `Информация_${reportType.title}`}_${currentDateStr.replace(/\./g, '_')}.docx`;
+      
+      const uploadResult = await socialApiService.uploadReport(
+        new File([out], fileName, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+        0,
+        reportType.reportType
+      );
+
+      if (uploadResult.success) {
+        const newReport: ReportData = {
+          id: uploadResult.fileId || Date.now(),
+          name: customName || `Информация ${reportType.title}`,
+          type: type,
+          date: currentDateStr,
+          fileId: uploadResult.fileId || Date.now(),
+          fileName: fileName
+        };
+        setReports(prev => [newReport, ...prev]);
+      }
+
+      saveAs(out, fileName);
+
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Ошибка при формировании отчёта');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleDownload = (reportId: number) => {
-    console.log(`Скачивание отчета #${reportId} в формате Word`);
+    const handleDownload = async (reportId: number) => {
+    const report = reports.find(r => r.id === reportId);
+    if (!report || !report.fileId) return;
+    
+    try {
+      const blob = await socialApiService.downloadReport(report.fileId);
+      saveAs(blob, report.fileName);
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Ошибка при скачивании отчета');
+    }
+  };
+
+  const handleDeleteReport = useCallback(async (reportId: number) => {
+    const report = reports.find(r => r.id === reportId);
+    if (!report || !report.fileId) return;
+    
+    if (!window.confirm('Удалить отчёт?')) return;
+    
+    try {
+      await socialApiService.deleteReport(report.fileId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      alert('Ошибка при удалении отчета');
+    }
+  }, [reports]);
+
+  const handleCreateSubmit = async () => {
+    if (!currentReportType) return;
+    setShowCreateModal(false);
+    await generateWordReport(currentReportType, newReportName);
+    setCurrentReportType(null);
+    setNewReportName('');
   };
 
   const startEditing = useCallback((type: 'disabled' | 'orphan', id: number, field: string, currentValue: string) => {
+    const cleanValue = currentValue === '—' ? '' : currentValue;
     setEditingInfo({ type, id, field });
-    setEditingValue(currentValue);
+    setEditingValue(cleanValue);
   }, []);
 
-  const saveEdit = useCallback(() => {
+  const saveEdit = useCallback(async () => {
     if (!editingInfo) return;
 
-    if (editingInfo.type === 'disabled') {
-      setDisabledStudents(prev => prev.map(student =>
-        student.id === editingInfo.id
-          ? (editingInfo.field === 'certificate'
-              ? { ...student, certificate: { ...student.certificate, fullInfo: editingValue } }
-              : { ...student, [editingInfo.field]: editingValue })
-          : student
-      ));
-    } else {
-      setOrphanStudents(prev => prev.map(student =>
-        student.id === editingInfo.id
-          ? { ...student, [editingInfo.field]: editingValue }
-          : student
-      ));
+    const validation = validateField(editingInfo.field, editingValue);
+    if (!validation.isValid) {
+      setValidationError({ field: editingInfo.field, error: validation.error || 'Ошибка валидации' });
+      setTimeout(() => setValidationError(null), 3000);
+      setEditingInfo(null);
+      setEditingValue('');
+      return;
     }
+
+    try {
+      if (editingInfo.type === 'disabled') {
+        const student = disabledStudents.find(s => s.id === editingInfo.id);
+        if (!student) return;
+
+        let updateData: Partial<DisabledStudentApi> = {};
+
+        if (editingInfo.field === 'certificate') {
+          updateData = { certificate: editingValue };
+        } else if (editingInfo.field === 'status') {
+          updateData = { status: editingValue };
+        } else if (editingInfo.field === 'limitationType') {
+          updateData = { limitationType: editingValue };
+        } else if (editingInfo.field === 'address') {
+          updateData = { address: editingValue };
+        } else if (editingInfo.field === 'educationForm') {
+          updateData = { educationForm: editingValue };
+        } else if (editingInfo.field === 'fio') {
+          updateData = { fio: editingValue };
+        } else if (editingInfo.field === 'numberGroup') {
+          updateData = { numberGroup: parseInt(editingValue) || student.numberGroup };
+        } else if (editingInfo.field === 'specialty') {
+          updateData = { specialty: editingValue };
+        } else if (editingInfo.field === 'birthDate') {
+          const isoDate = socialApiService.parseDateRuToIso(editingValue);
+          updateData = { birthDate: isoDate };
+        } else if (editingInfo.field === 'telephone') {
+          updateData = { telephone: editingValue };
+        }
+
+        await socialApiService.updateInvalid(editingInfo.id, updateData);
+
+        const displayValue = editingInfo.field === 'birthDate'
+          ? socialApiService.formatDateRu(socialApiService.parseDateRuToIso(editingValue))
+          : editingValue;
+
+        setDisabledStudents(prev => prev.map(s =>
+          s.id === editingInfo.id
+            ? (editingInfo.field === 'certificate'
+                ? { ...s, certificate: { ...s.certificate, fullInfo: editingValue } }
+                : { ...s, [editingInfo.field]: displayValue })
+            : s
+        ));
+      } else {
+        const student = orphanStudents.find(s => s.id === editingInfo.id);
+        if (!student) return;
+
+        let updateData: Partial<OrphanStudentApi> = {};
+
+        if (editingInfo.field === 'guardian') {
+          updateData = { guardian: editingValue };
+        } else if (editingInfo.field === 'telephone') {
+          updateData = { telephone: editingValue };
+        } else if (editingInfo.field === 'registrationAddress') {
+          updateData = { registrationAddress: editingValue };
+        } else if (editingInfo.field === 'parentInfo') {
+          updateData = { parentInfo: editingValue };
+        } else if (editingInfo.field === 'educationForm') {
+          updateData = { educationForm: editingValue };
+        } else if (editingInfo.field === 'fio') {
+          updateData = { fio: editingValue };
+        } else if (editingInfo.field === 'numberGroup') {
+          updateData = { numberGroup: parseInt(editingValue) || student.numberGroup };
+        } else if (editingInfo.field === 'specialty') {
+          updateData = { specialty: editingValue };
+        } else if (editingInfo.field === 'birthDate') {
+          const isoDate = socialApiService.parseDateRuToIso(editingValue);
+          updateData = { birthDate: isoDate };
+        }
+
+        await socialApiService.updateOrphan(editingInfo.id, updateData);
+
+        const displayValue = editingInfo.field === 'birthDate'
+          ? socialApiService.formatDateRu(socialApiService.parseDateRuToIso(editingValue))
+          : editingValue;
+
+        setOrphanStudents(prev => prev.map(s =>
+          s.id === editingInfo.id
+            ? { ...s, [editingInfo.field]: displayValue }
+            : s
+        ));
+      }
+    } catch (error) {
+      console.error('Error saving edit:', error);
+      alert('Ошибка при сохранении изменений');
+    }
+
     setEditingInfo(null);
     setEditingValue('');
-  }, [editingInfo, editingValue]);
+  }, [editingInfo, editingValue, disabledStudents, orphanStudents]);
 
   const cancelEdit = useCallback(() => {
     setEditingInfo(null);
@@ -527,20 +956,68 @@ export const ReportsSection: React.FC = () => {
     ));
   }, []);
 
-  const handleCertificateUpload = useCallback((studentId: number, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setDisabledStudents(prev => prev.map(student =>
-        student.id === studentId
-          ? { ...student, certificate: { ...student.certificate, image: e.target?.result as string } }
-          : student
+    const handleCertificateUpload = useCallback(async (studentId: number, file: File) => {
+    try {
+      const result = await socialApiService.uploadCertificate(file, studentId);
+
+      if (result.success && result.fileUrl) {
+        const certificates = await socialApiService.getStudentCertificates(studentId);
+        
+        setDisabledStudents(prev => prev.map(student =>
+          student.id === studentId
+            ? {
+                ...student,
+                certificate: {
+                  ...student.certificate,
+                  images: certificates.map(cert => ({
+                    fileId: cert.id,
+                    url: socialApiService.getFileUrl(cert.id),
+                    fileName: cert.nameFile || `справка_${cert.id}`
+                  }))
+                }
+              }
+            : student
+        ));
+      }
+    } catch (error) {
+      console.error('Error uploading certificate:', error);
+      alert('Ошибка при загрузке справки');
+    }
+  }, []);
+
+  const handleCertificateDownload = useCallback(async (fileId: number, fileName: string) => {
+    try {
+      await socialApiService.downloadFile(fileId);
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      alert('Ошибка при скачивании файла');
+    }
+  }, []);
+
+  const handleCertificateDelete = useCallback(async (studentId: number, fileId: number) => {
+    if (!window.confirm('Удалить прикрепленную справку?')) return;
+    try {
+      await socialApiService.deleteCertificate(fileId);
+      setDisabledStudents(prev => prev.map(s =>
+        s.id === studentId
+          ? {
+              ...s,
+              certificate: {
+                ...s.certificate,
+                images: s.certificate.images.filter(img => img.fileId !== fileId)
+              }
+            }
+          : s
       ));
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error deleting certificate:', error);
+      alert('Ошибка при удалении файла');
+    }
   }, []);
 
   const renderCell = useCallback((value: string, type: 'disabled' | 'orphan', id: number, field: string, placeholder?: string) => {
     const isEditing = editingInfo?.type === type && editingInfo?.id === id && editingInfo?.field === field;
+    const hasError = validationError?.field === field;
 
     if (isEditing && field === 'certificate') {
       return (
@@ -555,7 +1032,7 @@ export const ReportsSection: React.FC = () => {
               saveEdit();
             }
           }}
-          className="edit-input certificate-textarea"
+          className={`edit-input certificate-textarea ${hasError ? 'validation-error' : ''}`}
           placeholder={placeholder}
           autoFocus
           rows={2}
@@ -564,9 +1041,10 @@ export const ReportsSection: React.FC = () => {
     }
 
     if (isEditing) {
+      const inputType = (field === 'telephone' || field === 'phone') ? 'tel' : 'text';
       return (
         <input
-          type="text"
+          type={inputType}
           value={editingValue}
           onChange={(e) => setEditingValue(e.target.value)}
           onBlur={saveEdit}
@@ -610,6 +1088,10 @@ export const ReportsSection: React.FC = () => {
                 <span className="feature-icon"></span>
                 <span>Просмотр и редактирование списков студентов</span>
               </div>
+              <div className="feature-item">
+                <span className="feature-icon"></span>
+                <span>Загрузка и скачивание фото/документов справок для инвалидов</span>
+              </div>
             </div>
           </div>
         </div>
@@ -638,29 +1120,6 @@ export const ReportsSection: React.FC = () => {
         <InfoIcon />
         <div className="reports-header-actions">
           <RefreshButton />
-        </div>
-      </div>
-
-      <div className="reports-stats-grid">
-        {REPORT_TYPES.map(type => (
-          <div key={type.key} className="reports-stat-card">
-            <div className="reports-stat-icon">
-              <img src={type.cardImg} alt={type.title} />
-            </div>
-            <div className="reports-stat-info">
-              <h3>—</h3>
-              <p>{type.title}</p>
-            </div>
-          </div>
-        ))}
-        <div className="reports-stat-card">
-          <div className="reports-stat-icon">
-            <img src="/social-icons/all_od_icon.svg" alt="Всего" />
-          </div>
-          <div className="reports-stat-info">
-            <h3>—</h3>
-            <p>Всего студентов</p>
-          </div>
         </div>
       </div>
 
@@ -696,7 +1155,6 @@ export const ReportsSection: React.FC = () => {
         ))}
       </div>
 
-      {/* === ПАНЕЛЬ ПОИСКА, ФИЛЬТРА И СОРТИРОВКИ === */}
       <div className="reports-control-panel">
         <div className="reports-controls-top-row">
           <div className="reports-search-box">
@@ -802,6 +1260,12 @@ export const ReportsSection: React.FC = () => {
                       >
                         Word
                       </button>
+                      <button
+                        className="reports-action-btn delete-btn"
+                        onClick={() => handleDeleteReport(report.id)}
+                      >
+                        ✕
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -815,7 +1279,6 @@ export const ReportsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Модальное окно создания отчета */}
       {showCreateModal && (
         <>
           <div className="reports-modal-overlay" onClick={() => setShowCreateModal(false)} />
@@ -841,8 +1304,8 @@ export const ReportsSection: React.FC = () => {
                   type="text"
                   className="pc-input-enhanced"
                   placeholder="Введите название отчета"
-                  value={`Информация ${currentReportType === 'orphans' ? 'о детях-сиротах' : 'о лицах с инвалидностью'}`}
-                  readOnly
+                  value={newReportName}
+                  onChange={(e) => setNewReportName(e.target.value)}
                 />
               </div>
               <div className="pc-form-group">
@@ -875,7 +1338,9 @@ export const ReportsSection: React.FC = () => {
           renderCell={renderCell}
           updateCertificateInfo={updateCertificateInfo}
           handleCertificateUpload={handleCertificateUpload}
-          setPreviewImage={setPreviewImage}
+          handleCertificateDownload={handleCertificateDownload}
+          handleCertificateDelete={handleCertificateDelete}
+          loading={loadingStudents}
         />
       )}
       {showStudentsModal && currentReportType === 'orphans' && (
@@ -885,10 +1350,8 @@ export const ReportsSection: React.FC = () => {
           setStudentSearchTerm={setStudentSearchTerm}
           filteredOrphanStudents={filteredOrphanStudents}
           renderCell={renderCell}
+          loading={loadingStudents}
         />
-      )}
-      {previewImage && (
-        <ImagePreviewModal previewImage={previewImage} onClose={() => setPreviewImage(null)} />
       )}
     </div>
   );
