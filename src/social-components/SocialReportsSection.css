@@ -554,10 +554,178 @@
   background: #f0f4ff;
 }
 
+.reports-action-btn.delete-btn-reports:hover {
+  border-color: #a70000;
+  color: #a70000;
+  background: #fff0f0;
+}
+
+
 .reports-empty-cell {
   text-align: center;
   padding: 40px !important;
   color: #64748b;
+}
+
+.reports-modal.confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999;
+  max-width: 420px;
+  width: 90%;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+.certificate-actions-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cert-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  color: #475569;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cert-action-btn.add {
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.cert-action-btn.add:hover {
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.cert-action-btn.download-all {
+  width: auto;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  color: white;
+  gap: 6px;
+}
+
+.cert-action-btn.download-all:hover {
+  background: linear-gradient(135deg, #0020a7 0%, #4875e6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+  color: white;
+}
+
+.cert-action-btn.download-all:active {
+  transform: translateY(0);
+}
+
+.cert-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cert-file-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #1e293b;
+  max-width: 160px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.cert-file-tag:hover {
+  border-color: #cbd5e1;
+  background: #e2e8f0;
+}
+
+.cert-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.cert-file-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.cert-file-remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+
+.cert-upload-big {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px dashed #002FA7;
+  background: #f0f4ff;
+  color: #002FA7;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cert-upload-big:hover {
+  background: #002FA7;
+  color: white;
+  border-style: solid;
+}
+
+.certificate-cell {
+  min-width: 140px;
+}
+
+.certificate-fields {
+  margin-bottom: 4px;
 }
 
 /* Модальные окна */
@@ -972,6 +1140,12 @@
   background: #f8fafc;
 }
 
+.reports-confirm-btn-modal{
+  border-color: #a70000;
+  color: #a70000;
+  background: #fff0f0;
+}
+
 .reports-confirm-btn {
   padding: 12px 32px;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
@@ -1293,13 +1467,6 @@
 .reports-actions-cell {
   white-space: nowrap;
   width: 1%;
-}
-
-.reports-action-btn.delete-btn:hover {
-  border-color: #dc2626;
-  color: #dc2626;
-  background: #dc26264d;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 /* Стили для валидации */

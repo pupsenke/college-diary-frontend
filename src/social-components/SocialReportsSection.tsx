@@ -84,8 +84,8 @@ interface DisabledStudentsModalProps extends StudentsModalProps {
   filteredDisabledStudents: DisabledStudent[];
   updateCertificateInfo: (studentId: number, value: string) => void;
   handleCertificateUpload: (studentId: number, file: File) => void;
-  handleCertificateDownload: (fileId: number, fileName: string) => void;
   handleCertificateDelete: (studentId: number, fileId: number) => void;
+  handleDownloadAllCertificates: (studentId: number) => void;
   loading: boolean;
 }
 
@@ -123,8 +123,8 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
   renderCell,
   updateCertificateInfo,
   handleCertificateUpload,
-  handleCertificateDownload,
   handleCertificateDelete,
+  handleDownloadAllCertificates,
   loading
 }) => {
   return (
@@ -186,36 +186,26 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
                         <div className="certificate-fields">
                           {renderCell(student.certificate.fullInfo, 'disabled', student.id, 'certificate', 'Серия, номер, дата, срок действия')}
                         </div>
-                        <div className="certificate-images-section">
+                        
+                        <div className="certificate-actions-bar">
                           {student.certificate.images.length > 0 && (
-                            <div className="certificate-images-list">
-                              {student.certificate.images.map((img, idx) => (
-                                <div key={img.fileId} className="certificate-image-item">
-                                  <span className="certificate-filename">{img.fileName || `Справка ${idx + 1}`}</span>
-                                  <div className="certificate-image-actions">
-                                    <button
-                                      className="certificate-download-btn"
-                                      onClick={() => handleCertificateDownload(img.fileId, img.fileName)}
-                                      title="Скачать"
-                                    >
-                                    </button>
-                                    <button
-                                      className="certificate-delete-btn"
-                                      onClick={() => handleCertificateDelete(student.id, img.fileId)}
-                                      title="Удалить"
-                                    >
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            <button
+                              className="cert-action-btn download-all"
+                              onClick={() => handleDownloadAllCertificates(student.idStudent)}
+                              title="Скачать все справки"
+                            >
+                              Скачать все
+                            </button>
                           )}
+                          
                           <button
-                            className="certificate-upload-btn"
+                            className="cert-action-btn add"
                             onClick={() => document.getElementById(`cert-input-${student.id}`)?.click()}
+                            title="Прикрепить справку"
                           >
-                            Прикрепить справку
+                            +
                           </button>
+                          
                           <input
                             id={`cert-input-${student.id}`}
                             type="file"
@@ -223,11 +213,28 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
                             style={{ display: 'none' }}
                             onChange={(e) => {
                               if (e.target.files?.[0]) {
-                                handleCertificateUpload(student.id, e.target.files[0]);
+                                handleCertificateUpload(student.idStudent, e.target.files[0]);
                               }
                             }}
                           />
                         </div>
+                        
+                        {student.certificate.images.length > 0 && (
+                          <div className="cert-files-list">
+                            {student.certificate.images.map((img) => (
+                              <div key={img.fileId} className="cert-file-tag">
+                                <span className="cert-file-name" title={img.fileName}>{img.fileName}</span>
+                                <button
+                                  className="cert-file-remove"
+                                  onClick={() => handleCertificateDelete(student.id, img.fileId)}
+                                  title="Удалить справку"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>{renderCell(student.status || '—', 'disabled', student.id, 'status')}</td>
@@ -367,7 +374,13 @@ export const ReportsSection: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationError, setValidationError] = useState<{ field: string; error: string } | null>(null);
 
-  // Загрузка сохраненных отчетов с сервера
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   const loadSavedReports = useCallback(async () => {
     try {
       const [orphansReports, disabledReports] = await Promise.all([
@@ -400,7 +413,6 @@ export const ReportsSection: React.FC = () => {
     }
   }, []);
 
-  // Получение специальности группы по номеру
   const getGroupSpecialty = useCallback(async (groupNumber: number): Promise<string> => {
     if (groupSpecialtyCache.has(groupNumber)) {
       return groupSpecialtyCache.get(groupNumber)!;
@@ -422,7 +434,6 @@ export const ReportsSection: React.FC = () => {
     return '';
   }, []);
 
-  // Получение данных студента по ID
   const getStudentDetails = useCallback(async (studentId: number): Promise<{
     telephone?: string;
     address?: string;
@@ -483,7 +494,6 @@ export const ReportsSection: React.FC = () => {
           }
         }
 
-        // Если нет специальности, получаем из группы
         if (!specialty || specialty === 'null') {
           const groupSpecialty = await getGroupSpecialty(item.numberGroup);
           if (groupSpecialty) specialty = groupSpecialty;
@@ -564,7 +574,7 @@ export const ReportsSection: React.FC = () => {
           if (groupSpecialty) specialty = groupSpecialty;
         }
 
-        const studentCerts = certMap.get(item.idStudent) || [];
+        const studentCerts = (item.idStudent ? certMap.get(item.idStudent) : null) || [];
         const images = studentCerts.map(cert => ({
           fileId: cert.id,
           url: socialApiService.getFileUrl(cert.id),
@@ -656,7 +666,7 @@ export const ReportsSection: React.FC = () => {
   }, [orphanStudents, studentSearchTerm]);
 
   useEffect(() => {
-    if (showCreateModal || showStudentsModal) {
+    if (showCreateModal || showStudentsModal || confirmModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -664,7 +674,7 @@ export const ReportsSection: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showCreateModal, showStudentsModal]);
+  }, [showCreateModal, showStudentsModal, confirmModalOpen]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -682,13 +692,25 @@ export const ReportsSection: React.FC = () => {
     setCurrentReportType(type);
   };
 
-  const openStudentsModal = (type: 'orphans' | 'disabled') => {
+  const openStudentsModal = async (type: 'orphans' | 'disabled') => {
     setCurrentReportType(type);
     setStudentSearchTerm('');
     setShowStudentsModal(true);
+    
+    if (type === 'disabled') {
+      setLoadingStudents(true);
+      try {
+        socialApiService.invalidateCertificatesCache();
+        await loadInvalids();
+      } catch (error) {
+        console.error('Error refreshing invalids with certificates:', error);
+      } finally {
+        setLoadingStudents(false);
+      }
+    }
   };
 
-    const generateWordReport = async (type: 'orphans' | 'disabled', customName?: string) => {
+  const generateWordReport = async (type: 'orphans' | 'disabled', customName?: string) => {
     setIsGenerating(true);
     try {
       const reportType = REPORT_TYPES.find(t => t.key === type);
@@ -790,7 +812,7 @@ export const ReportsSection: React.FC = () => {
     }
   };
 
-    const handleDownload = async (reportId: number) => {
+  const handleDownload = async (reportId: number) => {
     const report = reports.find(r => r.id === reportId);
     if (!report || !report.fileId) return;
     
@@ -803,19 +825,25 @@ export const ReportsSection: React.FC = () => {
     }
   };
 
-  const handleDeleteReport = useCallback(async (reportId: number) => {
+  const handleDeleteReport = useCallback((reportId: number) => {
     const report = reports.find(r => r.id === reportId);
     if (!report || !report.fileId) return;
     
-    if (!window.confirm('Удалить отчёт?')) return;
-    
-    try {
-      await socialApiService.deleteReport(report.fileId);
-      setReports(prev => prev.filter(r => r.id !== reportId));
-    } catch (error) {
-      console.error('Error deleting report:', error);
-      alert('Ошибка при удалении отчета');
-    }
+    setConfirmModalConfig({
+      title: 'Удаление отчета',
+      message: `Вы уверены, что хотите удалить отчет "${report.name}"? Это действие нельзя отменить.`,
+      onConfirm: async () => {
+        try {
+          await socialApiService.deleteReport(report.fileId!);
+          setReports(prev => prev.filter(r => r.id !== reportId));
+        } catch (error) {
+          console.error('Error deleting report:', error);
+          alert('Ошибка при удалении отчета');
+        }
+        setConfirmModalOpen(false);
+      }
+    });
+    setConfirmModalOpen(true);
   }, [reports]);
 
   const handleCreateSubmit = async () => {
@@ -956,15 +984,15 @@ export const ReportsSection: React.FC = () => {
     ));
   }, []);
 
-    const handleCertificateUpload = useCallback(async (studentId: number, file: File) => {
+  const handleCertificateUpload = useCallback(async (studentId: number, file: File) => {
     try {
       const result = await socialApiService.uploadCertificate(file, studentId);
 
-      if (result.success && result.fileUrl) {
+      if (result.success) {
         const certificates = await socialApiService.getStudentCertificates(studentId);
         
         setDisabledStudents(prev => prev.map(student =>
-          student.id === studentId
+          student.idStudent === studentId
             ? {
                 ...student,
                 certificate: {
@@ -987,33 +1015,57 @@ export const ReportsSection: React.FC = () => {
 
   const handleCertificateDownload = useCallback(async (fileId: number, fileName: string) => {
     try {
-      await socialApiService.downloadFile(fileId);
+      const blob = await socialApiService.downloadFile(fileId);
+      saveAs(blob, fileName);
     } catch (error) {
       console.error('Error downloading certificate:', error);
       alert('Ошибка при скачивании файла');
     }
   }, []);
 
-  const handleCertificateDelete = useCallback(async (studentId: number, fileId: number) => {
-    if (!window.confirm('Удалить прикрепленную справку?')) return;
-    try {
-      await socialApiService.deleteCertificate(fileId);
-      setDisabledStudents(prev => prev.map(s =>
-        s.id === studentId
-          ? {
-              ...s,
-              certificate: {
-                ...s.certificate,
-                images: s.certificate.images.filter(img => img.fileId !== fileId)
-              }
-            }
-          : s
-      ));
-    } catch (error) {
-      console.error('Error deleting certificate:', error);
-      alert('Ошибка при удалении файла');
-    }
+  const handleCertificateDelete = useCallback((studentId: number, fileId: number) => {
+    setConfirmModalConfig({
+      title: 'Удаление справки',
+      message: 'Вы уверены, что хотите удалить прикрепленную справку? Это действие нельзя отменить.',
+      onConfirm: async () => {
+        try {
+          await socialApiService.deleteCertificate(fileId);
+          setDisabledStudents(prev => prev.map(s =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  certificate: {
+                    ...s.certificate,
+                    images: s.certificate.images.filter(img => img.fileId !== fileId)
+                  }
+                }
+              : s
+          ));
+        } catch (error) {
+          console.error('Error deleting certificate:', error);
+          alert('Ошибка при удалении файла');
+        }
+        setConfirmModalOpen(false);
+      }
+    });
+    setConfirmModalOpen(true);
   }, []);
+
+  const handleDownloadAllCertificates = useCallback(async (studentId: number) => {
+    const student = disabledStudents.find(s => s.idStudent === studentId);
+    if (!student || student.certificate.images.length === 0) return;
+    
+    try {
+      for (const img of student.certificate.images) {
+        const blob = await socialApiService.downloadFile(img.fileId);
+        saveAs(blob, img.fileName);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    } catch (error) {
+      console.error('Error downloading certificates:', error);
+      alert('Ошибка при скачивании справок');
+    }
+  }, [disabledStudents]);
 
   const renderCell = useCallback((value: string, type: 'disabled' | 'orphan', id: number, field: string, placeholder?: string) => {
     const isEditing = editingInfo?.type === type && editingInfo?.id === id && editingInfo?.field === field;
@@ -1261,7 +1313,7 @@ export const ReportsSection: React.FC = () => {
                         Word
                       </button>
                       <button
-                        className="reports-action-btn delete-btn"
+                        className="reports-action-btn delete-btn-reports"
                         onClick={() => handleDeleteReport(report.id)}
                       >
                         ✕
@@ -1338,8 +1390,8 @@ export const ReportsSection: React.FC = () => {
           renderCell={renderCell}
           updateCertificateInfo={updateCertificateInfo}
           handleCertificateUpload={handleCertificateUpload}
-          handleCertificateDownload={handleCertificateDownload}
           handleCertificateDelete={handleCertificateDelete}
+          handleDownloadAllCertificates={handleDownloadAllCertificates}
           loading={loadingStudents}
         />
       )}
@@ -1352,6 +1404,39 @@ export const ReportsSection: React.FC = () => {
           renderCell={renderCell}
           loading={loadingStudents}
         />
+      )}
+
+      {/* Модальное окно подтверждения удаления */}
+      {confirmModalOpen && confirmModalConfig && (
+        <>
+          <div className="reports-modal-overlay" onClick={() => setConfirmModalOpen(false)} />
+          <div className="reports-modal confirm-modal">
+            <div className="reports-modal-header">
+              <div className="reports-modal-header-content">
+                <div className="reports-modal-icon">
+                  <span style={{ fontSize: 24, filter: 'brightness(0) invert(1)' }}>⚠</span>
+                </div>
+                <div>
+                  <h3>{confirmModalConfig.title}</h3>
+                </div>
+              </div>
+              <button className="reports-modal-close" onClick={() => setConfirmModalOpen(false)}>✕</button>
+            </div>
+            <div className="reports-modal-content">
+              <p style={{ margin: 0, color: '#475569', fontSize: 15 }}>{confirmModalConfig.message}</p>
+            </div>
+            <div className="reports-modal-actions">
+              <button className="reports-btn-secondary" onClick={() => setConfirmModalOpen(false)}>Отмена</button>
+              <button 
+                className="reports-confirm-btn" 
+                onClick={confirmModalConfig.onConfirm}
+                style={{ background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)' }}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
