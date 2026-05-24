@@ -157,6 +157,12 @@ export interface SaveSchedulePayload {
   isIgnored?: boolean;
 }
 
+export interface TeacherWithNote {
+  id: number;
+  name: string;
+  note: string;
+}
+
 // сервис
 class MethodistApiService {
   private baseUrl: string;
@@ -165,13 +171,13 @@ class MethodistApiService {
     this.baseUrl = API_BASE_URL;
   }
 
-  // группы
+  // ГРУППЫ
   async getGroups(): Promise<ApiGroup[]> {
     const response = await axios.get<ApiGroup[]>(`${this.baseUrl}/api/v1/groups`);
     return response.data;
   }
 
-  // преподаватели (Staff)
+  // ПРЕПОДАВАТЕЛИ
   async getStaffMembers(): Promise<ApiStaff[]> {
     const response = await axios.get<ApiStaff[]>(`${this.baseUrl}/api/v1/staffs`);
     return response.data;
@@ -190,6 +196,57 @@ class MethodistApiService {
     return response.data;
   }
 
+  async updateStaffNote(id: number, note: string): Promise<ApiStaff> {
+    const response = await axios.patch<ApiStaff>(`${this.baseUrl}/api/v1/staffs/update`, {
+      id,
+      note
+    });
+    return response.data;
+  }
+
+  // получение примечания преподавателя по ID через /api/v1/staffs/note/{id}
+  async getStaffNoteById(id: number): Promise<string> {
+    try {
+      const response = await axios.get<string>(`${this.baseUrl}/api/v1/staffs/note/${id}`);
+      return response.data || '';
+    } catch (error) {
+      console.error(`Ошибка при получении примечания для преподавателя ${id}:`, error);
+      return '';
+    }
+  }
+
+  // получение полных данных преподавателя с примечанием через /api/v1/staffs/id/{id}
+  async getStaffByIdWithNote(id: number): Promise<ApiStaff> {
+    const response = await axios.get<ApiStaff>(`${this.baseUrl}/api/v1/staffs/id/${id}`);
+    return response.data;
+  }
+
+  // загрузка всех преподавателей с их примечаниями
+  async getTeachersWithNotes(): Promise<TeacherWithNote[]> {
+    const staff = await this.getStaffMembers();
+    
+    const teachersWithNotes = await Promise.all(
+      staff
+        .filter(st => st.staffPosition?.some(pos => pos.id === 9))
+        .map(async (st) => {
+          let note = st.note || '';
+          
+          // если примечание не пришло в основном запросе, пробуем получить отдельно
+          if (!note || note.trim() === '') {
+            note = await this.getStaffNoteById(st.id);
+          }
+          
+          return {
+            id: st.id,
+            name: `${st.lastName} ${st.name} ${st.patronymic || ''}`.trim(),
+            note: note
+          };
+        })
+    );
+    
+    return teachersWithNotes.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   async getTeachers(): Promise<TeacherOption[]> {
     const staff = await this.getStaffMembers();
     return staff
@@ -201,16 +258,7 @@ class MethodistApiService {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // обновление заметки преподавателя
-  async updateStaffNote(id: number, note: string): Promise<ApiStaff> {
-    const response = await axios.patch<ApiStaff>(`${this.baseUrl}/api/v1/staffs/update`, {
-      id,
-      note
-    });
-    return response.data;
-  }
-
-  // предметы 
+  // ПРЕДМЕТЫ
   async getSubjects(): Promise<ApiSubject[]> {
     const response = await axios.get<ApiSubject[]>(`${this.baseUrl}/api/v1/subjects`);
     return response.data;
@@ -233,7 +281,7 @@ class MethodistApiService {
     return response.data;
   }
 
-  // аудитории 
+  // АУДИТОРИИ
   async getRooms(): Promise<ApiRoom[]> {
     const response = await axios.get<ApiRoom[]>(`${this.baseUrl}/api/v1/rooms`);
     return response.data;
@@ -244,7 +292,7 @@ class MethodistApiService {
     return rooms.map(room => ({ id: room.id, name: room.name }));
   }
 
-  // расписание
+  // РАСПИСАНИЕ
   async getSchedule(): Promise<ApiSchedule[]> {
     const response = await axios.get<ApiSchedule[]>(`${this.baseUrl}/api/v1/schedule`);
     return response.data;
@@ -261,7 +309,7 @@ class MethodistApiService {
     const response = await axios.post<ApiSchedule>(`${this.baseUrl}/api/v1/schedule/save`, {
       ...payload,
       dateReplacement: payload.dateReplacement || null,
-      isIgnored: payload.isIgnored !== undefined ? payload.isIgnored : false // ✅ По умолчанию isIgnored: false
+      isIgnored: payload.isIgnored !== undefined ? payload.isIgnored : false
     });
     return response.data;
   }
@@ -294,11 +342,10 @@ class MethodistApiService {
     const response = await axios.get<ApiScheduleItem[]>(
       `${this.baseUrl}/api/v1/schedule/group/${groupId}`
     );
-    // фильтруем занятия, оставляем только те, у которых isIgnored: false
     return response.data.filter(item => item.isIgnored === false);
   }
 
-  // файлы (Path) 
+  // ФАЙЛЫ (PATH)
   async uploadFile(file: File, type: string, studentId?: number): Promise<PathTypeResponse> {
     const formData = new FormData();
     formData.append('file', file);
@@ -342,7 +389,7 @@ class MethodistApiService {
     }
   }
 
-  // замены (LocalStorage)
+  // ЗАМЕНЫ
   private getStorageKey(): string {
     return 'scheduleReplacements';
   }
@@ -386,7 +433,7 @@ class MethodistApiService {
     localStorage.removeItem(this.getStorageKey());
   }
 
-  // вспомогательные методы
+  // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
   getDayWeekForApi(date: Date): string {
     const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     return days[date.getDay()];

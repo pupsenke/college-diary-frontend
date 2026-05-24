@@ -182,7 +182,7 @@ const TeacherToRoom: React.FC = () => {
     <div className="tr-container">
       <div className="tr-header">
         <button className="tr-back-btn" onClick={() => navigate(-1)}>
-          ← Назад
+          Назад
         </button>
         <div className="tr-search-wrapper">
           <input

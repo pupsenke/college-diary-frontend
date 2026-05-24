@@ -201,20 +201,7 @@
 }
 
 .nt-btn-edit:hover {
-  background: #001f6e;
-}
-
-.nt-success-toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #28a745;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  animation: slideIn 0.3s ease;
-  z-index: 1000;
+  background: #002581;
 }
 
 .nt-loading {
@@ -229,6 +216,25 @@
   padding: 40px;
   color: #999;
   font-size: 14px;
+}
+
+.nt-btn-save {
+  background: #002FA7;
+  color: white;
+}
+
+.nt-btn-save:hover {
+  background: #002581;
+}
+
+.nt-btn-cancel {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.nt-btn-cancel:hover {
+  background: #f4f7ff;
 }
 
 @keyframes slideIn {

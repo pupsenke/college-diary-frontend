@@ -20,6 +20,30 @@ export const NotesTeacher: React.FC = () => {
     loadTeachers();
   }, []);
 
+  const handleCancelEdit = () => {
+  setEditingTeacherId(null);
+  setNoteText('');
+};
+
+    const handleSaveNote = async (teacherId: number) => {
+    try {
+        setSavingId(teacherId);
+
+        // тут вызывай свой API для сохранения
+        await methodistApiService.updateStaffNote(teacherId, noteText);
+
+        setTeachers(prev =>
+        prev.map(t => (t.id === teacherId ? { ...t, note: noteText } : t))
+        );
+
+        setEditingTeacherId(null);
+    } catch (error) {
+        console.error('Ошибка при сохранении примечания:', error);
+    } finally {
+        setSavingId(null);
+    }
+    };
+
   const loadTeachers = async () => {
     try {
       setLoading(true);
@@ -135,20 +159,31 @@ export const NotesTeacher: React.FC = () => {
             </div>
             
             <div className="nt-item-action">
-              <button
-                  className="nt-btn nt-btn-edit"
-                  onClick={() => handleEditNote(teacher)}
-                  title="Редактировать примечание"
-                >
-                  Редактировать
-                </button>
-            </div>
-            
-            {successMessage?.id === teacher.id && (
-              <div className="nt-success-toast">
-                {successMessage.message}
-              </div>
-            )}
+                {editingTeacherId === teacher.id ? (
+                    <div className="nt-action-buttons">
+                    <button
+                        className="nt-btn nt-btn-save"
+                        onClick={() => handleSaveNote(teacher.id)}
+                    >
+                        Сохранить
+                    </button>
+
+                    <button
+                        className="nt-btn nt-btn-cancel"
+                        onClick={handleCancelEdit}
+                    >
+                        Назад
+                    </button>
+                    </div>
+                ) : (
+                    <button
+                    className="nt-btn nt-btn-edit"
+                    onClick={() => handleEditNote(teacher)}
+                    >
+                    Редактировать
+                    </button>
+                )}
+                </div>
           </div>
         ))}
       </div>

@@ -9,6 +9,7 @@ import type {
   ApiStaff
 } from '../services/methodistApiService';
 
+
 type ApiScheduleItem = {
   id: number;
   dayWeek: string;
@@ -23,6 +24,7 @@ type ApiScheduleItem = {
   subgroup?: number | null;
   isIgnored?: boolean;
 };
+
 
 type PairData = {
   id?: number; // добавляем id занятия
@@ -39,10 +41,27 @@ type PairData = {
   subgroup?: number | null;
 };
 
+
 type PairCellData = {
   upper: PairData | null;
   lower: PairData | null;
 };
+
+// для кэширования
+type TeacherWithNote = {
+  id: number;
+  name: string;
+  note: string;
+};
+
+const SCHEDULE_CACHE_PREFIX = 'editSchedule_cache_';
+
+type ScheduleCacheEntry = {
+  timestamp: number;
+  schedule: Record<string, PairData[]>;
+};
+
+const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 минут
 
 export const EditSchedulePage: React.FC = () => {
   const navigate = useNavigate();
@@ -64,10 +83,10 @@ export const EditSchedulePage: React.FC = () => {
   const [saving, setSaving] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [groups, setGroups] = useState<ApiGroup[]>([]);
-  const [teachers, setTeachers] = useState<{ id: number; name: string }[]>([]);
+  const [teachers, setTeachers] = useState<TeacherWithNote[]>([]);
   const [rooms, setRooms] = useState<ApiRoom[]>([]);
   const [subjectsByTeacher, setSubjectsByTeacher] = useState<ApiSubjectWithTeachers[]>([]);
-  const [filteredTeachers, setFilteredTeachers] = useState<{ id: number; name: string }[]>([]);
+  const [filteredTeachers, setFilteredTeachers] = useState<TeacherWithNote[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<ApiSubjectWithTeachers[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<ApiRoom[]>([]);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState<string>('');
@@ -76,6 +95,7 @@ export const EditSchedulePage: React.FC = () => {
   const [visibleRoomsCount, setVisibleRoomsCount] = useState<number>(4);
   const [showAllRooms, setShowAllRooms] = useState<boolean>(false);
   const [currentEditingScheduleId, setCurrentEditingScheduleId] = useState<number | null>(null);
+  const [scheduleCacheByGroup, setScheduleCacheByGroup] = useState<Record<number, ScheduleCacheEntry>>({});
 
   const daysOfWeek = methodistApiService.getWeekDays();
   const pairTimes = [
@@ -90,6 +110,34 @@ export const EditSchedulePage: React.FC = () => {
 
   const handleBackToMain = () => {
     navigate('/metodist');
+  };
+
+  // кэширование
+  const getScheduleCacheKey = (groupId: number) =>
+  `${SCHEDULE_CACHE_PREFIX}${groupId}`;
+
+  const readScheduleCacheFromStorage = (groupId: number): ScheduleCacheEntry | null => {
+    try {
+      const raw = localStorage.getItem(getScheduleCacheKey(groupId));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as ScheduleCacheEntry;
+      if (!parsed || !parsed.schedule) return null;
+      const now = Date.now();
+      if (now - parsed.timestamp > SCHEDULE_CACHE_TTL_MS) {
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeScheduleCacheToStorage = (groupId: number, entry: ScheduleCacheEntry) => {
+    try {
+      localStorage.setItem(getScheduleCacheKey(groupId), JSON.stringify(entry));
+    } catch {
+      // игнорируем ошибки localStorage
+    }
   };
 
   // загрузка групп
@@ -132,13 +180,13 @@ export const EditSchedulePage: React.FC = () => {
     }
   }, []);
 
-  // загрузка преподавателей
+  // загрузка преподавателей с примечаниями 
   useEffect(() => {
     const loadTeachers = async () => {
       try {
-        const data = await methodistApiService.getTeachers();
-        setTeachers(data);
-        setFilteredTeachers(data);
+        const teachersWithNotes = await methodistApiService.getTeachersWithNotes();
+        setTeachers(teachersWithNotes);
+        setFilteredTeachers(teachersWithNotes);
       } catch (e: any) {
         console.error(e);
       }
@@ -220,12 +268,37 @@ export const EditSchedulePage: React.FC = () => {
 
     setLoadingSchedule(true);
     setLoadError('');
-    try {
-      const data = await methodistApiService.getScheduleByGroup(groupId);
-      
-      // фильтруем занятия, оставляем только те, у которых isIgnored === false
-      const filteredData = data.filter(item => item.isIgnored !== true);
 
+    try {
+      // пробуем кэш в памяти
+      let cacheEntry = scheduleCacheByGroup[groupId];
+
+      // если в памяти нет или неактуален пробуем localStorage
+      const now = Date.now();
+      const isMemoryCacheValid =
+        cacheEntry && now - cacheEntry.timestamp <= SCHEDULE_CACHE_TTL_MS;
+
+      if (!isMemoryCacheValid) {
+        const storageCache = readScheduleCacheFromStorage(groupId);
+        if (storageCache) {
+          cacheEntry = storageCache;
+          setScheduleCacheByGroup(prev => ({
+            ...prev,
+            [groupId]: storageCache,
+          }));
+        } else {
+          cacheEntry = undefined as any;
+        }
+      }
+
+      // если есть кэш - показываем его и выходим
+      if (cacheEntry && cacheEntry.schedule) {
+        setSchedule(cacheEntry.schedule);
+        setLoadingSchedule(false);
+        return;
+      }
+      const data = await methodistApiService.getScheduleByGroup(groupId);
+      const filteredData = data.filter(item => item.isIgnored !== true);
       const newSchedule: Record<string, PairData[]> = {};
 
       filteredData.forEach(item => {
@@ -264,6 +337,18 @@ export const EditSchedulePage: React.FC = () => {
       });
 
       setSchedule(newSchedule);
+
+      const newEntry: ScheduleCacheEntry = {
+        timestamp: Date.now(),
+        schedule: newSchedule,
+      };
+
+      // сохранение в кэш
+      setScheduleCacheByGroup(prev => ({
+        ...prev,
+        [groupId]: newEntry,
+      }));
+      writeScheduleCacheToStorage(groupId, newEntry);
     } catch (e: any) {
       setLoadError(e.message || 'Не удалось загрузить расписание');
       setSchedule({});
@@ -554,30 +639,51 @@ export const EditSchedulePage: React.FC = () => {
 
   const renderSubgroups = (subgroups: PairData[], weekLabel: string) => {
     if (subgroups.length === 0) return null;
-    
-    if (subgroups.length === 1 && (subgroups[0].subgroup === null || subgroups[0].subgroup === undefined)) {
+
+    if (
+      subgroups.length === 1 &&
+      (subgroups[0].subgroup === null || subgroups[0].subgroup === undefined)
+    ) {
       const pair = subgroups[0];
       return (
         <div className="pair-info">
           {weekLabel && <div className="week-label">{weekLabel}</div>}
           <div className="pair-subject">{pair.subject || '—'}</div>
-          <div className="pair-teacher">{pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}</div>
+          <div className="pair-teacher">
+            {pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}
+          </div>
           <div className="pair-room">ауд. {pair.room || '—'}</div>
         </div>
       );
     }
-    
+
+    const pairsWithSubgroup = subgroups.filter(
+      p => p.subgroup !== null && p.subgroup !== undefined
+    );
+
     return (
       <div className="pair-info subgroups">
         {weekLabel && <div className="week-label">{weekLabel}</div>}
-        {subgroups.map((pair, idx) => (
-          <div key={idx} className="subgroup-item">
-            <div className="subgroup-label">Подгруппа {pair.subgroup}:</div>
-            <div className="pair-subject">{pair.subject || '—'}</div>
-            <div className="pair-teacher">{pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}</div>
-            <div className="pair-room">ауд. {pair.room || '—'}</div>
-          </div>
-        ))}
+        {subgroups.map((pair, idx) => {
+          const indexInSubgroups = pairsWithSubgroup.findIndex(p => p === pair);
+          const shouldShowSubgroupLabel = indexInSubgroups !== -1;
+          const subgroupNumber = shouldShowSubgroupLabel
+            ? indexInSubgroups + 1
+            : null;
+
+          return (
+            <div key={idx} className="subgroup-item">
+              {shouldShowSubgroupLabel && subgroupNumber !== null && (
+                <div className="subgroup-label">Подгруппа {subgroupNumber}:</div>
+              )}
+              <div className="pair-subject">{pair.subject || '—'}</div>
+              <div className="pair-teacher">
+                {pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}
+              </div>
+              <div className="pair-room">ауд. {pair.room || '—'}</div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -706,15 +812,34 @@ export const EditSchedulePage: React.FC = () => {
                       className="search-input"
                     />
                   </div>
-                  <div className="teachers-list">
-                    {filteredTeachers.map(teacher => (
-                      <button
-                        key={teacher.id}
-                        className={`teacher-btn ${selectedTeacher === teacher.name ? 'active' : ''}`}
-                        onClick={() => handleTeacherSelect(teacher.id, teacher.name)}>
-                        {teacher.name}
-                      </button>
-                    ))}
+                  <div className="items-list teachers-list">
+                    {filteredTeachers.map(teacher => {
+                      const hasNote = !!teacher.note && teacher.note.trim() !== '';
+                      const isActive = selectedTeacher === teacher.name;
+
+                      return (
+                        <button
+                          key={teacher.id}
+                          className={`list-item teacher-item ${isActive ? 'active' : ''}`}
+                          onClick={() => handleTeacherSelect(teacher.id, teacher.name)}
+                        >
+                          <span className="item-name">{teacher.name}</span>
+
+                          {hasNote && (
+                            <span className="item-note-wrapper">
+                              <img
+                                src={isActive ? "/md-icons/info_icon_white.svg" : "/md-icons/info_icon.svg"}
+                                alt="info"
+                                className="item-note-icon"
+                              />
+                              <span className="item-note-tooltip">
+                                {teacher.note}
+                              </span>
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                     {filteredTeachers.length === 0 && (
                       <div className="no-results">Преподаватели не найдены</div>
                     )}
@@ -733,11 +858,11 @@ export const EditSchedulePage: React.FC = () => {
                       disabled={!selectedTeacherId}
                     />
                   </div>
-                  <div className="subjects-list">
+                  <div className="items-list subjects-list">
                     {filteredSubjects.map(subject => (
                       <button
                         key={subject.idSubject}
-                        className={`subject-btn ${selectedSubject === subject.nameSubject ? 'active' : ''}`}
+                        className={`list-item subject-item ${selectedSubject === subject.nameSubject ? 'active' : ''}`}
                         onClick={() => handleSubjectSelect(subject)}
                         disabled={!selectedTeacherId}>
                         {subject.nameSubject}

@@ -92,7 +92,7 @@ export const MetodistPage: React.FC = () => {
                   </button>
                   <button className="md-button" onClick={handleNotesTeacherClick}>
                     <div className="md-button-icon-container">
-                      <img src="/md-icons/room_icon.svg" alt="Заметки" className="md-button-icon"/>
+                      <img src="/md-icons/note_icon.svg" alt="Заметки" className="md-button-icon"/>
                     </div>
                     <h3 className="md-button-title">Заметки</h3>
                     <p className="md-button-desc">Добавление примечаний к составлению расписания</p>
