@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import './ReplacementDocumentsPage.css';
 import { methodistApiService } from '../services/methodistApiService';
 import type {
@@ -14,94 +15,64 @@ interface GroupedReplacements {
   [date: string]: ReplacementRecord[];
 }
 
-// ключи для localStorage
-const SERVER_FILES_CACHE_KEY = 'rd_server_files_cache';
-const SERVER_FILES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 минут
-
-type ParsedDocsCache = Record<number, ReplacementRecord[]>;
-
 export const ReplacementDocumentsPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [groupedReplacements, setGroupedReplacements] = useState<GroupedReplacements>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [serverFiles, setServerFiles] = useState<PathTypeResponse[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
-  const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
-  const [groupsCache, setGroupsCache] = useState<ApiGroup[] | null>(null);
-  const [groupSubjectsCache, setGroupSubjectsCache] = useState<Record<number, ApiSubjectWithTeachers[]>>({});
   const [parsedServerReplacements, setParsedServerReplacements] = useState<ReplacementRecord[] | null>(null);
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [parseError, setParseError] = useState<string | null>(null);
 
-  // кэш для распарсенных документов в памяти
-  const [parsedDocsCache, setParsedDocsCache] = useState<ParsedDocsCache>({});
+  const {
+    data: serverFiles = [],
+  } = useQuery<PathTypeResponse[]>({
+    queryKey: ['replacement-files', 'Изменения в расписании'],
+    queryFn: () => methodistApiService.getFilesByType('Изменения в расписании'),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     loadReplacements();
-    loadServerFiles();
   }, []);
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
+      const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
 
-  // ======== КЭШ СПИСКА ФАЙЛОВ В localStorage ========
-
-  interface ServerFilesCacheEntry {
-    timestamp: number;
-    data: PathTypeResponse[];
-  }
-
-  const readServerFilesCache = (): ServerFilesCacheEntry | null => {
-    try {
-      const raw = localStorage.getItem(SERVER_FILES_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as ServerFilesCacheEntry;
-      if (!parsed || !Array.isArray(parsed.data)) return null;
-      const now = Date.now();
-      if (now - parsed.timestamp > SERVER_FILES_CACHE_TTL_MS) {
-        // истёк срок действия
-        return null;
+  useEffect(() => {
+    if (selectedDate) {
+      const serverFile = getServerFileForDate(selectedDate);
+      if (!serverFile) {
+        setParsedServerReplacements(null);
+        setParseError(null);
+      } else if (
+        !groupedReplacements[selectedDate]?.length &&
+        parsedServerReplacements === null &&
+        !isParsing
+      ) {
+        parseServerFile(serverFile.id, selectedDate);
       }
-      return parsed;
-    } catch {
-      return null;
     }
-  };
-
-  const writeServerFilesCache = (data: PathTypeResponse[]) => {
-    const entry: ServerFilesCacheEntry = {
-      timestamp: Date.now(),
-      data,
-    };
-    try {
-      localStorage.setItem(SERVER_FILES_CACHE_KEY, JSON.stringify(entry));
-    } catch {
-      // если localStorage недоступен — тихо игнорируем
-    }
-  };
-
-  // ======== ПАРСИНГ ДОКУМЕНТОВ ========
+  }, [serverFiles, selectedDate, groupedReplacements]);
 
   const parseDocumentBlob = async (blob: Blob, date: string): Promise<ReplacementRecord[]> => {
     const arrayBuffer = await blob.arrayBuffer();
-
     const result = await mammoth.convertToHtml({ arrayBuffer });
     const html = result.value || '';
 
@@ -145,23 +116,15 @@ export const ReplacementDocumentsPage: React.FC = () => {
       const groupNum = parseInt(rawGroup, 10);
       const pairNum = parseInt(rawPair, 10);
 
-      if (Number.isNaN(groupNum) || Number.isNaN(pairNum)) {
-        continue;
-      }
-
-      if (!subjectInfo && !changesInfo) {
-        continue;
-      }
+      if (Number.isNaN(groupNum) || Number.isNaN(pairNum)) continue;
+      if (!subjectInfo && !changesInfo) continue;
 
       let subject = '';
       let teacher = '';
       let subgroup: number | null = null;
       let originalRoom = '';
 
-      const parts = subjectInfo
-        .split(',')
-        .map(p => p.trim())
-        .filter(p => p.length > 0);
+      const parts = subjectInfo.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0);
 
       if (parts.length > 0) subject = parts[0];
       if (parts.length > 1) teacher = parts[1];
@@ -187,10 +150,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
       if (changesInfo === 'Не будет') {
         type = 'notWillBe';
       } else if (changesInfo && changesInfo !== '—') {
-        const changeParts = changesInfo
-          .split(',')
-          .map(p => p.trim())
-          .filter(p => p.length > 0);
+        const changeParts = changesInfo.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0);
 
         if (changeParts.length > 0) newSubject = changeParts[0];
         if (changeParts.length > 1) newTeacher = changeParts[1];
@@ -218,9 +178,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
         type,
         newSubject: type === 'replacement' && newSubject ? newSubject : undefined,
         newTeacher: type === 'replacement' && newTeacher ? newTeacher : undefined,
-        newRoom: type === 'replacement'
-          ? (newRoom || baseRoom || '—')
-          : undefined,
+        newRoom: type === 'replacement' ? (newRoom || baseRoom || '—') : undefined,
         createdAt: new Date().toISOString(),
       });
     }
@@ -232,33 +190,17 @@ export const ReplacementDocumentsPage: React.FC = () => {
     return records;
   };
 
-  // Парсинг файла по его ID для указанной даты + кэширование результата
   const parseServerFile = async (fileId: number, date: string) => {
-    // сначала пробуем взять из кэша
-    const cached = parsedDocsCache[fileId];
-    if (cached && cached.length > 0) {
-      setParsedServerReplacements(cached);
-      setParseError(null);
-      return;
-    }
-
     setIsParsing(true);
     setParseError(null);
 
     try {
       const blob = await methodistApiService.downloadFile(fileId);
       const records = await parseDocumentBlob(blob, date);
-
-      // сохраняем в кэш по fileId
-      setParsedDocsCache(prev => ({
-        ...prev,
-        [fileId]: records,
-      }));
-
       setParsedServerReplacements(records);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Ошибка парсинга документа', err);
-      const msg = err?.message || 'Неизвестная ошибка';
+      const msg = err instanceof Error ? err.message : 'Неизвестная ошибка';
       setParseError(`Не удалось разобрать документ: ${msg}`);
       setParsedServerReplacements(null);
     } finally {
@@ -266,64 +208,24 @@ export const ReplacementDocumentsPage: React.FC = () => {
     }
   };
 
-  // Обработчик выбора даты
-  const handleSelectDate = (date: string) => {
-    setSelectedDate(date);
-
-    const serverFile = getServerFileForDate(date);
-
-    if (serverFile) {
-      setSelectedFileId(serverFile.id);
-
-      const hasLocal = groupedReplacements[date]?.length > 0;
-
-      if (!hasLocal) {
-        parseServerFile(serverFile.id, date);
-      } else {
-        setParsedServerReplacements(null);
-        setParseError(null);
-      }
-    } else {
-      setSelectedFileId(null);
-      setParsedServerReplacements(null);
-      setParseError(null);
-    }
-  };
-
-  // Сброс парсинга при изменении списка файлов (например, после удаления)
-  useEffect(() => {
-    if (selectedDate) {
-      const serverFile = getServerFileForDate(selectedDate);
-      if (!serverFile) {
-        setParsedServerReplacements(null);
-        setParseError(null);
-      } else if (
-        !groupedReplacements[selectedDate]?.length &&
-        parsedServerReplacements === null &&
-        !isParsing
-      ) {
-        parseServerFile(serverFile.id, selectedDate);
-      }
-    }
-  }, [serverFiles, selectedDate, groupedReplacements]);
-
   const loadReplacements = () => {
     const replacements = methodistApiService.getReplacements();
 
-    const grouped = replacements.reduce((acc: GroupedReplacements, record) => {
+    const grouped = replacements.reduce((acc: GroupedReplacements, record: ReplacementRecord) => {
       if (!acc[record.date]) {
         acc[record.date] = [];
       }
       acc[record.date].push(record);
       return acc;
-    }, {});
+    }, {} as GroupedReplacements);
 
     const sortedGrouped: GroupedReplacements = {};
     Object.keys(grouped)
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-      .forEach(key => {
+      .forEach((key: string) => {
         sortedGrouped[key] = grouped[key].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a: ReplacementRecord, b: ReplacementRecord) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       });
 
@@ -332,78 +234,6 @@ export const ReplacementDocumentsPage: React.FC = () => {
     const dates = Object.keys(sortedGrouped);
     if (dates.length > 0 && !selectedDate) {
       setSelectedDate(dates[0]);
-    }
-  };
-
-  const loadServerFiles = async () => {
-    try {
-      setError(null);
-
-      // пробуем прочитать кэш
-      const cached = readServerFilesCache();
-      if (cached) {
-        setServerFiles(cached.data);
-        if (cached.data.length > 0 && selectedFileId === null) {
-          setSelectedFileId(cached.data[0].id);
-        }
-        // фоном можно обновить, если нужно (опционально)
-        // return;
-      }
-
-      const data = await methodistApiService.getFilesByType('Изменения в расписании');
-      setServerFiles(data);
-      writeServerFilesCache(data);
-
-      if (data.length > 0 && selectedFileId === null) {
-        setSelectedFileId(data[0].id);
-      }
-    } catch (e: any) {
-      console.error('Ошибка загрузки файлов', e);
-      const msg = e.response?.data?.message || e.message || 'Неизвестная ошибка';
-      setError(`Не удалось загрузить список документов: ${msg}`);
-    }
-  };
-
-  const handleBack = () => {
-    navigate('/metodist/changes');
-  };
-
-  // удаление файла с сервера и из списка
-  const handleDeleteDocument = async (fileId: number, fileName: string) => {
-    if (window.confirm(`Вы уверены, что хотите удалить документ "${fileName}"?\nЭто действие нельзя отменить.`)) {
-      setDeletingFileId(fileId);
-      setError(null);
-      setSuccessMessage(null);
-      
-      try {
-        await methodistApiService.deleteFile(fileId);
-        const updatedFiles = serverFiles.filter(f => f.id !== fileId);
-        setServerFiles(updatedFiles);
-
-        // обновляем кэш списка файлов
-        writeServerFilesCache(updatedFiles);
-
-        if (selectedFileId === fileId) {
-          setSelectedFileId(updatedFiles.length > 0 ? updatedFiles[0].id : null);
-        }
-        
-        setSuccessMessage(`Документ "${fileName}" успешно удалён`);
-        
-      } catch (e: any) {
-        console.error('Ошибка при удалении файла:', e);
-        const errorMsg = e.response?.data?.message || e.message || 'Неизвестная ошибка';
-        setError(`Не удалось удалить документ: ${errorMsg}`);
-      } finally {
-        setDeletingFileId(null);
-      }
-    }
-  };
-
-  const handleDeleteRecord = (id: string) => {
-    if (window.confirm('Удалить эту замену?')) {
-      methodistApiService.deleteReplacement(id);
-      loadReplacements();
-      setSuccessMessage('Запись о замене успешно удалена');
     }
   };
 
@@ -442,10 +272,12 @@ export const ReplacementDocumentsPage: React.FC = () => {
     fullName.replace(/\s+/g, ' ').trim().toLowerCase();
 
   const ensureGroupsLoaded = async (): Promise<ApiGroup[] | null> => {
-    if (groupsCache) return groupsCache;
     try {
-      const data = await methodistApiService.getGroups();
-      setGroupsCache(data);
+      const data = await queryClient.fetchQuery({
+        queryKey: ['groups'],
+        queryFn: () => methodistApiService.getGroups(),
+        staleTime: 5 * 60 * 1000,
+      });
       return data;
     } catch (e) {
       console.error('Исключение при загрузке групп:', e);
@@ -454,10 +286,12 @@ export const ReplacementDocumentsPage: React.FC = () => {
   };
 
   const ensureGroupSubjectsLoaded = async (groupId: number): Promise<ApiSubjectWithTeachers[] | null> => {
-    if (groupSubjectsCache[groupId]) return groupSubjectsCache[groupId];
     try {
-      const data = await methodistApiService.getGroupSubjects(groupId);
-      setGroupSubjectsCache(prev => ({ ...prev, [groupId]: data }));
+      const data = await queryClient.fetchQuery({
+        queryKey: ['group-subjects', groupId],
+        queryFn: () => methodistApiService.getGroupSubjects(groupId),
+        staleTime: 5 * 60 * 1000,
+      });
       return data;
     } catch (e) {
       console.error('Исключение при загрузке subjects для группы', groupId, e);
@@ -468,7 +302,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
   const getGroupByNumber = async (groupNumber: number): Promise<ApiGroup | null> => {
     const groups = await ensureGroupsLoaded();
     if (!groups) return null;
-    const group = groups.find(g => g.numberGroup === groupNumber);
+    const group = groups.find((g: ApiGroup) => g.numberGroup === groupNumber);
     if (!group) {
       console.error('Группа не найдена по номеру', groupNumber);
       return null;
@@ -548,13 +382,33 @@ export const ReplacementDocumentsPage: React.FC = () => {
     return Boolean(hasOldSubject && hasOldTeacher);
   };
 
+  const deleteFileMutation = useMutation({
+    mutationFn: async ({ fileId }: { fileId: number }) => {
+      await methodistApiService.deleteFile(fileId);
+      return fileId;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['replacement-files', 'Изменения в расписании'] });
+    },
+  });
+
+  const deleteRecordMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await methodistApiService.deleteReplacement(id);
+      return id;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['replacements'] });
+    },
+  });
+
   const saveScheduleForDate = async (date: string) => {
     const records = groupedReplacements[date];
     if (!records || records.length === 0) return;
 
     setError(null);
     const savedIds: string[] = [];
-    
+
     for (const record of records) {
       try {
         let idInfo: { idSt: number; idGroup: number } | null = null;
@@ -597,10 +451,10 @@ export const ReplacementDocumentsPage: React.FC = () => {
         setError(`Ошибка при сохранении замены для группы ${record.groupNumber}, ${record.pairNumber} пары`);
       }
     }
-    
+
     if (savedIds.length > 0) {
       methodistApiService.deleteReplacementsByIds(savedIds);
-      loadReplacements(); 
+      loadReplacements();
     }
   };
 
@@ -617,7 +471,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
           if (a.groupNumber !== b.groupNumber) return a.groupNumber - b.groupNumber;
           return a.pairNumber - b.pairNumber;
         })
-        .map(record => {
+        .map((record: ReplacementRecord) => {
           let subjectInfo = '';
 
           if (record.subject && record.subject.trim() !== '') {
@@ -678,7 +532,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
       }
       const templateArrayBuffer = await templateResponse.arrayBuffer();
 
-      const zip = new PizZip(templateArrayBuffer);      
+      const zip = new PizZip(templateArrayBuffer);
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
@@ -713,18 +567,17 @@ export const ReplacementDocumentsPage: React.FC = () => {
 
       await methodistApiService.uploadFile(file, 'Изменения в расписании', 1);
       setSuccessMessage(`Документ за ${formatDisplayDate(date)} успешно сохранён на сервер!`);
-      await loadServerFiles();
-      
-    } catch (e: any) {
+      await queryClient.invalidateQueries({ queryKey: ['replacement-files', 'Изменения в расписании'] });
+    } catch (e: unknown) {
       console.error('Ошибка при загрузке документа', e);
-      const errorMessage = e.response?.data?.message || e.message || 'Неизвестная ошибка';
+      const errorMessage = e instanceof Error ? e.message : 'Неизвестная ошибка';
       setError(`Произошла ошибка: ${errorMessage}`);
     }
   };
 
   const handleDownloadSelectedFile = async () => {
     if (selectedFileId === null) return;
-    const file = serverFiles.find(f => f.id === selectedFileId);
+    const file = serverFiles.find((f: PathTypeResponse) => f.id === selectedFileId);
     if (!file) return;
 
     try {
@@ -740,9 +593,9 @@ export const ReplacementDocumentsPage: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Ошибка скачивания файла', e);
-      const msg = e.response?.data?.message || e.message || 'Неизвестная ошибка';
+      const msg = e instanceof Error ? e.message : 'Неизвестная ошибка';
       setError(`Не удалось скачать файл: ${msg}`);
     }
   };
@@ -759,18 +612,73 @@ export const ReplacementDocumentsPage: React.FC = () => {
   const getAllAvailableDates = (): string[] => {
     const localDates = Object.keys(groupedReplacements);
     const serverDates = serverFiles
-      .map(file => parseDateFromFileName(file.nameFile))
-      .filter((date): date is string => date !== null);
-    
+      .map((file: PathTypeResponse) => parseDateFromFileName(file.nameFile))
+      .filter((date: string | null): date is string => date !== null);
+
     const allDates = [...new Set([...localDates, ...serverDates])];
     return allDates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   };
 
   const getServerFileForDate = (date: string): PathTypeResponse | undefined => {
-    return serverFiles.find(file => parseDateFromFileName(file.nameFile) === date);
+    return serverFiles.find((file: PathTypeResponse) => parseDateFromFileName(file.nameFile) === date);
   };
 
-  const selectedFile = selectedFileId ? serverFiles.find(f => f.id === selectedFileId) || null : null;
+  const handleSelectDate = (date: string) => {
+    setSelectedDate(date);
+
+    const serverFile = getServerFileForDate(date);
+
+    if (serverFile) {
+      setSelectedFileId(serverFile.id);
+
+      const hasLocal = groupedReplacements[date]?.length > 0;
+
+      if (!hasLocal) {
+        parseServerFile(serverFile.id, date);
+      } else {
+        setParsedServerReplacements(null);
+        setParseError(null);
+      }
+    } else {
+      setSelectedFileId(null);
+      setParsedServerReplacements(null);
+      setParseError(null);
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/metodist/changes');
+  };
+
+  const handleDeleteDocument = async (fileId: number, fileName: string) => {
+    if (window.confirm(`Вы уверены, что хотите удалить документ "${fileName}"?\nЭто действие нельзя отменить.`)) {
+      setError(null);
+      setSuccessMessage(null);
+
+      try {
+        await deleteFileMutation.mutateAsync({ fileId });
+        setSuccessMessage(`Документ "${fileName}" успешно удалён`);
+        if (selectedFileId === fileId) {
+          const updatedFiles = serverFiles.filter((f: PathTypeResponse) => f.id !== fileId);
+          setSelectedFileId(updatedFiles.length > 0 ? updatedFiles[0].id : null);
+        }
+      } catch (e: unknown) {
+        console.error('Ошибка при удалении файла:', e);
+        const errorMsg = e instanceof Error ? e.message : 'Неизвестная ошибка';
+        setError(`Не удалось удалить документ: ${errorMsg}`);
+      }
+    }
+  };
+
+  const handleDeleteRecord = async (id: string) => {
+    if (window.confirm('Удалить эту замену?')) {
+      await deleteRecordMutation.mutateAsync(id);
+      loadReplacements();
+      setSuccessMessage('Запись о замене успешно удалена');
+    }
+  };
+
+  const selectedFile = selectedFileId ? serverFiles.find((f: PathTypeResponse) => f.id === selectedFileId) || null : null;
   const availableDates = getAllAvailableDates();
 
   const currentDateHasLocalChanges = selectedDate && groupedReplacements[selectedDate]?.length > 0;
@@ -793,9 +701,9 @@ export const ReplacementDocumentsPage: React.FC = () => {
         <button className="back-button" onClick={handleBack}>
           Назад
         </button>
-        <button 
-          className="rd-save-btn" 
-          onClick={handleDownloadSelectedFile} 
+        <button
+          className="rd-save-btn"
+          onClick={handleDownloadSelectedFile}
           disabled={!selectedFile}>
           Скачать .docx
         </button>
@@ -814,11 +722,11 @@ export const ReplacementDocumentsPage: React.FC = () => {
             <div className="rd-sidebar">
               <h3>Документы по датам</h3>
               <ul className="rd-date-list">
-                {availableDates.map(date => {
+                {availableDates.map((date: string) => {
                   const serverFile = getServerFileForDate(date);
                   const hasLocalChanges = groupedReplacements[date]?.length > 0;
                   const isSelected = selectedDate === date;
-                  
+
                   return (
                     <li
                       key={serverFile?.id || date}
@@ -843,9 +751,9 @@ export const ReplacementDocumentsPage: React.FC = () => {
                             e.stopPropagation();
                             handleDeleteDocument(serverFile.id, serverFile.nameFile);
                           }}
-                          disabled={deletingFileId === serverFile.id}
+                          disabled={deleteFileMutation.isPending}
                           title="Удалить документ">
-                          {deletingFileId === serverFile.id ? '...' : '×'}
+                          {deleteFileMutation.isPending ? '...' : '×'}
                         </button>
                       )}
                     </li>
@@ -888,7 +796,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
                         }, {} as { [key: number]: ReplacementRecord[] })
                       )
                         .sort(([a], [b]) => Number(a) - Number(b))
-                        .map(([groupNum, records]) => (
+                        .map(([groupNum, records]: [string, ReplacementRecord[]]) => (
                           <div key={groupNum} className="rd-group">
                             <h3>Группа {groupNum}</h3>
                             <table className="rd-table">
@@ -903,8 +811,8 @@ export const ReplacementDocumentsPage: React.FC = () => {
                               </thead>
                               <tbody>
                                 {records
-                                  .sort((a, b) => a.pairNumber - b.pairNumber)
-                                  .map(record => {
+                                  .sort((a: ReplacementRecord, b: ReplacementRecord) => a.pairNumber - b.pairNumber)
+                                  .map((record: ReplacementRecord) => {
                                     const subjectInfo = record.subgroup
                                       ? `${record.subject}, п/г ${record.subgroup}, ${record.teacher}`
                                       : `${record.subject}, ${record.teacher}`;
@@ -918,7 +826,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
                                     if (record.type === 'notWillBe') {
                                       changesInfo = 'Не будет';
                                     } else if (record.newSubject || record.newTeacher || record.newRoom) {
-                                      const changes = [];
+                                      const changes: string[] = [];
                                       if (record.newSubject) changes.push(record.newSubject);
                                       if (record.newTeacher) changes.push(record.newTeacher);
                                       if (record.newRoom && record.newRoom !== '—' && record.newRoom !== '') {

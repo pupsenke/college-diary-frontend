@@ -1,33 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import './EditScheduleSection.css';
 import { methodistApiService } from '../services/methodistApiService';
 import type {
   ApiGroup,
   ApiRoom,
   ApiSubjectWithTeachers,
-  ApiStaff
+  ApiStaff,
+  ApiScheduleItem
 } from '../services/methodistApiService';
 
-
-type ApiScheduleItem = {
-  id: number;
-  dayWeek: string;
-  typeWeek: 'Общая' | 'Верхняя' | 'Нижняя';
-  numPair: number;
-  room: string | null;
-  nameSubject: string;
-  lastnameTeacher: string;
-  nameTeacher: string;
-  patronymicTeacher: string;
-  idGroup: number;
-  subgroup?: number | null;
-  isIgnored?: boolean;
-};
-
-
 type PairData = {
-  id?: number; // добавляем id занятия
+  id?: number;
   teacher: string;
   teacherId?: number;
   subject: string;
@@ -41,30 +26,29 @@ type PairData = {
   subgroup?: number | null;
 };
 
-
 type PairCellData = {
   upper: PairData | null;
   lower: PairData | null;
 };
 
-// для кэширования
 type TeacherWithNote = {
   id: number;
   name: string;
   note: string;
 };
 
-const SCHEDULE_CACHE_PREFIX = 'editSchedule_cache_';
-
 type ScheduleCacheEntry = {
   timestamp: number;
   schedule: Record<string, PairData[]>;
 };
 
-const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 минут
+const SCHEDULE_CACHE_PREFIX = 'editSchedule_cache_';
+const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const EditSchedulePage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>('');
   const [selectedPair, setSelectedPair] = useState<number | null>(null);
@@ -77,15 +61,9 @@ export const EditSchedulePage: React.FC = () => {
   const [selectedSubgroupType, setSelectedSubgroupType] = useState<number | null>(null);
   const [upperWeekChecked, setUpperWeekChecked] = useState<boolean>(true);
   const [lowerWeekChecked, setLowerWeekChecked] = useState<boolean>(true);
-  const [schedule, setSchedule] = useState<Record<string, PairData[]>>({});
-  const [loadingSchedule, setLoadingSchedule] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
-  const [groups, setGroups] = useState<ApiGroup[]>([]);
-  const [teachers, setTeachers] = useState<TeacherWithNote[]>([]);
-  const [rooms, setRooms] = useState<ApiRoom[]>([]);
-  const [subjectsByTeacher, setSubjectsByTeacher] = useState<ApiSubjectWithTeachers[]>([]);
   const [filteredTeachers, setFilteredTeachers] = useState<TeacherWithNote[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<ApiSubjectWithTeachers[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<ApiRoom[]>([]);
@@ -95,7 +73,6 @@ export const EditSchedulePage: React.FC = () => {
   const [visibleRoomsCount, setVisibleRoomsCount] = useState<number>(4);
   const [showAllRooms, setShowAllRooms] = useState<boolean>(false);
   const [currentEditingScheduleId, setCurrentEditingScheduleId] = useState<number | null>(null);
-  const [scheduleCacheByGroup, setScheduleCacheByGroup] = useState<Record<number, ScheduleCacheEntry>>({});
 
   const daysOfWeek = methodistApiService.getWeekDays();
   const pairTimes = [
@@ -112,209 +89,60 @@ export const EditSchedulePage: React.FC = () => {
     navigate('/metodist');
   };
 
-  // кэширование
-  const getScheduleCacheKey = (groupId: number) =>
-  `${SCHEDULE_CACHE_PREFIX}${groupId}`;
+  const groupsQuery = useQuery<ApiGroup[]>({
+    queryKey: ['groups'],
+    queryFn: () => methodistApiService.getGroups(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
-  const readScheduleCacheFromStorage = (groupId: number): ScheduleCacheEntry | null => {
-    try {
-      const raw = localStorage.getItem(getScheduleCacheKey(groupId));
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as ScheduleCacheEntry;
-      if (!parsed || !parsed.schedule) return null;
-      const now = Date.now();
-      if (now - parsed.timestamp > SCHEDULE_CACHE_TTL_MS) {
-        return null;
-      }
-      return parsed;
-    } catch {
-      return null;
-    }
-  };
+  const roomsQuery = useQuery<ApiRoom[]>({
+    queryKey: ['rooms'],
+    queryFn: () => methodistApiService.getRooms(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
-  const writeScheduleCacheToStorage = (groupId: number, entry: ScheduleCacheEntry) => {
-    try {
-      localStorage.setItem(getScheduleCacheKey(groupId), JSON.stringify(entry));
-    } catch {
-      // игнорируем ошибки localStorage
-    }
-  };
+  const teachersQuery = useQuery<TeacherWithNote[]>({
+    queryKey: ['teachers-with-notes'],
+    queryFn: () => methodistApiService.getTeachersWithNotes(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
-  // загрузка групп
-  useEffect(() => {
-    const loadGroups = async () => {
-      try {
-        const data = await methodistApiService.getGroups();
-        const sorted = [...data].sort((a, b) => a.numberGroup - b.numberGroup);
-        setGroups(sorted);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadGroups();
-  }, []);
+  const selectedGroupSubjectsQuery = useQuery<ApiSubjectWithTeachers[]>({
+    queryKey: ['group-subjects', selectedGroupId],
+    queryFn: async () => {
+      if (!selectedGroupId) return [];
+      return methodistApiService.getGroupSubjects(selectedGroupId);
+    },
+    enabled: !!selectedGroupId && !!selectedTeacherId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
-  // загрузка аудиторий
-  useEffect(() => {
-    const loadRooms = async () => {
-      try {
-        const data = await methodistApiService.getRooms();
-        setRooms(data);
-        setFilteredRooms(data);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadRooms();
-  }, []);
-
-  // при первом монтировании читаем id из localStorage и сразу грузим расписание
-  useEffect(() => {
-    const savedGroup = localStorage.getItem('selectedGroupForEdit');
-    if (savedGroup) {
-      const id = Number(savedGroup);
-      if (!Number.isNaN(id)) {
-        setSelectedGroupId(id);
-        loadScheduleForGroup(id);
-      }
-    }
-  }, []);
-
-  // загрузка преподавателей с примечаниями 
-  useEffect(() => {
-    const loadTeachers = async () => {
-      try {
-        const teachersWithNotes = await methodistApiService.getTeachersWithNotes();
-        setTeachers(teachersWithNotes);
-        setFilteredTeachers(teachersWithNotes);
-      } catch (e: any) {
-        console.error(e);
-      }
-    };
-    loadTeachers();
-  }, []);
-
-  // загрузка предметов по выбранному преподавателю и группе
-  useEffect(() => {
-    const loadSubjectsByTeacherAndGroup = async () => {
-      if (!selectedTeacherId || !selectedGroupId) {
-        setSubjectsByTeacher([]);
-        setFilteredSubjects([]);
-        return;
-      }
-
-      try {
-        const data = await methodistApiService.getGroupSubjects(selectedGroupId);
-        
-        const filteredByTeacher = data.filter(subject =>
-          subject.teachers.some(teacher => teacher.idTeacher === selectedTeacherId)
-        );
-        
-        setSubjectsByTeacher(filteredByTeacher);
-        setFilteredSubjects(filteredByTeacher);
-      } catch (e: any) {
-        setSubjectsByTeacher([]);
-        setFilteredSubjects([]);
-      }
-    };
-
-    loadSubjectsByTeacherAndGroup();
-  }, [selectedTeacherId, selectedGroupId]);
-
-  // фильтрация преподавателей по поиску
-  useEffect(() => {
-    if (teacherSearchTerm.trim() === '') {
-      setFilteredTeachers(teachers);
-    } else {
-      const filtered = teachers.filter(teacher =>
-        teacher.name.toLowerCase().includes(teacherSearchTerm.toLowerCase())
-      );
-      setFilteredTeachers(filtered);
-    }
-  }, [teacherSearchTerm, teachers]);
-
-  // фильтрация предметов по поиску
-  useEffect(() => {
-    if (subjectSearchTerm.trim() === '') {
-      setFilteredSubjects(subjectsByTeacher);
-    } else {
-      const filtered = subjectsByTeacher.filter(subject =>
-        subject.nameSubject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
-      );
-      setFilteredSubjects(filtered);
-    }
-  }, [subjectSearchTerm, subjectsByTeacher]);
-
-  // фильтрация аудиторий по поиску
-  useEffect(() => {
-    if (roomSearchTerm.trim() === '') {
-      setFilteredRooms(rooms);
-    } else {
-      const filtered = rooms.filter(room =>
-        room.name.toLowerCase().includes(roomSearchTerm.toLowerCase())
-      );
-      setFilteredRooms(filtered);
-    }
-    setShowAllRooms(false);
-    setVisibleRoomsCount(4);
-  }, [roomSearchTerm, rooms]);
-
-  // загрузка расписания по id группы (только с isIgnored: false)
-  const loadScheduleForGroup = async (groupId: number | null) => {
-    if (!groupId) {
-      setSchedule({});
-      return;
-    }
-
-    setLoadingSchedule(true);
-    setLoadError('');
-
-    try {
-      // пробуем кэш в памяти
-      let cacheEntry = scheduleCacheByGroup[groupId];
-
-      // если в памяти нет или неактуален пробуем localStorage
-      const now = Date.now();
-      const isMemoryCacheValid =
-        cacheEntry && now - cacheEntry.timestamp <= SCHEDULE_CACHE_TTL_MS;
-
-      if (!isMemoryCacheValid) {
-        const storageCache = readScheduleCacheFromStorage(groupId);
-        if (storageCache) {
-          cacheEntry = storageCache;
-          setScheduleCacheByGroup(prev => ({
-            ...prev,
-            [groupId]: storageCache,
-          }));
-        } else {
-          cacheEntry = undefined as any;
-        }
-      }
-
-      // если есть кэш - показываем его и выходим
-      if (cacheEntry && cacheEntry.schedule) {
-        setSchedule(cacheEntry.schedule);
-        setLoadingSchedule(false);
-        return;
-      }
-      const data = await methodistApiService.getScheduleByGroup(groupId);
-      const filteredData = data.filter(item => item.isIgnored !== true);
+  const scheduleQuery = useQuery<Record<string, PairData[]>>({
+    queryKey: ['schedule-by-group', selectedGroupId],
+    queryFn: async () => {
+      if (!selectedGroupId) return {};
+      const data = await methodistApiService.getScheduleByGroup(selectedGroupId);
+      const filteredData = data.filter((item: ApiScheduleItem) => item.isIgnored !== true);
       const newSchedule: Record<string, PairData[]> = {};
 
-      filteredData.forEach(item => {
+      filteredData.forEach((item: ApiScheduleItem) => {
         const day = item.dayWeek;
         const pairNumber = item.numPair;
-        
+
         if (!day || !pairNumber) return;
 
         const base: PairData = {
           id: item.id,
-          teacher: (item.lastnameTeacher && item.nameTeacher) 
-            ? `${item.lastnameTeacher} ${item.nameTeacher} ${item.patronymicTeacher || ''}`.trim() 
+          teacher: (item.lastnameTeacher && item.nameTeacher)
+            ? `${item.lastnameTeacher} ${item.nameTeacher} ${item.patronymicTeacher || ''}`.trim()
             : '',
           subject: item.nameSubject || '',
           room: item.room || '',
-          time: pairTimes.find(p => p.number === pairNumber)?.time || '',
+          time: pairTimes.find((p) => p.number === pairNumber)?.time || '',
           typeWeek: item.typeWeek as 'Общая' | 'Верхняя' | 'Нижняя',
           idGroup: item.idGroup,
           subgroup: item.subgroup === null ? null : item.subgroup,
@@ -323,11 +151,11 @@ export const EditSchedulePage: React.FC = () => {
 
         let key = '';
         if (item.typeWeek === 'Общая') {
-          key = `${groupId}-${day}-${pairNumber}-common`;
+          key = `${selectedGroupId}-${day}-${pairNumber}-common`;
         } else if (item.typeWeek === 'Верхняя') {
-          key = `${groupId}-${day}-${pairNumber}-upper`;
+          key = `${selectedGroupId}-${day}-${pairNumber}-upper`;
         } else if (item.typeWeek === 'Нижняя') {
-          key = `${groupId}-${day}-${pairNumber}-lower`;
+          key = `${selectedGroupId}-${day}-${pairNumber}-lower`;
         }
 
         if (!newSchedule[key]) {
@@ -336,26 +164,114 @@ export const EditSchedulePage: React.FC = () => {
         newSchedule[key].push(base);
       });
 
-      setSchedule(newSchedule);
+      return newSchedule;
+    },
+    enabled: !!selectedGroupId,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+  });
 
-      const newEntry: ScheduleCacheEntry = {
-        timestamp: Date.now(),
-        schedule: newSchedule,
-      };
-
-      // сохранение в кэш
-      setScheduleCacheByGroup(prev => ({
-        ...prev,
-        [groupId]: newEntry,
-      }));
-      writeScheduleCacheToStorage(groupId, newEntry);
-    } catch (e: any) {
-      setLoadError(e.message || 'Не удалось загрузить расписание');
-      setSchedule({});
-    } finally {
-      setLoadingSchedule(false);
+  useEffect(() => {
+    const savedGroup = localStorage.getItem('selectedGroupForEdit');
+    if (savedGroup) {
+      const id = Number(savedGroup);
+      if (!Number.isNaN(id)) {
+        setSelectedGroupId(id);
+      }
     }
-  };
+  }, []);
+
+  // загрузка преподавателей с примечаниями 
+  useEffect(() => {
+    if (groupsQuery.data) {
+      const sorted = [...groupsQuery.data].sort((a, b) => a.numberGroup - b.numberGroup);
+      if (selectedGroupId === null && sorted.length > 0) {
+        const savedGroup = localStorage.getItem('selectedGroupForEdit');
+        const savedGroupId = savedGroup ? Number(savedGroup) : null;
+        if (savedGroupId && sorted.some(g => g.id === savedGroupId)) {
+          setSelectedGroupId(savedGroupId);
+        } else {
+          setSelectedGroupId(sorted[0].id);
+        }
+      }
+    }
+  }, [groupsQuery.data]);
+
+  useEffect(() => {
+    if (roomsQuery.data) {
+      setFilteredRooms(
+        roomSearchTerm.trim() === ''
+          ? roomsQuery.data
+          : roomsQuery.data.filter((room: ApiRoom) =>
+              room.name.toLowerCase().includes(roomSearchTerm.toLowerCase())
+            )
+      );
+    }
+  }, [roomsQuery.data, roomSearchTerm]);
+
+  useEffect(() => {
+    if (teachersQuery.data) {
+      setFilteredTeachers(
+        teacherSearchTerm.trim() === ''
+          ? teachersQuery.data
+          : teachersQuery.data.filter((teacher: TeacherWithNote) =>
+              teacher.name.toLowerCase().includes(teacherSearchTerm.toLowerCase())
+            )
+      );
+    }
+  }, [teachersQuery.data, teacherSearchTerm]);
+
+  // фильтрация предметов по поиску
+  useEffect(() => {
+    if (!selectedTeacherId || !selectedGroupId || !selectedGroupSubjectsQuery.data) {
+      setFilteredSubjects([]);
+      return;
+    }
+
+    const filteredByTeacher = selectedGroupSubjectsQuery.data.filter((subject: ApiSubjectWithTeachers) =>
+      subject.teachers.some(teacher => teacher.idTeacher === selectedTeacherId)
+    );
+
+    const filtered =
+      subjectSearchTerm.trim() === ''
+        ? filteredByTeacher
+        : filteredByTeacher.filter((subject: ApiSubjectWithTeachers) =>
+            subject.nameSubject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
+          );
+
+    setFilteredSubjects(filtered);
+  }, [selectedGroupSubjectsQuery.data, selectedTeacherId, selectedGroupId, subjectSearchTerm]);
+
+  // фильтрация аудиторий по поиску
+  useEffect(() => {
+    setShowAllRooms(false);
+    setVisibleRoomsCount(4);
+  }, [roomSearchTerm, roomsQuery.data]);
+
+  useEffect(() => {
+    setLoadError('');
+  }, [selectedGroupId]);
+
+  useEffect(() => {
+    if (groupsQuery.error) {
+      setLoadError('Не удалось загрузить группы');
+    }
+    if (roomsQuery.error) {
+      setLoadError('Не удалось загрузить аудитории');
+    }
+    if (teachersQuery.error) {
+      setLoadError('Не удалось загрузить преподавателей');
+    }
+    if (scheduleQuery.error) {
+      setLoadError('Не удалось загрузить расписание');
+    }
+  }, [groupsQuery.error, roomsQuery.error, teachersQuery.error, scheduleQuery.error]);
+
+  const normalizedSchedule = scheduleQuery.data ?? {};
+  const groups = groupsQuery.data ? [...groupsQuery.data].sort((a, b) => a.numberGroup - b.numberGroup) : [];
+  const rooms = roomsQuery.data ?? [];
+  const teachers = teachersQuery.data ?? [];
+  const loadingSchedule = scheduleQuery.isLoading;
 
   const handleGroupChange = (value: string) => {
     const id = value ? Number(value) : null;
@@ -377,7 +293,7 @@ export const EditSchedulePage: React.FC = () => {
     setShowAllRooms(false);
     setVisibleRoomsCount(4);
     setCurrentEditingScheduleId(null);
-    loadScheduleForGroup(id);
+
     if (id) {
       localStorage.setItem('selectedGroupForEdit', String(id));
     } else {
@@ -406,72 +322,31 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedRoom(roomName);
   };
 
-  const handleDeletePair = async () => {
-    if (!currentEditingScheduleId) {
-      alert('Не найден ID занятия для удаления');
-      return;
-    }
-
-    if (!window.confirm('Вы уверены, что хотите удалить это занятие?')) {
-      return;
-    }
-
-    setDeleting(true);
-    
-    try {
-      // пробуем удалить занятие
-      await methodistApiService.deleteSchedule(currentEditingScheduleId);
-      alert('Занятие успешно удалено');
-      
-      // перезагружаем расписание
-      if (selectedGroupId) {
-        await loadScheduleForGroup(selectedGroupId);
-      }
-      
-      // очищаем форму редактирования
-      cancelEdit();
-      
-    } catch (deleteError: any) {
-      // если удаление не удалось (например, 409 Conflict), пробуем обновить флаг isIgnored
-      console.log('Удаление невозможно, пробуем обновить флаг isIgnored...');
-      
+  const handleDeletePairMutation = useMutation({
+    mutationFn: async (scheduleId: number) => {
       try {
-        await methodistApiService.updateScheduleIgnored(currentEditingScheduleId, true);
-        alert('Занятие помечено как игнорируемое и скрыто из расписания');
-        
-        // перезагружаем расписание
-        if (selectedGroupId) {
-          await loadScheduleForGroup(selectedGroupId);
-        }
-        
-        // очищаем форму редактирования
-        cancelEdit();
-        
-      } catch (patchError: any) {
-        console.error('Ошибка при обновлении флага isIgnored:', patchError);
-        alert('Не удалось удалить или скрыть занятие. Попробуйте позже.');
+        await methodistApiService.deleteSchedule(scheduleId);
+      } catch {
+        await methodistApiService.updateScheduleIgnored(scheduleId, true);
       }
-    } finally {
-      setDeleting(false);
-    }
-  };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schedule-by-group', selectedGroupId] });
+    },
+  });
 
-  const savePair = async () => {
-    if (!selectedGroupId || !selectedDay || !selectedPair || !selectedIdSt || !selectedRoom) {
-      alert('Заполните все поля (преподаватель, предмет, аудитория)');
-      return;
-    }
+  const savePairMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedGroupId || !selectedDay || !selectedPair || !selectedIdSt || !selectedRoom) {
+        throw new Error('Заполните все поля (преподаватель, предмет, аудитория)');
+      }
 
-    if (!upperWeekChecked && !lowerWeekChecked) {
-      alert('Выберите хотя бы одну неделю');
-      return;
-    }
+      if (!upperWeekChecked && !lowerWeekChecked) {
+        throw new Error('Выберите хотя бы одну неделю');
+      }
 
-    setSaving(true);
-    
-    try {
       const subgroupValue = selectedSubgroupType === null ? null : selectedSubgroupType;
-      
+
       if (upperWeekChecked && lowerWeekChecked) {
         await methodistApiService.saveSchedule({
           dayWeek: selectedDay,
@@ -510,16 +385,45 @@ export const EditSchedulePage: React.FC = () => {
           });
         }
       }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schedule-by-group', selectedGroupId] });
+    },
+  });
 
-      // перезагружаем расписание после сохранения
-      await loadScheduleForGroup(selectedGroupId);
-      
+  const handleDeletePair = async () => {
+    if (!currentEditingScheduleId) {
+      alert('Не найден ID занятия для удаления');
+      return;
+    }
+
+    if (!window.confirm('Вы уверены, что хотите удалить это занятие?')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await handleDeletePairMutation.mutateAsync(currentEditingScheduleId);
+      alert('Занятие успешно удалено');
+      cancelEdit();
+    } catch (e) {
+      console.error('Ошибка удаления/скрытия:', e);
+      alert('Не удалось удалить или скрыть занятие. Попробуйте позже.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const savePair = async () => {
+    setSaving(true);
+    try {
+      await savePairMutation.mutateAsync();
+      await queryClient.invalidateQueries({ queryKey: ['schedule-by-group', selectedGroupId] });
       cancelEdit();
       alert('Изменения успешно сохранены');
-      
-    } catch (e: any) {
-      console.error('Ошибка сохранения:', e);
-      alert('Ошибка при сохранении: ' + (e.message || 'Неизвестная ошибка'));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Неизвестная ошибка';
+      alert('Ошибка при сохранении: ' + message);
     } finally {
       setSaving(false);
     }
@@ -552,9 +456,9 @@ export const EditSchedulePage: React.FC = () => {
     const upperKey = `${selectedGroupId}-${day}-${pairNumber}-upper`;
     const lowerKey = `${selectedGroupId}-${day}-${pairNumber}-lower`;
 
-    const commonPairs = schedule[commonKey] || [];
-    const upperPairs = schedule[upperKey] || [];
-    const lowerPairs = schedule[lowerKey] || [];
+    const commonPairs = normalizedSchedule[commonKey] || [];
+    const upperPairs = normalizedSchedule[upperKey] || [];
+    const lowerPairs = normalizedSchedule[lowerKey] || [];
 
     const commonPair = commonPairs.length > 0 ? commonPairs[0] : null;
     const upperPair = upperPairs.length > 0 ? upperPairs[0] : null;
@@ -574,14 +478,14 @@ export const EditSchedulePage: React.FC = () => {
     if (weekType === 'upper') {
       const commonKey = `${selectedGroupId}-${day}-${pairNumber}-common`;
       const upperKey = `${selectedGroupId}-${day}-${pairNumber}-upper`;
-      key = schedule[commonKey] ? commonKey : upperKey;
+      key = normalizedSchedule[commonKey] ? commonKey : upperKey;
     } else {
       const commonKey = `${selectedGroupId}-${day}-${pairNumber}-common`;
       const lowerKey = `${selectedGroupId}-${day}-${pairNumber}-lower`;
-      key = schedule[commonKey] ? commonKey : lowerKey;
+      key = normalizedSchedule[commonKey] ? commonKey : lowerKey;
     }
 
-    return schedule[key] || [];
+    return normalizedSchedule[key] || [];
   };
 
   const handleCellClick = (day: string, pairNumber: number) => {
@@ -589,10 +493,10 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedPair(pairNumber);
 
     const pairData = getPairData(day, pairNumber);
-    
+
     const commonKey = `${selectedGroupId}-${day}-${pairNumber}-common`;
-    const commonPairs = schedule[commonKey];
-    
+    const commonPairs = normalizedSchedule[commonKey];
+
     if (commonPairs && commonPairs.length > 0) {
       const commonPair = commonPairs[0];
       setSelectedTeacher(commonPair.teacher);
@@ -601,7 +505,11 @@ export const EditSchedulePage: React.FC = () => {
       setSelectedSubjectId(commonPair.subjectId || null);
       setSelectedIdSt(commonPair.idSt || null);
       setSelectedRoom(commonPair.room);
-      setSelectedSubgroupType(commonPair.subgroup === null ? null : (commonPair.subgroup === 1 || commonPair.subgroup === 2 ? commonPair.subgroup : null));
+      setSelectedSubgroupType(
+        commonPair.subgroup === null
+          ? null
+          : (commonPair.subgroup === 1 || commonPair.subgroup === 2 ? commonPair.subgroup : null)
+      );
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
       setCurrentEditingScheduleId(commonPair.id || null);
@@ -614,7 +522,11 @@ export const EditSchedulePage: React.FC = () => {
         setSelectedSubjectId(sourcePair.subjectId || null);
         setSelectedIdSt(sourcePair.idSt || null);
         setSelectedRoom(sourcePair.room);
-        setSelectedSubgroupType(sourcePair.subgroup === null ? null : (sourcePair.subgroup === 1 || sourcePair.subgroup === 2 ? sourcePair.subgroup : null));
+        setSelectedSubgroupType(
+          sourcePair.subgroup === null
+            ? null
+            : (sourcePair.subgroup === 1 || sourcePair.subgroup === 2 ? sourcePair.subgroup : null)
+        );
         setCurrentEditingScheduleId(sourcePair.id || null);
       }
       setUpperWeekChecked(!!pairData.upper);
@@ -631,7 +543,7 @@ export const EditSchedulePage: React.FC = () => {
       setLowerWeekChecked(true);
       setCurrentEditingScheduleId(null);
     }
-    
+
     setTeacherSearchTerm('');
     setSubjectSearchTerm('');
     setRoomSearchTerm('');
@@ -658,18 +570,16 @@ export const EditSchedulePage: React.FC = () => {
     }
 
     const pairsWithSubgroup = subgroups.filter(
-      p => p.subgroup !== null && p.subgroup !== undefined
+      (p: PairData) => p.subgroup !== null && p.subgroup !== undefined
     );
 
     return (
       <div className="pair-info subgroups">
         {weekLabel && <div className="week-label">{weekLabel}</div>}
-        {subgroups.map((pair, idx) => {
-          const indexInSubgroups = pairsWithSubgroup.findIndex(p => p === pair);
+        {subgroups.map((pair: PairData, idx: number) => {
+          const indexInSubgroups = pairsWithSubgroup.findIndex((p: PairData) => p === pair);
           const shouldShowSubgroupLabel = indexInSubgroups !== -1;
-          const subgroupNumber = shouldShowSubgroupLabel
-            ? indexInSubgroups + 1
-            : null;
+          const subgroupNumber = shouldShowSubgroupLabel ? indexInSubgroups + 1 : null;
 
           return (
             <div key={idx} className="subgroup-item">
@@ -691,7 +601,7 @@ export const EditSchedulePage: React.FC = () => {
   const renderCellContent = (day: string, pairNumber: number) => {
     const upperSubgroups = getSubgroupsData(day, pairNumber, 'upper');
     const lowerSubgroups = getSubgroupsData(day, pairNumber, 'lower');
-    
+
     const hasUpper = upperSubgroups.length > 0;
     const hasLower = lowerSubgroups.length > 0;
 
@@ -700,7 +610,7 @@ export const EditSchedulePage: React.FC = () => {
     }
 
     const commonKey = `${selectedGroupId}-${day}-${pairNumber}-common`;
-    const isCommon = !!schedule[commonKey];
+    const isCommon = !!normalizedSchedule[commonKey];
 
     if (isCommon) {
       return renderSubgroups(upperSubgroups, '');
@@ -731,7 +641,7 @@ export const EditSchedulePage: React.FC = () => {
                   onChange={(e) => handleGroupChange(e.target.value)}
                   className="group-select">
                   <option value="">Выберите группу</option>
-                  {groups.map(group => (
+                  {groups.map((group: ApiGroup) => (
                     <option key={group.id} value={group.id}>
                       {group.numberGroup}
                     </option>
@@ -763,20 +673,20 @@ export const EditSchedulePage: React.FC = () => {
             <div className="schedule-grid-container">
               <div className="schedule-grid">
                 <div className="grid-header empty"></div>
-                {daysOfWeek.map(day => (
+                {daysOfWeek.map((day: string) => (
                   <div key={day} className="grid-header">
                     {day}
                   </div>
                 ))}
 
-                {pairTimes.map(pair => (
+                {pairTimes.map((pair) => (
                   <React.Fragment key={pair.number}>
                     <div className="time-cell">
                       <div className="pair-number">{pair.number} пара</div>
                       <div className="pair-time">{pair.time}</div>
                     </div>
 
-                    {daysOfWeek.map(day => {
+                    {daysOfWeek.map((day: string) => {
                       const isSelected = selectedDay === day && selectedPair === pair.number;
 
                       return (
@@ -797,7 +707,7 @@ export const EditSchedulePage: React.FC = () => {
           {selectedGroupId && selectedDay && selectedPair && (
             <div className="edit-pair-panel">
               <h3 className="edit-pair-title">
-                Редактирование пары: {selectedDay}, {selectedPair} пара ({pairTimes.find(p => p.number === selectedPair)?.time})
+                Редактирование пары: {selectedDay}, {selectedPair} пара ({pairTimes.find((p) => p.number === selectedPair)?.time})
               </h3>
 
               <div className="edit-controls">
@@ -813,7 +723,7 @@ export const EditSchedulePage: React.FC = () => {
                     />
                   </div>
                   <div className="items-list teachers-list">
-                    {filteredTeachers.map(teacher => {
+                    {filteredTeachers.map((teacher: TeacherWithNote) => {
                       const hasNote = !!teacher.note && teacher.note.trim() !== '';
                       const isActive = selectedTeacher === teacher.name;
 
@@ -859,7 +769,7 @@ export const EditSchedulePage: React.FC = () => {
                     />
                   </div>
                   <div className="items-list subjects-list">
-                    {filteredSubjects.map(subject => (
+                    {filteredSubjects.map((subject: ApiSubjectWithTeachers) => (
                       <button
                         key={subject.idSubject}
                         className={`list-item subject-item ${selectedSubject === subject.nameSubject ? 'active' : ''}`}
@@ -890,7 +800,7 @@ export const EditSchedulePage: React.FC = () => {
                     />
                   </div>
                   <div className="rooms-grid">
-                    {(showAllRooms ? filteredRooms : filteredRooms.slice(0, visibleRoomsCount)).map(room => (
+                    {(showAllRooms ? filteredRooms : filteredRooms.slice(0, visibleRoomsCount)).map((room: ApiRoom) => (
                       <button
                         key={room.id}
                         className={`room-btn ${selectedRoom === room.name ? 'active' : ''}`}
@@ -960,8 +870,8 @@ export const EditSchedulePage: React.FC = () => {
                 </div>
 
                 <div className="action-buttons">
-                  <button 
-                    className="delete-btn" 
+                  <button
+                    className="delete-btn"
                     onClick={handleDeletePair}
                     disabled={saving || deleting || !currentEditingScheduleId}>
                     {deleting ? 'Удаление...' : 'Удалить'}
@@ -969,8 +879,8 @@ export const EditSchedulePage: React.FC = () => {
                   <button className="cancel-btn" onClick={cancelEdit} disabled={saving || deleting}>
                     Отменить
                   </button>
-                  <button 
-                    className="save-btn" 
+                  <button
+                    className="save-btn"
                     onClick={savePair}
                     disabled={saving || deleting || !selectedTeacherId || !selectedSubjectId || !selectedRoom}>
                     {saving ? 'Сохранение...' : 'Сохранить'}
