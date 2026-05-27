@@ -17,13 +17,13 @@ const TeacherToRoom: React.FC = () => {
   const [teachers, setTeachers] = useState<TeacherWithRoom[]>([]);
   const [filteredTeachers, setFilteredTeachers] = useState<TeacherWithRoom[]>([]);
   const [rooms, setRooms] = useState<ApiRoom[]>([]);
+  const [freeRooms, setFreeRooms] = useState<ApiRoom[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [openTeacherId, setOpenTeacherId] = useState<number | null>(null);
   const [roomSearchTerms, setRoomSearchTerms] = useState<Record<number, string>>({});
   const [filteredRoomsCache, setFilteredRoomsCache] = useState<Record<number, ApiRoom[]>>({});
   const [savingTeacherId, setSavingTeacherId] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState<string>('');
 
   // загрузка преподавателей и аудиторий
@@ -34,27 +34,26 @@ const TeacherToRoom: React.FC = () => {
         setError(null);
         const staffMembers = await methodistApiService.getStaffMembers();
         
-        // должность с id = 9
         const teachersList = staffMembers.filter(
           st => st.staffPosition?.some(pos => pos.id === 9)
         );
 
-        const roomsList = await methodistApiService.getRooms();
-        setRooms(roomsList);
+        const allRooms = await methodistApiService.getRoomsWithOwners();
+        setRooms(allRooms);
         
-        const savedTeacherRooms = getSavedTeacherRooms();
+        const freeRoomsList = await methodistApiService.getFreeRooms();
+        setFreeRooms(freeRoomsList);
         
         const teachersWithRooms: TeacherWithRoom[] = teachersList.map(teacher => {
-          const savedRoom = savedTeacherRooms[teacher.id];
-          const selectedRoom = roomsList.find(r => r.id === savedRoom?.roomId);
+          const assignedRoom = allRooms.find(room => room.idStaffOwner === teacher.id);
           
           return {
             id: teacher.id,
             name: teacher.name,
             lastName: teacher.lastName,
             patronymic: teacher.patronymic,
-            selectedRoomId: savedRoom?.roomId || null,
-            selectedRoomName: selectedRoom?.name || '',
+            selectedRoomId: assignedRoom?.id || null,
+            selectedRoomName: assignedRoom?.name || '',
           };
         });
         
@@ -84,38 +83,55 @@ const TeacherToRoom: React.FC = () => {
     }
   }, [teacherSearchTerm, teachers]);
   
-  // пока через localStorage
-  const getSavedTeacherRooms = (): Record<number, { roomId: number; roomName: string }> => {
-    const saved = localStorage.getItem('teacherRooms');
-    return saved ? JSON.parse(saved) : {};
+  // сохранение привязки аудитории к преподавателю через API
+  const assignRoomToTeacher = async (teacherId: number, roomId: number | null): Promise<void> => {
+    if (roomId === null) {
+      try {
+        await methodistApiService.assignRoomToStaff(0, teacherId);
+      } catch (err) {
+        console.error('Ошибка при отвязке аудитории:', err);
+        throw err;
+      }
+    } else {
+      await methodistApiService.assignRoomToStaff(roomId, teacherId);
+    }
   };
   
-  const saveTeacherRoom = (teacherId: number, roomId: number | null, roomName: string) => {
-    const saved = getSavedTeacherRooms();
-    
-    if (roomId === null) {
-      delete saved[teacherId];
-    } else {
-      saved[teacherId] = { roomId, roomName };
-    }
-    
-    localStorage.setItem('teacherRooms', JSON.stringify(saved));
-    
+  // обновление локального состояния после привязки/отвязки
+  const updateLocalState = (teacherId: number, roomId: number | null, roomName: string) => {
     setTeachers(prev => prev.map(teacher =>
       teacher.id === teacherId
         ? { ...teacher, selectedRoomId: roomId, selectedRoomName: roomName }
         : teacher
     ));
+    
+    // обновление списка всех аудиторий 
+    setRooms(prev => prev.map(room =>
+      room.id === roomId
+        ? { ...room, idStaffOwner: teacherId }
+        : room.idStaffOwner === teacherId && room.id !== roomId
+          ? { ...room, idStaffOwner: null }
+          : room
+    ));
+    
+    // обновление списка свободных аудиторий
+    const updateFreeRooms = async () => {
+      try {
+        const newFreeRooms = await methodistApiService.getFreeRooms();
+        setFreeRooms(newFreeRooms);
+      } catch (err) {
+        console.error('Ошибка обновления списка свободных аудиторий:', err);
+      }
+    };
+    updateFreeRooms();
   };
   
   const handleRoomSelect = async (teacherId: number, roomId: number | null, roomName: string) => {
     setSavingTeacherId(teacherId);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      saveTeacherRoom(teacherId, roomId, roomName);
-      setSuccessMessage(`Аудитория успешно ${roomName ? 'назначена' : 'снята'}`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      await assignRoomToTeacher(teacherId, roomId);
+      updateLocalState(teacherId, roomId, roomName);
     } catch (err) {
       console.error('Ошибка при сохранении:', err);
       setError('Не удалось сохранить аудиторию');
@@ -128,10 +144,23 @@ const TeacherToRoom: React.FC = () => {
   const handleRoomSearch = (teacherId: number, searchTerm: string) => {
     setRoomSearchTerms(prev => ({ ...prev, [teacherId]: searchTerm }));
     
+    const currentTeacher = teachers.find(t => t.id === teacherId);
+    const currentRoomId = currentTeacher?.selectedRoomId;
+    const currentRoom = rooms.find(r => r.id === currentRoomId);
+    
+    let availableRooms: ApiRoom[] = [...freeRooms];
+    
+    if (currentRoom && currentRoom.idStaffOwner === teacherId) {
+      const alreadyInList = availableRooms.some(r => r.id === currentRoom.id);
+      if (!alreadyInList) {
+        availableRooms = [currentRoom, ...availableRooms];
+      }
+    }
+    
     if (searchTerm.trim() === '') {
-      setFilteredRoomsCache(prev => ({ ...prev, [teacherId]: rooms }));
+      setFilteredRoomsCache(prev => ({ ...prev, [teacherId]: availableRooms }));
     } else {
-      const filtered = rooms.filter(room =>
+      const filtered = availableRooms.filter(room =>
         room.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredRoomsCache(prev => ({ ...prev, [teacherId]: filtered }));
@@ -142,7 +171,17 @@ const TeacherToRoom: React.FC = () => {
     if (filteredRoomsCache[teacherId]) {
       return filteredRoomsCache[teacherId];
     }
-    return rooms;
+    
+    const currentTeacher = teachers.find(t => t.id === teacherId);
+    const currentRoomId = currentTeacher?.selectedRoomId;
+    const currentRoom = rooms.find(r => r.id === currentRoomId);
+    
+    let availableRooms: ApiRoom[] = [...freeRooms];
+    if (currentRoom && currentRoom.idStaffOwner === teacherId && !availableRooms.some(r => r.id === currentRoom.id)) {
+      availableRooms = [currentRoom, ...availableRooms];
+    }
+    
+    return availableRooms;
   };
   
   const toggleDropdown = (teacherId: number) => {
@@ -158,6 +197,15 @@ const TeacherToRoom: React.FC = () => {
       if (!roomSearchTerms[teacherId]) {
         setRoomSearchTerms(prev => ({ ...prev, [teacherId]: '' }));
       }
+      const currentTeacher = teachers.find(t => t.id === teacherId);
+      const currentRoomId = currentTeacher?.selectedRoomId;
+      const currentRoom = rooms.find(r => r.id === currentRoomId);
+      
+      let availableRooms: ApiRoom[] = [...freeRooms];
+      if (currentRoom && currentRoom.idStaffOwner === teacherId && !availableRooms.some(r => r.id === currentRoom.id)) {
+        availableRooms = [currentRoom, ...availableRooms];
+      }
+      setFilteredRoomsCache(prev => ({ ...prev, [teacherId]: availableRooms }));
     }
   };
   
@@ -194,14 +242,12 @@ const TeacherToRoom: React.FC = () => {
           />
         </div>
       </div>
-
       {error && (
         <div className="tr-error">
           <span>{error}</span>
           <button onClick={() => setError(null)}>×</button>
         </div>
       )}
-
       {filteredTeachers.length === 0 ? (
         <div className="tr-empty">
           <p>Преподаватели не найдены</p>
@@ -233,7 +279,7 @@ const TeacherToRoom: React.FC = () => {
                         disabled={savingTeacherId === teacher.id}
                       >
                         <span className={!teacher.selectedRoomName ? 'tr-placeholder' : ''}>
-                          {teacher.selectedRoomName || 'Выберите аудиторию'}
+                          {teacher.selectedRoomName || 'Не выбрана'}
                         </span>
                         <span className="tr-selector-arrow">▼</span>
                       </button>
@@ -259,7 +305,6 @@ const TeacherToRoom: React.FC = () => {
                               }}
                             >
                               <span>Не выбрано</span>
-                              {!teacher.selectedRoomId && <span className="tr-check">✓</span>}
                             </div>
                             
                             {getFilteredRoomsForTeacher(teacher.id).length === 0 ? (
@@ -289,7 +334,7 @@ const TeacherToRoom: React.FC = () => {
                         <div className="tr-saving">Сохранение...</div>
                       )}
                     </div>
-                  </td>
+                   </td>
                 </tr>
               ))}
             </tbody>

@@ -292,6 +292,23 @@ class MethodistApiService {
     return rooms.map(room => ({ id: room.id, name: room.name }));
   }
 
+  async assignRoomToStaff(roomId: number, staffId: number): Promise<ApiRoom> {
+    const response = await axios.patch<ApiRoom>(
+      `${this.baseUrl}/api/v1/rooms/assign/${roomId}/${staffId}`
+    );
+    return response.data;
+  }
+
+  async getFreeRooms(): Promise<ApiRoom[]> {
+    const response = await axios.get<ApiRoom[]>(`${this.baseUrl}/api/v1/rooms/free`);
+    return response.data;
+  }
+
+  async getRoomsWithOwners(): Promise<ApiRoom[]> {
+    const response = await axios.get<ApiRoom[]>(`${this.baseUrl}/api/v1/rooms`);
+    return response.data;
+  }
+
   // РАСПИСАНИЕ
   async getSchedule(): Promise<ApiSchedule[]> {
     const response = await axios.get<ApiSchedule[]>(`${this.baseUrl}/api/v1/schedule`);

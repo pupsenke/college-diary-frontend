@@ -171,6 +171,22 @@ export const EditSchedulePage: React.FC = () => {
     gcTime: 5 * 60 * 1000,
   });
 
+  // сортировка аудиторий, сначала привязанная к выбранному преподавателю, затем остальные
+  const sortRoomsByOwner = (roomsList: ApiRoom[], teacherId: number | null): ApiRoom[] => {
+    if (!teacherId) return [...roomsList].sort((a, b) => a.name.localeCompare(b.name));
+    
+    const assignedRoom = roomsList.find(room => room.idStaffOwner === teacherId);
+    const otherRooms = roomsList.filter(room => room.idStaffOwner !== teacherId);
+    
+    const sortedOther = [...otherRooms].sort((a, b) => a.name.localeCompare(b.name));
+    
+    if (assignedRoom) {
+      return [assignedRoom, ...sortedOther];
+    }
+    
+    return sortedOther;
+  };
+
   useEffect(() => {
     const savedGroup = localStorage.getItem('selectedGroupForEdit');
     if (savedGroup) {
@@ -197,18 +213,7 @@ export const EditSchedulePage: React.FC = () => {
     }
   }, [groupsQuery.data]);
 
-  useEffect(() => {
-    if (roomsQuery.data) {
-      setFilteredRooms(
-        roomSearchTerm.trim() === ''
-          ? roomsQuery.data
-          : roomsQuery.data.filter((room: ApiRoom) =>
-              room.name.toLowerCase().includes(roomSearchTerm.toLowerCase())
-            )
-      );
-    }
-  }, [roomsQuery.data, roomSearchTerm]);
-
+  // фильтрация преподавателей по поиску
   useEffect(() => {
     if (teachersQuery.data) {
       setFilteredTeachers(
@@ -220,6 +225,22 @@ export const EditSchedulePage: React.FC = () => {
       );
     }
   }, [teachersQuery.data, teacherSearchTerm]);
+
+  // фильтрация и сортировка аудиторий по поиску
+  useEffect(() => {
+    if (!roomsQuery.data) return;
+    
+    let filtered = [...roomsQuery.data];
+    
+    if (roomSearchTerm.trim() !== '') {
+      filtered = filtered.filter((room: ApiRoom) =>
+        room.name.toLowerCase().includes(roomSearchTerm.toLowerCase())
+      );
+    }
+    
+    const sorted = sortRoomsByOwner(filtered, selectedTeacherId);
+    setFilteredRooms(sorted);
+  }, [roomsQuery.data, roomSearchTerm, selectedTeacherId]);
 
   // фильтрация предметов по поиску
   useEffect(() => {
@@ -242,11 +263,11 @@ export const EditSchedulePage: React.FC = () => {
     setFilteredSubjects(filtered);
   }, [selectedGroupSubjectsQuery.data, selectedTeacherId, selectedGroupId, subjectSearchTerm]);
 
-  // фильтрация аудиторий по поиску
+  // сброс пагинации аудиторий при изменении поиска или выборе преподавателя
   useEffect(() => {
     setShowAllRooms(false);
     setVisibleRoomsCount(4);
-  }, [roomSearchTerm, roomsQuery.data]);
+  }, [roomSearchTerm, roomsQuery.data, selectedTeacherId]);
 
   useEffect(() => {
     setLoadError('');
