@@ -25,7 +25,6 @@ export class DocxService {
       const doc = new Docxtemplater();
       doc.loadZip(zip);
       
-      // Создаем строки с принудительным добавлением enter после каждого студента
       let excellentText = '';
       data.excellentStudents.forEach((name, i) => {
         excellentText += `${i + 1}. ${name}\r\n`;

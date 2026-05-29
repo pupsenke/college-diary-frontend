@@ -32,7 +32,6 @@ interface GroupData {
 type DetailTabType = 'group' | 'scholarship' | 'session' | 'summary' | 'departmentGroups' | 'personalCabinet';
 type LeftPanelView = 'department' | 'groups';
 
-// Хук для кешированных данных
 function useCachedFetch<T>(
   cacheKey: string,
   fetchFn: () => Promise<T>,
@@ -247,9 +246,8 @@ export const DepartmentHeadPage: React.FC = () => {
       const studentsCounts = await Promise.all(groupStudentsPromises);
       totalStudents = studentsCounts.reduce((sum, count) => sum + count, 0);
       
-      // **НОВЫЙ ЗАПРОС: получаем средний балл и посещаемость по отделению**
-      let averagePerformance = 4.33; // значение по умолчанию
-      let averageAttendance = 77; // значение по умолчанию
+      let averagePerformance = 4.33;
+      let averageAttendance = 77;
       
       try {
         const overallStats = await headApiService.getOverallStats();
@@ -258,7 +256,6 @@ export const DepartmentHeadPage: React.FC = () => {
         console.log('Получена общая статистика:', overallStats);
       } catch (statsError) {
         console.error('Ошибка при получении общей статистики:', statsError);
-        // Используем значения по умолчанию
       }
       
       const departmentData = {
@@ -281,8 +278,7 @@ export const DepartmentHeadPage: React.FC = () => {
 
   const { 
     data: departmentInfo, 
-    loading: departmentLoading,
-    fromCache: deptFromCache
+    loading: departmentLoading
   } = useCachedFetch(
     'department_info',
     loadDepartmentInfo,
@@ -290,57 +286,6 @@ export const DepartmentHeadPage: React.FC = () => {
     [cachedGroups]
   );
 
-  const loadDepartmentScholarships = useCallback(async () => {
-    const groups = academicGroups.length > 0 ? academicGroups : cachedGroups || [];
-    let totalStudents = 0;
-    let excellentCount = 0;
-    let goodExcellentCount = 0;
-    let goodCount = 0;
-    let noneCount = 0;
-    let totalAmount = 0;
-
-    for (const group of groups) {
-      const students = await headApiService.getGroupStudents(group.id);
-      totalStudents += students.length;
-      
-      for (const student of students) {
-        const avgGrade = Math.random() * 2 + 3;
-        
-        if (avgGrade >= 4.8) {
-          excellentCount++;
-          totalAmount += 3500;
-        } else if (avgGrade >= 4.0) {
-          goodExcellentCount++;
-          totalAmount += 2500;
-        } else if (avgGrade >= 3.5) {
-          goodCount++;
-          totalAmount += 1800;
-        } else {
-          noneCount++;
-        }
-      }
-    }
-
-    return {
-      totalStudents,
-      excellentCount,
-      goodExcellentCount,
-      goodCount,
-      noneCount,
-      totalAmount,
-      averageAmount: totalStudents > 0 ? totalAmount / totalStudents : 0
-    };
-  }, [academicGroups, cachedGroups]);
-
-  const { 
-    data: departmentScholarships,
-    fromCache: scholarshipsFromCache
-  } = useCachedFetch(
-    'department_scholarships',
-    loadDepartmentScholarships,
-    CACHE_TTL.DEPARTMENT_SCHOLARSHIPS,
-    [academicGroups]
-  );
 
   const handleAddGroup = async (groupNumber: string) => {
     try {
@@ -418,53 +363,29 @@ export const DepartmentHeadPage: React.FC = () => {
     setLeftPanelView('department');
   };
 
-  const handleClosePersonalCabinet = () => {
-    setActiveDepartmentTab('groups'); 
-    setShowPersonalCabinet(false);
-    setActiveDetailTab('departmentGroups');
-    setShowDepartmentGroups(true);
-  };
-
-  const CacheWarning = () => {
-    if (!usingCache && !groupsFromCache && !deptFromCache && !scholarshipsFromCache) return null;
-    
-    return (
-      <div className="dhp-cache-warning">
-        <div className="dhp-cache-warning-icon">⚠️</div>
-        <div className="dhp-cache-warning-text">
-          {!onlineStatus 
-            ? 'Нет подключения к интернету. Показаны сохранённые данные.' 
-            : 'Используются кэшированные данные. Некоторые данные могут быть устаревшими.'}
+  const CombinedMetricCard = ({ averageGrade, attendance }: { averageGrade: number; attendance: number }) => (
+    <div className="dhp-combined-metric-card">
+      <div className="dhp-combined-metrics">
+        <div className="dhp-combined-metric-item">
+          <div className="dhp-combined-metric-label">Средний балл</div>
+          <div className="dhp-combined-metric-value">{averageGrade.toFixed(2)}</div>
+          <div className="dhp-combined-metric-progress">
+            <div className="dhp-progress-bar">
+              <div className="dhp-progress-fill" style={{ width: `${(averageGrade / 5) * 100}%` }}></div>
+            </div>
+          </div>
         </div>
-        {onlineStatus && (
-          <button 
-            className="dhp-cache-warning-btn"
-            onClick={() => window.location.reload()}
-          >
-            Обновить
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const MetricPlaceholder = ({ label, value, isPercentage = false, isRealData = false }: { label: string; value: number; isPercentage?: boolean; isRealData?: boolean }) => (
-    <div className="dhp-metric-card">
-      <div className="dhp-metric-header">
-        <span className="dhp-metric-title">{label}</span>
-      </div>
-      <div className="dhp-metric-value">
-        {isPercentage ? `${value.toFixed(1)}%` : value.toFixed(2)}
-      </div>
-      <div className="dhp-metric-progress">
-        <div className="dhp-progress-bar">
-          <div 
-            className="dhp-progress-fill" 
-            style={{ width: `${isPercentage ? value : (value / 5) * 100}%` }}
-          ></div>
+        <div className="dhp-combined-metric-divider"></div>
+        <div className="dhp-combined-metric-item">
+          <div className="dhp-combined-metric-label">Посещаемость</div>
+          <div className="dhp-combined-metric-value">{attendance.toFixed(1)}%</div>
+          <div className="dhp-combined-metric-progress">
+            <div className="dhp-progress-bar">
+              <div className="dhp-progress-fill" style={{ width: `${attendance}%` }}></div>
+            </div>
+          </div>
         </div>
       </div>
-      {!isRealData && <div className="dhp-metric-note">* демонстрационные данные</div>}
     </div>
   );
 
@@ -520,7 +441,7 @@ export const DepartmentHeadPage: React.FC = () => {
           </div>
           
           <div className="dhp-department-specialities">
-            <h4 className="dhp-specialities-title">Направления подготовки</h4>
+            <h4 className="dhp-specialities-title">Специальности:</h4>
             <div className="dhp-specialities-list">
               {departmentInfo.specialities?.map((spec: string, index: number) => (
                 <div key={index} className="dhp-speciality-item">
@@ -530,19 +451,10 @@ export const DepartmentHeadPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="dhp-department-metrics">
-            <div className="dhp-metrics-grid">
-              <MetricPlaceholder 
-                label="Средняя успеваемость" 
-                value={departmentInfo.averagePerformance} 
-              />
-              <MetricPlaceholder 
-                label="Общая посещаемость" 
-                value={departmentInfo.averageAttendance} 
-                isPercentage 
-              />
-            </div>
-          </div>
+          <CombinedMetricCard 
+            averageGrade={departmentInfo.averagePerformance}
+            attendance={departmentInfo.averageAttendance}
+          />
 
           <div className="dhp-quick-links">
             <button 
@@ -796,7 +708,6 @@ export const DepartmentHeadPage: React.FC = () => {
           <HeaderDepartmentHead />
 
           <div className="dhp-main-layout">
-            {/* Левая колонка: панель + кнопка под ней */}
             <div className="dhp-left-column">
               <div className="dhp-groups-panel">
                 <div className="dhp-left-panel-nav">
@@ -830,11 +741,10 @@ export const DepartmentHeadPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Правая колонка: детальная панель */}
             <div className="dhp-detail-panel">
               {leftPanelView === 'groups' && selectedGroupId !== null && !showPersonalCabinet && (
                 <div className="dhp-detail-tabs">
-                 { (['group', 'summary', 'scholarship', 'session', 'diploma'] as DetailTabType[]).map((tab) => (
+                  {(['group', 'summary', 'scholarship', 'session', 'diploma'] as DetailTabType[]).map((tab) => (
                     <button
                       key={tab}
                       className={`dhp-detail-tab ${activeDetailTab === tab ? 'active' : ''}`}

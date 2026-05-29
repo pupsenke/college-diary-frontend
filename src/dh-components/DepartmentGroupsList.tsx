@@ -1,4 +1,3 @@
-// DepartmentGroupsList.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { headApiService, StudentInfo } from '../services/headApiService';
 import StudentProfile from './StudentProfile';
@@ -25,7 +24,6 @@ interface DepartmentGroupsListProps {
   onGroupSelect?: (groupId: number) => void;
 }
 
-// Хук для кешированной загрузки студентов группы
 function useCachedGroupStudents(groupId: number | null) {
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +39,6 @@ function useCachedGroupStudents(groupId: number | null) {
     try {
       const cacheKey = `group_students_${groupId}`;
 
-      // Проверяем кеш если не игнорируем
       if (!ignoreCache) {
         const cached = cacheService.get<StudentInfo[]>(cacheKey, { ttl: CACHE_TTL.GROUP_STUDENTS });
         if (cached) {
@@ -49,7 +46,6 @@ function useCachedGroupStudents(groupId: number | null) {
           setFromCache(true);
           setLoading(false);
           
-          // Если есть интернет, обновляем в фоне
           if (cacheService.isNetworkOnline()) {
             loadStudents(true);
           }
@@ -57,22 +53,17 @@ function useCachedGroupStudents(groupId: number | null) {
         }
       }
 
-      // Если нет интернета и нет кеша
       if (!cacheService.isNetworkOnline()) {
         throw new Error('Нет подключения к интернету');
       }
 
-      // Загружаем свежие данные
       const freshStudents = await headApiService.getGroupStudents(groupId);
       setStudents(freshStudents);
       setFromCache(false);
-      
-      // Сохраняем в кеш
       cacheService.set(cacheKey, freshStudents, { ttl: CACHE_TTL.GROUP_STUDENTS });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки студентов');
       
-      // Пробуем кеш как fallback
       const cacheKey = `group_students_${groupId}`;
       const cached = cacheService.get<StudentInfo[]>(cacheKey, { ttl: CACHE_TTL.GROUP_STUDENTS });
       if (cached) {
@@ -94,7 +85,6 @@ function useCachedGroupStudents(groupId: number | null) {
   return { students, loading, error, fromCache, refetch: () => loadStudents(true) };
 }
 
-// Компонент для отображения информации о группе с кешированием
 const GroupExpandedInfo: React.FC<{ 
   group: GroupData; 
   onStudentClick: (studentId: number, groupName: string) => void;
@@ -113,14 +103,12 @@ const GroupExpandedInfo: React.FC<{
 
   return (
     <div className="dgl-group-expanded-info">
-      {/* Предупреждение о кеше */}
       {fromCache && !loading && (
         <div className="dgl-cache-badge">
           <span className="dgl-cache-text">Нет подключения к интернету. Отображаются сохраненные данные из локального хранилища</span>
         </div>
       )}
 
-      {/* Основная информация о группе */}
       <div className="dgl-expanded-grid">
         <div className="dgl-expanded-item">
           <span className="dgl-expanded-label">Специальность</span>
@@ -136,7 +124,6 @@ const GroupExpandedInfo: React.FC<{
         </div>
       </div>
 
-      {/* Список студентов со скроллом */}
       <div className="dgl-students-section">
         <div className="dgl-students-header">
           <span className="dgl-students-title">Список студентов</span>
@@ -190,12 +177,7 @@ const GroupExpandedInfo: React.FC<{
   );
 };
 
-// Компонент для отображения метрик с заглушками
 const GroupMetrics: React.FC<{ group: GroupData }> = ({ group }) => {
-  // Заглушки для среднего балла и посещаемости
-  const displayAverageGrade = 0;
-  const displayAttendance = 0;
-
   return (
     <div className="dgl-group-stats">
       <div className="dgl-group-stat">
@@ -206,18 +188,6 @@ const GroupMetrics: React.FC<{ group: GroupData }> = ({ group }) => {
         <span className="dgl-stat-label">Куратор:</span>
         <span className="dgl-stat-value">{group.curator}</span>
       </div>
-      {/* <div className="dgl-group-stat placeholder-stat">
-        <span className="dgl-stat-label">Ср. балл:</span>
-        <span className="dgl-stat-value demo-value">
-          {displayAverageGrade.toFixed(2)}
-        </span>
-      </div>
-      <div className="dgl-group-stat placeholder-stat">
-        <span className="dgl-stat-label">Посещаемость:</span>
-        <span className="dgl-stat-value demo-value">
-          {displayAttendance.toFixed(1)}%
-        </span>
-      </div> */}
     </div>
   );
 };
@@ -230,7 +200,6 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
   const [selectedGroupName, setSelectedGroupName] = useState<string>('');
   const [onlineStatus, setOnlineStatus] = useState(true);
 
-  // Отслеживание статуса сети
   useEffect(() => {
     const updateOnlineStatus = () => {
       setOnlineStatus(navigator.onLine);
@@ -246,7 +215,6 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
     };
   }, []);
 
-  // Группировка групп по курсам
   useEffect(() => {
     const grouped: Record<number, GroupData[]> = {
       1: [],
@@ -297,7 +265,6 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
     };
     return names[course] || `${course} курс`;
   };
-
 
   return (
     <>
@@ -378,7 +345,6 @@ export const DepartmentGroupsList: React.FC<DepartmentGroupsListProps> = ({ grou
         )}
       </div>
 
-      {/* Модальное окно профиля студента */}
       {isStudentProfileOpen && selectedStudentId && (
         <div className="sp-modal-overlay" onClick={handleCloseStudentProfile}>
           <div className="sp-modal-content" onClick={(e) => e.stopPropagation()}>

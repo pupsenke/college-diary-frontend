@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './StudentProfileStyle.css';
 import { headApiService, FullStudentInfo } from '../services/headApiService';
-import { apiService } from '../services/studentApiService';
 
 interface StudentProfileProps {
   studentId: number;

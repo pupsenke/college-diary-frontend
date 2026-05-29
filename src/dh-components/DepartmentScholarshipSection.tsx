@@ -42,14 +42,8 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<StudentInfo | null>(null);
   const [groupScholarshipCategories, setGroupScholarshipCategories] = useState<ScholarshipCategory[]>([]);
   const [loadingGroupData, setLoadingGroupData] = useState(false);
-  
-  // Состояния для экспорта
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportData, setExportData] = useState<string>('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
 
-  // **Функция для получения категорий стипендий группы (из второго кода)**
+  // Функция для получения категорий стипендий группы
   const loadGroupScholarshipCategories = async (groupId: number): Promise<ScholarshipCategory[]> => {
     try {
       const categories = await headApiService.getStudentsByScholarshipCategories(groupId);
@@ -60,7 +54,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     }
   };
 
-  // **Функция для получения категории студента**
+  // Функция для получения категории студента
   const getStudentCategory = (studentFullName: string, categories: ScholarshipCategory[]): string => {
     for (const category of categories) {
       if (category.students.includes(studentFullName)) {
@@ -70,15 +64,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     return 'none';
   };
 
-  // **Функция для получения студентов по типу стипендии**
-  const getStudentsByType = (categoryType: string, studentsList: StudentInfo[], categories: ScholarshipCategory[]): StudentInfo[] => {
-    const category = categories.find(c => c.category === categoryType);
-    if (!category) return [];
-    
-    return studentsList.filter(student => 
-      category.students.includes(getStudentFullName(student))
-    );
-  };
 
   const getStudentFullName = (student: StudentInfo): string => {
     return `${student.lastName} ${student.name} ${student.patronymic}`;
@@ -104,17 +89,14 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
       let totalNone = 0;
 
       for (const group of filteredGroups) {
-        // **Получаем студентов группы**
         const students = await headApiService.getGroupStudents(group.id);
         
-        // **ВНЕДРЕННЫЙ ЗАПРОС: получаем категории стипендий для группы из второго кода**
         const scholarshipCategories = await loadGroupScholarshipCategories(group.id);
         
         let groupExcellent = 0, groupGoodExcellent = 0, groupGood = 0, groupNone = 0;
         
         for (const student of students) {
           const studentFullName = getStudentFullName(student);
-          // **Определяем тип стипендии студента на основе полученных категорий**
           const category = getStudentCategory(studentFullName, scholarshipCategories);
           
           switch (category) {
@@ -167,7 +149,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     }
   };
 
-  // **Функция для открытия модального окна с детальной информацией о группе**
+  // Функция для открытия модального окна с детальной информацией о группе
   const handleGroupClick = async (groupId: number) => {
     setLoadingGroupData(true);
     try {
@@ -175,7 +157,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
       setGroupStudents(students);
       setSelectedGroup(groupId);
       
-      // **ВНЕДРЕННЫЙ ЗАПРОС: получаем категории стипендий для выбранной группы**
       const categories = await loadGroupScholarshipCategories(groupId);
       setGroupScholarshipCategories(categories);
       
@@ -187,12 +168,12 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     }
   };
 
-  // **Функция для получения категории студента в модальном окне**
+  // Функция для получения категории студента в модальном окне
   const getModalStudentCategory = (studentFullName: string): string => {
     return getStudentCategory(studentFullName, groupScholarshipCategories);
   };
 
-  // **Функция для получения названия категории стипендии**
+  // Функция для получения названия категории стипендии
   const getScholarshipTypeName = (category: string): string => {
     const types: Record<string, string> = {
       '5': 'Повышенная стипендия (+50%)',
@@ -203,7 +184,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
     return types[category] || types.none;
   };
 
-  // **Функция для получения цвета категории стипендии**
+  // Функция для получения цвета категории стипендии
   const getScholarshipColor = (category: string): string => {
     const colors: Record<string, string> = {
       '5': '#10b981',
@@ -219,219 +200,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
   }, []);
 
   const filteredGroups = stats?.byGroup.filter(g => selectedCourse === 'all' || g.course === selectedCourse) || [];
-
-  // Генерация данных для экспорта
-  const generateExportData = () => {
-    // ... (код экспорта остается без изменений)
-    const currentYear = new Date().getFullYear();
-    const groupName = "Отделение |||";
-    
-    let html = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Списки студентов на стипендию - Отделение</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            background: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            padding: 40px;
-        }
-        .document {
-            max-width: 1200px;
-            width: 100%;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 30px 25px 40px 25px;
-        }
-        .title {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1.4;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .specialty {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .department-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #002FA7;
-        }
-        .styled-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-        .styled-table th, .styled-table td {
-            border: 1px solid #000;
-            padding: 10px 12px;
-            vertical-align: top;
-        }
-        .styled-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-align: center;
-        }
-        .course-row td {
-            border-top: 2px solid #000;
-            font-weight: bold;
-            background-color: #f8fafc;
-        }
-        .signature {
-            margin-top: 45px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-        }
-        .signature-line {
-            margin-top: 5px;
-            width: 220px;
-            border-bottom: 1px solid #000;
-        }
-        .stats-info {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-        .stats-info p {
-            margin: 5px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="document">
-        <div class="title">
-            СПИСКИ СТУДЕНТОВ НА НАЗНАЧЕНИЕ<br>
-            ГОСУДАРСТВЕННОЙ АКАДЕМИЧЕСКОЙ СТИПЕНДИИ
-        </div>
-        <div class="subtitle">
-            (Федеральное финансирование)
-        </div>
-        <div class="specialty">
-            Специальность 09.02.07 Информационные системы и программирование
-        </div>
-        <div class="department-name">
-            ${groupName}
-        </div>
-        
-        <div class="stats-info">
-            <p><strong>Всего студентов:</strong> ${stats?.totalStudents || 0}</p>
-            <p><strong>Получают стипендию:</strong> ${stats?.receivingCount || 0} (${stats?.coveragePercent.toFixed(1) || 0}%)</p>
-            <p><strong>Студенты с повышенной стипендией (+50%):</strong> ${stats?.byGroup.reduce((sum, g) => sum + g.excellent, 0) || 0}</p>
-            <p><strong>Студенты с повышенной стипендией (+25%):</strong> ${stats?.byGroup.reduce((sum, g) => sum + g.goodExcellent, 0) || 0}</p>
-            <p><strong>Студенты со стандартной стипендией:</strong> ${stats?.byGroup.reduce((sum, g) => sum + g.good, 0) || 0}</p>
-            <p><strong>Не получают стипендию:</strong> ${stats?.byGroup.reduce((sum, g) => sum + g.none, 0) || 0}</p>
-        </div>
-
-        <h4 style="margin-bottom: 10px;">Распределение по курсам</h4>
-        ${[1, 2, 3, 4].map(course => {
-          const courseGroups = stats?.byGroup.filter(g => g.course === course) || [];
-          if (courseGroups.length === 0) return '';
-          return `
-            <table class="styled-table">
-                <thead>
-                    <tr class="course-row">
-                        <th colspan="4">${course} курс</th>
-                    </tr>
-                    <tr>
-                        <th style="width: 40%">Группа</th>
-                        <th style="width: 20%">Всего студентов</th>
-                        <th style="width: 20%">Получают стипендию</th>
-                        <th style="width: 20%">Охват</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${courseGroups.map(group => `
-                        <tr>
-                            <td>Группа ${group.groupName}</td>
-                            <td style="text-align: center">${group.total}</td>
-                            <td style="text-align: center">${group.excellent + group.goodExcellent + group.good}</td>
-                            <td style="text-align: center">${group.coveragePercent.toFixed(1)}%</td>
-                        </tr>
-                    `).join('')}
-                    <tr style="font-weight: bold; background-color: #f0f0f0;">
-                        <td>Итого по ${course} курсу</td>
-                        <td style="text-align: center">${stats?.byCourse[course].total || 0}</td>
-                        <td style="text-align: center">${(stats?.byCourse[course].excellent || 0) + (stats?.byCourse[course].goodExcellent || 0) + (stats?.byCourse[course].good || 0)}</td>
-                        <td style="text-align: center">${stats?.byCourse[course].total ? ((((stats?.byCourse[course].excellent || 0) + (stats?.byCourse[course].goodExcellent || 0) + (stats?.byCourse[course].good || 0)) / stats?.byCourse[course].total) * 100).toFixed(1) : 0}%</td>
-                    </tr>
-                </tbody>
-            </table>
-          `;
-        }).join('')}
-
-        <div class="signature">
-            <div>
-                Председатель стипендиальной комиссии<br>
-                <div class="signature-line"></div>
-            </div>
-            <div>
-                Секретарь<br>
-                <div class="signature-line"></div>
-            </div>
-        </div>
-        <div style="margin-top: 20px; font-size: 11px; text-align: center; color: #64748b;">
-            Документ сформирован автоматически ${new Date().toLocaleString()}
-        </div>
-    </div>
-</body>
-</html>`;
-    
-    return html;
-  };
-
-  const handleExport = () => {
-    const data = generateExportData();
-    setExportData(data);
-    setEditedContent(data);
-    setIsEditing(false);
-    setShowExportModal(true);
-  };
-
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(exportData);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  const handleSaveEdit = () => {
-    setExportData(editedContent);
-    setIsEditing(false);
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([exportData], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `стипендии_отделение.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   if (loading) {
     return (
@@ -462,9 +230,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
           <h2 className="dss-title">Статистика стипендий по отделению</h2>
           <p className="dss-subtitle">Информация о назначении государственной академической стипендии</p>
         </div>
-        {/* <button className="dss-export-btn" onClick={handleExport}>
-          Экспорт ведомости
-        </button> */}
       </div>
 
       {/* Карточки с общей статистикой */}
@@ -591,7 +356,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
         </div>
       </div>
 
-      {/* **Модальное окно с детальной информацией о группе** */}
+      {/* Модальное окно с детальной информацией о группе */}
       {showGroupModal && (
         <div className="dss-modal-overlay" onClick={() => setShowGroupModal(false)}>
           <div className="dss-group-modal" onClick={(e) => e.stopPropagation()}>
@@ -719,7 +484,7 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
         </div>
       )}
 
-      {/* **Модальное окно с детальной информацией о студенте** */}
+      {/* Модальное окно с детальной информацией о студенте */}
       {selectedStudentForDetails && (
         <div className="dss-modal-overlay" onClick={() => setSelectedStudentForDetails(null)}>
           <div className="dss-student-modal" onClick={(e) => e.stopPropagation()}>
@@ -747,44 +512,6 @@ export const DepartmentScholarshipSection: React.FC<DepartmentScholarshipSection
           </div>
         </div>
       )}
-
-      {/* Модальное окно экспорта
-      {showExportModal && (
-        <div className="dss-modal-overlay" onClick={() => setShowExportModal(false)}>
-          <div className="dss-export-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="dss-modal-header">
-              <h3>Просмотр и экспорт ведомости</h3>
-              <button className="dss-modal-close" onClick={() => setShowExportModal(false)}>×</button>
-            </div>
-            <div className="dss-modal-toolbar">
-              {!isEditing ? (
-                <>
-                  <button className="dss-toolbar-btn" onClick={() => setIsEditing(true)}>Редактировать</button>
-                  <button className="dss-toolbar-btn" onClick={handlePrint}>Печать</button>
-                  <button className="dss-toolbar-btn" onClick={handleDownload}>Скачать</button>
-                </>
-              ) : (
-                <>
-                  <button className="dss-toolbar-btn primary" onClick={handleSaveEdit}>Сохранить изменения</button>
-                  <button className="dss-toolbar-btn" onClick={() => { setIsEditing(false); setEditedContent(exportData); }}>❌ Отменить</button>
-                </>
-              )}
-            </div>
-            <div className="dss-modal-content">
-              {isEditing ? (
-                <textarea 
-                  className="dss-edit-area"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  rows={20}
-                />
-              ) : (
-                <iframe srcDoc={exportData} className="dss-preview-frame" title="Предпросмотр" />
-              )}
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

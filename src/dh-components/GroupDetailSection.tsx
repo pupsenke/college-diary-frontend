@@ -1,4 +1,3 @@
-// GroupDetailSection.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GroupDetailSectionStyle.css';
 import { 
@@ -58,7 +57,6 @@ function useCachedGroupData(groupId: number) {
         throw new Error('Нет кешированных данных');
       }
 
-      // Загрузка свежих данных
       const groups = await headApiService.getGroups();
       const group = groups.find(g => g.id === groupId);
       
@@ -93,7 +91,6 @@ function useCachedGroupData(groupId: number) {
 
       const studentsData = await headApiService.getGroupStudents(groupId);
 
-      // Сохраняем в кеш
       cacheService.set(groupCacheKey, groupData, { ttl: CACHE_TTL.GROUP_INFO });
       cacheService.set(studentsCacheKey, studentsData, { ttl: CACHE_TTL.GROUP_STUDENTS });
       if (curatorData) {
@@ -108,7 +105,6 @@ function useCachedGroupData(groupId: number) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки данных группы');
       
-      // Последняя попытка - кеш
       const groupCacheKey = `group_info_${groupId}`;
       const studentsCacheKey = `group_students_${groupId}`;
       const cachedGroup = cacheService.get<ApiGroupInfo>(groupCacheKey, { ttl: CACHE_TTL.GROUP_INFO });
@@ -166,7 +162,7 @@ function useCachedPerformanceData(groupId: number, subjectTeacher: SubjectTeache
       const marksCacheKey = `group_marks_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const datesCacheKey = `group_lesson_dates_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
 
-      // Если нет интернета - грузим из кеша и НЕ делаем фоновое обновление
+      // Если нет интернета - грузим из кеша
       if (!isOnline) {
         const cachedMarks = cacheService.get<GroupMark[]>(marksCacheKey, { ttl: CACHE_TTL.MARKS_DATA });
         const cachedDates = cacheService.get<LessonDate[]>(datesCacheKey, { ttl: CACHE_TTL.LESSON_DATES });
@@ -185,7 +181,6 @@ function useCachedPerformanceData(groupId: number, subjectTeacher: SubjectTeache
 
       // Если есть интернет - загружаем свежие данные
       if (isOnline) {
-        // Сначала проверяем кеш для быстрого отображения
         if (!ignoreCache) {
           const cachedMarks = cacheService.get<GroupMark[]>(marksCacheKey, { ttl: CACHE_TTL.MARKS_DATA });
           const cachedDates = cacheService.get<LessonDate[]>(datesCacheKey, { ttl: CACHE_TTL.LESSON_DATES });
@@ -196,7 +191,6 @@ function useCachedPerformanceData(groupId: number, subjectTeacher: SubjectTeache
             setLessonDates(cachedDates);
             setFromCache(true);
             loadedRef.current = true;
-            // Не возвращаем, продолжаем загрузку свежих данных в фоне
           }
         }
 
@@ -210,7 +204,6 @@ function useCachedPerformanceData(groupId: number, subjectTeacher: SubjectTeache
         setLessonDates(freshDates);
         setFromCache(false);
         
-        // Сохраняем в кеш
         cacheService.set(marksCacheKey, freshMarks, { ttl: CACHE_TTL.MARKS_DATA });
         cacheService.set(datesCacheKey, freshDates, { ttl: CACHE_TTL.LESSON_DATES });
         console.log(`[Performance] Данные сохранены в кеш для ${subjectTeacher.subjectName}`);
@@ -220,7 +213,6 @@ function useCachedPerformanceData(groupId: number, subjectTeacher: SubjectTeache
       console.error('[Performance] Ошибка:', err);
       setError(err instanceof Error ? err.message : 'Ошибка загрузки данных успеваемости');
       
-      // При ошибке пытаемся загрузить из кеша
       const marksCacheKey = `group_marks_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const datesCacheKey = `group_lesson_dates_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const cachedMarks = cacheService.get<GroupMark[]>(marksCacheKey, { ttl: CACHE_TTL.MARKS_DATA });
@@ -286,7 +278,7 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
       const attendanceCacheKey = `group_attendance_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const datesCacheKey = `group_lesson_dates_attendance_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
 
-      // Если нет интернета - грузим из кеша и НЕ делаем фоновое обновление
+      // Если нет интернета - грузим из кеша
       if (!isOnline) {
         const cachedAttendance = cacheService.get<GroupAttendance[]>(attendanceCacheKey, { ttl: CACHE_TTL.ATTENDANCE_DATA });
         const cachedDates = cacheService.get<LessonDate[]>(datesCacheKey, { ttl: CACHE_TTL.LESSON_DATES });
@@ -305,7 +297,6 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
 
       // Если есть интернет - загружаем свежие данные
       if (isOnline) {
-        // Сначала проверяем кеш для быстрого отображения
         if (!ignoreCache) {
           const cachedAttendance = cacheService.get<GroupAttendance[]>(attendanceCacheKey, { ttl: CACHE_TTL.ATTENDANCE_DATA });
           const cachedDates = cacheService.get<LessonDate[]>(datesCacheKey, { ttl: CACHE_TTL.LESSON_DATES });
@@ -316,7 +307,6 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
             setLessonDates(cachedDates);
             setFromCache(true);
             loadedRef.current = true;
-            // Не возвращаем, продолжаем загрузку свежих данных в фоне
           }
         }
 
@@ -330,7 +320,6 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
         setLessonDates(freshDates);
         setFromCache(false);
         
-        // Сохраняем в кеш
         cacheService.set(attendanceCacheKey, freshAttendance, { ttl: CACHE_TTL.ATTENDANCE_DATA });
         cacheService.set(datesCacheKey, freshDates, { ttl: CACHE_TTL.LESSON_DATES });
         console.log(`[Attendance] Данные сохранены в кеш для ${subjectTeacher.subjectName}`);
@@ -340,7 +329,6 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
       console.error('[Attendance] Ошибка:', err);
       setError(err instanceof Error ? err.message : 'Ошибка загрузки данных посещаемости');
       
-      // При ошибке пытаемся загрузить из кеша
       const attendanceCacheKey = `group_attendance_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const datesCacheKey = `group_lesson_dates_attendance_${groupId}_${subjectTeacher.subjectId}_${subjectTeacher.teacherId}`;
       const cachedAttendance = cacheService.get<GroupAttendance[]>(attendanceCacheKey, { ttl: CACHE_TTL.ATTENDANCE_DATA });
@@ -372,7 +360,6 @@ function useCachedAttendanceData(groupId: number, subjectTeacher: SubjectTeacher
   }};
 }
 
-// Также обновите useCachedSubjects для корректного кеширования
 function useCachedSubjects(groupId: number) {
   const [subjects, setSubjects] = useState<SubjectTeacher[]>([]);
   const [loading, setLoading] = useState(false);
@@ -455,23 +442,6 @@ function useCachedSubjects(groupId: number) {
   }};
 }
 
-
-// Заглушка для среднего балла
-const getDemoAverage = (studentId: number): number => {
-  // Генерируем случайный средний балл от 3 до 5
-  const seed = studentId * 12345;
-  const random = ((seed % 100) / 100) * 2 + 3;
-  return Math.round(random * 100) / 100;
-};
-
-// Заглушка для процента посещаемости
-const getDemoAttendancePercent = (studentId: number): number => {
-  // Генерируем случайный процент от 70 до 100
-  const seed = studentId * 67890;
-  const random = ((seed % 100) / 100) * 30 + 70;
-  return Math.round(random * 10) / 10;
-};
-
 export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId, onClose, onGroupDeleted }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'performance' | 'attendance'>('info');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -486,7 +456,6 @@ export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId,
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
   
-  // Кешированные данные
   const { 
     groupInfo, 
     curatorInfo, 
@@ -517,7 +486,6 @@ export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId,
     fromCache: attendanceFromCache
   } = useCachedAttendanceData(groupId, selectedSubjectTeacher);
 
-  // Загрузка предметов при переключении на вкладки успеваемости/посещаемости
   useEffect(() => {
     if ((activeTab === 'performance' || activeTab === 'attendance') && subjectsWithTeachers.length > 0 && !selectedSubjectTeacher) {
       setSelectedSubjectTeacher(subjectsWithTeachers[0]);
@@ -538,7 +506,6 @@ export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId,
       setIsDeleting(true);
       await headApiService.deleteGroup(groupId);
       
-      // Очищаем кеш группы
       cacheService.remove(`group_info_${groupId}`);
       cacheService.remove(`group_students_${groupId}`);
       cacheService.remove(`curator_info_${groupId}`);
@@ -561,17 +528,7 @@ export const GroupDetailSection: React.FC<GroupDetailSectionProps> = ({ groupId,
     }
   };
 
-// Заглушка для среднего балла группы - всегда 0
-const getGroupAverage = (): number => {
-  return 0;
-};
-
-// Заглушка для общей посещаемости группы - всегда 0
-const getGroupAttendancePercent = (): number => {
-  return 0;
-};
-
-// Получение оценки для студента (из реальных данных или кеша)
+// Получение оценки для студента 
 const getMarkForStudent = (studentId: number, lessonNumber: number): number | null => {
   if (marksData.length > 0) {
     const mark = marksData.find(m => m.studentId === studentId && m.lessonNumber === lessonNumber);
@@ -580,7 +537,7 @@ const getMarkForStudent = (studentId: number, lessonNumber: number): number | nu
   return null;
 };
 
-// Получение статуса посещаемости (из реальных данных или кеша)
+// Получение статуса посещаемости 
 const getAttendanceStatus = (studentId: number, lessonId: number): string => {
   if (attendanceData.length > 0) {
     const attendance = attendanceData.find(a => a.studentId === studentId && a.lessonNumber === lessonId);
@@ -589,7 +546,7 @@ const getAttendanceStatus = (studentId: number, lessonId: number): string => {
   return '';
 };
 
-// Реальный средний балл студента
+// средний балл студента
 const getStudentAverage = (studentId: number): number => {
   if (marksData.length > 0) {
     const studentMarks = marksData.filter(m => m.studentId === studentId && m.mark !== null);
@@ -600,7 +557,7 @@ const getStudentAverage = (studentId: number): number => {
   return 0;
 };
 
-// Реальный процент посещаемости студента
+// процент посещаемости студента
 const getStudentAttendancePercent = (studentId: number): number => {
   if (attendanceData.length > 0 && attendanceDates.length > 0) {
     const studentAttendances = attendanceData.filter(a => a.studentId === studentId);
@@ -653,7 +610,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
 
   const displayedStudents = showAllStudents ? filteredStudents : filteredStudents.slice(0, 5);
 
-  // Получаем уникальные предметы для выбора
   const uniqueSubjects = subjectsWithTeachers
     .reduce((acc: SubjectTeacher[], item: SubjectTeacher) => {
       if (!acc.find(s => s.subjectId === item.subjectId)) {
@@ -663,10 +619,9 @@ const getStudentAttendancePercent = (studentId: number): number => {
     }, [])
     .sort((a, b) => a.subjectName.localeCompare(b.subjectName, 'ru'));
 
-  // Получаем преподавателей для выбранного предмета
   const teachersForSubject = [...subjectsWithTeachers
-  .filter(s => s.subjectId === selectedSubjectTeacher?.subjectId)
-].sort((a, b) => a.teacherLastName.localeCompare(b.teacherLastName, 'ru'));
+    .filter(s => s.subjectId === selectedSubjectTeacher?.subjectId)
+  ].sort((a, b) => a.teacherLastName.localeCompare(b.teacherLastName, 'ru'));
 
   const handleSubjectChange = (subjectTeacher: SubjectTeacher | null) => {
     setSelectedSubjectTeacher(subjectTeacher);
@@ -693,7 +648,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
   };
 
   const isLoading = loading || (activeTab === 'performance' && performanceLoading) || (activeTab === 'attendance' && attendanceLoading);
-  const isUsingCache = groupFromCache || subjectsFromCache || performanceFromCache || attendanceFromCache;
 
   if (loading) {
     return (
@@ -723,9 +677,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
   }
 
   if (!groupInfo) return null;
-
-  const groupAverage = getGroupAverage();
-  const groupAttendance = getGroupAttendancePercent();
 
   return (
     <>
@@ -1155,8 +1106,6 @@ const getStudentAttendancePercent = (studentId: number): number => {
                                 if (percent >= 0) return '#f59e0b';
                                 return '#d1d5db';
                               };
-
-
                               
                               const bgColor = hasData ? getPercentColor(studentAttendancePercent, true) : '#d1d5db';
                               

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { headApiService } from '../services/headApiService';
 import ExcelJS from 'exceljs';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
+import { useUser } from '../context/UserContext'; 
+import { methodistApiService, PathTypeResponse } from '../services/methodistApiService';
 import './SummaryStatementSectionStyle.css';
 
 interface Subject {
@@ -78,9 +80,11 @@ interface AttestationFormData {
   regularDeadline: string;
 }
 
+
 type AttestationType = 'regular' | 'commission';
 
 export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = ({ groupId, onClose }) => {
+  const { user } = useUser();
   const [groupStatement, setGroupStatement] = useState<GroupStatement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,16 +136,22 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     return avg.toFixed(1);
   };
 
+  const getRomanSemester = (sem: number): string => {
+    const romanMap: Record<number, string> = { 
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 
+      6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X' 
+    };
+    return romanMap[sem] || sem.toString();
+  };
+
   const handleExportStatement = () => {
     if (!groupStatement) return;
     exportToExcel();
   };
 
-  // **НОВАЯ ФУНКЦИЯ ПЕЧАТИ**
   const handlePrint = () => {
     if (!groupStatement) return;
 
-    // Создаем временный iframe для печати
     const printFrame = document.createElement('iframe');
     printFrame.style.position = 'absolute';
     printFrame.style.width = '0px';
@@ -152,7 +162,8 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
     const printDocument = printFrame.contentWindow?.document;
     if (!printDocument) return;
 
-    // Формируем HTML для печати
+    const statistics = calculateStatistics();
+
     printDocument.write(`
       <!DOCTYPE html>
       <html>
@@ -160,214 +171,38 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
         <meta charset="UTF-8">
         <title>Сводная ведомость - Группа ${groupStatement.groupNumber}</title>
         <style>
-          @page {
-            size: portrait;
-            margin: 5mm 8mm;
-          }
-
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-
-          body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 8pt;
-            line-height: 1.1;
-            background: white;
-            padding: 0;
-            margin: 0;
-          }
-
+          @page { size: portrait; margin: 5mm 8mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Times New Roman', Times, serif; font-size: 8pt; line-height: 1.1; background: white; padding: 0; margin: 0; }
           @media print {
-            body {
-              padding: 0;
-              margin: 0;
-            }
-            .no-print {
-              display: none !important;
-            }
-            table {
-              page-break-inside: avoid;
-            }
-            tr {
-              page-break-inside: avoid;
-            }
-            thead {
-              display: table-header-group;
-            }
-            tfoot {
-              display: table-footer-group;
-            }
+            body { padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            table { page-break-inside: avoid; }
+            tr { page-break-inside: avoid; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
           }
-
-          .statement-container {
-            width: 100%;
-          }
-
-          .header {
-            text-align: center;
-            margin-bottom: 4px;
-          }
-
-          .header h2 {
-            font-size: 8pt;
-            margin: 0;
-            font-weight: normal;
-          }
-
-          .header h3 {
-            font-size: 8pt;
-            margin: 0;
-            font-weight: bold;
-          }
-
-          .header p {
-            font-size: 8pt;
-            margin: 0;
-          }
-
-          .subheader {
-            text-align: left;
-            margin-bottom: 10px;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 6pt;
-            table-layout: fixed;
-            page-break-before: avoid;
-            break-before: avoid;
-            margin-top: 0;
-          }
-
-          th, td {
-            border: 1px solid black;
-            padding: 2px 3px;
-            text-align: center;
-            vertical-align: middle;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-          }
-
-          th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-          }
-
-          .student-name-col {
-            text-align: left;
-            min-width: 120px;
-          }
-
-          .vertical-header {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            white-space: normal;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            font-size: 5pt;
-            padding: 4px 2px;
-            height: 100px;
-            min-width: 24px;
-            max-width: 26px;
-            line-height: 1.1;
-          }
-
-          .average-cell {
-            font-weight: bold;
-          }
-
-          .na-cell {
-            background-color: #cfe6f8;
-          }
-
-          .statistics {
-            margin-top: 10px;
-            border: 1px solid black;
-            padding: 6px;
-          }
-
-          .statistics-grid {
-            display: flex;
-            gap: 20px;
-            justify-content: flex-start;
-            flex-wrap: wrap;
-          }
-
-          .stat-item {
-            display: flex;
-            gap: 6px;
-            font-size: 9pt;
-          }
-
-          .signatures {
-            margin-top: 8px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9pt;
-          }
-
-          .signature-line {
-            margin-top: 20px;
-            width: 220px;
-            border-top: 1px solid black;
-          }
-
-          /* Скрываем колонки "Стипендия" и "Кол-во оценок" при печати */
-          .scholarship-col,
-          .grades-count-col {
-            display: none !important;
-          }
-
-          .num-col {
-            width: 22px;
-            min-width: 24px;
-          }
-
-          .name-col {
-            width: 120px;
-            min-width: 120px;
-          }
-
-          .grade-col {
-            width: 26px;
-            min-width: 24px;
-            max-width: 30px;
-            word-break: break-word;
-            overflow-wrap: break-word;
-          }
-
-          .avg-col, .behavior-col, .absent-col, .unjust-col {
-            width: 30px;
-            min-width: 26px;
-            max-width: 34px;
-          }
-
-          .stats-footer {
-            border: 1px solid black;
-            padding: 4px 8px;
-            text-align: left;
-          }
-
-          .stats-footer-row td {
-            border: none;
-            padding: 2px 4px;
-            text-align: left;
-          }
-
-          .stats-label {
-            text-align: right;
-            padding-right: 4px;
-          }
-
-          .stats-value {
-            text-align: left;
-            min-width: 50px;
-          }
+          .statement-container { width: 100%; }
+          .header { text-align: center; margin-bottom: 4px; }
+          .header h2 { font-size: 8pt; margin: 0; font-weight: normal; }
+          .header h3 { font-size: 8pt; margin: 0; font-weight: bold; }
+          .header p { font-size: 8pt; margin: 0; }
+          table { width: 100%; border-collapse: collapse; font-size: 6pt; table-layout: fixed; page-break-before: avoid; break-before: avoid; margin-top: 0; }
+          th, td { border: 1px solid black; padding: 2px 3px; text-align: center; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
+          th { background-color: #f0f0f0; font-weight: bold; }
+          .student-name-col { text-align: left; min-width: 120px; }
+          .vertical-header { writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); white-space: normal; word-break: break-word; overflow-wrap: break-word; font-size: 5pt; padding: 4px 2px; height: 100px; min-width: 24px; max-width: 26px; line-height: 1.1; }
+          .average-cell { font-weight: bold; }
+          .na-cell { background-color: #cfe6f8; }
+          .signatures { margin-top: 8px; display: flex; justify-content: space-between; font-size: 9pt; }
+          .num-col { width: 22px; min-width: 24px; }
+          .name-col { width: 120px; min-width: 120px; }
+          .grade-col { width: 26px; min-width: 24px; max-width: 30px; }
+          .avg-col, .behavior-col, .absent-col, .unjust-col { width: 30px; min-width: 26px; max-width: 34px; }
+          .stats-footer { border: 1px solid black; padding: 4px 8px; text-align: left; }
+          .stats-footer-row td { border: none; padding: 2px 4px; text-align: left; }
+          .stats-label { text-align: right; padding-right: 4px; }
+          .stats-value { text-align: left; min-width: 50px; }
         </style>
       </head>
       <body>
@@ -380,14 +215,12 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
             <h3>ПОЛИТЕХНИЧЕСКИЙ ИНСТИТУТ</h3>
             <h3>ПОЛИТЕХНИЧЕСКИЙ КОЛЛЕДЖ</h3>
           </div>
-
           <div class="header">
             <h3>Сводная аттестационная ведомость</h3>
             <p>на ${groupStatement.academicYear} учебный год&nbsp;&nbsp;&nbsp;&nbsp;Семестр ${getRomanSemester(groupStatement.semester)}</p>
             <p>Специальность ${groupStatement.specialty}</p>
             <p>Курс ${groupStatement.course}&nbsp;&nbsp;&nbsp;&nbsp;Группа ${groupStatement.groupNumber}&nbsp;&nbsp;&nbsp;&nbsp;Форма обучения ${groupStatement.formOfStudy}</p>
           </div>
-
           <table>
             <thead>
               <tr>
@@ -398,16 +231,11 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
                 <th rowspan="2" class="behavior-col">Поведе-<br>ние</th>
                 <th rowspan="2" class="absent-col">Пропуски<br>занятий<br>всего</th>
                 <th rowspan="2" class="unjust-col">в т. ч. по<br>неуважит.<br>причинам</th>
-                <th rowspan="2" class="scholarship-col">Стипендия</th>
-                <th colspan="3" class="grades-count-col">Кол-во оценок</th>
               </tr>
               <tr>
                 ${groupStatement.subjects.map(subject => `
                   <th class="vertical-header">${subject.name}, ${subject.assessmentForm}</th>
                 `).join('')}
-                <th class="grades-count-col">5</th>
-                <th class="grades-count-col">4</th>
-                <th class="grades-count-col">3</th>
               </tr>
             </thead>
             <tbody>
@@ -425,10 +253,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
                   <td class="behavior-col">${student.behavior}</td>
                   <td class="absent-col">${student.absencesTotal}</td>
                   <td class="unjust-col">${student.absencesUnjustified}</td>
-                  <td class="scholarship-col">${student.scholarship}</td>
-                  <td class="grades-count-col">${student.gradesCount.five}</td>
-                  <td class="grades-count-col">${student.gradesCount.four}</td>
-                  <td class="grades-count-col">${student.gradesCount.three}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -454,53 +278,60 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
               </tr>
             </tfoot>
           </table>
-
           <div class="signatures">
-            <div>
-              Куратор ________________ /Г. А. Голубева/
-            </div>
-            <div>
-              Зам. директора по УМ и ВР/ зав.отделением / зав.уч.частью ____________ /Г. А. Голубева/
-            </div>
+            <div>Куратор ________________ /Г. А. Голубева/</div>
+            <div>Зам. директора по УМ и ВР/ зав.отделением / зав.уч.частью ____________ /Г. А. Голубева/</div>
           </div>
-          <div style="margin-top: 10px; font-size: 9pt;">
-            «____»_______________${groupStatement.academicYear.split('-')[1]} г.
-          </div>
+          <div style="margin-top: 10px; font-size: 9pt;">«____»_______________${groupStatement.academicYear.split('-')[1]} г.</div>
         </div>
       </body>
       </html>
     `);
 
     printDocument.close();
-
-    // Ждем загрузки содержимого и вызываем печать
     printFrame.contentWindow?.focus();
     printFrame.contentWindow?.print();
-
-    // Удаляем iframe после печати
-    setTimeout(() => {
-      document.body.removeChild(printFrame);
-    }, 1000);
+    setTimeout(() => { document.body.removeChild(printFrame); }, 1000);
   };
 
-  const getRomanSemester = (sem: number): string => {
-    const romanMap: Record<number, string> = { 
-      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 
-      6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X' 
-    };
-    return romanMap[sem] || sem.toString();
+  // функция загрузки Excel на сервер
+  const uploadExcelToServer = async (blob: Blob, fileName: string): Promise<void> => {
+    try {
+      const file = new File([blob], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      await methodistApiService.uploadFile(file, 'summary_statement', user?.id);  // ← добавь user?.id
+      console.log(`Excel документ ${fileName} успешно загружен на сервер`);
+    } catch (error) {
+      console.error('Ошибка загрузки Excel документа на сервер:', error);
+    }
+  };
+
+  //  функция загрузки на сервер
+  const uploadDocumentToServer = async (
+    blob: Blob,
+    fileName: string,
+    documentType: string,
+    studentId?: number
+  ): Promise<void> => {
+    try {
+      const file = new File([blob], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+      await methodistApiService.uploadFile(file, documentType, studentId);
+      console.log(`Документ ${fileName} успешно загружен на сервер`);
+    } catch (error) {
+      console.error('Ошибка загрузки документа на сервер:', error);
+      throw new Error(`Не удалось загрузить документ на сервер: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
   };
 
   const exportToExcel = async () => {
-    // ... (ваш существующий код экспорта в Excel)
     if (!groupStatement) return;
-
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Сводная ведомость');
-
       const subjectCount = groupStatement.subjects.length;
-
       const afterSubjectsStart = 3 + subjectCount;
       const avgCol = afterSubjectsStart;
       const behaviorCol = afterSubjectsStart + 1;
@@ -508,14 +339,11 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       const unjustifiedCol = afterSubjectsStart + 3;
       const scholarshipCol = afterSubjectsStart + 4;
       const gradesStartCol = afterSubjectsStart + 5;
-
       const lastColIndex = gradesStartCol + 2;
       const lastColLetter = String.fromCharCode(65 + lastColIndex - 1);
 
       const createFill = (color: string): ExcelJS.Fill => ({
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: color }
+        type: 'pattern', pattern: 'solid', fgColor: { argb: color }
       } as ExcelJS.Fill);
 
       const headerLines = [
@@ -537,7 +365,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       });
 
       const titleRow = 8;
-
       worksheet.mergeCells(`A${titleRow}:${lastColLetter}${titleRow}`);
       worksheet.getCell(`A${titleRow}`).value = `Сводная аттестационная ведомость на ${groupStatement.academicYear} учебный год   Семестр ${getRomanSemester(groupStatement.semester)}`;
       worksheet.getCell(`A${titleRow}`).font = { size: 12, bold: true, name: 'Times New Roman' };
@@ -604,12 +431,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       groupStatement.subjects.forEach((subject, idx) => {
         const cell = secondHeaderRow.getCell(3 + idx);
         cell.value = `${subject.name}, ${subject.assessmentForm}`;
-        cell.alignment = {
-          horizontal: 'center',
-          vertical: 'middle',
-          wrapText: true,
-          textRotation: 90
-        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true, textRotation: 90 };
         cell.fill = createFill('FFDBE5F1');
         cell.font = { color: { argb: 'FF000000' }, bold: true, size: 9, name: 'Times New Roman' };
         cell.border = {
@@ -717,7 +539,6 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       groupStatement.students.forEach((student, idx) => {
         const row = worksheet.getRow(dataStartRow + idx);
         row.height = 18;
-
         const rowFill: ExcelJS.Fill | undefined = idx % 2 === 0 ? undefined : createFill('FFFFFFFF');
 
         row.getCell(1).value = idx + 1;
@@ -749,17 +570,14 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
           cell.value = grade;
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
           cell.font = { size: 10, name: 'Times New Roman' };
-
           if (grade === 'н/а') {
             cell.font = { size: 10, name: 'Times New Roman', color: { argb: 'FFFF0000' } };
           }
-
           if (student.naSubjects?.has(subjectKey)) {
             cell.fill = createFill('FFe8f4fd');
           } else if (rowFill) {
             cell.fill = rowFill;
           }
-
           cell.border = {
             top: { style: 'thin', color: { argb: 'FF000000' } },
             left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -936,20 +754,15 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
         fitToWidth: 1,
         fitToHeight: 0,
         paperSize: 9,
-        margins: {
-          left: 0.25,
-          right: 0.25,
-          top: 0.75,
-          bottom: 0.75,
-          header: 0.3,
-          footer: 0.3
-        }
+        margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }
       };
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, `Сводная_ведомость_${groupStatement.groupNumber}_${groupStatement.academicYear}_семестр${groupStatement.semester}.xlsx`);
-
+      const fileName = `Сводная_ведомость_${groupStatement.groupNumber}_семестр${groupStatement.semester}.xlsx`;
+      
+      saveAs(blob, fileName);
+      await uploadExcelToServer(blob, fileName);
     } catch (error) {
       console.error('Ошибка при экспорте:', error);
       setError('Не удалось экспортировать ведомость');
@@ -1109,24 +922,24 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       };
 
       const response = await fetch('/templates/attestation_direction_template.docx');
-      if (!response.ok) {
-        throw new Error(`Шаблон не найден: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Шаблон не найден: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
-
       const uint8Array = new Uint8Array(arrayBuffer);
       const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B;
-
-      if (!isZip) {
-        throw new Error('Файл шаблона поврежден или имеет неверный формат');
-      }
+      if (!isZip) throw new Error('Файл шаблона поврежден или имеет неверный формат');
 
       const zip = new PizZip(arrayBuffer);
       const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
       doc.render(templateData);
-      const blob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      saveAs(blob, `Направление_на_аттестацию_${selectedNAStudent.name.replace(/\s+/g, '_')}_${subjectName}.docx`);
+      
+      const blob = doc.getZip().generate({ 
+        type: 'blob', 
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+
+      const fileName = `Напр_на_аттест_${selectedNAStudent.name.replace(/\s+/g, '_')}_${subjectName}.docx`;
+      await uploadDocumentToServer(blob, fileName, 'attestation_direction', selectedNAStudent.id);
+      saveAs(blob, fileName);
 
       const updatedGroup = { ...groupStatement };
       const student = updatedGroup.students.find(s => s.id === selectedNAStudent.id);
@@ -1195,24 +1008,24 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
       };
 
       const response = await fetch('/templates/attestation_commission_template.docx');
-      if (!response.ok) {
-        throw new Error(`Шаблон для комиссии не найден: ${response.status}. Создайте файл attestation_commission_template.docx в папке public/templates/`);
-      }
-
+      if (!response.ok) throw new Error(`Шаблон для комиссии не найден: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
-
       const uint8Array = new Uint8Array(arrayBuffer);
       const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B;
-
-      if (!isZip) {
-        throw new Error('Файл шаблона для комиссии поврежден или имеет неверный формат');
-      }
+      if (!isZip) throw new Error('Файл шаблона для комиссии поврежден или имеет неверный формат');
 
       const zip = new PizZip(arrayBuffer);
       const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
       doc.render(templateData);
-      const blob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      saveAs(blob, `Направление_на_аттестацию_комиссией_${selectedNAStudent.name.replace(/\s+/g, '_')}_${subjectName}.docx`);
+      
+      const blob = doc.getZip().generate({ 
+        type: 'blob', 
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+
+      const fileName = `Напр_на_аттест_комиссией_${selectedNAStudent.name.replace(/\s+/g, '_')}_${subjectName}.docx`;
+      await uploadDocumentToServer(blob, fileName, 'attestation_commission', selectedNAStudent.id);
+      saveAs(blob, fileName);
 
       const updatedGroup = { ...groupStatement };
       const student = updatedGroup.students.find(s => s.id === selectedNAStudent.id);
@@ -1346,73 +1159,115 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
               <>
                 <button className="dh-at-btn-secondary" onClick={() => setIsEditing(true)}>Редактировать</button>
                 <button className="dh-at-btn-primary" onClick={handleExportStatement}>Сохранить XLSX</button>
-                {/* НОВАЯ КНОПКА ПЕЧАТИ */}
                 <button className="dh-at-btn-print" onClick={handlePrint}>Печать</button>
               </>
             )}
           </div>
         </div>
       </div>
-      <div className="dh-at-statement-body">
-        <div className="dh-at-table-container">
-          <table className="dh-at-statement-table">
-            <thead>
-              <tr><th rowSpan={2}>№ п/п</th><th rowSpan={2}>Фамилия, имя, отчество студента</th>
-                <th colSpan={groupStatement.subjects.length}>Наименование дисциплины (МДК)/ форма аттестации</th>
-                <th rowSpan={2}>Средний балл</th><th rowSpan={2}>Поведение</th><th rowSpan={2}>Пропуски занятий всего</th>
-                <th rowSpan={2}>в т. ч. по неуважит. причинам</th><th rowSpan={2} className="scholarship-col-print">Стипендия</th><th colSpan={3} className="grades-count-col-print">Кол-во оценок</th>
-              </tr>
-              <tr>{groupStatement.subjects.map((subject) => (
-                <th key={subject.id} className={`dh-at-vertical-header ${getSubjectNameLength(subject.name)}`}>
-                  <div className="dh-at-vertical-text">{subject.name}, {subject.assessmentForm}</div>
-                </th>
-              ))}<th className="grades-count-col-print">5</th><th className="grades-count-col-print">4</th><th className="grades-count-col-print">3</th></tr>
-            </thead>
-            <tbody>
-              {groupStatement.students.map((student, idx) => (
-                <tr key={student.id}>
-                  <td>{idx + 1}</td>
-                  <td className="dh-at-student-name">{student.name}</td>
-                  {groupStatement.subjects.map((subject) => {
-                    const subjectKey = `${subject.name}, ${subject.assessmentForm}`;
-                    const grade = student.grades.get(subjectKey) || '';
-                    const isHighlighted = shouldHighlightCell(student, subjectKey);
-                    return (
-                      <td key={subject.id} style={isHighlighted ? { backgroundColor: '#cfe6f8' } : {}}>
-                        {isEditing ? (
-                          <select value={grade} onChange={(e) => handleGradeChange(student.id, subjectKey, e.target.value)} className="dh-at-grade-select">
-                            <option value="">-</option><option value="5">5</option><option value="4">4</option>
-                            <option value="3">3</option><option value="зач.">зач.</option><option value="н/а">н/а</option>
-                          </select>
-                        ) : grade === 'н/а' ? (
-                          <button className="dh-at-na-button" onClick={() => handleNAGradeClick(student, subjectKey)}>н/а</button>
-                        ) : (grade)}
-                      </td>
-                    );
-                  })}
-                  <td className="dh-at-average">{formatAverageDisplay(student.average)}</td>
-                  <td>{student.behavior}</td>
-                  <td>{student.absencesTotal}</td>
-                  <td>{student.absencesUnjustified}</td>
-                  <td className="scholarship-col-print">{student.scholarship}</td>
-                  <td className="grades-count-col-print">{student.gradesCount.five}</td>
-                  <td className="grades-count-col-print">{student.gradesCount.four}</td>
-                  <td className="grades-count-col-print">{student.gradesCount.three}</td>
+
+      <div className="dh-at-main-content">
+        
+        {/* ЛЕВАЯ КОЛОНКА - Таблица ведомости */}
+        <div className="dh-at-statement-body" style={{ flex: '1 1 auto', minWidth: 0 }}>
+          <div className="dh-at-table-container">
+            <table className="dh-at-statement-table">
+              <thead>
+                <tr>
+                  <th rowSpan={2}>№ п/п</th>
+                  <th rowSpan={2}>Фамилия, имя, отчество студента</th>
+                  <th colSpan={groupStatement.subjects.length}>Наименование дисциплины (МДК)/ форма аттестации</th>
+                  <th rowSpan={2}>Средний балл</th>
+                  <th rowSpan={2}>Поведение</th>
+                  <th rowSpan={2}>Пропуски занятий всего</th>
+                  <th rowSpan={2}>в т. ч. по неуважит. причинам</th>
+                  <th rowSpan={2} className="scholarship-col-print">Стипендия</th>
+                  <th colSpan={3} className="grades-count-col-print">Кол-во оценок</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot><tr><td colSpan={groupStatement.subjects.length + 12} className="dh-at-statistics-footer">
-              <div className="dh-at-statistics-grid">
-                <div className="dh-at-stat-item"><span>На «5»</span><span className="dh-at-stat-value">{statistics.fivesOnly} чел.</span></div>
-                <div className="dh-at-stat-item"><span>На «4», «5»</span><span className="dh-at-stat-value">{statistics.foursAndFives} чел.</span></div>
-                <div className="dh-at-stat-item"><span>Есть «3»</span><span className="dh-at-stat-value">{statistics.hasThree} чел.</span></div>
-                <div className="dh-at-stat-item"><span>н/а</span><span className="dh-at-stat-value dh-at-na-stat">{statistics.naCount} чел.</span></div>
-              </div>
-            </td></tr></tfoot>
-          </table>
+                <tr>
+                  {groupStatement.subjects.map((subject) => (
+                    <th key={subject.id} className={`dh-at-vertical-header ${getSubjectNameLength(subject.name)}`}>
+                      <div className="dh-at-vertical-text">{subject.name}, {subject.assessmentForm}</div>
+                    </th>
+                  ))}
+                  <th className="grades-count-col-print">5</th>
+                  <th className="grades-count-col-print">4</th>
+                  <th className="grades-count-col-print">3</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupStatement.students.map((student, idx) => (
+                  <tr key={student.id}>
+                    <td>{idx + 1}</td>
+                    <td className="dh-at-student-name">{student.name}</td>
+                    {groupStatement.subjects.map((subject) => {
+                      const subjectKey = `${subject.name}, ${subject.assessmentForm}`;
+                      const grade = student.grades.get(subjectKey) || '';
+                      const isHighlighted = shouldHighlightCell(student, subjectKey);
+                      return (
+                        <td key={subject.id} style={isHighlighted ? { backgroundColor: '#cfe6f8' } : {}}>
+                          {isEditing ? (
+                            <select 
+                              value={grade} 
+                              onChange={(e) => handleGradeChange(student.id, subjectKey, e.target.value)} 
+                              className="dh-at-grade-select"
+                            >
+                              <option value="">-</option>
+                              <option value="5">5</option>
+                              <option value="4">4</option>
+                              <option value="3">3</option>
+                              <option value="зач.">зач.</option>
+                              <option value="н/а">н/а</option>
+                            </select>
+                          ) : grade === 'н/а' ? (
+                            <button className="dh-at-na-button" onClick={() => handleNAGradeClick(student, subjectKey)}>н/а</button>
+                          ) : (
+                            grade
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="dh-at-average">{formatAverageDisplay(student.average)}</td>
+                    <td>{student.behavior}</td>
+                    <td>{student.absencesTotal}</td>
+                    <td>{student.absencesUnjustified}</td>
+                    <td className="scholarship-col-print">{student.scholarship}</td>
+                    <td className="grades-count-col-print">{student.gradesCount.five}</td>
+                    <td className="grades-count-col-print">{student.gradesCount.four}</td>
+                    <td className="grades-count-col-print">{student.gradesCount.three}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={groupStatement.subjects.length + 12} className="dh-at-statistics-footer">
+                    <div className="dh-at-statistics-grid">
+                      <div className="dh-at-stat-item">
+                        <span>На «5»</span>
+                        <span className="dh-at-stat-value">{statistics.fivesOnly} чел.</span>
+                      </div>
+                      <div className="dh-at-stat-item">
+                        <span>На «4», «5»</span>
+                        <span className="dh-at-stat-value">{statistics.foursAndFives} чел.</span>
+                      </div>
+                      <div className="dh-at-stat-item">
+                        <span>Есть «3»</span>
+                        <span className="dh-at-stat-value">{statistics.hasThree} чел.</span>
+                      </div>
+                      <div className="dh-at-stat-item">
+                        <span>н/а</span>
+                        <span className="dh-at-stat-value dh-at-na-stat">{statistics.naCount} чел.</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
+      {/* Модальное окно направления на аттестацию */}
       {isNAModalOpen && selectedNAStudent && (
         <div className="dh-at-modal-overlay" onClick={() => setIsNAModalOpen(false)}>
           <div className="dh-at-modal-content dh-at-attestation-modal" onClick={(e) => e.stopPropagation()}>
@@ -1439,7 +1294,7 @@ export const SummaryStatementSection: React.FC<SummaryStatementSectionProps> = (
             <div className="dh-at-modal-body">
               <div className="dh-at-na-info">
                 <p>Студент: <strong>{selectedNAStudent.name}</strong></p>
-                <p>Предмет: <strong>{selectedNASubject.split(',')[0]}</strong></p>
+                <p>Предмет: <strong>{selectedNASubject}</strong></p>
               </div>
 
               <div className="dh-at-form-group">

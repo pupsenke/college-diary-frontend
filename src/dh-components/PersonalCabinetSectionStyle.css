@@ -1,70 +1,62 @@
-/* PersonalCabinetSectionStyle.css */
-
-/* Основные стили секции */
 .dh-pc-section {
   background: transparent;
-  padding: 20;
+  padding: 20px;
   overflow: hidden;
 }
 
 .dh-pc-personal-section {
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 20px;
 }
 
-/* Заголовок секции */
 .dh-pc-section-header {
-  margin-bottom: 20px;
-  margin-left: 4px;
+  margin-bottom: 24px;
+  margin-left: 8px;
+  margin-top: 4px;
 }
 
-.dh-pc-section-title {
-  font-size: 28px;
+.dss-title {
+  font-size: 24px;
   font-weight: 700;
   color: #002FA7;
-  margin: 0;
-  -webkit-background-clip: text;
-  background-clip: text;
+  margin: 0 0 8px 0;
 }
 
-/* Основной контент - двухколоночная сетка */
+.dss-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
 .dh-pc-main-content {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 1fr;
+  height: 700px;
   gap: 24px;
   padding: 8px;
+  align-items: stretch;
 }
 
-@media (max-width: 768px) {
-  .dh-pc-main-content {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-}
-
-/* Левая колонка - личная информация */
 .dh-pc-content-left {
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .dh-pc-personal-content {
   padding: 24px;
+  flex: 1;
 }
 
-/* Профиль пользователя */
 .dh-pc-profile-details {
-  margin-bottom: 24px;
-}
-
-.dh-pc-detail-group {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
+  margin-bottom: 0;
 }
 
 .dh-pc-detail-group-title {
@@ -108,7 +100,6 @@
   font-style: italic;
 }
 
-/* Редактируемые поля */
 .dh-pc-field-editable {
   width: 100%;
   padding: 10px 14px;
@@ -119,6 +110,7 @@
   transition: all 0.2s ease;
   background: #ffffff;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .dh-pc-field-editable:focus {
@@ -137,7 +129,6 @@
   cursor: not-allowed;
 }
 
-/* Ошибки */
 .dh-pc-error-text {
   color: #ef4444;
   font-size: 12px;
@@ -145,11 +136,11 @@
   display: block;
 }
 
-/* Футер профиля */
 .dh-pc-profile-footer {
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: 0;
+  padding: 20px 24px;
   border-top: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .dh-pc-header-actions {
@@ -158,150 +149,212 @@
   flex-wrap: wrap;
 }
 
-/* Кнопки */
 .dh-pc-edit-btn,
 .dh-pc-password-btn,
 .dh-pc-save-btn,
 .dh-pc-cancel-btn {
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
-  border: none;
-  text-align: center;
-}
-
-.dh-pc-edit-btn {
-  background: linear-gradient(135deg, #002FA7 0%, #1e40af 100%);
-  color: white;
-  flex: 1;
-}
-
-.dh-pc-edit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1e40af 0%, #002FA7 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 47, 167, 0.25);
-}
-
-.dh-pc-password-btn {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  flex: 1;
-}
-
-.dh-pc-password-btn:hover:not(:disabled) {
-  background: #e2e8f0;
+  border: 1px solid #8aa3c4b8;
+  background: white;
   color: #002FA7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.dh-pc-save-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
   flex: 1;
 }
 
-.dh-pc-save-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+.dh-pc-edit-btn:hover,
+.dh-pc-password-btn:hover,
+.dh-pc-save-btn:hover,
+.dh-pc-cancel-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
 }
 
-.dh-pc-cancel-btn {
-  background: #ef4444;
-  color: white;
-  flex: 1;
-}
-
-.dh-pc-cancel-btn:hover:not(:disabled) {
-  background: #dc2626;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
-}
-
-.dh-pc-edit-btn:disabled,
-.dh-pc-password-btn:disabled,
-.dh-pc-save-btn:disabled,
-.dh-pc-cancel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Правая колонка - быстрые действия */
 .dh-pc-content-right {
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  height: 100%;
 }
 
-.dh-pc-quick-actions-panel {
-  padding: 24px;
+.dh-pc-documents-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.dh-pc-documents-title {
+  color: #002FA7;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.dh-pc-upload-doc-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border: 1px solid #8aa3c4b8;
+  background: white;
+  color: #002FA7;
+  margin-left: 8px;
+}
+
+.dh-pc-upload-doc-btn:hover {
+  transform: translateY(-2px);
+}
+
+.dh-pc-documents-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  height: 550px;
+}
+
+.dh-pc-documents-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.dh-pc-documents-table thead tr {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.dh-pc-documents-table th {
+  text-align: left;
+  padding: 16px 20px;
+  font-weight: 500;
+  color: #1e40af;
+  font-size: 14px;
+}
+
+.dh-pc-documents-table th:first-child {
+  border-right: 1px solid #e2e8f0;
+}
+
+.dh-pc-documents-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.dh-pc-doc-category-row td {
+  padding: 0;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dh-pc-doc-category-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.dh-pc-doc-category-header:hover {
+  background: #f1f5f9;
+}
+
+.dh-pc-doc-category-icon {
+  font-size: 20px;
+}
+
+.dh-pc-doc-category-name {
+  font-weight: 700;
+  color: #002FA7;
+  font-size: 15px;
+}
+
+.dh-pc-doc-name-cell {
+  border-right: 1px solid #e2e8f0;
+  min-width: 290px;
+}
+
+.dh-pc-doc-info {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-/* Быстрые действия - кнопки */
-.dh-pc-quick-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
-  width: 100%;
+.dh-pc-doc-icon {
+  font-size: 24px;
 }
 
-.dh-pc-quick-action-btn:hover {
-  transform: translateX(4px);
-  border-color: #5986f7;
-  box-shadow: 0 4px 12px rgba(89, 134, 247, 0.15);
-  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+.dh-pc-doc-name {
+  font-weight: 500;
+  color: #0f2c89;
+  font-size: 14px;
+  word-break: break-word;
 }
 
-.dh-pc-quick-action-icon {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-}
-
-.dh-pc-quick-action-content {
-  flex: 1;
-}
-
-.dh-pc-quick-action-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.dh-pc-quick-action-description {
+.dh-pc-doc-meta {
   font-size: 12px;
-  color: #64748b;
+  color: #94a3b8;
+  margin-left: 8px;
 }
 
-/* Модальное окно */
+.dh-pc-doc-actions-cell {
+  width: 260px;
+}
+
+.dh-pc-doc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dh-pc-doc-download,
+.dh-pc-doc-print,
+.dh-pc-doc-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dh-pc-doc-download {
+  background: #ffffff;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+}
+
+.dh-pc-doc-download:hover {
+  background: #dbeafe78;
+  transform: translateY(-1px);
+}
+
+.dh-pc-doc-delete {
+  background: #ffffff;
+  color: #b13232;
+  border: 1px solid #b13232;
+}
+
+.dh-pc-doc-delete:hover {
+  background: #f7cccc54;
+  transform: translateY(-1px);
+}
+
 .dh-pc-modal-overlay {
   position: fixed;
   top: 0;
@@ -385,7 +438,6 @@
   cursor: not-allowed;
 }
 
-/* Форма смены пароля */
 .dh-pc-password-form {
   padding: 28px;
 }
@@ -473,7 +525,6 @@
   transform: none;
 }
 
-/* Состояние загрузки */
 .dh-pc-loading {
   text-align: center;
   padding: 60px 20px;
@@ -488,7 +539,24 @@
   margin: 0;
 }
 
-/* Не авторизован */
+.dh-pc-loading-documents {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.dh-pc-no-documents {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.dh-pc-no-documents-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
 .dh-pc-not-authorized {
   text-align: center;
   padding: 60px 20px;
@@ -506,13 +574,43 @@
   color: #64748b;
 }
 
-/* Адаптивность */
-@media (max-width: 640px) {
+.dh-pc-documents-table tbody tr:hover {
+  background-color: #cce1fc2c;
+}
+
+.dh-pc-doc-date-cell {
+  text-align: center;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #555;
+}
+
+@media (max-width: 1100px) {
+  .dh-pc-main-content {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  
+  .dh-pc-content-left,
+  .dh-pc-content-right {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
   .dh-pc-section-header {
     padding: 0 4px 16px 4px;
   }
   
-  .dh-pc-section-title {
+  .dh-pc-personal-section {
+    padding: 12px;
+  }
+  
+  .dh-pc-section {
+    padding: 12px;
+  }
+  
+  .dss-title {
     font-size: 24px;
   }
   
@@ -524,12 +622,58 @@
     padding: 16px;
   }
   
-  .dh-pc-quick-actions-panel {
+  .dh-pc-profile-footer {
     padding: 16px;
   }
   
   .dh-pc-header-actions {
     flex-direction: column;
+  }
+  
+  .dh-pc-edit-btn,
+  .dh-pc-password-btn,
+  .dh-pc-save-btn,
+  .dh-pc-cancel-btn {
+    width: 100%;
+  }
+  
+  .dh-pc-content-right {
+    padding: 16px;
+  }
+  
+  .dh-pc-documents-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .dh-pc-doc-actions-cell {
+    width: auto;
+  }
+  
+  .dh-pc-doc-actions {
+    flex-direction: column;
+  }
+  
+  .dh-pc-doc-download,
+  .dh-pc-doc-print,
+  .dh-pc-doc-delete {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .dh-pc-doc-name {
+    font-size: 13px;
+  }
+  
+  .dh-pc-doc-meta {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+  
+  .dh-pc-doc-info {
+    flex-wrap: wrap;
   }
   
   .dh-pc-modal-content {
@@ -549,21 +693,13 @@
   .dh-pc-btn-secondary {
     width: 100%;
   }
-}
-
-/* Анимация загрузки для кнопок */
-@keyframes dh-pc-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.dh-pc-loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: dh-pc-spin 0.8s linear infinite;
-  margin-right: 8px;
+  
+  .dh-pc-doc-date-cell {
+    display: none;
+  }
+  
+  .dh-pc-documents-table th:nth-child(2),
+  .dh-pc-documents-table td:nth-child(2) {
+    display: none;
+  }
 }

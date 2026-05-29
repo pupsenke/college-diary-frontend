@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { headApiService, StudentInfo, ScholarshipCategory } from '../services/headApiService';
 import { DocxService, ScholarshipDocData } from '../services/docxService';
+import { methodistApiService } from '../services/methodistApiService';
+import { useUser } from '../context/UserContext';
 import './ScholarshipSectionStyle.css';
 
 interface ScholarshipSectionProps {
@@ -9,6 +11,7 @@ interface ScholarshipSectionProps {
 }
 
 export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId, onClose }) => {
+  const { user } = useUser();
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [scholarshipCategories, setScholarshipCategories] = useState<ScholarshipCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,21 +104,15 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
   };
 
   // Экспорт в DOCX с использованием шаблона
-  const handleExportToDocx = async () => {
+    const handleExportToDocx = async () => {
     setExporting(true);
     try {
-      // Получаем студентов по категориям
       const excellentStudents = getStudentsByType('5');
       const goodExcellentStudents = getStudentsByType('4-5');
       const goodStudents = getStudentsByType('4');
       
-      // Получаем ФИО заведующего отделением
       const headName = "Голубева Г.А.";
-      
-      // Получаем информацию о специальности
       const specialityName = groupInfo?.specialty || '09.02.07 Информационные системы и программирование';
-      
-      // Подготавливаем данные для шаблона - убираем дублирование "Группа"
       const groupName = `${groupInfo?.numberGroup || groupId}`;
       
       const docData: ScholarshipDocData = {
@@ -131,15 +128,19 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
       
       console.log('Данные для экспорта:', docData);
       
-      // Загружаем шаблон
       const templatePath = '/templates/scholarship_template.docx';
       const templateBlob = await DocxService.loadTemplate(templatePath);
-      
-      // Генерируем документ
       const documentBlob = await DocxService.generateScholarshipDocument(templateBlob, docData);
       
-      // Скачиваем документ
       const fileName = `Стипендии_${groupInfo?.numberGroup || groupId}_${selectedYear}_семестр${selectedSemester}.docx`;
+      
+      // ЗАГРУЗКА НА СЕРВЕР
+      const file = new File([documentBlob], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      await methodistApiService.uploadFile(file, 'scholarship', user?.id);
+      console.log('Документ стипендий загружен на сервер');
+      
       DocxService.downloadDocument(documentBlob, fileName);
       
     } catch (error) {
@@ -150,7 +151,7 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
     }
   };
 
-  // **ФУНКЦИЯ ПЕЧАТИ**
+  // ФУНКЦИЯ ПЕЧАТИ
   const handlePrint = () => {
     if (!groupInfo || students.length === 0) return;
 
@@ -172,7 +173,6 @@ export const ScholarshipSection: React.FC<ScholarshipSectionProps> = ({ groupId,
     const course = groupInfo?.course || 4;
     const specialty = groupInfo?.specialty || '09.02.07 Информационные системы и программирование';
 
-    // Build student list HTML strings
     const excellentList = excellentStudents.map((student, idx) => 
       `<div class="student-item">${idx + 1}. ${getStudentFullName(student)}</div>`
     ).join('');

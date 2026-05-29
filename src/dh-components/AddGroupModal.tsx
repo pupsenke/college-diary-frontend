@@ -19,7 +19,6 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose, onAdd }) 
       return;
     }
 
-    // Проверка, что введены только цифры
     if (!/^\d+$/.test(groupNumber.trim())) {
       setError('Номер группы должен содержать только цифры');
       return;

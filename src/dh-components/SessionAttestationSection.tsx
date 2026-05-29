@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { headApiService, StudentInfo, SubjectTeacher } from '../services/headApiService';
 import { SessionAttestationService, AttestationData } from '../services/sessionAttestationService';
+import { methodistApiService } from '../services/methodistApiService';
+import { useUser } from '../context/UserContext';
 import './SessionAttestationSectionStyle.css';
 
 interface SessionAttestationSectionProps {
@@ -11,6 +13,7 @@ interface SessionAttestationSectionProps {
 type AttestationForm = 'exam' | 'credit' | 'test';
 
 export const SessionAttestationSection: React.FC<SessionAttestationSectionProps> = ({ groupId, onClose }) => {
+  const { user } = useUser();
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [subjects, setSubjects] = useState<SubjectTeacher[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
@@ -22,12 +25,9 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
   const [exporting, setExporting] = useState(false);
   const [groupInfo, setGroupInfo] = useState<any>(null);
   const [date, setDate] = useState<string>(new Date().toLocaleDateString('ru-RU'));
-
-  // Фильтр по году
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  // Инициализация доступных годов
   useEffect(() => {
     const currentYear = new Date().getFullYear();
     const years = [];
@@ -65,7 +65,6 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
       setStudents(studentsData);
       setGroupInfo(groupData);
       
-      // Получаем уникальные предметы
       const uniqueSubjectsMap = new Map<number, SubjectTeacher>();
       subjectsData.forEach(s => {
         if (!uniqueSubjectsMap.has(s.subjectId)) {
@@ -89,7 +88,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
     return availableTeachers.find(t => t.teacherId === selectedTeacherId);
   };
 
-  const handleExport = async () => {
+    const handleExport = async () => {
     if (students.length === 0) {
       alert('Нет студентов для формирования ведомости');
       return;
@@ -100,10 +99,8 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
       const selectedTeacher = getSelectedTeacher();
       const selectedSubject = subjects.find(s => s.subjectId === selectedSubjectId);
       
-      const attestationNumber = '';
-      
       const attestationData: AttestationData = {
-        attestationNumber: attestationNumber,
+        attestationNumber: '',
         date: date,
         attestationForm: attestationForm,
         semester: semester,
@@ -121,10 +118,16 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
         headName: "Голубева Г.А."
       };
       
-      console.log('Данные для экспорта:', attestationData);
-      
       const documentBlob = await SessionAttestationService.generateAttestationDocument(attestationData);
       const fileName = `Аттестационная_ведомость_${groupInfo?.numberGroup || groupId}_${selectedSubject?.subjectName || 'предмет'}_${selectedYear}.doc`;
+      
+      // ЗАГРУЗКА НА СЕРВЕР 
+      const file = new File([documentBlob], fileName, {
+        type: 'application/msword'
+      });
+      await methodistApiService.uploadFile(file, 'session_attestation', user?.id);
+      console.log('Аттестационная ведомость загружена на сервер');
+      
       SessionAttestationService.downloadDocument(documentBlob, fileName);
       
     } catch (error) {
@@ -135,7 +138,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
     }
   };
 
-  // **ФУНКЦИЯ ПЕЧАТИ**
+  // ФУНКЦИЯ ПЕЧАТИ
   const handlePrint = () => {
     if (!groupInfo || students.length === 0) return;
 
@@ -153,7 +156,7 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
     const selectedSubject = subjects.find(s => s.subjectId === selectedSubjectId);
 
     const attestationFormText = attestationForm === 'exam' ? 'экзамен' : 
-                                attestationForm === 'credit' ? 'зачёт' : 'дифференцированный зачет';
+      attestationForm === 'credit' ? 'зачёт' : 'дифференцированный зачет';
 
     const academicYear = `${selectedYear}-${selectedYear + 1}`;
     const romanSemester = semester === 7 ? 'VII' : 'VIII';
@@ -167,7 +170,6 @@ export const SessionAttestationSection: React.FC<SessionAttestationSectionProps>
     const course = groupInfo?.course || 4;
     const groupName = `${groupInfo?.numberGroup || groupId}`;
 
-    // Build student rows HTML
     const studentRows = students.map((student, index) => {
       const fullName = `${student.lastName} ${student.name} ${student.patronymic ? student.patronymic : ''}`;
       return `

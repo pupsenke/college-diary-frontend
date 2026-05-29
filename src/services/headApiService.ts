@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '../constants/apiConstant';
 
-// Интерфейс для данных сотрудника
+// Функция: Обновление данных сотрудника
 interface StaffUpdateData {
   id: number;
   email?: string;
@@ -8,11 +8,11 @@ interface StaffUpdateData {
   office?: string;
   workPhone?: string;
   employmentDate?: string;
-  password?: string; // Для смены пароля
-  currentPassword?: string; // Для проверки текущего пароля
+  password?: string;
+  currentPassword?: string;
 }
 
-// Интерфейс для изменения пароля
+// Функция: Смена пароля
 interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
@@ -20,6 +20,7 @@ interface ChangePasswordData {
   userId: number;
 }
 
+// Функция: Получение всех групп
 interface Group {
   id: number;
   numberGroup: number;
@@ -31,6 +32,7 @@ interface Group {
   specialty: string;
 }
 
+// Функция: Получение данных сотрудника
 interface Staff {
   id: number;
   lastName: string;
@@ -44,6 +46,7 @@ interface Staff {
   }>;
 }
 
+// Функция: Получение данных студента
 interface Student {
   id: number;
   lastName: string;
@@ -62,7 +65,7 @@ interface Student {
   code: string | null;
 }
 
-// Интерфейс для GroupDetail компонента
+// Функция: Информация о студенте
 export interface StudentInfo {
   id: number;
   lastName: string;
@@ -75,6 +78,7 @@ export interface StudentInfo {
   telephone: string | null;
 }
 
+// Функция: Информация о группе
 export interface GroupInfo {
   id: number;
   name: string;
@@ -87,6 +91,7 @@ export interface GroupInfo {
   curatorId: number;
 }
 
+// Функция: Информация о кураторе
 export interface CuratorInfo {
   lastName: string;
   name: string;
@@ -94,6 +99,7 @@ export interface CuratorInfo {
   email: string;
 }
 
+// Функция: Полная информация о студенте
 export interface FullStudentInfo extends StudentInfo {
   birthDate: string | null;
   address: string | null;
@@ -103,15 +109,16 @@ export interface FullStudentInfo extends StudentInfo {
   code: string | null;
 }
 
-// Интерфейсы для успеваемости и посещаемости группы
+// Функция: Информация о предмете
 export interface SubjectInfo {
   id: number;
   name: string;
   teacherId: number;
   teacherName?: string;
-  assessmentForm?: string; // добавим
+  assessmentForm?: string;
 }
 
+// Функция: Оценка группы
 export interface GroupMark {
   studentId: number;
   mark: number;
@@ -120,6 +127,7 @@ export interface GroupMark {
   typeMark?: string;
 }
 
+// Функция: Посещаемость группы
 export interface GroupAttendance {
   studentId: number;
   present: boolean;
@@ -129,12 +137,14 @@ export interface GroupAttendance {
   comment?: string;
 }
 
+// Функция: Дата занятия
 export interface LessonDate {
   number: number;
   date: string;
   lessonId: number;
 }
 
+// Функция: Предмет и преподаватель
 export interface SubjectTeacher {
   id: number;
   subjectId: number;
@@ -145,25 +155,13 @@ export interface SubjectTeacher {
   teacherPatronymic: string;
 }
 
-// Интерфейс для сотрудника
-interface Staff {
-  id: number;
-  lastName: string;
-  name: string;
-  patronymic: string;
-  login: string;
-  email: string;
-  staffPosition: Array<{
-    id: number;
-    name: string;
-  }>;
-}
-
+// Функция: Ответ отчета группы
 interface GroupReportResponse {
   subjectNames: string[];
   studentsData: StudentReportData[][];
 }
 
+// Функция: Данные студента в отчете
 interface StudentReportData {
   fio: string;
   marks: number[];
@@ -176,20 +174,20 @@ interface StudentReportData {
   total_absent: number;
 }
 
-// Интерфейс для категорий стипендии
+// Функция: Категория стипендии
 export interface ScholarshipCategory {
   category: string;
   students: string[];
 }
 
-// Интерфейс для общей статистики студентов
+// Функция: Общая статистика студентов
 export interface OverallStats {
   averageGrade: number;
   attendancePercentage: number;
 }
 
 export const headApiService = {
-  // Обновление данных сотрудника
+  // Функция: Обновление данных сотрудника
   async updateStaff(data: StaffUpdateData) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/staffs/update`, {
@@ -213,7 +211,7 @@ export const headApiService = {
     }
   },
 
-  // Смена пароля через update endpoint
+  // Функция: Смена пароля
   async changePassword(data: ChangePasswordData) {
     try {
       const updateData: StaffUpdateData = {
@@ -243,7 +241,7 @@ export const headApiService = {
     }
   },
 
-  // Получение всех групп с фильтрацией по профилю
+  // Функция: Получение всех групп
   async getGroups(profileFilter?: string): Promise<Group[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups`);
@@ -252,7 +250,6 @@ export const headApiService = {
       }
       const groups: Group[] = await response.json();
       
-      // Фильтрация по профилю, если указан
       if (profileFilter) {
         return groups.filter(group => 
           group.profile.toLowerCase().includes(profileFilter.toLowerCase())
@@ -266,7 +263,7 @@ export const headApiService = {
     }
   },
 
-  // Получение данных куратора
+  // Функция: Получение данных куратора
   async getCurator(curatorId: number): Promise<Staff> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${curatorId}`);
@@ -280,7 +277,7 @@ export const headApiService = {
     }
   },
 
-  // Получение студентов группы - исправленный метод
+  // Функция: Получение студентов группы
   async getGroupStudents(groupId: number): Promise<StudentInfo[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/students/group/${groupId}`);
@@ -289,7 +286,6 @@ export const headApiService = {
       }
       const students: Student[] = await response.json();
       
-      // Преобразуем Student[] в StudentInfo[]
       return students.map(student => ({
         id: student.id,
         lastName: student.lastName,
@@ -307,18 +303,15 @@ export const headApiService = {
     }
   },
 
-  // Получение информации об отделении
+  // Функция: Получение информации об отделении
   async getDepartmentInfo() {
     try {
-      // Получаем все группы для статистики
       const groups = await this.getGroups();
       
-      // Фильтруем группы по нужному профилю
       const filteredGroups = groups.filter(group => 
         group.profile === "Информационные системы и программирование"
       );
       
-      // Получаем всех студентов для подсчета
       let totalStudents = 0;
       for (const group of filteredGroups) {
         const students = await this.getGroupStudents(group.id);
@@ -328,7 +321,6 @@ export const headApiService = {
       return {
         totalGroups: filteredGroups.length,
         totalStudents: totalStudents,
-        // Остальные данные пока статические
         name: 'Отделение информационных технологий',
         specialities: ['09.02.07 Информационные системы и программирование'],
         totalTeachers: 24,
@@ -341,7 +333,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ДАННЫХ СТУДЕНТА ПО ID
+  // Функция: Получение данных студента по ID
   async getStudentById(studentId: number): Promise<FullStudentInfo> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/students/id/${studentId}`);
@@ -355,7 +347,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ОЦЕНОК СТУДЕНТА
+  // Функция: Получение оценок студента
   async getStudentMarks(studentId: number): Promise<any[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${studentId}`);
@@ -369,7 +361,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ПОСЕЩАЕМОСТИ СТУДЕНТА
+  // Функция: Получение посещаемости студента
   async getStudentAttendance(studentId: number): Promise<any[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/attendances/student/${studentId}`);
@@ -383,7 +375,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ДОКУМЕНТОВ СТУДЕНТА
+  // Функция: Получение документов студента
   async getStudentDocuments(studentId: number): Promise<any[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/paths`);
@@ -398,7 +390,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ГРУППЕ (уже есть, но добавлю для полноты)
+  // Функция: Получение информации о группе по ID
   async getGroupById(groupId: number): Promise<Group> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/id/${groupId}`);
@@ -412,7 +404,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ ДАННЫХ ПРЕПОДАВАТЕЛЯ
+  // Функция: Получение данных преподавателя по ID
   async getTeacherById(teacherId: number): Promise<Staff> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/staffs/id/${teacherId}`);
@@ -426,7 +418,7 @@ export const headApiService = {
     }
   },
 
-  // Добавление новой группы
+  // Функция: Добавление новой группы
   async addGroup(groupNumber: string): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/add/${groupNumber}`, {
@@ -448,7 +440,7 @@ export const headApiService = {
     }
   },
 
-  // Удаление группы
+  // Функция: Удаление группы
   async deleteGroup(groupId: number): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/delete/${groupId}`, {
@@ -463,17 +455,14 @@ export const headApiService = {
         throw new Error(`Ошибка удаления группы: ${response.status} - ${errorText}`);
       }
 
-      // Проверяем, есть ли содержимое в ответе
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const text = await response.text();
-        // Если текст не пустой, парсим JSON
         if (text && text.trim()) {
           return JSON.parse(text);
         }
       }
       
-      // Возвращаем успешный результат без данных
       return { success: true, message: 'Группа успешно удалена' };
     } catch (error) {
       console.error('Ошибка при удалении группы:', error);
@@ -481,33 +470,23 @@ export const headApiService = {
     }
   },
 
-  // ============= НОВЫЕ МЕТОДЫ ДЛЯ УСПЕВАЕМОСТИ И ПОСЕЩАЕМОСТИ ГРУППЫ =============
-
-  // Получение всех предметов и преподавателей для группы
-
+  // Функция: Получение предметов и преподавателей для группы
   async getGroupSubjectsWithTeachers(groupId: number): Promise<SubjectTeacher[]> {
     try {
-      // Получаем все распределения ST
       const response = await fetch(`${API_BASE_URL}/api/v1/st`);
       if (!response.ok) {
         throw new Error(`Ошибка получения данных ST: ${response.status}`);
       }
       
       const stData: any[] = await response.json();
-      
-      // Фильтруем по группе
       const groupStData = stData.filter(item => item.groups && item.groups.includes(groupId));
-      
-      // Получаем информацию о преподавателях
       const result: SubjectTeacher[] = [];
       
       for (const st of groupStData) {
-        // Получаем информацию о предмете
         const subjectResponse = await fetch(`${API_BASE_URL}/api/v1/subjects/id/${st.idSubject}`);
         if (subjectResponse.ok) {
           const subject = await subjectResponse.json();
           
-          // Для каждого преподавателя в ST
           for (const teacherId of st.teachers) {
             try {
               const teacher = await this.getTeacherById(teacherId);
@@ -543,12 +522,9 @@ export const headApiService = {
     }
   },
 
-  // Получение дат занятий для группы по предмету и преподавателю
-
-  // Получение дат занятий для группы по предмету и преподавателю
+  // Функция: Получение дат занятий для группы по предмету и преподавателю
   async getLessonDatesBySubject(groupId: number, subjectId: number, teacherId: number): Promise<LessonDate[]> {
     try {
-      // Сначала получаем stId
       const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
       if (!stResponse.ok) {
         throw new Error(`Ошибка получения ST: ${stResponse.status}`);
@@ -566,7 +542,6 @@ export const headApiService = {
         return [];
       }
       
-      // Получаем даты занятий
       const response = await fetch(`${API_BASE_URL}/api/v1/lessons/date/st/${st.id}/group/${groupId}/teacher/${teacherId}`);
       if (!response.ok) {
         throw new Error(`Ошибка получения дат занятий: ${response.status}`);
@@ -574,8 +549,6 @@ export const headApiService = {
       
       const data = await response.json();
       
-      // Важно: используем idLesson из данных посещаемости для сопоставления
-      // lessonId должен быть именно idLesson, а не номер урока
       return data.map((item: any) => ({
         number: item.number,
         date: item.date,
@@ -587,11 +560,9 @@ export const headApiService = {
     }
   },
 
-  // Получение оценок группы по предмету и преподавателю
-
+  // Функция: Получение оценок группы по предмету и преподавателю
   async getGroupMarksWithTeachers(groupId: number, subjectId: number, teacherId: number): Promise<GroupMark[]> {
     try {
-      // Получаем stId
       const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
       if (!stResponse.ok) {
         throw new Error(`Ошибка получения ST: ${stResponse.status}`);
@@ -609,7 +580,6 @@ export const headApiService = {
         return [];
       }
       
-      // Получаем студентов группы с оценками
       const studentsResponse = await fetch(`${API_BASE_URL}/api/v1/groups/marks/group?idGroup=${groupId}&idSt=${st.id}&idTeacher=${teacherId}`);
       if (!studentsResponse.ok) {
         throw new Error(`Ошибка получения студентов с оценками: ${studentsResponse.status}`);
@@ -618,12 +588,10 @@ export const headApiService = {
       const studentsData = await studentsResponse.json();
       const marks: GroupMark[] = [];
       
-      // Извлекаем оценки из данных студентов
       for (const student of studentsData) {
         if (student.marks && Array.isArray(student.marks)) {
           for (const mark of student.marks) {
             if (mark.value !== null && mark.value !== undefined && mark.number) {
-              // Получаем дату занятия по номеру
               let dateStr = '';
               try {
                 const lessonDate = await this.getLessonDateByNumber(groupId, st.id, teacherId, mark.number);
@@ -651,8 +619,7 @@ export const headApiService = {
     }
   },
 
-  //Получение даты занятия по номеру
-
+  // Функция: Получение даты занятия по номеру
   async getLessonDateByNumber(groupId: number, stId: number, teacherId: number, lessonNumber: number): Promise<string> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/lessons/date/st/${stId}/group/${groupId}/teacher/${teacherId}`);
@@ -670,13 +637,10 @@ export const headApiService = {
     }
   },
 
-  // Получение всех доступных предметов для группы
-
+  // Функция: Получение всех доступных предметов для группы
   async getAvailableSubjectsForGroup(groupId: number): Promise<SubjectInfo[]> {
     try {
       const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
-      
-      // Группируем по предметам и выбираем уникальные
       const uniqueSubjects = new Map<number, SubjectInfo>();
       
       for (const item of subjectsWithTeachers) {
@@ -697,12 +661,10 @@ export const headApiService = {
     }
   },
 
-  // Получение всех преподавателей для предмета в группе
-
+  // Функция: Получение всех преподавателей для предмета в группе
   async getTeachersForSubject(groupId: number, subjectId: number): Promise<SubjectTeacher[]> {
     try {
       const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
-      
       return subjectsWithTeachers.filter(item => item.subjectId === subjectId);
     } catch (error) {
       console.error('Ошибка при получении преподавателей для предмета:', error);
@@ -710,8 +672,7 @@ export const headApiService = {
     }
   },
 
-  // Получение полной информации об успеваемости группы с фильтрацией по предмету и преподавателю
-  
+  // Функция: Получение полной информации об успеваемости группы
   async getFullGroupPerformance(groupId: number, subjectId: number, teacherId: number): Promise<{
     students: StudentInfo[];
     marks: GroupMark[];
@@ -745,11 +706,9 @@ export const headApiService = {
     }
   },
 
-  // Получение посещаемости группы по предмету и преподавателю
-  
+  // Функция: Получение посещаемости группы по предмету и преподавателю
   async getGroupAttendanceWithTeachers(groupId: number, subjectId: number, teacherId: number): Promise<GroupAttendance[]> {
     try {
-      // Получаем stId
       const stResponse = await fetch(`${API_BASE_URL}/api/v1/st`);
       if (!stResponse.ok) {
         throw new Error(`Ошибка получения ST: ${stResponse.status}`);
@@ -767,7 +726,6 @@ export const headApiService = {
         return [];
       }
       
-      // Получаем посещаемость группы
       const url = `${API_BASE_URL}/api/v1/attendances/group/${groupId}/st/${st.id}/teacher/${teacherId}`;
       console.log('Запрос посещаемости URL:', url);
       
@@ -785,14 +743,13 @@ export const headApiService = {
       for (const student of data) {
         if (student.attendances && Array.isArray(student.attendances)) {
           for (const att of student.attendances) {
-            // ВАЖНО: сохраняем оригинальный статус
             const statusValue = att.status || '';
             attendance.push({
               studentId: student.idStudent,
               present: statusValue === 'п',
               date: att.date,
               lessonNumber: att.idLesson,
-              status: statusValue, // Сохраняем 'п', 'у', 'н' или ''
+              status: statusValue,
               comment: att.comment || undefined
             });
           }
@@ -807,8 +764,7 @@ export const headApiService = {
     }
   },
 
-  // Получение полной информации о посещаемости группы с фильтрацией по предмету и преподавателю
-  
+  // Функция: Получение полной информации о посещаемости группы
   async getFullGroupAttendance(groupId: number, subjectId: number, teacherId: number): Promise<{
     students: StudentInfo[];
     attendance: GroupAttendance[];
@@ -842,12 +798,10 @@ export const headApiService = {
     }
   },
 
-  // Получение всех предметов и оценок для студента
+  // Функция: Получение всех предметов и оценок для студента
   async getStudentMarksBySubjects(studentId: number): Promise<{ subjectId: number; subjectName: string; marks: GroupMark[] }[]> {
     try {
       const allMarks = await this.getStudentMarks(studentId);
-      
-      // Группируем оценки по предметам
       const marksBySubject = new Map<number, { subjectId: number; subjectName: string; marks: GroupMark[] }>();
       
       for (const mark of allMarks) {
@@ -855,7 +809,6 @@ export const headApiService = {
         if (!subjectId) continue;
         
         if (!marksBySubject.has(subjectId)) {
-          // Получаем название предмета
           let subjectName = `Предмет ${subjectId}`;
           try {
             const subjectResponse = await fetch(`${API_BASE_URL}/api/v1/subjects/id/${subjectId}`);
@@ -890,7 +843,7 @@ export const headApiService = {
     }
   },
 
-  // Получение среднего балла группы по всем предметам
+  // Функция: Получение среднего балла группы по всем предметам
   async getGroupOverallAverage(groupId: number): Promise<number> {
     try {
       const students = await this.getGroupStudents(groupId);
@@ -914,7 +867,7 @@ export const headApiService = {
     }
   },
 
-  // Получение общего среднего балла студента
+  // Функция: Получение общего среднего балла студента
   async getStudentOverallAverage(studentId: number): Promise<number> {
     try {
       const subjectsMarks = await this.getStudentMarksBySubjects(studentId);
@@ -939,10 +892,9 @@ export const headApiService = {
     }
   },
 
-  // Получение общего процента посещаемости группы
+  // Функция: Получение общего процента посещаемости группы
   async getGroupOverallAttendance(groupId: number): Promise<number> {
     try {
-      // Получаем все предметы группы
       const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
       if (subjectsWithTeachers.length === 0) return 0;
       
@@ -952,7 +904,6 @@ export const headApiService = {
       let totalPresent = 0;
       let totalLessons = 0;
       
-      // Для каждого предмета собираем данные посещаемости
       for (const subject of subjectsWithTeachers) {
         const attendance = await this.getGroupAttendanceWithTeachers(
           groupId, 
@@ -979,7 +930,8 @@ export const headApiService = {
       return 0;
     }
   },
-  // Получение преподавателей
+
+  // Функция: Получение преподавателей
   async getStaffs(): Promise<Staff[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/staffs`);
@@ -993,7 +945,7 @@ export const headApiService = {
     }
   },
 
-
+  // Функция: Обновление куратора группы
   async updateGroupCurator(groupId: number, curatorId: number): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/update`, {
@@ -1020,9 +972,7 @@ export const headApiService = {
     }
   },
 
-
-
-  // Получение предметов для группы (уникальные)
+  // Функция: Получение предметов для группы
   async getGroupSubjects(groupId: number): Promise<SubjectInfo[]> {
     try {
       const subjectsWithTeachers = await this.getGroupSubjectsWithTeachers(groupId);
@@ -1044,16 +994,12 @@ export const headApiService = {
     }
   },
 
-  // Получение итоговых оценок студента по предмету (экзамен/дифф.зачёт/зачёт)
-  // Здесь нужно знать, какое поле в API отвечает за итоговую оценку. 
-  // Допустим, в объекте оценки есть поле certification.
-  // Предположим, что getStudentMarks возвращает массив с полем certification.
+  // Функция: Получение итоговой оценки студента по предмету
   async getStudentFinalMark(studentId: number, subjectId: number): Promise<string | null> {
     try {
       const marks = await this.getStudentMarks(studentId);
       const subjectMarks = marks.find(m => m.subjectId === subjectId || m.idSubject === subjectId);
       if (subjectMarks && subjectMarks.certification) {
-        // certification может быть числом 2-5 или строкой 'зач.'
         return subjectMarks.certification.toString();
       }
       return null;
@@ -1063,7 +1009,7 @@ export const headApiService = {
     }
   },
 
-  // Получение всех оценок студента по предмету (для среднего балла)
+  // Функция: Получение всех оценок студента по предмету
   async getStudentSubjectMarks(studentId: number, subjectId: number): Promise<number[]> {
     try {
       const marks = await this.getStudentMarks(studentId);
@@ -1080,11 +1026,10 @@ export const headApiService = {
     }
   },
 
-  // Получение статистики пропусков студента (всего и по неуважительным причинам)
+  // Функция: Получение статистики пропусков студента
   async getStudentAttendanceStats(studentId: number, groupId: number): Promise<{ total: number; unjustified: number }> {
     try {
       const attendanceData = await this.getStudentAttendance(studentId);
-      // attendanceData – массив предметов с посещаемостью
       let total = 0;
       let unjustified = 0;
       for (const subject of attendanceData) {
@@ -1104,12 +1049,9 @@ export const headApiService = {
     }
   },
 
-
-
-    // Восстановление пароля - отправка кода на email
+  // Функция: Отправка кода восстановления пароля на email
   async sendPasswordResetCode(email: string, userId: number): Promise<boolean> {
     try {
-      // Сначала проверяем/обновляем email пользователя
       const userType = await this.getUserTypeById(userId);
       if (userType) {
         await this.updateUserEmail(userId, email, userType);
@@ -1129,10 +1071,9 @@ export const headApiService = {
     }
   },
 
-  // Проверка кода и смена пароля
+  // Функция: Проверка кода и смена пароля
   async resetPasswordWithCode(userId: number, code: string, newPassword: string): Promise<boolean> {
     try {
-      // Проверяем код
       const verifyResponse = await fetch(`${API_BASE_URL}/api/v1/email/password/id/${userId}/change/${code}`, {
         method: 'GET',
         headers: {
@@ -1144,17 +1085,14 @@ export const headApiService = {
         return false;
       }
       
-      // Обновляем пароль
       const updateData = { id: userId, password: newPassword };
       
-      // Пробуем обновить как студента
       let updateResponse = await fetch(`${API_BASE_URL}/api/v1/students/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
       
-      // Если не студент, пробуем как сотрудника
       if (!updateResponse.ok) {
         updateResponse = await fetch(`${API_BASE_URL}/api/v1/staffs/update`, {
           method: 'PATCH',
@@ -1170,10 +1108,9 @@ export const headApiService = {
     }
   },
 
-  // Получение ID пользователя по email
+  // Функция: Получение ID пользователя по email
   async getUserIdByEmail(email: string): Promise<number | null> {
     try {
-      // Проверяем среди студентов
       const studentsResponse = await fetch(`${API_BASE_URL}/api/v1/students`);
       if (studentsResponse.ok) {
         const students = await studentsResponse.json();
@@ -1181,7 +1118,6 @@ export const headApiService = {
         if (student) return student.id;
       }
       
-      // Проверяем среди сотрудников
       const staffResponse = await fetch(`${API_BASE_URL}/api/v1/staffs`);
       if (staffResponse.ok) {
         const staff = await staffResponse.json();
@@ -1196,7 +1132,7 @@ export const headApiService = {
     }
   },
 
-  // Получение типа пользователя по ID
+  // Функция: Получение типа пользователя по ID
   async getUserTypeById(userId: number): Promise<'student' | 'staff' | null> {
     try {
       const studentResponse = await fetch(`${API_BASE_URL}/api/v1/students/id/${userId}`);
@@ -1212,7 +1148,7 @@ export const headApiService = {
     }
   },
 
-  // Обновление email пользователя
+  // Функция: Обновление email пользователя
   async updateUserEmail(userId: number, email: string, userType: 'student' | 'staff'): Promise<boolean> {
     try {
       if (userType === 'student') {
@@ -1278,8 +1214,7 @@ export const headApiService = {
     }
   },
 
-
-  // Получение сводной ведомости группы
+  // Функция: Получение сводной ведомости группы
   async getGroupReport(groupId: number): Promise<GroupReportResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/report/${groupId}`, {
@@ -1301,7 +1236,7 @@ export const headApiService = {
     }
   },
 
-  // ПОЛУЧЕНИЕ СТУДЕНТОВ ПО КАТЕГОРИЯМ СТИПЕНДИИ
+  // Функция: Получение студентов по категориям стипендии
   async getStudentsByScholarshipCategories(groupId: number): Promise<ScholarshipCategory[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/groups/categories/${groupId}`);
@@ -1314,7 +1249,8 @@ export const headApiService = {
       throw error;
     }
   },
-  // Получение общей статистики по всем студентам (средний балл и посещаемость)
+
+  // Функция: Получение общей статистики по всем студентам
   async getOverallStats(): Promise<OverallStats> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/students/overall-stats`, {
@@ -1332,7 +1268,6 @@ export const headApiService = {
       return await response.json();
     } catch (error) {
       console.error('Ошибка при получении общей статистики студентов:', error);
-      // Возвращаем значения по умолчанию при ошибке
       return { averageGrade: 0, attendancePercentage: 0 };
     }
   }

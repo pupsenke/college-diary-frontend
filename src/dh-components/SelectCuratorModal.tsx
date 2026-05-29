@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { headApiService } from '../services/headApiService';
-import './SelectCuratorModalStyle.css'; // стили можно добавить в общий файл
+import './SelectCuratorModalStyle.css'; 
 
 interface Staff {
   id: number;
