@@ -141,22 +141,6 @@ export const HeaderDepartmentHead: React.FC = () => {
               <span className="dh-dropdown-position">{getPosition()}</span>
             </div>
             <div className="dh-dropdown-menu">
-              <button className="dh-dropdown-item" onClick={() => handleNavigation('personal')}>
-                Личный кабинет
-              </button>
-              <button className="dh-dropdown-item" onClick={() => handleNavigation('management')}>
-                Управление отделением
-              </button>
-              <button className="dh-dropdown-item" onClick={() => handleNavigation('staff')}>
-                Управление сотрудниками
-              </button>
-              <button className="dh-dropdown-item" onClick={() => handleNavigation('academic')}>
-                Учебная работа
-              </button>
-              <button className="dh-dropdown-item" onClick={() => handleNavigation('reports')}>
-                Отчеты и аналитика
-              </button>
-              <div className="dh-dropdown-divider"></div>
               <button className="dh-dropdown-item dh-logout" onClick={handleLogout}>
                 Выйти
               </button>
