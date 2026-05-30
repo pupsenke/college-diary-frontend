@@ -121,7 +121,7 @@ export interface ApiScheduleItem {
   subgroup: number | null;
   replacement: boolean;
   dateReplacement: string | null;
-  isIgnored?: boolean;
+  isIgnored?: boolean | null;
 }
 
 export interface ApiSubjectWithTeachers {

@@ -20,6 +20,7 @@ export interface ScheduleItem {
   numberGroup: number;
   subgroup: number; 
   replacement: boolean;
+  dateReplacement: string | null;
 }
 
 type Lesson = {
@@ -200,6 +201,9 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
 }
 
 const transformApiData = (apiData: ScheduleItem[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
+  if (!weekDates || weekDates.length === 0) return [];
+  if (!apiData || apiData.length === 0) return [];
+
   return weekDates.map(({ weekday, date, isCurrentWeek }) => {
     const dayLessons = apiData
       .filter(lesson => lesson.dayWeek === weekday)
@@ -450,7 +454,7 @@ export const ScheduleSection: React.FC = () => {
     // установка активного день 
     const today = new Date();
     const currentDateStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-    let defaultActiveDay = dates[0].weekday;
+    let defaultActiveDay = dates[0]?.weekday || 'Понедельник';
     // если это текущая неделя, выбираем текущий день
     if (dates.some(day => day.isCurrentWeek)) {
       const currentDay = dates.find(day => day.date === currentDateStr)?.weekday;

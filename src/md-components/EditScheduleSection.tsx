@@ -24,6 +24,7 @@ type PairData = {
   typeWeek: 'Общая' | 'Верхняя' | 'Нижняя';
   idGroup?: number;
   subgroup?: number | null;
+  subgroupNumber?: number | null;
 };
 
 type PairCellData = {
@@ -36,14 +37,6 @@ type TeacherWithNote = {
   name: string;
   note: string;
 };
-
-type ScheduleCacheEntry = {
-  timestamp: number;
-  schedule: Record<string, PairData[]>;
-};
-
-const SCHEDULE_CACHE_PREFIX = 'editSchedule_cache_';
-const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const EditSchedulePage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,9 +63,8 @@ export const EditSchedulePage: React.FC = () => {
   const [teacherSearchTerm, setTeacherSearchTerm] = useState<string>('');
   const [subjectSearchTerm, setSubjectSearchTerm] = useState<string>('');
   const [roomSearchTerm, setRoomSearchTerm] = useState<string>('');
-  const [visibleRoomsCount, setVisibleRoomsCount] = useState<number>(4);
-  const [showAllRooms, setShowAllRooms] = useState<boolean>(false);
   const [currentEditingScheduleId, setCurrentEditingScheduleId] = useState<number | null>(null);
+  const [selectedSubjectTeachersCount, setSelectedSubjectTeachersCount] = useState<number>(0);
 
   const daysOfWeek = methodistApiService.getWeekDays();
   const pairTimes = [
@@ -135,12 +127,19 @@ export const EditSchedulePage: React.FC = () => {
 
         if (!day || !pairNumber) return;
 
+        const teacherId = item.subgroup !== null && item.subgroup !== undefined 
+          ? item.subgroup 
+          : item.idTeacher;
+
         const base: PairData = {
           id: item.id,
           teacher: (item.lastnameTeacher && item.nameTeacher)
             ? `${item.lastnameTeacher} ${item.nameTeacher} ${item.patronymicTeacher || ''}`.trim()
             : '',
+          teacherId: teacherId || undefined,
           subject: item.nameSubject || '',
+          subjectId: item.idSubject,
+          idSt: item.idSt,
           room: item.room || '',
           time: pairTimes.find((p) => p.number === pairNumber)?.time || '',
           typeWeek: item.typeWeek as 'Общая' | 'Верхняя' | 'Нижняя',
@@ -242,7 +241,7 @@ export const EditSchedulePage: React.FC = () => {
     setFilteredRooms(sorted);
   }, [roomsQuery.data, roomSearchTerm, selectedTeacherId]);
 
-  // фильтрация предметов по поиску
+  // удаление дублирования предметов
   useEffect(() => {
     if (!selectedTeacherId || !selectedGroupId || !selectedGroupSubjectsQuery.data) {
       setFilteredSubjects([]);
@@ -253,10 +252,20 @@ export const EditSchedulePage: React.FC = () => {
       subject.teachers.some(teacher => teacher.idTeacher === selectedTeacherId)
     );
 
+    // удаление дубликатов по idSubject
+    const uniqueSubjectsMap = new Map<number, ApiSubjectWithTeachers>();
+    filteredByTeacher.forEach((subject: ApiSubjectWithTeachers) => {
+      if (!uniqueSubjectsMap.has(subject.idSubject)) {
+        uniqueSubjectsMap.set(subject.idSubject, subject);
+      }
+    });
+
+    const uniqueSubjects = Array.from(uniqueSubjectsMap.values());
+
     const filtered =
       subjectSearchTerm.trim() === ''
-        ? filteredByTeacher
-        : filteredByTeacher.filter((subject: ApiSubjectWithTeachers) =>
+        ? uniqueSubjects
+        : uniqueSubjects.filter((subject: ApiSubjectWithTeachers) =>
             subject.nameSubject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
           );
 
@@ -265,9 +274,19 @@ export const EditSchedulePage: React.FC = () => {
 
   // сброс пагинации аудиторий при изменении поиска или выборе преподавателя
   useEffect(() => {
-    setShowAllRooms(false);
-    setVisibleRoomsCount(4);
-  }, [roomSearchTerm, roomsQuery.data, selectedTeacherId]);
+    if (selectedSubjectId && selectedGroupSubjectsQuery.data) {
+      const selectedSubjectData = selectedGroupSubjectsQuery.data.find(
+        (sub: ApiSubjectWithTeachers) => sub.idSubject === selectedSubjectId
+      );
+      if (selectedSubjectData) {
+        setSelectedSubjectTeachersCount(selectedSubjectData.teachers.length);
+      } else {
+        setSelectedSubjectTeachersCount(0);
+      }
+    } else {
+      setSelectedSubjectTeachersCount(0);
+    }
+  }, [selectedSubjectId, selectedGroupSubjectsQuery.data]);
 
   useEffect(() => {
     setLoadError('');
@@ -290,8 +309,6 @@ export const EditSchedulePage: React.FC = () => {
 
   const normalizedSchedule = scheduleQuery.data ?? {};
   const groups = groupsQuery.data ? [...groupsQuery.data].sort((a, b) => a.numberGroup - b.numberGroup) : [];
-  const rooms = roomsQuery.data ?? [];
-  const teachers = teachersQuery.data ?? [];
   const loadingSchedule = scheduleQuery.isLoading;
 
   const handleGroupChange = (value: string) => {
@@ -311,9 +328,8 @@ export const EditSchedulePage: React.FC = () => {
     setTeacherSearchTerm('');
     setSubjectSearchTerm('');
     setRoomSearchTerm('');
-    setShowAllRooms(false);
-    setVisibleRoomsCount(4);
     setCurrentEditingScheduleId(null);
+    setSelectedSubjectTeachersCount(0);
 
     if (id) {
       localStorage.setItem('selectedGroupForEdit', String(id));
@@ -329,14 +345,16 @@ export const EditSchedulePage: React.FC = () => {
     setSelectedSubjectId(null);
     setSelectedIdSt(null);
     setSubjectSearchTerm('');
+    setSelectedSubgroupType(null);
+    setSelectedSubjectTeachersCount(0);
   };
 
   const handleSubjectSelect = (subject: ApiSubjectWithTeachers) => {
     setSelectedSubject(subject.nameSubject);
     setSelectedSubjectId(subject.idSubject);
     setSelectedIdSt(subject.idSt);
-    setShowAllRooms(false);
-    setVisibleRoomsCount(4);
+    setSelectedSubgroupType(null);
+    setSelectedSubjectTeachersCount(subject.teachers.length);
   };
 
   const handleRoomSelect = (roomName: string) => {
@@ -366,9 +384,30 @@ export const EditSchedulePage: React.FC = () => {
         throw new Error('Выберите хотя бы одну неделю');
       }
 
-      const subgroupValue = selectedSubgroupType === null ? null : selectedSubgroupType;
+      const subgroupValue = selectedSubgroupType === null 
+        ? null 
+        : selectedTeacherId;
+
+      const checkConflict = async (typeWeek: 'Общая' | 'Верхняя' | 'Нижняя') => {
+        const existingSchedule = await methodistApiService.getScheduleByGroup(selectedGroupId);
+        
+        return existingSchedule.some((item: ApiScheduleItem) => 
+          item.isIgnored !== true &&
+          item.dayWeek === selectedDay &&
+          item.numPair === selectedPair &&
+          item.typeWeek === typeWeek &&
+          (subgroupValue === null 
+            ? item.subgroup === null 
+            : item.subgroup === subgroupValue) &&
+          item.id !== currentEditingScheduleId
+        );
+      };
 
       if (upperWeekChecked && lowerWeekChecked) {
+        const hasConflict = await checkConflict('Общая');
+        if (hasConflict) {
+          throw new Error(`Конфликт: на ${selectedDay} ${selectedPair} пару (${subgroupValue === null ? 'общая группа' : `подгруппа ${selectedSubgroupType}`}) уже есть занятие.`);
+        }
         await methodistApiService.saveSchedule({
           dayWeek: selectedDay,
           typeWeek: 'Общая',
@@ -381,6 +420,10 @@ export const EditSchedulePage: React.FC = () => {
         });
       } else {
         if (upperWeekChecked) {
+          const hasConflict = await checkConflict('Верхняя');
+          if (hasConflict) {
+            throw new Error(`Конфликт: на ${selectedDay} ${selectedPair} пару (${subgroupValue === null ? 'общая группа' : `подгруппа ${selectedSubgroupType}`}) верхней недели уже есть занятие.`);
+          }
           await methodistApiService.saveSchedule({
             dayWeek: selectedDay,
             typeWeek: 'Верхняя',
@@ -394,6 +437,10 @@ export const EditSchedulePage: React.FC = () => {
         }
 
         if (lowerWeekChecked) {
+          const hasConflict = await checkConflict('Нижняя');
+          if (hasConflict) {
+            throw new Error(`Конфликт: на ${selectedDay} ${selectedPair} пару (${subgroupValue === null ? 'общая группа' : `подгруппа ${selectedSubgroupType}`}) нижней недели уже есть занятие.`);
+          }
           await methodistApiService.saveSchedule({
             dayWeek: selectedDay,
             typeWeek: 'Нижняя',
@@ -465,9 +512,8 @@ export const EditSchedulePage: React.FC = () => {
     setTeacherSearchTerm('');
     setSubjectSearchTerm('');
     setRoomSearchTerm('');
-    setShowAllRooms(false);
-    setVisibleRoomsCount(4);
     setCurrentEditingScheduleId(null);
+    setSelectedSubjectTeachersCount(0);
   };
 
   const getPairData = (day: string, pairNumber: number): PairCellData => {
@@ -506,7 +552,28 @@ export const EditSchedulePage: React.FC = () => {
       key = normalizedSchedule[commonKey] ? commonKey : lowerKey;
     }
 
-    return normalizedSchedule[key] || [];
+    const items = normalizedSchedule[key] || [];
+    
+    if (items.length === 0) return [];
+    
+    const hasSubgroups = items.some((item: PairData) => item.subgroup !== null && item.subgroup !== undefined);
+    
+    if (!hasSubgroups) {
+      return items;
+    }
+    
+    const subgroupsWithIds = items.filter((item: PairData) => item.subgroup !== null && item.subgroup !== undefined);
+    const commonItems = items.filter((item: PairData) => item.subgroup === null || item.subgroup === undefined);
+    
+    const result = [...commonItems];
+    subgroupsWithIds.forEach((item: PairData, index: number) => {
+      result.push({
+        ...item,
+        subgroupNumber: index + 1
+      });
+    });
+    
+    return result;
   };
 
   const handleCellClick = (day: string, pairNumber: number) => {
@@ -526,11 +593,14 @@ export const EditSchedulePage: React.FC = () => {
       setSelectedSubjectId(commonPair.subjectId || null);
       setSelectedIdSt(commonPair.idSt || null);
       setSelectedRoom(commonPair.room);
-      setSelectedSubgroupType(
-        commonPair.subgroup === null
-          ? null
-          : (commonPair.subgroup === 1 || commonPair.subgroup === 2 ? commonPair.subgroup : null)
-      );
+      
+      const hasSubgroups = commonPairs.some((p: PairData) => p.subgroup !== null);
+      if (hasSubgroups) {
+        setSelectedSubgroupType(null);
+      } else {
+        setSelectedSubgroupType(null);
+      }
+      
       setUpperWeekChecked(true);
       setLowerWeekChecked(true);
       setCurrentEditingScheduleId(commonPair.id || null);
@@ -543,11 +613,13 @@ export const EditSchedulePage: React.FC = () => {
         setSelectedSubjectId(sourcePair.subjectId || null);
         setSelectedIdSt(sourcePair.idSt || null);
         setSelectedRoom(sourcePair.room);
-        setSelectedSubgroupType(
-          sourcePair.subgroup === null
-            ? null
-            : (sourcePair.subgroup === 1 || sourcePair.subgroup === 2 ? sourcePair.subgroup : null)
-        );
+        
+        if (sourcePair.subgroup !== null && sourcePair.subgroup !== undefined) {
+          setSelectedSubgroupType(1);
+        } else {
+          setSelectedSubgroupType(null);
+        }
+        
         setCurrentEditingScheduleId(sourcePair.id || null);
       }
       setUpperWeekChecked(!!pairData.upper);
@@ -568,15 +640,19 @@ export const EditSchedulePage: React.FC = () => {
     setTeacherSearchTerm('');
     setSubjectSearchTerm('');
     setRoomSearchTerm('');
+    
+    setTimeout(() => {
+      const editPanel = document.querySelector('.edit-pair-panel');
+      if (editPanel) {
+        editPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const renderSubgroups = (subgroups: PairData[], weekLabel: string) => {
     if (subgroups.length === 0) return null;
 
-    if (
-      subgroups.length === 1 &&
-      (subgroups[0].subgroup === null || subgroups[0].subgroup === undefined)
-    ) {
+    if (subgroups.length === 1 && subgroups[0].subgroup === null) {
       const pair = subgroups[0];
       return (
         <div className="pair-info">
@@ -590,31 +666,21 @@ export const EditSchedulePage: React.FC = () => {
       );
     }
 
-    const pairsWithSubgroup = subgroups.filter(
-      (p: PairData) => p.subgroup !== null && p.subgroup !== undefined
-    );
-
     return (
       <div className="pair-info subgroups">
         {weekLabel && <div className="week-label">{weekLabel}</div>}
-        {subgroups.map((pair: PairData, idx: number) => {
-          const indexInSubgroups = pairsWithSubgroup.findIndex((p: PairData) => p === pair);
-          const shouldShowSubgroupLabel = indexInSubgroups !== -1;
-          const subgroupNumber = shouldShowSubgroupLabel ? indexInSubgroups + 1 : null;
-
-          return (
-            <div key={idx} className="subgroup-item">
-              {shouldShowSubgroupLabel && subgroupNumber !== null && (
-                <div className="subgroup-label">Подгруппа {subgroupNumber}:</div>
-              )}
-              <div className="pair-subject">{pair.subject || '—'}</div>
-              <div className="pair-teacher">
-                {pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}
-              </div>
-              <div className="pair-room">ауд. {pair.room || '—'}</div>
+        {subgroups.map((pair: PairData, idx: number) => (
+          <div key={idx} className="subgroup-item">
+            {pair.subgroupNumber !== null && pair.subgroupNumber !== undefined && (
+              <div className="subgroup-label">Подгруппа {pair.subgroupNumber}:</div>
+            )}
+            <div className="pair-subject">{pair.subject || '—'}</div>
+            <div className="pair-teacher">
+              {pair.teacher && pair.teacher.trim() !== '' ? pair.teacher : 'Преподаватель не указан'}
             </div>
-          );
-        })}
+            <div className="pair-room">ауд. {pair.room || '—'}</div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -820,31 +886,26 @@ export const EditSchedulePage: React.FC = () => {
                       disabled={!selectedSubjectId}
                     />
                   </div>
-                  <div className="rooms-grid">
-                    {(showAllRooms ? filteredRooms : filteredRooms.slice(0, visibleRoomsCount)).map((room: ApiRoom) => (
-                      <button
-                        key={room.id}
-                        className={`room-btn ${selectedRoom === room.name ? 'active' : ''}`}
-                        onClick={() => handleRoomSelect(room.name)}
-                        disabled={!selectedSubjectId}>
-                        {room.name}
-                      </button>
-                    ))}
-                    {filteredRooms.length > visibleRoomsCount && !showAllRooms && (
-                      <button
-                        className="room-btn show-more-btn"
-                        onClick={() => setShowAllRooms(true)}
-                        disabled={!selectedSubjectId}>
-                        Показать ещё (+{filteredRooms.length - visibleRoomsCount})
-                      </button>
+                  <div className="items-list rooms-list">
+                    {filteredRooms.map((room: ApiRoom) => {
+                      const isOwnerRoom = room.idStaffOwner === selectedTeacherId;
+                      const isActive = selectedRoom === room.name;
+                      
+                      return (
+                        <button
+                          key={room.id}
+                          className={`list-item room-item ${isActive ? 'active' : ''} ${isOwnerRoom ? 'owner-room' : ''}`}
+                          onClick={() => handleRoomSelect(room.name)}
+                          disabled={!selectedSubjectId}>
+                          <span className="item-name">{room.name}</span>
+                        </button>
+                      );
+                    })}
+                    {filteredRooms.length === 0 && (
+                      <div className="no-results">Аудитории не найдены</div>
                     )}
-                    {showAllRooms && filteredRooms.length > visibleRoomsCount && (
-                      <button
-                        className="room-btn show-less-btn"
-                        onClick={() => setShowAllRooms(false)}
-                        disabled={!selectedSubjectId}>
-                        Свернуть
-                      </button>
+                    {!selectedSubjectId && (
+                      <div className="no-results">Сначала выберите предмет</div>
                     )}
                   </div>
                 </div>
@@ -857,17 +918,26 @@ export const EditSchedulePage: React.FC = () => {
                       onClick={() => setSelectedSubgroupType(null)}>
                       Общая
                     </button>
-                    <button
-                      className={`subgroup-btn ${selectedSubgroupType === 1 ? 'active' : ''}`}
-                      onClick={() => setSelectedSubgroupType(1)}>
-                      Подгруппа 1
-                    </button>
-                    <button
-                      className={`subgroup-btn ${selectedSubgroupType === 2 ? 'active' : ''}`}
-                      onClick={() => setSelectedSubgroupType(2)}>
-                      Подгруппа 2
-                    </button>
+                    {selectedSubjectTeachersCount > 1 && (
+                      <>
+                        <button
+                          className={`subgroup-btn ${selectedSubgroupType === 1 ? 'active' : ''}`}
+                          onClick={() => setSelectedSubgroupType(1)}>
+                          Подгруппа 1
+                        </button>
+                        <button
+                          className={`subgroup-btn ${selectedSubgroupType === 2 ? 'active' : ''}`}
+                          onClick={() => setSelectedSubgroupType(2)}>
+                          Подгруппа 2
+                        </button>
+                      </>
+                    )}
                   </div>
+                  {selectedSubjectTeachersCount <= 1 && selectedSubjectId && (
+                    <div className="no-results" style={{ marginTop: '8px', fontSize: '12px' }}>
+                      Для этого предмета не предусмотрено разделение на подгруппы (только один преподаватель)
+                    </div>
+                  )}
                 </div>
 
                 <div className="control-group week-checkbox-group">
@@ -889,24 +959,24 @@ export const EditSchedulePage: React.FC = () => {
                     </label>
                   </div>
                 </div>
+              </div>
 
-                <div className="action-buttons">
-                  <button
-                    className="delete-btn"
-                    onClick={handleDeletePair}
-                    disabled={saving || deleting || !currentEditingScheduleId}>
-                    {deleting ? 'Удаление...' : 'Удалить'}
-                  </button>
-                  <button className="cancel-btn" onClick={cancelEdit} disabled={saving || deleting}>
-                    Отменить
-                  </button>
-                  <button
-                    className="save-btn"
-                    onClick={savePair}
-                    disabled={saving || deleting || !selectedTeacherId || !selectedSubjectId || !selectedRoom}>
-                    {saving ? 'Сохранение...' : 'Сохранить'}
-                  </button>
-                </div>
+              <div className="action-buttons">
+                <button
+                  className="delete-btn"
+                  onClick={handleDeletePair}
+                  disabled={saving || deleting || !currentEditingScheduleId}>
+                  {deleting ? 'Удаление...' : 'Удалить'}
+                </button>
+                <button className="cancel-btn" onClick={cancelEdit} disabled={saving || deleting}>
+                  Отменить
+                </button>
+                <button
+                  className="save-btn"
+                  onClick={savePair}
+                  disabled={saving || deleting || !selectedTeacherId || !selectedSubjectId || !selectedRoom}>
+                  {saving ? 'Сохранение...' : 'Сохранить'}
+                </button>
               </div>
             </div>
           )}
