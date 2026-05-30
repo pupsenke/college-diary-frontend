@@ -18,7 +18,7 @@ export interface ScheduleItem {
   patronymicTeacher: string;
   idGroup: number;
   numberGroup: number;
-  subgroup: number; 
+  subgroup: number;
   replacement: boolean;
   dateReplacement: string | null;
 }
@@ -32,6 +32,8 @@ type Lesson = {
   subgroup?: number;
   room?: string;
   typeWeek: string;
+  replacement: boolean;
+  isCancelled?: boolean;
 };
 
 type DaySchedule = {
@@ -129,24 +131,23 @@ const pairTimes: Record<number, { start: string; end: string }> = {
 // функция для определения верхней/нижней недели
 export const getCurrentWeekType = (): 'upper' | 'lower' => {
   const today = new Date();
-  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025 (месяцы 0-11)
+  const startOfAcademicYear = new Date(2025, 8, 1);
   const diffTime = today.getTime() - startOfAcademicYear.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weekNumber = Math.floor(diffDays / 7) + 1; 
-  // Согласно календарю: нечетные недели - верхние, четные - нижние
+  const weekNumber = Math.floor(diffDays / 7) + 1;
   return weekNumber % 2 === 1 ? 'upper' : 'lower';
 };
 
 // функция для получения номера текущей недели
 export const getCurrentWeekNumber = (): number => {
   const today = new Date();
-  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025
+  const startOfAcademicYear = new Date(2025, 8, 1);
   const diffTime = today.getTime() - startOfAcademicYear.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return Math.floor(diffDays / 7) + 1;
 };
 
-// функция для получения дат недели с определением типа недели
+// функция для получения дат недели
 const getWeekDates = (weekType?: 'upper' | 'lower'): { 
   weekday: string; 
   date: string; 
@@ -155,7 +156,7 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
 }[] => {
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const today = new Date();
-  const currentWeekType = getCurrentWeekType();  
+  const currentWeekType = getCurrentWeekType();
   const targetWeekType = weekType || currentWeekType;
   const monday = new Date(today);
   const dayOfWeek = monday.getDay();
@@ -200,39 +201,94 @@ function groupLessonsByTime(lessons: Lesson[]): GroupedSlot[] {
   );
 }
 
+// проверка актуальности замены
+const isReplacementActive = (dateReplacement: string | null | undefined): boolean => {
+  if (!dateReplacement) return false;
+  const replacementDate = new Date(dateReplacement);
+  const today = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 3);
+  return replacementDate >= sevenDaysAgo;
+};
+
 const transformApiData = (apiData: ScheduleItem[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
   if (!weekDates || weekDates.length === 0) return [];
   if (!apiData || apiData.length === 0) return [];
 
-  return weekDates.map(({ weekday, date, isCurrentWeek }) => {
-    const dayLessons = apiData
-      .filter(lesson => lesson.dayWeek === weekday)
+  return weekDates.map(({ weekday, date }) => {
+    const originalLessons = apiData.filter(lesson => lesson.dayWeek === weekday && !lesson.replacement);
+    const replacementLessons = apiData.filter(lesson => 
+      lesson.dayWeek === weekday && 
+      lesson.replacement === true && 
+      isReplacementActive(lesson.dateReplacement)
+    );
+    
+    // Создаем карту замен - ключ - номер пары
+    const replacementMap = new Map<number, ScheduleItem>();
+    replacementLessons.forEach(replacement => {
+      replacementMap.set(replacement.numPair, replacement);
+    });
+    
+    const dayLessons = originalLessons
       .map(lesson => {
         const pairTime = pairTimes[lesson.numPair];
         if (!pairTime) {
           console.warn(`Неизвестный номер пары: ${lesson.numPair} для урока ${lesson.id}`);
           return null;
         }
+        
+        // Ищем замену по номеру пары
+        const replacement = replacementMap.get(lesson.numPair);
+        
         let room: string;
         if (lesson.room !== undefined && lesson.room !== null && lesson.room !== "") {
           room = `ауд. ${lesson.room}`;
         } else {
           room = `ауд. -`;
         }
+        
+        let subjectName = lesson.nameSubject || `Предмет ${lesson.idSubject}`;
+        let displayRoom = room;
+        let isReplacementFlag = false;
+        let isCancelled = false;
+        
+        if (replacement) {
+          // Проверяем, является ли замена отменой (тот же idSt)
+          if (replacement.idSt === lesson.idSt) {
+            isCancelled = true;
+            isReplacementFlag = true;
+            subjectName = `${subjectName} (Не будет)`;
+            displayRoom = room;
+          } else {
+            isReplacementFlag = true;
+            subjectName = `${replacement.nameSubject || `Предмет ${replacement.idSubject}`} (Замена)`;
+            
+            if (replacement.room !== undefined && replacement.room !== null && replacement.room !== "") {
+              displayRoom = `ауд. ${replacement.room}`;
+            } else {
+              displayRoom = `ауд. -`;
+            }
+          }
+        }
+        
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
+        
         const transformedLesson: Lesson = {
           id: lesson.id,
           startTime: pairTime.start,
           endTime: pairTime.end,
-          subject: lesson.nameSubject || `Предмет ${lesson.idSubject}`,
+          subject: subjectName,
           group: lesson.numberGroup,
           subgroup,
-          room,
-          typeWeek: lesson.typeWeek
+          room: displayRoom,
+          typeWeek: lesson.typeWeek,
+          replacement: isReplacementFlag,
+          isCancelled
         };
         return transformedLesson;
       })
       .filter((lesson): lesson is Lesson => lesson !== null);
+    
     const groupedLessons: Lesson[] = [];
     const timeGroups: Record<string, Lesson[]> = {};
     dayLessons.forEach(lesson => {
@@ -325,7 +381,7 @@ const DayScheduleView: React.FC<{
       {daySchedule.lessons.length > 0 ? (
         groupLessonsByTime(daySchedule.lessons).map(({ startTime, endTime, lessons: grouped }: GroupedSlot) => (
           grouped.length > 1 ? (
-            <div key={`${startTime}-${endTime}`} className="separated-lesson-row">
+            <div key={`${startTime}-${endTime}`} className={`separated-lesson-row ${grouped[0].replacement ? 'replacement' : ''}`}>
               <div className="separated-time">
                 {startTime} - {endTime}
               </div>
@@ -333,7 +389,7 @@ const DayScheduleView: React.FC<{
                 {grouped.map((lesson: Lesson, index: number) => (
                   <div 
                     key={lesson.id} 
-                    className="separated-lesson-item"
+                    className={`separated-lesson-item ${lesson.replacement ? 'replacement' : ''}`}
                   >
                     <div className="separated-subject">
                       {lesson.subject}
@@ -352,7 +408,7 @@ const DayScheduleView: React.FC<{
           ) : (
             <div 
               key={`${startTime}-${endTime}`} 
-              className="lesson-row"
+              className={`lesson-row ${grouped[0].replacement ? 'replacement' : ''}`}
             >
               <div className="lesson-time">{startTime} - {endTime}</div>
               <div className="lesson-content">
@@ -406,7 +462,7 @@ const NextLessonCard: React.FC<{ scheduleData: DaySchedule[] }> = ({ scheduleDat
       <div className="next-lesson-title">
         <h3>Следующая пара</h3>
       </div>
-      <div className="next-lesson-card">
+      <div className={`next-lesson-card ${nextLesson.replacement ? 'replacement' : ''}`}>
         <div className="next-lesson-subject">{nextLesson.subject}</div>
         <div className="next-lesson-details">
           <div className="next-lesson-detail">
@@ -545,10 +601,6 @@ export const ScheduleSection: React.FC = () => {
     return weekDates.find(day => day.date === currentDateStr)?.weekday || '';
   };
 
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return '';
-    return `Обновлено: ${date.toLocaleTimeString()}`;
-  };
   const currentDay = getCurrentDay();
   const isCurrentWeek = weekDates.some(day => day.isCurrentWeek);
 
@@ -628,7 +680,6 @@ export const ScheduleSection: React.FC = () => {
             activeDay={activeDay}
           />
           
-          {/* блок "Следующая пара" показывается только для текущего дня текущей недели */}
           {activeDay === currentDay && isCurrentWeek && (
             <NextLessonCard scheduleData={getFilteredSchedule(activeTab)} />
           )}

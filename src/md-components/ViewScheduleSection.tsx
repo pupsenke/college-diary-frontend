@@ -16,6 +16,9 @@ type Lesson = {
   dayWeek: string;
   typeWeek: string;
   replacement: boolean;
+  isCancelled: boolean;
+  dateReplacement?: string | null;
+  idSt?: number;
 };
 
 type DaySchedule = {
@@ -55,56 +58,106 @@ const groupLessonsByTime = (lessons: Lesson[]): GroupedSlot[] => {
   );
 };
 
+// проверка на актуальность замены
+const isReplacementActive = (dateReplacement: string | null | undefined): boolean => {
+  if (!dateReplacement) return false;
+  const replacementDate = new Date(dateReplacement);
+  const today = new Date();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(today.getDate() - 3);
+  
+  return replacementDate >= oneWeekAgo;
+};
+
 const transformApiData = (apiData: ApiScheduleItem[], weekDays: string[]): DaySchedule[] => {
   return weekDays.map((weekday) => {
-    const dayLessons = apiData
-      .filter(lesson => lesson.dayWeek === weekday)
-      .map(lesson => {
-        const pairTime = methodistApiService.getPairTime(lesson.numPair);
-        // если время пары не найдено, пропускаем урок
-        if (!pairTime || !pairTime.start) {
-          console.warn(`Не найдено время для пары №${lesson.numPair}`, lesson);
-          return null;
-        }
+    const allDayLessons = apiData.filter(lesson => lesson.dayWeek === weekday);
+    
+    const originalLessons = allDayLessons.filter(lesson => !lesson.replacement);
+    const replacementLessons = allDayLessons.filter(lesson => 
+      lesson.replacement === true && isReplacementActive(lesson.dateReplacement)
+    );
+    
+    const replacementMap = new Map<number, ApiScheduleItem>();
+    replacementLessons.forEach(replacement => {
+      replacementMap.set(replacement.numPair, replacement);
+    });
+    
+    const dayLessons = originalLessons.map(lesson => {
+      const pairTime = methodistApiService.getPairTime(lesson.numPair);
+      if (!pairTime || !pairTime.start) {
+        console.warn(`Не найдено время для пары №${lesson.numPair}`, lesson);
+        return null;
+      }
 
-        let teacher: string | undefined = undefined;
-        // проверка наличия данных преподавателя
-        if (lesson.lastnameTeacher && lesson.nameTeacher) {
-          teacher = methodistApiService.formatTeacherName(
-            lesson.lastnameTeacher,
-            lesson.nameTeacher,
-            lesson.patronymicTeacher
-          );
+      let teacher: string | undefined = undefined;
+      if (lesson.lastnameTeacher && lesson.nameTeacher) {
+        teacher = methodistApiService.formatTeacherName(
+          lesson.lastnameTeacher,
+          lesson.nameTeacher,
+          lesson.patronymicTeacher
+        );
+      }
+      
+      let room: string = 'ауд. -';
+      if (lesson.room != null && lesson.room !== '') {
+        room = methodistApiService.formatRoom(lesson.room);
+      }
+      
+      const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
+      
+      const replacement = replacementMap.get(lesson.numPair);
+      
+      let subjectName = lesson.nameSubject || `Предмет ${lesson.idSubject}`;
+      let displayTeacher = teacher;
+      let displayRoom = room;
+      let isActualReplacement = false;
+      let isCancelled = false;
+      
+      if (replacement) {
+        if (replacement.idSt === lesson.idSt) {
+          isCancelled = true;
+          subjectName = `${subjectName} (Не будет)`;
+          isActualReplacement = true;
+          displayTeacher = teacher;
+          displayRoom = room;
+        } else {
+          isActualReplacement = true;
+          subjectName = `${replacement.nameSubject || `Предмет ${replacement.idSubject}`} (Замена)`;
+          
+          if (replacement.lastnameTeacher && replacement.nameTeacher) {
+            displayTeacher = methodistApiService.formatTeacherName(
+              replacement.lastnameTeacher,
+              replacement.nameTeacher,
+              replacement.patronymicTeacher
+            );
+          }
+          
+          if (replacement.room != null && replacement.room !== '') {
+            displayRoom = methodistApiService.formatRoom(replacement.room);
+          } else {
+            displayRoom = 'ауд. -';
+          }
         }
-        
-        let room: string = 'ауд. -';
-        // обработка null/undefined аудитории
-        if (lesson.room != null && lesson.room !== '') {
-          room = methodistApiService.formatRoom(lesson.room);
-        }
-        
-        const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
-        
-        // отображение замен с визуальным маркером
-        const subjectName = lesson.replacement 
-          ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
-          : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
-
-        return {
-          id: lesson.id,
-          startTime: pairTime.start,
-          endTime: pairTime.end,
-          subject: subjectName,
-          teacher,
-          room,
-          subgroup,
-          numPair: lesson.numPair,
-          dayWeek: lesson.dayWeek,
-          typeWeek: lesson.typeWeek,
-          replacement: lesson.replacement
-        };
-      })
-      .filter((lesson): lesson is NonNullable<typeof lesson> => lesson !== null);
+      }
+      
+      return {
+        id: lesson.id,
+        startTime: pairTime.start,
+        endTime: pairTime.end,
+        subject: subjectName,
+        teacher: displayTeacher,
+        room: displayRoom,
+        subgroup,
+        numPair: lesson.numPair,
+        dayWeek: lesson.dayWeek,
+        typeWeek: lesson.typeWeek,
+        replacement: isActualReplacement,
+        isCancelled: isCancelled,
+        dateReplacement: replacement?.dateReplacement,
+        idSt: lesson.idSt,
+      };
+    }).filter((lesson): lesson is NonNullable<typeof lesson> => lesson !== null);
     
     return {
       weekday,
@@ -151,7 +204,6 @@ export const ViewScheduleSection: React.FC = () => {
     const fetchSchedule = async () => {
       // группа должна быть выбрана и дни недели загружены
       if (!selectedGroup || weekDays.length === 0) {
-        console.log('ViewSchedule: ожидание данных (group:', selectedGroup, 'weekDays:', weekDays.length, ')');
         return;
       }
       

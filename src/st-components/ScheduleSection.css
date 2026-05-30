@@ -697,7 +697,7 @@
 .lesson-row.replacement {
   background-color: #ffebee;
   border-left: 4px solid #f44336;
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .separated-lesson-item.replacement {
@@ -705,16 +705,13 @@
   border-left: 4px solid #f44336;
   padding-left: 15px;
   border-radius: 5px;
-  margin-top: 10px;
 }
 
 .separated-lesson-item.clickable-lesson.replacement:hover {
   background-color: #ffe0e5;
-  margin-top: 10px;
 }
 
 .next-lesson-card.replacement {
   background-color: #ffebee;
   border-left: 4px solid #f44336;
-  margin-top: 10px;
 }

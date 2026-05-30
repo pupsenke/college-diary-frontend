@@ -338,7 +338,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
       }
       return null;
     } catch (e) {
-      console.error('Ошибка при поиске idSt', record, e);
+      console.error('Ошибка при поиске idSt для старой пары', record, e);
       return null;
     }
   };
@@ -350,6 +350,8 @@ export const ReplacementDocumentsPage: React.FC = () => {
 
       const subjectsData = await ensureGroupSubjectsLoaded(group.id);
       if (!subjectsData) return null;
+
+      if (record.type === 'notWillBe') return null;
 
       const baseSubjectName = record.newSubject?.trim() || '';
       const baseTeacherName = record.newTeacher?.trim() || '';
@@ -416,10 +418,10 @@ export const ReplacementDocumentsPage: React.FC = () => {
         if (record.type === 'notWillBe') {
           idInfo = await findIdStForOldPair(record);
         } else {
-          if (isOldPair(record)) {
-            idInfo = await findIdStForOldPair(record);
-          } else {
+          if (record.newSubject && record.newTeacher) {
             idInfo = await findIdStForNewPair(record);
+          } else {
+            idInfo = await findIdStForOldPair(record);
           }
         }
 
@@ -430,12 +432,25 @@ export const ReplacementDocumentsPage: React.FC = () => {
 
         const d = new Date(record.date);
         const dayWeek = methodistApiService.getDayWeekForApi(d);
-        const weekNumber = getWeekNumber(d);
-        const typeWeekFormatted = weekNumber % 2 === 0 ? 'Нижняя' : 'Верхняя';
+        
+        let originalTypeWeek: string = 'Общая';
+        try {
+          const scheduleData = await methodistApiService.getScheduleByGroup(idInfo.idGroup);
+          const originalLesson = scheduleData.find(item => 
+            !item.replacement &&
+            item.dayWeek === dayWeek &&
+            item.numPair === record.pairNumber
+          );
+          if (originalLesson) {
+            originalTypeWeek = originalLesson.typeWeek;
+          }
+        } catch (e) {
+          console.warn('Не удалось получить оригинальный typeWeek, используем Общая', e);
+        }
 
         await methodistApiService.saveSchedule({
           dayWeek,
-          typeWeek: typeWeekFormatted,
+          typeWeek: originalTypeWeek,
           numPair: record.pairNumber,
           room: record.newRoom || null,
           idSt: idInfo.idSt,
@@ -445,6 +460,7 @@ export const ReplacementDocumentsPage: React.FC = () => {
           dateReplacement: record.date,
           isIgnored: false,
         });
+
         savedIds.push(record.id);
       } catch (e) {
         console.error('Ошибка при сохранении пары', record, e);

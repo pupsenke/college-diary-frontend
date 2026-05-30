@@ -432,6 +432,19 @@ class MethodistApiService {
     localStorage.setItem(this.getStorageKey(), JSON.stringify(filtered));
   }
 
+  async getActiveReplacementsForGroup(groupId: number): Promise<ApiScheduleItem[]> {
+    const schedule = await this.getScheduleByGroup(groupId);
+    const today = new Date();
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(today.getDate() - 1);
+    
+    return schedule.filter(item => 
+      item.replacement === true && 
+      item.dateReplacement && 
+      new Date(item.dateReplacement) >= fiveDaysAgo
+    );
+  }
+
   // удаление замен по массиву ID
   deleteReplacementsByIds(ids: string[]): void {
     const replacements = this.getReplacements();

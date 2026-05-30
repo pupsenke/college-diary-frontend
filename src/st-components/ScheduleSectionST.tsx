@@ -13,6 +13,7 @@ type ApiLesson = {
   idGroup: number;
   subgroup: number | null;
   replacement: boolean;
+  dateReplacement: string | null;
   idSubject: number;
   nameSubject: string;
   idTeacher: number | null;
@@ -158,18 +159,17 @@ const pairTimes: Record<number, { start: string; end: string }> = {
 // определение верхней/нижней недели
 export const getCurrentWeekType = (): 'upper' | 'lower' => {
   const today = new Date();
-  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025 (месяцы 0-11)
+  const startOfAcademicYear = new Date(2025, 8, 1);
   const diffTime = today.getTime() - startOfAcademicYear.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weekNumber = Math.floor(diffDays / 7) + 1; 
-  // нечетные недели - верхние, четные - нижние
+  const weekNumber = Math.floor(diffDays / 7) + 1;
   return weekNumber % 2 === 1 ? 'upper' : 'lower';
 };
 
 // функция для получения номера текущей недели
 export const getCurrentWeekNumber = (): number => {
   const today = new Date();
-  const startOfAcademicYear = new Date(2025, 8, 1); // 1 сентября 2025
+  const startOfAcademicYear = new Date(2025, 8, 1);
   const diffTime = today.getTime() - startOfAcademicYear.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return Math.floor(diffDays / 7) + 1;
@@ -185,14 +185,12 @@ const getWeekDates = (weekType?: 'upper' | 'lower'): {
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const today = new Date();
   const currentWeekType = getCurrentWeekType();
-  // если тип недели не указан, используем текущий
   const targetWeekType = weekType || currentWeekType;
-  // понедельник текущей недели
   const monday = new Date(today);
   const dayOfWeek = monday.getDay();
   const diff = monday.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   monday.setDate(diff);
-  // если нужна противоположная неделя, сдвигаем на 7 дней
+  
   if (targetWeekType !== currentWeekType) {
     monday.setDate(monday.getDate() + (targetWeekType === 'upper' ? -7 : 7));
   }
@@ -248,52 +246,100 @@ type TransformedLesson = {
   replacement: boolean;
 };
 
+const isReplacementActive = (dateReplacement: string | null | undefined): boolean => {
+  if (!dateReplacement) return false;
+  const replacementDate = new Date(dateReplacement);
+  const today = new Date();
+  const fiveDaysAgo = new Date();
+  fiveDaysAgo.setDate(today.getDate() - 3);
+  
+  return replacementDate >= fiveDaysAgo;
+};
+
 export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: string; date: string; isCurrentWeek: boolean }[]): DaySchedule[] => {
-  return weekDates.map(({ weekday, date, isCurrentWeek }) => {
-    const dayLessons = apiData
-      .filter(lesson => lesson.dayWeek === weekday)
+  return weekDates.map(({ weekday, date }) => {
+    const originalLessons = apiData.filter(lesson => lesson.dayWeek === weekday && !lesson.replacement);
+    const replacementLessons = apiData.filter(lesson => 
+      lesson.dayWeek === weekday && 
+      lesson.replacement === true && 
+      isReplacementActive(lesson.dateReplacement)
+    );
+    
+    const replacementMap = new Map<number, ApiLesson>();
+    replacementLessons.forEach(replacement => {
+      replacementMap.set(replacement.numPair, replacement);
+    });
+    
+    const dayLessons = originalLessons
       .map(lesson => {
         const pairTime = pairTimes[lesson.numPair];
+        if (!pairTime) return null;
 
+        const replacement = replacementMap.get(lesson.numPair);
+        
         let teacher: string | undefined = undefined;
+        let room: string = 'ауд. -';
+        let subjectName = lesson.nameSubject || `Предмет ${lesson.idSubject}`;
+        let displayTeacher: string | undefined;
+        let displayRoom: string = room;
+        let isReplacementFlag = false;
+        
         if (lesson.lastnameTeacher && lesson.nameTeacher) {
           const nameInitial = lesson.nameTeacher[0] || '';
           const patronymicInitial = lesson.patronymicTeacher ? lesson.patronymicTeacher[0] : '';
           teacher = `${lesson.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
         }
-        let room: string;
-        if (lesson.replacement) {
-          room = lesson.room !== null ? `ауд. ${lesson.room}` : "ауд. -";
-        } else {
-          // обычные занятия
-          if (lesson.room !== undefined && lesson.room !== null)  {
-            room = `ауд. ${lesson.room}`;
-          }
-          else {
-            room = `ауд. -`
+        
+        if (lesson.room !== null && lesson.room !== undefined) {
+          room = `ауд. ${lesson.room}`;
+        }
+        
+        displayTeacher = teacher;
+        displayRoom = room;
+        
+        if (replacement) {
+          if (replacement.idSt === lesson.idSt) {
+            isReplacementFlag = true;
+            subjectName = `${subjectName} (Не будет)`;
+            displayTeacher = teacher;
+            displayRoom = room;
+          } else {
+            isReplacementFlag = true;
+            subjectName = `${replacement.nameSubject || `Предмет ${replacement.idSubject}`} (Замена)`;
+            
+            if (replacement.lastnameTeacher && replacement.nameTeacher) {
+              const nameInitial = replacement.nameTeacher[0] || '';
+              const patronymicInitial = replacement.patronymicTeacher ? replacement.patronymicTeacher[0] : '';
+              displayTeacher = `${replacement.lastnameTeacher} ${nameInitial}.${patronymicInitial ? patronymicInitial + '.' : ''}`.trim();
+            }
+            
+            if (replacement.room !== null && replacement.room !== undefined) {
+              displayRoom = `ауд. ${replacement.room}`;
+            } else {
+              displayRoom = 'ауд. -';
+            }
           }
         }
+        
         const subgroup = lesson.subgroup && lesson.subgroup > 0 ? lesson.subgroup : undefined;
-        const subjectName = lesson.replacement 
-          ? `${lesson.nameSubject || `Предмет ${lesson.idSubject}`} (Замена)`
-          : lesson.nameSubject || `Предмет ${lesson.idSubject}`;
-
+        
         const transformedLesson: TransformedLesson = {
           id: lesson.id,
           startTime: pairTime.start,
           endTime: pairTime.end,
           subject: subjectName,
-          teacher,
-          room,
+          teacher: displayTeacher,
+          room: displayRoom,
           subgroup,
           numPair: lesson.numPair,
           dayWeek: lesson.dayWeek,
           typeWeek: lesson.typeWeek,
-          replacement: lesson.replacement
+          replacement: isReplacementFlag
         };
         return transformedLesson;
       })
       .filter((lesson): lesson is TransformedLesson => lesson !== null);
+    
     const groupedLessons: Lesson[] = [];
     const timeGroups: Record<string, Lesson[]> = {};
     dayLessons.forEach(lesson => {
@@ -303,6 +349,7 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
       }
       timeGroups[timeKey].push(lesson);
     });
+    
     Object.values(timeGroups).forEach(lessonsInSlot => {
       if (lessonsInSlot.length === 1) {
         groupedLessons.push(lessonsInSlot[0]);
@@ -310,7 +357,9 @@ export const transformApiData = (apiData: ApiLesson[], weekDates: { weekday: str
         groupedLessons.push(...lessonsInSlot);
       }
     });
+    
     groupedLessons.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    
     return {
       date: { weekday, date },
       lessons: groupedLessons,
@@ -594,8 +643,6 @@ export const ScheduleSection: React.FC = () => {
   const { user, isStudent } = useUser();
   const userGroupId = isStudent ? (user as Student).idGroup : null;
   const userId = user?.id;
-  const currentWeekNumber = getCurrentWeekNumber();
-  const currentWeekType = getCurrentWeekType();
 
   useEffect(() => {
     const dates = getWeekDates(activeTab);
@@ -654,29 +701,29 @@ export const ScheduleSection: React.FC = () => {
   }, [userGroupId, userId, weekDates]);
 
   useEffect(() => {
-  const fetchMarks = async () => {
-    if (!isStudent || !user || !userId) return;
-    try {
-      const cachedMarks = loadFromCache<StudentMarks[]>(CACHE_KEYS.MARKS, userId, 2 * 60 * 60 * 1000);
-      if (cachedMarks) {
-        setMarks(cachedMarks);
-      }  
-      const marksResponse = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${user.id}`);
-      if (!marksResponse.ok) {
-        throw new Error('Ошибка загрузки оценок');
-      }    
-      const marksData: StudentMarks[] = await marksResponse.json();
-      console.log('Расписание. Загруженные оценки:', marksData);
-      saveToCache(CACHE_KEYS.MARKS, marksData, userId);    
-      if (!cachedMarks || generateHash(cachedMarks) !== generateHash(marksData)) {
-        setMarks(marksData);
+    const fetchMarks = async () => {
+      if (!isStudent || !user || !userId) return;
+      try {
+        const cachedMarks = loadFromCache<StudentMarks[]>(CACHE_KEYS.MARKS, userId, 2 * 60 * 60 * 1000);
+        if (cachedMarks) {
+          setMarks(cachedMarks);
+        }  
+        const marksResponse = await fetch(`${API_BASE_URL}/api/v1/students/marks/id/${user.id}`);
+        if (!marksResponse.ok) {
+          throw new Error('Ошибка загрузки оценок');
+        }    
+        const marksData: StudentMarks[] = await marksResponse.json();
+        console.log('Расписание. Загруженные оценки:', marksData);
+        saveToCache(CACHE_KEYS.MARKS, marksData, userId);    
+        if (!cachedMarks || generateHash(cachedMarks) !== generateHash(marksData)) {
+          setMarks(marksData);
+        }
+      } catch (err) {
+        console.error('Расписание. Ошибка загрузки оценок:', err);
       }
-    } catch (err) {
-      console.error('Расписание. Ошибка загрузки оценок:', err);
-    }
-  };
-  fetchMarks();
-}, [isStudent, user, userId]);
+    };
+    fetchMarks();
+  }, [isStudent, user, userId]);
 
   // функция для принудительного обновления данных
   const refreshData = async () => {
@@ -686,7 +733,7 @@ export const ScheduleSection: React.FC = () => {
     setError(null);
     try {
       clearUserCache(userId);
-            const [scheduleResponse, marksResponse] = await Promise.all([
+      const [scheduleResponse, marksResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/v1/schedule/group/${userGroupId}`),
         isStudent && user ? fetch(`${API_BASE_URL}/api/v1/students/marks/id/${user.id}`) : null
       ]);
@@ -730,10 +777,7 @@ export const ScheduleSection: React.FC = () => {
   };
   const currentDay = getCurrentDay();
   const isCurrentWeek = weekDates.some(day => day.isCurrentWeek);
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return '';
-    return `Обновлено: ${date.toLocaleTimeString()}`;
-  };
+
   if (loading && !scheduleData.length) {
     return (
       <div className="loading">
@@ -819,5 +863,5 @@ export const ScheduleSection: React.FC = () => {
         marks={marks}
       />
     </div>
-);
+  );
 };
