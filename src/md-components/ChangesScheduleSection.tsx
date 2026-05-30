@@ -12,7 +12,8 @@ import type {
   TeacherGroupSubject,
   SchedulePair,
   ReplacementRecord,
-  SubjectOption
+  SubjectOption,
+  ApiScheduleItem
 } from '../services/methodistApiService';
 
 // компонент выпадающего списка с поиском
@@ -128,6 +129,16 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   );
 };
 
+// проверка на актуальность замены
+const isReplacementActive = (dateReplacement: string | null | undefined): boolean => {
+  if (!dateReplacement) return false;
+  const replacementDate = new Date(dateReplacement);
+  const today = new Date();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(today.getDate() - 7);
+  return replacementDate >= oneWeekAgo;
+};
+
 // формирование замен в расписании
 export const ChangesSchedulePage: React.FC = () => {
   const navigate = useNavigate();
@@ -154,6 +165,7 @@ export const ChangesSchedulePage: React.FC = () => {
   const [filteredRooms, setFilteredRooms] = useState<ApiRoom[]>([]);
   const [roomOptions, setRoomOptions] = useState<{ id: number; name: string }[]>([]);
   const [newTeacherSubjects, setNewTeacherSubjects] = useState<{ [key: number]: SubjectOption[] }>({});
+  const [activeReplacements, setActiveReplacements] = useState<Set<string>>(new Set());
 
   // Загрузка предметов для выбранного нового преподавателя
   useEffect(() => {
@@ -274,6 +286,39 @@ export const ChangesSchedulePage: React.FC = () => {
     }
   }, [selectedDate]);
 
+  // загрузка актульных замен для фильтрации
+  useEffect(() => {
+    const loadActiveReplacements = async () => {
+      if (!selectedTeacher || !selectedDate) return;
+      
+      try {
+        const teacherIdStValues = teacherGroups.map(tg => tg.idSt);
+        const allTeacherGroupIds = teacherGroups.flatMap(tg => tg.idGroups);
+        
+        const activeReplacementSet = new Set<string>();
+        
+        for (const groupId of allTeacherGroupIds) {
+          const scheduleByGroup = await methodistApiService.getScheduleByGroup(groupId);
+          
+          scheduleByGroup.forEach(item => {
+            if (item.replacement === true && isReplacementActive(item.dateReplacement)) {
+              const key = `${groupId}-${item.numPair}-${item.typeWeek}-${item.subgroup || 'null'}`;
+              activeReplacementSet.add(key);
+            }
+          });
+        }
+        
+        setActiveReplacements(activeReplacementSet);
+      } catch (error) {
+        console.error('Ошибка загрузки активных замен:', error);
+      }
+    };
+    
+    if (selectedTeacher && selectedDate && teacherGroups.length > 0) {
+      loadActiveReplacements();
+    }
+  }, [selectedTeacher, selectedDate, teacherGroups]);
+
   const getSubjectNameByIdSt = (idSt: number): string => {
     return teacherGroups.find(tg => tg.idSt === idSt)?.subjectName || 'Предмет не найден';
   };
@@ -312,6 +357,11 @@ export const ChangesSchedulePage: React.FC = () => {
       !item.replacement
     );
 
+    filtered = filtered.filter(item => {
+      const key = `${item.idGroup}-${item.numPair}-${item.typeWeek}-${item.subgroup || 'null'}`;
+      return !activeReplacements.has(key);
+    });
+
     if (filterType === 'pairRange') {
       filtered = filtered.filter(item => item.numPair >= startPair && item.numPair <= endPair);
     }
@@ -338,7 +388,7 @@ export const ChangesSchedulePage: React.FC = () => {
     pairsWithDetails.sort((a, b) => a.pairNumber - b.pairNumber);
     setFilteredPairs(pairsWithDetails);
     setLoading(false);
-  }, [selectedTeacher, selectedDate, schedule, groups, teachers, teacherGroups, subjectTeachers, filterType, startPair, endPair]);
+  }, [selectedTeacher, selectedDate, schedule, groups, teachers, teacherGroups, subjectTeachers, filterType, startPair, endPair, activeReplacements]);
 
   // генерация уникального ID для записи замены
   const generateReplacementId = (): string => {
