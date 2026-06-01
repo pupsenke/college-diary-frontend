@@ -1140,10 +1140,22 @@
   background: #f8fafc;
 }
 
-.reports-confirm-btn-modal{
-  border-color: #a70000;
-  color: #a70000;
-  background: #fff0f0;
+.cell-stack { 
+  display: flex; 
+  flex-direction: 
+  column; gap: 
+  4px; 
+
+}
+
+.cell-line  { 
+  color: #1e293b; 
+
+}
+
+.cell-phone { 
+  color: #475569; 
+  font-size: 13px; 
 }
 
 .reports-confirm-btn {
@@ -1359,51 +1371,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Модальное окно для просмотра фото */
-.image-preview-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  max-width: 90vw;
-  max-height: 90vh;
-  z-index: 1000;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  animation: modalAppear 0.2s ease-out;
-}
-
-.image-preview-full {
-  max-width: calc(90vw - 32px);
-  max-height: calc(90vh - 32px);
-  object-fit: contain;
-}
-
-.image-preview-close {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 32px;
-  height: 32px;
-  background: #002FA7;
-  border: none;
-  border-radius: 50%;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.image-preview-close:hover {
-  background: #5986f7;
-  transform: scale(1.1);
-}
-
 /* Пустая строка в таблице */
 .empty-row {
   text-align: center;
@@ -1467,6 +1434,18 @@
 .reports-actions-cell {
   white-space: nowrap;
   width: 1%;
+}
+
+.disabled-table th:nth-child(10), 
+.disabled-table td:nth-child(10) { 
+  width: 10%; 
+  min-width: 140px; 
+}
+
+.orphan-table th:nth-child(10),
+.orphan-table td:nth-child(10) { 
+  width: 10%; 
+  min-width: 140px; 
 }
 
 /* Стили для валидации */

@@ -13,6 +13,7 @@ interface ReportData {
   date: string;
   fileId: number;
   fileName: string;
+  createdAt: string;
 }
 
 interface DisabledStudent {
@@ -42,6 +43,7 @@ interface OrphanStudent {
   birthDate: string | null;
   parentInfo: string | null;
   telephone: string | null;
+  address: string | null;
   registrationAddress: string | null;
   guardian: string | null;
   educationForm: string | null;
@@ -240,7 +242,14 @@ const DisabledStudentsModal: React.FC<DisabledStudentsModalProps> = ({
                     <td>{renderCell(student.status || '—', 'disabled', student.id, 'status')}</td>
                     <td>{renderCell(student.limitationType || '—', 'disabled', student.id, 'limitationType')}</td>
                     <td>{renderCell(student.birthDate || '—', 'disabled', student.id, 'birthDate')}</td>
-                    <td>{renderCell(student.address || '—', 'disabled', student.id, 'address')}</td>
+                    <td>
+                      <div className="cell-stack">
+                        {renderCell(student.address || '—', 'disabled', student.id, 'address')}
+                        <div className="cell-phone">
+                          {renderCell(student.telephone || '—', 'disabled', student.id, 'telephone')}
+                        </div>
+                      </div>
+                    </td>
                     <td>{renderCell(student.educationForm || '—', 'disabled', student.id, 'educationForm')}</td>
                   </tr>
                 ))}
@@ -327,7 +336,16 @@ const OrphanStudentsModal: React.FC<OrphanStudentsModalProps> = ({
                     <td>{renderCell(student.specialty || '—', 'orphan', student.id, 'specialty')}</td>
                     <td>{renderCell(student.birthDate || '—', 'orphan', student.id, 'birthDate')}</td>
                     <td>{renderCell(student.parentInfo || '—', 'orphan', student.id, 'parentInfo')}</td>
-                    <td>{renderCell(student.telephone || '—', 'orphan', student.id, 'telephone')}</td>
+                    <td>
+                      <div className="cell-stack">
+                        <div className="cell-line">
+                          {renderCell(student.address || '—', 'orphan', student.id, 'address')}
+                        </div>
+                        <div className="cell-phone">
+                          {renderCell(student.telephone || '—', 'orphan', student.id, 'telephone')}
+                        </div>
+                      </div>
+                    </td>
                     <td>{renderCell(student.registrationAddress || '—', 'orphan', student.id, 'registrationAddress')}</td>
                     <td>{renderCell(student.guardian || '—', 'orphan', student.id, 'guardian')}</td>
                     <td>{renderCell(student.educationForm || '—', 'orphan', student.id, 'educationForm')}</td>
@@ -388,51 +406,57 @@ export const ReportsSection: React.FC = () => {
         socialApiService.getReportsByType('инвалиды')
       ]);
 
+      const extractDateFromFileName = (fileName: string): string | null => {
+        const match = fileName.match(/(\d{2})_(\d{2})_(\d{4})\.docx$/);
+        if (match) {
+          const [, day, month, year] = match;
+          return `${day}.${month}.${year}`;
+        }
+        return null;
+      };
+
       const formattedReports: ReportData[] = [
-        ...orphansReports.map(report => ({
-          id: report.id,
-          name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' '),
-          type: 'orphans' as const,
-          date: new Date().toLocaleDateString('ru-RU'),
-          fileId: report.id,
-          fileName: report.nameFile
-        })),
-        ...disabledReports.map(report => ({
-          id: report.id,
-          name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' '),
-          type: 'disabled' as const,
-          date: new Date().toLocaleDateString('ru-RU'),
-          fileId: report.id,
-          fileName: report.nameFile
-        }))
+        ...orphansReports.map(report => {
+          const extractedDate = extractDateFromFileName(report.nameFile);
+          const reportDate = extractedDate || new Date().toLocaleDateString('ru-RU');
+          return {
+            id: report.id,
+            name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' ').replace(/\s\d{2}_\d{2}_\d{4}$/, ''),
+            type: 'orphans' as const,
+            date: reportDate,
+            fileId: report.id,
+            fileName: report.nameFile,
+            createdAt: extractedDate 
+              ? new Date(`${extractedDate.split('.').reverse().join('-')}T00:00:00`).toISOString()
+              : new Date().toISOString()
+          };
+        }),
+        ...disabledReports.map(report => {
+          const extractedDate = extractDateFromFileName(report.nameFile);
+          const reportDate = extractedDate || new Date().toLocaleDateString('ru-RU');
+          return {
+            id: report.id,
+            name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' ').replace(/\s\d{2}_\d{2}_\d{4}$/, ''),
+            type: 'disabled' as const,
+            date: reportDate,
+            fileId: report.id,
+            fileName: report.nameFile,
+            createdAt: extractedDate
+              ? new Date(`${extractedDate.split('.').reverse().join('-')}T00:00:00`).toISOString()
+              : new Date().toISOString()
+          };
+        })
       ];
+
+      formattedReports.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
       setReports(formattedReports);
     } catch (error) {
       console.error('Error loading saved reports:', error);
     }
-  }, []);
-
-  const getGroupSpecialty = useCallback(async (groupNumber: number): Promise<string> => {
-    if (groupSpecialtyCache.has(groupNumber)) {
-      return groupSpecialtyCache.get(groupNumber)!;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/groups/stats/curator/88`);
-      if (response.ok) {
-        const groupsData = await response.json();
-        const group = groupsData.find((g: any) => g.groupNumber === groupNumber);
-        if (group && group.specialty) {
-          groupSpecialtyCache.set(groupNumber, group.specialty);
-          return group.specialty;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching group specialty:', error);
-    }
-    return '';
-  }, []);
+  }, []);  
 
   const getStudentDetails = useCallback(async (studentId: number): Promise<{
     telephone?: string;
@@ -444,58 +468,73 @@ export const ReportsSection: React.FC = () => {
     patronymic?: string;
   } | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/students/id/${studentId}`);
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          telephone: data.telephone,
-          address: data.address,
-          educationBasis: data.educationBasis,
-          birthDate: data.birthDate,
-          lastName: data.lastName,
-          firstName: data.name,
-          patronymic: data.patronymic
-        };
-      }
+      const data = await socialApiService.getStudentById(studentId);
+      return {
+        telephone: data.telephone ?? undefined,
+        address: data.address ?? undefined,
+        educationBasis: data.educationBasis ?? undefined,
+        birthDate: data.birthDate ?? undefined,
+        lastName: data.lastName ?? undefined,
+        firstName: data.name ?? undefined,
+        patronymic: data.patronymic ?? undefined,
+      };
     } catch (error) {
       console.error('Error fetching student details:', error);
+      return null;
     }
-    return null;
   }, []);
 
   const loadOrphans = useCallback(async () => {
     try {
       const data = await socialApiService.getOrphans();
-      
+
       const enrichedOrphans = await Promise.all(data.map(async (item) => {
         let fio = item.fio;
         let specialty = item.specialty;
         let telephone = item.telephone;
+        let address: string | null = null;
         let registrationAddress = item.registrationAddress;
         let birthDate = item.birthDate;
         let educationForm = item.educationForm;
 
-        if (!fio || fio === 'null' || fio === '—') {
+        const needsStudentData =
+          !fio || fio === 'null' || fio === '—' ||
+          !telephone || telephone === 'null' || telephone === '—' ||
+          !address || address === 'null' || address === '—' ||
+          !registrationAddress || registrationAddress === 'null' || registrationAddress === '—' ||
+          !birthDate || birthDate === 'null' || birthDate === '—' ||
+          !educationForm || educationForm === 'null' || educationForm === '—';
+
+        if (needsStudentData && item.idStudent) {
           const studentDetails = await getStudentDetails(item.idStudent);
           if (studentDetails) {
-            const lastName = studentDetails.lastName || '';
-            const firstName = studentDetails.firstName || '';
-            const patronymic = studentDetails.patronymic || '';
-            fio = `${lastName} ${firstName} ${patronymic}`.trim();
-            
-            if (!telephone && studentDetails.telephone) telephone = studentDetails.telephone;
-            if (!registrationAddress && studentDetails.address) registrationAddress = studentDetails.address;
-            if ((!birthDate || birthDate === 'null') && studentDetails.birthDate) {
-              birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+            if (!fio || fio === 'null' || fio === '—') {
+              const lastName = studentDetails.lastName || '';
+              const firstName = studentDetails.firstName || '';
+              const patronymic = studentDetails.patronymic || '';
+              fio = `${lastName} ${firstName} ${patronymic}`.trim();
             }
-            if ((!educationForm || educationForm === 'null') && studentDetails.educationBasis) {
-              educationForm = studentDetails.educationBasis;
+            if (!telephone || telephone === 'null' || telephone === '—') {
+              if (studentDetails.telephone) telephone = studentDetails.telephone;
+            }
+            if (!address || address === 'null' || address === '—') {
+              if (studentDetails.address) address = studentDetails.address;
+            }
+            if (!registrationAddress || registrationAddress === 'null' || registrationAddress === '—') {
+            }
+            if (!birthDate || birthDate === 'null' || birthDate === '—') {
+              if (studentDetails.birthDate) {
+                birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+              }
+            }
+            if (!educationForm || educationForm === 'null' || educationForm === '—') {
+              if (studentDetails.educationBasis) educationForm = studentDetails.educationBasis;
             }
           }
         }
 
         if (!specialty || specialty === 'null') {
-          const groupSpecialty = await getGroupSpecialty(item.numberGroup);
+          const groupSpecialty = await socialApiService.getGroupSpecialty(item.numberGroup);
           if (groupSpecialty) specialty = groupSpecialty;
         }
 
@@ -507,11 +546,12 @@ export const ReportsSection: React.FC = () => {
           birthDate: birthDate || '—',
           parentInfo: item.parentInfo || '—',
           telephone: telephone || '—',
+          address: address || '—',
           registrationAddress: registrationAddress || '—',
           guardian: item.guardian || '—',
           educationForm: educationForm || '—',
           idGroup: item.idGroup,
-          idStudent: item.idStudent
+          idStudent: item.idStudent,
         };
       }));
 
@@ -519,13 +559,13 @@ export const ReportsSection: React.FC = () => {
     } catch (error) {
       console.error('Error loading orphans:', error);
     }
-  }, [getStudentDetails, getGroupSpecialty]);
+  }, [getStudentDetails]);
 
   const loadInvalids = useCallback(async () => {
     try {
       const invalidsData = await socialApiService.getInvalids();
       let certificates: CertificateFile[] = [];
-      
+
       try {
         certificates = await socialApiService.getCertificates();
       } catch (certErr) {
@@ -550,27 +590,41 @@ export const ReportsSection: React.FC = () => {
         let birthDate = item.birthDate;
         let educationForm = item.educationForm;
 
-        if (!fio || fio === 'null' || fio === '—') {
+        const needsStudentData =
+          !fio || fio === 'null' || fio === '—' ||
+          !telephone || telephone === 'null' || telephone === '—' ||
+          !address || address === 'null' || address === '—' ||
+          !birthDate || birthDate === 'null' || birthDate === '—' ||
+          !educationForm || educationForm === 'null' || educationForm === '—';
+
+        if (needsStudentData && item.idStudent) {
           const studentDetails = await getStudentDetails(item.idStudent);
           if (studentDetails) {
-            const lastName = studentDetails.lastName || '';
-            const firstName = studentDetails.firstName || '';
-            const patronymic = studentDetails.patronymic || '';
-            fio = `${lastName} ${firstName} ${patronymic}`.trim();
-            
-            if ((!telephone || telephone === 'null') && studentDetails.telephone) telephone = studentDetails.telephone;
-            if ((!address || address === 'null') && studentDetails.address) address = studentDetails.address;
-            if ((!birthDate || birthDate === 'null') && studentDetails.birthDate) {
-              birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+            if (!fio || fio === 'null' || fio === '—') {
+              const lastName = studentDetails.lastName || '';
+              const firstName = studentDetails.firstName || '';
+              const patronymic = studentDetails.patronymic || '';
+              fio = `${lastName} ${firstName} ${patronymic}`.trim();
             }
-            if ((!educationForm || educationForm === 'null') && studentDetails.educationBasis) {
-              educationForm = studentDetails.educationBasis;
+            if (!telephone || telephone === 'null' || telephone === '—') {
+              if (studentDetails.telephone) telephone = studentDetails.telephone;
+            }
+            if (!address || address === 'null' || address === '—') {
+              if (studentDetails.address) address = studentDetails.address;
+            }
+            if (!birthDate || birthDate === 'null' || birthDate === '—') {
+              if (studentDetails.birthDate) {
+                birthDate = socialApiService.formatDateRu(studentDetails.birthDate);
+              }
+            }
+            if (!educationForm || educationForm === 'null' || educationForm === '—') {
+              if (studentDetails.educationBasis) educationForm = studentDetails.educationBasis;
             }
           }
         }
 
         if (!specialty || specialty === 'null') {
-          const groupSpecialty = await getGroupSpecialty(item.numberGroup);
+          const groupSpecialty = await socialApiService.getGroupSpecialty(item.numberGroup);
           if (groupSpecialty) specialty = groupSpecialty;
         }
 
@@ -578,7 +632,7 @@ export const ReportsSection: React.FC = () => {
         const images = studentCerts.map(cert => ({
           fileId: cert.id,
           url: socialApiService.getFileUrl(cert.id),
-          fileName: cert.nameFile || `справка_${cert.id}`
+          fileName: cert.nameFile || `справка_${cert.id}`,
         }));
 
         return {
@@ -588,7 +642,7 @@ export const ReportsSection: React.FC = () => {
           specialty: specialty || '—',
           certificate: {
             fullInfo: item.certificate || '',
-            images: images
+            images: images,
           },
           status: item.status || '—',
           limitationType: item.limitationType || '—',
@@ -597,7 +651,7 @@ export const ReportsSection: React.FC = () => {
           telephone: telephone || '—',
           educationForm: educationForm || '—',
           idGroup: item.idGroup,
-          idStudent: item.idStudent
+          idStudent: item.idStudent,
         };
       }));
 
@@ -606,7 +660,7 @@ export const ReportsSection: React.FC = () => {
       console.error('Error loading invalids:', error);
       setDisabledStudents([]);
     }
-  }, [getStudentDetails, getGroupSpecialty]);
+  }, [getStudentDetails]);
 
   const loadAllData = useCallback(async () => {
     setLoadingStudents(true);
@@ -637,13 +691,9 @@ export const ReportsSection: React.FC = () => {
 
     result.sort((a, b) => {
       if (sortBy === 'date') {
-        const parseDate = (d: string) => {
-          const [day, month, year] = d.split('.');
-          return new Date(`${year}-${month}-${day}`).getTime();
-        };
         return sortOrder === 'asc' 
-          ? parseDate(a.date) - parseDate(b.date)
-          : parseDate(b.date) - parseDate(a.date);
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
       return sortOrder === 'asc' 
         ? a.name.localeCompare(b.name)
@@ -679,7 +729,6 @@ export const ReportsSection: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     socialApiService.invalidateAllReportsCache();
-    groupSpecialtyCache.clear();
     await loadAllData();
     setTimeout(() => setRefreshing(false), 500);
   };
@@ -745,7 +794,12 @@ export const ReportsSection: React.FC = () => {
           specialty: s.specialty || '',
           birthDate: s.birthDate || '',
           parentInfo: s.parentInfo || '',
-          telephone: s.telephone || '',
+          addressAndPhone: (() => {
+            const parts: string[] = [];
+            if (s.address && s.address !== '—') parts.push(s.address);
+            if (s.telephone && s.telephone !== '—') parts.push(s.telephone);
+            return parts.join(', ');
+          })(),
           registrationAddress: s.registrationAddress || '',
           guardian: s.guardian || '',
           educationForm: s.educationForm || ''
@@ -765,8 +819,12 @@ export const ReportsSection: React.FC = () => {
           status: s.status || '',
           limitationType: s.limitationType || '',
           birthDate: s.birthDate || '',
-          address: s.address || '',
-          telephone: s.telephone || '',
+          addressAndPhone: (() => {
+            const parts: string[] = [];
+            if (s.address && s.address !== '—') parts.push(s.address);
+            if (s.telephone && s.telephone !== '—') parts.push(s.telephone);
+            return parts.join(', ');
+          })(),
           educationForm: s.educationForm || ''
         }));
 
@@ -782,7 +840,7 @@ export const ReportsSection: React.FC = () => {
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
 
-      const fileName = `${customName || `Информация_${reportType.title}`}_${currentDateStr.replace(/\./g, '_')}.docx`;
+      const fileName = `${customName || `Информация_${reportType.title}`}.docx`;
       
       const uploadResult = await socialApiService.uploadReport(
         new File([out], fileName, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
@@ -791,13 +849,15 @@ export const ReportsSection: React.FC = () => {
       );
 
       if (uploadResult.success) {
+        const now = new Date();
         const newReport: ReportData = {
           id: uploadResult.fileId || Date.now(),
           name: customName || `Информация ${reportType.title}`,
           type: type,
-          date: currentDateStr,
+          date: now.toLocaleDateString('ru-RU'),
           fileId: uploadResult.fileId || Date.now(),
-          fileName: fileName
+          fileName: fileName,
+          createdAt: now.toISOString()
         };
         setReports(prev => [newReport, ...prev]);
       }
@@ -877,36 +937,49 @@ export const ReportsSection: React.FC = () => {
         const student = disabledStudents.find(s => s.id === editingInfo.id);
         if (!student) return;
 
-        let updateData: Partial<DisabledStudentApi> = {};
+        const updateData: Partial<DisabledStudentApi> = {
+          id: editingInfo.id,
+          fio: student.fio === '—' ? undefined : student.fio,
+          numberGroup: student.numberGroup,
+          specialty: student.specialty === '—' ? undefined : student.specialty,
+          certificate: student.certificate.fullInfo || undefined,
+          status: student.status === '—' ? undefined : student.status,
+          limitationType: student.limitationType === '—' ? undefined : student.limitationType,
+          birthDate: student.birthDate === '—' ? undefined : socialApiService.parseDateRuToIso(student.birthDate),
+          address: student.address === '—' ? undefined : student.address,
+          telephone: student.telephone === '—' ? undefined : student.telephone,
+          educationForm: student.educationForm === '—' ? undefined : student.educationForm,
+          idGroup: student.idGroup,
+          idStudent: student.idStudent,
+        };
 
         if (editingInfo.field === 'certificate') {
-          updateData = { certificate: editingValue };
+          updateData.certificate = editingValue || undefined;
         } else if (editingInfo.field === 'status') {
-          updateData = { status: editingValue };
+          updateData.status = editingValue || undefined;
         } else if (editingInfo.field === 'limitationType') {
-          updateData = { limitationType: editingValue };
+          updateData.limitationType = editingValue || undefined;
         } else if (editingInfo.field === 'address') {
-          updateData = { address: editingValue };
+          updateData.address = editingValue || undefined;
         } else if (editingInfo.field === 'educationForm') {
-          updateData = { educationForm: editingValue };
+          updateData.educationForm = editingValue || undefined;
         } else if (editingInfo.field === 'fio') {
-          updateData = { fio: editingValue };
+          updateData.fio = editingValue || undefined;
         } else if (editingInfo.field === 'numberGroup') {
-          updateData = { numberGroup: parseInt(editingValue) || student.numberGroup };
+          updateData.numberGroup = parseInt(editingValue) || student.numberGroup;
         } else if (editingInfo.field === 'specialty') {
-          updateData = { specialty: editingValue };
+          updateData.specialty = editingValue || undefined;
         } else if (editingInfo.field === 'birthDate') {
-          const isoDate = socialApiService.parseDateRuToIso(editingValue);
-          updateData = { birthDate: isoDate };
+          updateData.birthDate = socialApiService.parseDateRuToIso(editingValue);
         } else if (editingInfo.field === 'telephone') {
-          updateData = { telephone: editingValue };
+          updateData.telephone = editingValue || undefined;
         }
 
         await socialApiService.updateInvalid(editingInfo.id, updateData);
 
         const displayValue = editingInfo.field === 'birthDate'
           ? socialApiService.formatDateRu(socialApiService.parseDateRuToIso(editingValue))
-          : editingValue;
+          : editingValue || '—';
 
         setDisabledStudents(prev => prev.map(s =>
           s.id === editingInfo.id
@@ -916,45 +989,68 @@ export const ReportsSection: React.FC = () => {
             : s
         ));
       } else {
-        const student = orphanStudents.find(s => s.id === editingInfo.id);
-        if (!student) return;
+    const student = orphanStudents.find(s => s.id === editingInfo.id);
+    if (!student) return;
 
-        let updateData: Partial<OrphanStudentApi> = {};
+    if (editingInfo.field === 'address' || editingInfo.field === 'telephone') {
+      await socialApiService.updateStudent(student.idStudent, {
+        [editingInfo.field]: editingValue || undefined
+      });
 
-        if (editingInfo.field === 'guardian') {
-          updateData = { guardian: editingValue };
-        } else if (editingInfo.field === 'telephone') {
-          updateData = { telephone: editingValue };
-        } else if (editingInfo.field === 'registrationAddress') {
-          updateData = { registrationAddress: editingValue };
-        } else if (editingInfo.field === 'parentInfo') {
-          updateData = { parentInfo: editingValue };
-        } else if (editingInfo.field === 'educationForm') {
-          updateData = { educationForm: editingValue };
-        } else if (editingInfo.field === 'fio') {
-          updateData = { fio: editingValue };
-        } else if (editingInfo.field === 'numberGroup') {
-          updateData = { numberGroup: parseInt(editingValue) || student.numberGroup };
-        } else if (editingInfo.field === 'specialty') {
-          updateData = { specialty: editingValue };
-        } else if (editingInfo.field === 'birthDate') {
-          const isoDate = socialApiService.parseDateRuToIso(editingValue);
-          updateData = { birthDate: isoDate };
-        }
+      const displayValue = editingValue || '—';
+      setOrphanStudents(prev => prev.map(s =>
+        s.id === editingInfo.id
+          ? { ...s, [editingInfo.field]: displayValue }
+          : s
+      ));
+    } else {
+      const updateData: Partial<OrphanStudentApi> = {
+        id: editingInfo.id,
+        fio: student.fio === '—' ? undefined : student.fio,
+        numberGroup: student.numberGroup,
+        specialty: student.specialty === '—' ? undefined : student.specialty,
+        birthDate: student.birthDate === '—' ? undefined : socialApiService.parseDateRuToIso(student.birthDate),
+        parentInfo: student.parentInfo === '—' ? undefined : student.parentInfo,
+        telephone: student.telephone === '—' ? undefined : student.telephone,
+        registrationAddress: student.registrationAddress === '—' ? undefined : student.registrationAddress,
+        guardian: student.guardian === '—' ? undefined : student.guardian,
+        educationForm: student.educationForm === '—' ? undefined : student.educationForm,
+        idGroup: student.idGroup,
+        idStudent: student.idStudent,
+      };
 
-        await socialApiService.updateOrphan(editingInfo.id, updateData);
-
-        const displayValue = editingInfo.field === 'birthDate'
-          ? socialApiService.formatDateRu(socialApiService.parseDateRuToIso(editingValue))
-          : editingValue;
-
-        setOrphanStudents(prev => prev.map(s =>
-          s.id === editingInfo.id
-            ? { ...s, [editingInfo.field]: displayValue }
-            : s
-        ));
+      if (editingInfo.field === 'guardian') {
+        updateData.guardian = editingValue || undefined;
+      } else if (editingInfo.field === 'registrationAddress') {
+        updateData.registrationAddress = editingValue || undefined;
+      } else if (editingInfo.field === 'parentInfo') {
+        updateData.parentInfo = editingValue || undefined;
+      } else if (editingInfo.field === 'educationForm') {
+        updateData.educationForm = editingValue || undefined;
+      } else if (editingInfo.field === 'fio') {
+        updateData.fio = editingValue || undefined;
+      } else if (editingInfo.field === 'numberGroup') {
+        updateData.numberGroup = parseInt(editingValue) || student.numberGroup;
+      } else if (editingInfo.field === 'specialty') {
+        updateData.specialty = editingValue || undefined;
+      } else if (editingInfo.field === 'birthDate') {
+        updateData.birthDate = socialApiService.parseDateRuToIso(editingValue);
       }
-    } catch (error) {
+
+      await socialApiService.updateOrphan(editingInfo.id, updateData);
+
+      const displayValue = editingInfo.field === 'birthDate'
+        ? socialApiService.formatDateRu(socialApiService.parseDateRuToIso(editingValue))
+        : editingValue || '—';
+
+      setOrphanStudents(prev => prev.map(s =>
+        s.id === editingInfo.id
+          ? { ...s, [editingInfo.field]: displayValue }
+          : s
+      ));
+      }
+    }
+  } catch (error) {
       console.error('Error saving edit:', error);
       alert('Ошибка при сохранении изменений');
     }

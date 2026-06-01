@@ -192,12 +192,13 @@ export interface OrphanStudentApi {
   birthDate: string | null;
   parentInfo: string | null;
   telephone: string | null;
+  address: string | null;
   registrationAddress: string | null;
   guardian: string | null;
   educationForm: string | null;
   idGroup: number;
   idStudent: number;
-  residenceAddressPhone?: string; // для PATCH, если API принимает
+  residenceAddressPhone?: string;
 }
 
 export interface DisabledStudentApi {
@@ -567,7 +568,7 @@ export const socialApiService = {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/orphans/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...data }),
+        body: JSON.stringify({ ...data, id }),
       });
 
       if (!response.ok) {
@@ -581,6 +582,26 @@ export const socialApiService = {
       console.error('Error updating orphan:', error);
       throw error;
     }
+  },
+
+  async getGroupSpecialty(groupNumber: number): Promise<string> {
+    const cacheKey = `group_specialty_${groupNumber}`;
+    const cached = cacheService.get<string>(cacheKey, { ttl: CACHE_TTL.GROUP_DATA });
+    if (cached) return cached;
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/groups/stats/curator/88`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const groupsData: any[] = await response.json();
+      const group = groupsData.find((g: any) => g.groupNumber === groupNumber);
+      if (group?.specialty) {
+        cacheService.set(cacheKey, group.specialty, { ttl: CACHE_TTL.GROUP_DATA });
+        return group.specialty;
+      }
+    } catch (error) {
+      console.error('Error fetching group specialty:', error);
+    }
+    return '';
   },
 
   async getInvalids(): Promise<DisabledStudentApi[]> {
@@ -614,7 +635,7 @@ export const socialApiService = {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/invalids/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...data }),
+        body: JSON.stringify({ ...data, id }),
       });
 
       if (!response.ok) {
@@ -627,6 +648,34 @@ export const socialApiService = {
     } catch (error) {
       console.error('Error updating invalid:', error);
       throw error;
+    }
+  },
+
+  async updateStudent(studentId: number, data: Partial<StudentDetail>): Promise<{ success: boolean }> {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, id: studentId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка обновления данных студента: ${response.status} - ${errorText}`);
+      }
+
+      this.invalidateStudentCache(studentId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating student:', error);
+      throw error;
+    }
+  },
+
+  invalidateStudentCache(studentId?: number): void {
+    if (studentId) {
+      cacheService.remove(`student_${studentId}`);
+      cacheService.remove(`student_details_${studentId}`);
     }
   },
 

@@ -642,31 +642,42 @@ export const CuratorGroupDetails: React.FC<CuratorGroupDetailsProps> = ({
 
       <div className="curator-details-monitor-section">
         <div className="curator-details-monitor-rows">
-          {monitorsList.map((monitor, idx) => (
-            <div key={idx} className="curator-details-monitor-row">
-              <div 
-                className="curator-details-monitor-name clickable" 
-                onClick={() => setShowMonitorModal(true)}
-                title="Нажмите для смены старосты"
-              >
-                {monitor}
-              </div>
-              <div className="curator-details-monitor-contact-item">
-                <div className="monitor-contact-details">
-                  {group.monitor.phones[idx] && (
-                    <span className="meta-phone">
-                      <span className="meta-label">Тел.:</span> {group.monitor.phones[idx]}
-                    </span>
-                  )}
-                  {group.monitor.emails[idx] && (
-                    <span className="meta-email">
-                      <span className="meta-label">Email:</span> {group.monitor.emails[idx]}
-                    </span>
-                  )}
+          {monitorsList.length > 0 && monitorsList[0] !== '' && monitorsList[0] !== '—' ? (
+            monitorsList.map((monitor, idx) => (
+              <div key={idx} className="curator-details-monitor-row">
+                <div 
+                  className="curator-details-monitor-name clickable" 
+                  onClick={() => setShowMonitorModal(true)}
+                  title="Нажмите для смены старосты"
+                >
+                  {monitor}
+                </div>
+                <div className="curator-details-monitor-contact-item">
+                  <div className="monitor-contact-details">
+                    {group.monitor.phones[idx] && group.monitor.phones[idx] !== '—' && (
+                      <span className="meta-phone">
+                        <span className="meta-label">Тел.:</span> {group.monitor.phones[idx]}
+                      </span>
+                    )}
+                    {group.monitor.emails[idx] && group.monitor.emails[idx] !== '—' && (
+                      <span className="meta-email">
+                        <span className="meta-label">Email:</span> {group.monitor.emails[idx]}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div 
+              className="curator-details-monitor-row curator-monitor-empty"
+              onClick={() => setShowMonitorModal(true)}
+            >
+              <div className="curator-details-monitor-name clickable empty-monitor">
+                <span>Назначить старосту</span>
+              </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
