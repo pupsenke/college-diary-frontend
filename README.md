@@ -233,7 +233,7 @@ src/
 ├── md-components/      # Компоненты методиста
 ├── st-components/      # Компоненты студента
 ├── th-components/      # Компоненты преподавателя
-├── social-components/      # Компоненты социального педагога
+├── social-components/  # Компоненты социального педагога
 ├── pages/              # Страницы приложения
 ├── services/           # API сервисы
 ├── context/            # React Context
