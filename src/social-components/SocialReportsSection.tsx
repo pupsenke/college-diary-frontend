@@ -406,46 +406,39 @@ export const ReportsSection: React.FC = () => {
         socialApiService.getReportsByType('инвалиды')
       ]);
 
-      const extractDateFromFileName = (fileName: string): string | null => {
-        const match = fileName.match(/(\d{2})_(\d{2})_(\d{4})\.docx$/);
+      const extractDateFromFileName = (fileName: string): { dateStr: string | null; isoDate: string } => {
+        const match = fileName.match(/_(\d{2})_(\d{2})_(\d{4})\.docx$/);
         if (match) {
           const [, day, month, year] = match;
-          return `${day}.${month}.${year}`;
+          return {
+            dateStr: `${day}.${month}.${year}`,
+            isoDate: `${year}-${month}-${day}T00:00:00`
+          };
         }
-        return null;
+        return { dateStr: null, isoDate: new Date(0).toISOString() };
+      };
+
+      const formatReport = (report: CertificateFile, type: 'orphans' | 'disabled'): ReportData => {
+        const { dateStr, isoDate } = extractDateFromFileName(report.nameFile);
+        
+        const cleanName = report.nameFile
+          .replace(/\.docx$/, '')
+          .replace(/_\d{2}_\d{2}_\d{4}$/, '');
+
+        return {
+          id: report.id,
+          name: cleanName,
+          type,
+          date: dateStr || 'Неизвестно',
+          fileId: report.id,
+          fileName: report.nameFile,
+          createdAt: isoDate
+        };
       };
 
       const formattedReports: ReportData[] = [
-        ...orphansReports.map(report => {
-          const extractedDate = extractDateFromFileName(report.nameFile);
-          const reportDate = extractedDate || new Date().toLocaleDateString('ru-RU');
-          return {
-            id: report.id,
-            name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' ').replace(/\s\d{2}_\d{2}_\d{4}$/, ''),
-            type: 'orphans' as const,
-            date: reportDate,
-            fileId: report.id,
-            fileName: report.nameFile,
-            createdAt: extractedDate 
-              ? new Date(`${extractedDate.split('.').reverse().join('-')}T00:00:00`).toISOString()
-              : new Date().toISOString()
-          };
-        }),
-        ...disabledReports.map(report => {
-          const extractedDate = extractDateFromFileName(report.nameFile);
-          const reportDate = extractedDate || new Date().toLocaleDateString('ru-RU');
-          return {
-            id: report.id,
-            name: report.nameFile.replace(/\.docx$/, '').replace(/_/g, ' ').replace(/\s\d{2}_\d{2}_\d{4}$/, ''),
-            type: 'disabled' as const,
-            date: reportDate,
-            fileId: report.id,
-            fileName: report.nameFile,
-            createdAt: extractedDate
-              ? new Date(`${extractedDate.split('.').reverse().join('-')}T00:00:00`).toISOString()
-              : new Date().toISOString()
-          };
-        })
+        ...orphansReports.map(report => formatReport(report, 'orphans')),
+        ...disabledReports.map(report => formatReport(report, 'disabled'))
       ];
 
       formattedReports.sort((a, b) => 
@@ -456,7 +449,7 @@ export const ReportsSection: React.FC = () => {
     } catch (error) {
       console.error('Error loading saved reports:', error);
     }
-  }, []);  
+  }, []);
 
   const getStudentDetails = useCallback(async (studentId: number): Promise<{
     telephone?: string;
@@ -785,6 +778,11 @@ export const ReportsSection: React.FC = () => {
         month: 'long',
         year: 'numeric'
       });
+      
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const year = currentDate.getFullYear();
+      const dateForFileName = `${day}_${month}_${year}`;
 
       if (type === 'orphans') {
         const students = orphanStudents.map((s, index) => ({
@@ -840,7 +838,8 @@ export const ReportsSection: React.FC = () => {
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
 
-      const fileName = `${customName || `Информация_${reportType.title}`}.docx`;
+      const baseName = customName || `Информация_${reportType.title}`;
+      const fileName = `${baseName}_${dateForFileName}.docx`;
       
       const uploadResult = await socialApiService.uploadReport(
         new File([out], fileName, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
@@ -849,15 +848,14 @@ export const ReportsSection: React.FC = () => {
       );
 
       if (uploadResult.success) {
-        const now = new Date();
         const newReport: ReportData = {
           id: uploadResult.fileId || Date.now(),
-          name: customName || `Информация ${reportType.title}`,
+          name: baseName,
           type: type,
-          date: now.toLocaleDateString('ru-RU'),
+          date: `${day}.${month}.${year}`,
           fileId: uploadResult.fileId || Date.now(),
           fileName: fileName,
-          createdAt: now.toISOString()
+          createdAt: `${year}-${month}-${day}T00:00:00`
         };
         setReports(prev => [newReport, ...prev]);
       }

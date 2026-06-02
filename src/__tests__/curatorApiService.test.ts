@@ -44,7 +44,8 @@ describe('teacherApiService curator methods', () => {
   describe('getGroupLeader', () => {
     it('возвращает данные старосты группы', async () => {
       const mockLeader = [
-        { fio: 'Иванов Иван Иванович', telephone: '+7(999)123-45-67', email: 'ivanov@example.com' }
+        { fio: 'Иванов Иван Иванович', telephone: '+7(999)123-45-67', 
+          email: 'ivanov@example.com' }
       ];
 
       (fetch as jest.Mock).mockResolvedValue({
