@@ -233,7 +233,7 @@
 ```bash
 # Клонирование репозитория
 git clone <repository-url>
-cd scollege-diary-frontend
+cd college-diary-frontend
 
 # Установка зависимостей
 npm install
