@@ -4,6 +4,7 @@ import { DisciplinesSection } from '../th-components/DisciplinesSection';
 import { GroupsSection } from '../th-components/GroupsSection';
 import { PersonalCabinet } from '../th-components/PersonalCabinet';
 import { ScheduleSection } from '../th-components/ScheduleSection';
+import { CuratorSection } from '../th-components/CuratorSection';
 import { useUser } from '../context/UserContext';
 import { getNextLesson, getScheduleData, Lesson } from '../utils/scheduleUtils';
 import './TeacherStyle.css';
@@ -14,7 +15,6 @@ export const TeacherPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('personal');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>();
-  const [nextLesson, setNextLesson] = useState<Lesson | null>(null);
   const { user } = useUser();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,7 +22,7 @@ export const TeacherPage: React.FC = () => {
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['personal', 'disciplines', 'groups', 'schedule'].includes(tab)) {
+    if (tab && ['personal', 'disciplines', 'groups', 'schedule', 'curator'].includes(tab)) {
       setActiveTab(tab);
     } else {
       setActiveTab('personal');
@@ -58,19 +58,6 @@ export const TeacherPage: React.FC = () => {
       console.log('User data in TeacherPage:', user);
     }
   }, [user, navigate]);
-
-  // Загружаем следующую пару при монтировании компонента
-  useEffect(() => {
-    const loadNextLesson = () => {
-      const scheduleData = getScheduleData();
-      const next = getNextLesson(scheduleData.upper);
-      setNextLesson(next);
-    };
-
-    loadNextLesson();
-    const interval = setInterval(loadNextLesson, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Функция для перехода к дисциплинам с выбранной дисциплиной
   const handleNavigateToDisciplines = (disciplineName?: string) => {
@@ -125,6 +112,8 @@ export const TeacherPage: React.FC = () => {
             onDisciplineSelect={handleDisciplineSelect}
           />
         );
+      case 'curator':
+        return <CuratorSection />;
       case 'schedule':
         return <ScheduleSection />;
       default:
@@ -146,6 +135,8 @@ export const TeacherPage: React.FC = () => {
         return <img src="th-icons/groups_icon.svg" alt="Группы" className="nav-svg-icon" />;
       case 'personal':
         return <img src="th-icons/paccount_icon.svg" alt="Личный кабинет" className="nav-svg-icon" />;
+      case 'curator':
+        return <img src="social-icons/responsible_icon.svg" alt="Кураторство" className="nav-svg-icon" />;
       case 'schedule':
         return <img src="th-icons/schedule_icon.svg" alt="Расписание" className="nav-svg-icon" />;
       default:
@@ -161,6 +152,8 @@ export const TeacherPage: React.FC = () => {
         return 'Группы';
       case 'personal':
         return 'Личный кабинет';
+      case 'curator':
+        return 'Кураторство';
       case 'schedule':
         return 'Расписание';
       default:
@@ -176,6 +169,8 @@ export const TeacherPage: React.FC = () => {
         return 'Мои учебные группы';
       case 'personal':
         return 'Управление персональными данными';
+      case 'curator':
+        return 'Управление кураторскими группами и социальный портрет';
       case 'schedule':
         return 'Просмотр расписания занятий';
       default:
@@ -233,7 +228,7 @@ export const TeacherPage: React.FC = () => {
             </div>
 
             <nav className="sidebar-nav">
-              {['personal', 'disciplines', 'groups', 'schedule'].map((tab) => (
+              {['personal', 'disciplines', 'groups', 'curator', 'schedule'].map((tab) => (
                 <button
                   key={tab}
                   className={`nav-item ${activeTab === tab ? 'active' : ''}`}
@@ -246,23 +241,6 @@ export const TeacherPage: React.FC = () => {
                 </button>
               ))}
             </nav>
-
-            <div className="sidebar-footer">
-              <h4 className="next-class-title">Следующая пара:</h4>
-              <div className="next-class-sidebar">
-                <div className="next-class-info">
-                  {nextLesson ? (
-                    <>
-                      <div className="next-class-time">{nextLesson.startTime} - {nextLesson.endTime}</div>
-                      <div className="next-class-subject">{nextLesson.subject}</div>
-                      <div className="next-class-group">{nextLesson.group}</div>
-                    </>
-                  ) : (
-                    <div className="no-next-class">Пар на сегодня нет</div>
-                  )}
-                </div>
-              </div>
-            </div>
           </aside>
 
           <main className="content-area">

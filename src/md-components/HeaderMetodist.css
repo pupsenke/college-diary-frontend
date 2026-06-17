@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+* {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.h-header-main {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  margin-bottom: 18px;
+  min-height: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.h-image {
+  width: 50px;
+  height: 50px;
+}
+
+.h-header-logo-area {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.h-logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.h-logo-title {
+  color: #002FA7;
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 0px;
+  margin-left: 8px;
+}
+
+.h-logo-subtitle {
+  color: #002FA7;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 0px;
+  margin-left: 8px;
+}
+
+.h-header-profile-area {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.h-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #d3dbff5d;
+  border-radius: 16px;
+  padding: 8px 18px;
+  border: 1.5px solid rgba(99, 153, 254, 0.3);
+  box-shadow: 0 4px 8px rgba(85, 105, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.h-profile-card:hover {
+  background: #c5d0ff85;
+  box-shadow: 0 6px 12px rgba(85, 105, 255, 0.2);
+}
+
+.h-profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 8px;
+}
+
+.h-profile-name {
+  font-size: 13px;
+  color: #002FA7;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.h-profile-info .h-profile-role {
+  font-size: 12px;
+  color: #002FA7;
+  font-weight: 300;
+}
+
+.h-profile-arrow {
+  font-size: 12px;
+  color: #547ced;
+  transition: transform 0.3s ease;
+  margin-left: 5px;
+}
+
+.h-profile-arrow.h-rotated {
+  transform: rotate(180deg);
+}
+
+/* выпадающее меню - тёмная тема (по умолчанию) */
+.h-profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  z-index: 4;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  animation: h-fadeIn 0.2s ease-out;
+}
+
+@keyframes h-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.h-dropdown-user-info {
+  padding: 16px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.h-dropdown-user-info .h-user-gradient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+  opacity: 1;
+  z-index: -1;
+}
+
+.h-dropdown-fullname {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.h-dropdown-position {
+  font-size: 15px;
+  font-weight: 400;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.h-dropdown-group {
+  display: block;
+  font-size: 13px;
+  color: #d6e1ff;
+  font-weight: 400;
+}
+
+.h-dropdown-menu {
+  padding: 8px 0;
+}
+
+.h-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #4664b5;
+  text-align: left;
+  font-weight: 400;
+}
+
+.h-dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+  padding-left: 22px;
+}
+
+.h-dropdown-item.h-logout {
+  color: #e53e3e;
+  margin-top: 8px;
+}
+
+.h-dropdown-item.h-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+.h-dropdown-divider {
+  height: 1px;
+  background: rgba(102, 126, 234, 0.1);
+  margin: 8px 0;
+}
+
+/* ========== СВЕТЛАЯ ТЕМА ========== */
+body.h-theme-light .h-profile-dropdown {
+  background: white;
+  border: 1px solid rgba(0, 47, 167, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+body.h-theme-light .h-dropdown-user-info .h-user-gradient-bg {
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+}
+
+body.h-theme-light .h-dropdown-fullname,
+body.h-theme-light .h-dropdown-position {
+  color: #0d2e82;
+}
+
+body.h-theme-light .h-dropdown-group {
+  color: #002FA7;
+}
+
+body.h-theme-light .h-dropdown-item {
+  color: #4664b5;
+}
+
+body.h-theme-light .h-dropdown-item:hover {
+  background: rgba(0, 47, 167, 0.08);
+}
+
+body.h-theme-light .h-dropdown-item.h-logout {
+  color: #e53e3e;
+}
+
+body.h-theme-light .h-dropdown-item.h-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+body.h-theme-light .h-dropdown-divider {
+  background: rgba(0, 47, 167, 0.1);
+}
+
+body.h-theme-dark .h-profile-dropdown {
+  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.h-theme-dark .h-dropdown-user-info .h-user-gradient-bg {
+  background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
+}
+
+body.h-theme-dark .h-dropdown-fullname,
+body.h-theme-dark .h-dropdown-position {
+  color: #ffffff;
+}
+
+body.h-theme-dark .h-dropdown-group {
+  color: #d6e1ff;
+}
+
+body.h-theme-dark .h-dropdown-item {
+  color: #4664b5;
+}
+
+body.h-theme-dark .h-dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+body.h-theme-dark .h-dropdown-item.h-logout {
+  color: #e53e3e;
+}
+
+body.h-theme-dark .h-dropdown-item.h-logout:hover {
+  background: rgba(229, 62, 62, 0.08);
+}
+
+body.h-theme-dark .h-dropdown-divider {
+  background: rgba(102, 126, 234, 0.1);
+}

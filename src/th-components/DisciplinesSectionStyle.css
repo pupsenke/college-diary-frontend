@@ -1,10 +1,12 @@
 .ds-disciplines-section {
   padding: 0;
   background: transparent;
-  min-height: 500px;
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  overflow-y: hidden;
+  height: auto;
+  min-height: auto
 }
 
 .ds-disciplines-header {
@@ -397,33 +399,39 @@
   border-left: 4px solid #002FA7;
 }
 
-/* Кнопка сброса фильтра в DisciplinesSection */
+/* Кнопка сброса фильтра */
 .ds-clear-discipline {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
-  border: 2px solid rgba(66, 92, 177, 0.508);
-  color: white;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 16px;
   cursor: pointer;
-  font-size: 14px;
   font-weight: 600;
+  font-size: 14px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
   max-width: 200px;
   min-width: 200px;
+  justify-content: center;
 }
 
 .ds-clear-discipline:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  color: #002FA7;
 }
 
 .ds-clear-discipline:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 47, 167, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
-
 .pc-refresh-btn {
   position: relative;
   overflow: hidden;

@@ -1,0 +1,545 @@
+.cs-container {
+  padding: 24px 0px;
+  max-width: 1400px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+/* стили для блока фильтров */
+.cs-filters {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+  overflow: visible;
+  position: relative; 
+  z-index: 1; 
+}
+
+.cs-actions-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+
+.cs-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  overflow: visible;
+}
+
+.cs-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  position: relative; 
+  overflow: visible; 
+}
+
+.cs-filter-group label {
+  font-weight: 500;
+  color: #444;
+  font-size: 14px;
+}
+
+.cs-input, .cs-select {
+  padding: 10px 12px;
+  border: 1px solid #e0e5ec;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  background: white;
+}
+
+.cs-input:focus, .cs-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.cs-teacher-search {
+  display: flex;
+  gap: 8px;
+}
+
+.cs-teacher-search .cs-input {
+  flex: 1;
+}
+
+.cs-time-range, .cs-pair-range {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-time-range .cs-input {
+  width: 120px;
+}
+
+.cs-pair-range .cs-select {
+  width: 100px;
+}
+
+.cs-schedule-list {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-x: visible;
+  overflow-y: visible;
+  position: relative;
+  width: 120%;
+  margin-left: -0,5%; 
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+
+/* Для таблицы внутри */
+.cs-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  font-size: 13px;
+  padding: 10px;
+}
+
+.cs-table th {
+  background: #f8faff;
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #002FA7;
+  border-bottom: 2px solid #e0e5ec;
+  font-size: 13px;
+  white-space: nowrap;
+  position: relative; /* Добавлено */
+}
+
+.cs-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #eef2f6;
+  vertical-align: middle;
+  position: relative; 
+  overflow: visible;
+}
+
+.cs-pair-row:hover {
+  background: #fafbff;
+}
+
+.cs-teacher-name {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.cs-subject-cell {
+  max-width: 300px;
+  white-space: normal;
+  word-wrap: break-word;
+  font-size: 12px; 
+  line-height: 1.4;
+}
+
+.cs-change-cell {
+  min-width: 200px;
+  position: relative;
+  overflow: visible; 
+}
+
+.cs-change-select, .cs-room-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e0e5ec;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.cs-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.cs-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.cs-btn-save {
+  background: #002FA7;
+  color: white;
+}
+
+.cs-btn-save:hover {
+  background: #001f7a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 47, 167, 0.2);
+}
+
+.cs-btn-notwill {
+  background: #f2f6fe;
+  color: #002FA7;
+}
+
+.cs-btn-notwill:hover {
+  background: #f2f6fe;
+}
+
+.cs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.cs-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0;
+}
+
+.cs-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cs-btn-view, .cs-btn-add {
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 450;
+}
+
+.cs-btn-view:hover, .cs-btn-add:hover {
+  background: #f0f3ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 47, 167, 0.1);
+}
+
+.cs-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  color: #888;
+  font-size: 16px;
+}
+
+.cs-loading {
+  text-align: center;
+  padding: 40px;
+  color: white;
+  font-size: 16px;
+}
+
+/* стили для страницы добавления пары */
+.add-pair-container {
+  padding: 24px 0px;
+  max-width: 1400px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+/* верхний блок */
+.add-pair-header-block {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible; 
+}
+
+.add-pair-date-info {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.date-info-input {
+  padding: 8px 12px;
+  border: 1px solid #e0e5ec;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  min-width: 150px;
+  margin-left: 5px;
+}
+
+.date-info-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.add-pair-nav {
+  display: flex;
+  align-items: center;
+}
+
+/* нижний блок */
+.add-pair-form-block {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible; 
+}
+
+.add-pair-form {
+  padding: 0;
+  overflow: visible;
+}
+
+.form-section {
+  margin-bottom: 32px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  overflow: visible; 
+}
+
+.form-section h3 {
+  font-size: 18px;
+  color: #002FA7;
+  margin: 0 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e5ec;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 20px;
+  overflow: visible; 
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: visible;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #444;
+  font-size: 14px;
+}
+
+.required {
+  color: #dc3545;
+  margin-left: 4px;
+}
+
+.form-control {
+  padding: 12px;
+  border: 1px solid #e0e5ec;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.form-control:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-hint.warning {
+  color: #dc3545;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #eef2f6;
+}
+
+.btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #002FA7;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #001f7a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.2);
+}
+
+.btn-primary:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: #f2f6fe;
+  color: #002FA7;
+}
+
+.btn-secondary:hover {
+  background: #e5eaff;
+  transform: translateY(-1px);
+}
+
+/* стили для SearchableSelect */
+.searchable-select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  overflow: visible; 
+}
+
+.searchable-select-trigger {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.searchable-select-label {
+  flex: 1;
+  text-align: left;
+  font-size: 14px; 
+}
+
+.searchable-select-trigger:hover {
+  border-color: #002FA7;
+}
+
+.searchable-select-trigger:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+}
+
+.searchable-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e5ec;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  overflow: hidden;
+  margin-top: 4px;
+  min-width: 100%;
+  width: auto;
+}
+
+/* Стиль для выпадающего списка, когда он открывается вверх */
+.searchable-select-dropdown.dropup {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.searchable-select-list {
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.searchable-select-option {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.searchable-select-option:hover {
+  background-color: #f2f6fe;
+}
+
+.searchable-select-option.selected {
+  background-color: #e8f0fe;
+  color: #002FA7;
+  font-weight: 500;
+}
+
+.searchable-select-option.no-results {
+  color: #999;
+  font-style: italic;
+  cursor: default;
+  text-align: center;
+}
+
+.searchable-select-option.no-results:hover {
+  background-color: transparent;
+}
+
+.cs-disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.portal-dropdown {
+  position: fixed !important;
+  z-index: 10000 !important;
+}

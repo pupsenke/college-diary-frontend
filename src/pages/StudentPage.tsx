@@ -1,6 +1,5 @@
-// src/pages/StudentPage.tsx
 import React, { useState, useEffect } from 'react';
-import { Header } from '../st-components/HeaderStudent';
+import { StudentHeader } from '../st-components/HeaderStudent';
 import { AttendanceSection } from '../st-components/AttendanceSection';
 import { PerformanceSection } from '../st-components/PerformanceSection';
 import { PersonalCabinet } from '../st-components/PersonalCabinet';
@@ -26,15 +25,40 @@ export const StudentPage: React.FC = () => {
   const [averageGrade, setAverageGrade] = useState<number>(0);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
   const [attendanceData, setAttendanceData] = useState<SubjectAttendance[]>([]);
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
+
+  // Определение темы при загрузке
+  useEffect(() => {
+    const checkTheme = () => {
+      const savedTheme = localStorage.getItem('st-theme');
+      const isDark = savedTheme === 'dark' || (!savedTheme && document.body.classList.contains('st-theme-dark'));
+      setIsDarkTheme(isDark);
+    };
+
+    checkTheme();
+    
+    // Слушатель изменений темы
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          checkTheme();
+        }
+      });
+    });
+    
+    observer.observe(document.body, { attributes: true });
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Синхронизация активной вкладки с URL параметрами
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['attendance', 'performance', 'personal', 'schedule', 'documents'].includes(tab)) {
+    if (tab && ['personal',  'schedule', 'attendance', 'performance','documents'].includes(tab)) {
       setActiveTab(tab);
     } else {
-      setActiveTab('attendance');
-      searchParams.set('tab', 'attendance');
+      setActiveTab('personal');
+      searchParams.set('tab', 'personal');
       setSearchParams(searchParams);
     }
   }, [searchParams, setSearchParams]);
@@ -164,6 +188,43 @@ export const StudentPage: React.FC = () => {
     loadStudentData();
   }, [user, isStudent, navigate]);
 
+  // Получение иконок в зависимости от темы и активной вкладки
+  const getTabIcon = (tabName: string) => {
+    const icons = {
+      attendance: '/st-icons/attendance_icon.svg',
+      performance: '/st-icons/grade_icon.svg',
+      personal: '/st-icons/cabinet_icon.svg',
+      schedule: '/st-icons/schedule_icon.svg',
+      documents: '/st-icons/documents_icon.svg'
+    };
+    return <img src={icons[tabName as keyof typeof icons]} alt="" className="st-nav-svg-icon" />;
+  };
+
+  // Получение иконки для заголовка контента (меняется в зависимости от темы)
+  const getTitleIcon = (tabName: string) => {
+    // Для светлой темы используем синие иконки из боковой панели
+    if (!isDarkTheme) {
+      const icons = {
+        attendance: '/st-icons/attendance_icon.svg',
+        performance: '/st-icons/grade_icon.svg',
+        personal: '/st-icons/cabinet_icon.svg',
+        schedule: '/st-icons/schedule_icon.svg',
+        documents: '/st-icons/documents_icon.svg'
+      };
+      return <img src={icons[tabName as keyof typeof icons]} alt="" className="st-title-icon" />;
+    }
+    
+    // Для темной темы используем белые иконки
+    const whiteIcons = {
+      attendance: '/st-icons/white_attendance_icon.svg',
+      performance: '/st-icons/white_grade_icon.svg',
+      personal: '/st-icons/white_cabinet_icon.svg',
+      schedule: '/st-icons/white_schedule_icon.svg',
+      documents: '/st-icons/white_documents_icon.svg'
+    };
+    return <img src={whiteIcons[tabName as keyof typeof whiteIcons]} alt="" className="st-title-icon" />;
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -201,7 +262,12 @@ export const StudentPage: React.FC = () => {
 
     switch (activeTab) {
       case 'attendance':
-        return <AttendanceSection studentId={student.id}/>;
+        return (
+          <AttendanceSection 
+            studentId={student.id}
+            groupNumber={student.numberGroup?.toString()}
+          />
+        );
       case 'performance':
         return <PerformanceSection studentId={student.id} />;
       case 'personal':
@@ -215,37 +281,13 @@ export const StudentPage: React.FC = () => {
     }
   };
 
-  // Иконки для sidebar
-  const getTabIcon = (tabName: string) => {
-    const icons = {
-      attendance: '/st-icons/attendance_icon.svg',
-      performance: '/st-icons/grade_icon.svg',
-      personal: '/st-icons/cabinet_icon.svg',
-      schedule: '/st-icons/schedule_icon.svg',
-      documents: '/st-icons/documents_icon.svg'
-    };
-    return <img src={icons[tabName as keyof typeof icons]} alt="" className="st-nav-svg-icon" />;
-  };
-
-  // Белые иконки на content-area
-  const getIcon = (tabName: string) => {
-    const icons = {
-      attendance: '/st-icons/white_attendance_icon.svg',
-      performance: '/st-icons/white_grade_icon.svg',
-      personal: '/st-icons/white_cabinet_icon.svg',
-      schedule: '/st-icons/white_schedule_icon.svg',
-      documents: '/st-icons/white_documents_icon.svg'
-    };
-    return <img src={icons[tabName as keyof typeof icons]} alt="" className="st-nav-svg-white-icon" />;
-  };
-
   const getTabTitle = (tabName: string) => {
     const titles = {
       attendance: 'Посещаемость',
       performance: 'Успеваемость',
       personal: 'Личный кабинет',
       schedule: 'Расписание',
-      documents: 'Мои документы'
+      documents: 'Документы'
     };
     return titles[tabName as keyof typeof titles] || 'Посещаемость';
   };
@@ -288,7 +330,7 @@ export const StudentPage: React.FC = () => {
       </div>
 
       <div className="st-content">
-        <Header />
+        <StudentHeader />
 
         <div className={`st-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           <aside className={`st-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
@@ -309,40 +351,11 @@ export const StudentPage: React.FC = () => {
                 <p className="st-user-name">{student.lastName} {student.name}</p>
                 <p className="st-user-patronymic">{student.patronymic}</p>
                 <p className="st-user-role">Студент</p>
-                
-                <p className="st-user-group">
-                  <strong>Группа:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : (
-                    <span>{groupData?.numberGroup || 'Не указана'}</span>
-                  )}
-                </p>
-                
-                <p className="st-user-speciality">
-                  <strong>Специальность:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : (
-                    <span>{groupData?.specialty || 'Не указана'}</span>
-                  )}
-                </p>
-                
-                <p className="st-user-curator">
-                  <strong>Куратор:</strong>{' '}
-                  {loading ? (
-                    <span style={{ color: '#64748b' }}>Загрузка...</span>
-                  ) : curatorData ? (
-                    <span>{formatCuratorName(curatorData)}</span>
-                  ) : (
-                    <span>Не назначен</span>
-                  )}
-                </p>
               </div>
             </div>
 
             <nav className="st-sidebar-nav">
-              {['attendance', 'performance', 'personal', 'schedule', 'documents'].map((tab) => (
+              {['personal', 'schedule', 'attendance', 'performance', 'documents'].map((tab) => (
                 <button
                   key={tab}
                   className={`st-nav-item ${activeTab === tab ? 'active' : ''}`}
@@ -378,7 +391,7 @@ export const StudentPage: React.FC = () => {
           <main className="st-content-area">
             <div className="st-content-header">
               <div className="st-content-title-wrapper">
-                <span className="st-title-icon">{getIcon(activeTab)}</span>
+                <span className="st-title-icon">{getTitleIcon(activeTab)}</span>
                 <div>
                   <h1 className="st-content-title">{getTabTitle(activeTab)}</h1>
                   <p className="st-content-subtitle">{getTabSubTitle(activeTab)}</p>

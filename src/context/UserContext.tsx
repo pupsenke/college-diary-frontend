@@ -26,11 +26,13 @@ export interface Staff {
   login: string;
   position: string;
   staffPosition?: any[];
-  userType: 'teacher' | 'metodist' | 'departmentHead';
+  userType: 'teacher' | 'metodist' | 'departmentHead' | 'social';
   email?: string;
   telephone?: string;
   birthDate?: string;
   address?: string;
+  department?: string;
+  office?: string;
 }
 
 export type User = Student | Staff;
@@ -49,9 +51,11 @@ interface UserContextType {
   isTeacher: boolean;
   isMetodist: boolean;
   isDepartmentHead: boolean;
+  isSocial: boolean;
   isLoading: boolean;
   logout: () => void;
   userId: number | null;
+  isLeader: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -72,6 +76,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const isTeacher = user?.userType === 'teacher';
   const isMetodist = user?.userType === 'metodist';
   const isDepartmentHead = user?.userType === 'departmentHead';
+  const isSocial = user?.userType === 'social';
   const userId = user?.id || null;
 
   // Сохранение пользователя в сессию
@@ -195,6 +200,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isTeacher,
     isMetodist,
     isDepartmentHead,
+    isSocial,
     isLoading,
     logout,
     userId

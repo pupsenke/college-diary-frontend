@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser, Staff } from "../context/UserContext";
 import "./LoginStyle.css";
 import { apiService, GroupData, TeacherData } from '../services/studentApiService';
+import { API_BASE_URL } from '../constants/apiConstant';
 
 // Интерфейс для данных пользователя с возможными ролями
 interface UserWithRoles {
@@ -18,12 +19,16 @@ interface UserWithRoles {
   lastNameGenitive?: string | null;
   nameGenitive?: string | null;
   patronymicGenitive?: string | null;
+  isLeader?: boolean;
   roles: Array<{
-    type: 'student' | 'teacher' | 'metodist' | 'departmentHead';
+    type: 'student' | 'teacher' | 'metodist' | 'departmentHead' | 'social';
     position?: string;
     staffPosition?: any[];
     idGroup?: number;
     numberGroup?: number;
+    department?: string;
+    office?: string;
+    isLeader?: boolean;
   }>;
 }
 
@@ -64,6 +69,9 @@ export const LoginPage: React.FC = () => {
         case 'departmentHead':
           navigate("/departmentHead", { replace: true });
           break;
+        case 'social':
+          navigate("/social", { replace: true });
+          break;
         default:
           console.error('Unknown user type');
       }
@@ -90,6 +98,8 @@ export const LoginPage: React.FC = () => {
           return `Методист`;
         case 'departmentHead':
           return `Заведующий отделением`;
+        case 'social':
+          return `Социальный педагог`;
         default:
           return role.type;
       }
@@ -105,6 +115,8 @@ export const LoginPage: React.FC = () => {
           return 'Доступ к методическим функциям';
         case 'departmentHead':
           return 'Доступ к управлению отделением';
+        case 'social':
+          return 'Доступ к функциям социального педагога';
         default:
           return '';
       }
@@ -179,11 +191,14 @@ export const LoginPage: React.FC = () => {
       case 'teacher':
       case 'metodist':
       case 'departmentHead':
+      case 'social':
         userData = {
           ...baseUserData,
           position: selectedRole.position || "",
           staffPosition: selectedRole.staffPosition || [],
-          userType: selectedRole.type
+          userType: selectedRole.type,
+          department: selectedRole.department,
+          office: selectedRole.office
         } as Staff;
         break;
     }
@@ -228,7 +243,8 @@ export const LoginPage: React.FC = () => {
           roles.push({
             type: 'student',
             idGroup: studentData.idGroup,
-            numberGroup: numberGroup
+            numberGroup: numberGroup,
+            isLeader: studentData.isLeader || false
           });
 
           userBaseData = {
@@ -243,14 +259,15 @@ export const LoginPage: React.FC = () => {
             address: studentData.address || "",
             lastNameGenitive: studentData.lastNameGenitive || null,
             nameGenitive: studentData.nameGenitive || null,
-            patronymicGenitive: studentData.patronymicGenitive || null
+            patronymicGenitive: studentData.patronymicGenitive || null,
+            isLeader: studentData.isLeader || false 
           };
         }
       } catch (studentError) {
       }
 
       const staffResponse = await fetch(
-        `http://localhost:8080/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
+        `${API_BASE_URL}/api/v1/staffs/login/${encodeURIComponent(login)}/password/${encodeURIComponent(password)}`
       );
 
       if (staffResponse.ok) {
@@ -275,12 +292,16 @@ export const LoginPage: React.FC = () => {
               const positionName = position.name || '';
               const lowerPosition = positionName.toLowerCase();
               
-              let roleType: 'teacher' | 'metodist' | 'departmentHead' = 'teacher';
+              let roleType: 'teacher' | 'metodist' | 'departmentHead' | 'social' = 'teacher';
               
               if (lowerPosition.includes('методист')) {
                 roleType = 'metodist';
-              } else if (lowerPosition.includes('зав. отделением')) {
+              } else if (lowerPosition.includes('зав. отделением') || 
+                         lowerPosition.includes('заведующий отделением')) {
                 roleType = 'departmentHead';
+              } else if (lowerPosition.includes('социальный педагог') || 
+                         lowerPosition.includes('соц. педагог')) {
+                roleType = 'social';
               } else if (lowerPosition.includes('преподаватель')) {
                 roleType = 'teacher';
               }
@@ -332,14 +353,17 @@ export const LoginPage: React.FC = () => {
               userType: 'student' as const,
               lastNameGenitive: userBaseData.lastNameGenitive || userBaseData.lastName || null,
               nameGenitive: userBaseData.nameGenitive || userBaseData.name || null,
-              patronymicGenitive: userBaseData.patronymicGenitive || userBaseData.patronymic || null
+              patronymicGenitive: userBaseData.patronymicGenitive || userBaseData.patronymic || null,
+              isLeader: selectedRole.isLeader || false 
             };
           } else {
             userData = {
               ...baseUserData,
               position: selectedRole.position || "",
               staffPosition: selectedRole.staffPosition || [],
-              userType: selectedRole.type
+              userType: selectedRole.type,
+              department: selectedRole.department,
+              office: selectedRole.office
             } as Staff;
           }
 
@@ -433,6 +457,16 @@ export const LoginPage: React.FC = () => {
                 <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`}></span>
               </button>
             </div>
+            <div className="forgot-password-container">
+              <button 
+                type="button"
+                className="forgot-password-link"
+                onClick={handleForgotPassword}
+                disabled={isLoading}
+              >
+                Забыли пароль?
+              </button>
+            </div>
           </div>
 
           <button
@@ -465,7 +499,7 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div className="version-info">
-          Версия 1.0.0 • © 2025 Дневник ПТК
+          Версия 1.0.0 • © 2026 Дневник ПТК
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './AttendanceSectionStyle.css';
 import { apiService } from '../services/studentApiService'; 
+import { HeadStudentAttendanceSection } from './HeadStudentAttendanceSection';
 import {
   BarChart,
   Bar,
@@ -41,7 +42,18 @@ interface AttendanceSectionProps {
 }
 
 interface SubjectAttendance {
-  nameSubjectTeachersDTO: {
+  stteachersDTO?: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
+  nameSubjectTeachersDTO?: {
     idSt: number;
     idSubject: number;
     nameSubject: string;
@@ -73,8 +85,18 @@ interface SemesterInfo {
   value: 'first' | 'second';
 }
 
+interface AttendanceSectionProps {
+  studentId: number;
+  isHeadman?: boolean; 
+  groupNumber?: string; 
+  onManageAttendance?: () => void; 
+}
+
 export const AttendanceSection: React.FC<AttendanceSectionProps> = ({ 
-  studentId 
+  studentId,
+  isHeadman = true,
+  groupNumber,
+  onManageAttendance
 }) => {
   const [activeTab, setActiveTab] = useState<'semesters' | 'subjects' | 'analytics'>('semesters');
   const [selectedSemester, setSelectedSemester] = useState<'first' | 'second'>('first');
@@ -106,6 +128,14 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     start: '',
     end: ''
   });
+  const [showHeadmanAttendance, setShowHeadmanAttendance] = useState(false);
+  const [selectedSubjectForHeadman, setSelectedSubjectForHeadman] = useState<{
+    groupNumber: string;
+    idSt: number;
+    teacherId: number;
+    subject: string;
+  } | null>(null);
+  const [userGroupNumber, setUserGroupNumber] = useState<string | undefined>(groupNumber);
 
   // Функция загрузки данных с приоритетом API
   const fetchAttendanceData = async (forceRefresh = false) => {
@@ -123,52 +153,90 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
 
       const data: SubjectAttendance[] = await apiService.getStudentAttendance(studentId);
       
-      const transformedData: Attendance[] = data.map(subject => {
-        const teachers = subject.nameSubjectTeachersDTO.teachers || [];
-        const mainTeacher = teachers[0] || { 
-          lastnameTeacher: 'Неизвестно', 
-          nameTeacher: 'Н', 
-          patronymicTeacher: 'П' 
-        };
+      if (!data || !Array.isArray(data)) {
+        console.error('Некорректные данные от API:', data);
+        setAttendanceData([]);
+        return;
+      }
+
+      const transformedData: Attendance[] = data
+      .filter(subject => subject)
+      .map((subject, index) => {
+        const subjectDTO = subject.stteachersDTO || subject.nameSubjectTeachersDTO;
         
-        const teacherString = `${mainTeacher.lastnameTeacher} ${mainTeacher.nameTeacher.charAt(0)}.${mainTeacher.patronymicTeacher.charAt(0)}.`;
+        if (!subjectDTO) {
+          console.warn('Отсутствуют данные о предмете:', subject);
+          const fallbackId = Date.now() + index;
+          return {
+            id: fallbackId,
+            subject: `Предмет ${index + 1}`,
+            teacher: 'Не указан',
+            statuses: [],
+            quantity: 0,
+            percent: 0,
+            reasonStatus: []
+          };
+        }
         
-        // Включаем ВСЕ статусы для отображения (включая null)
-        const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances.map(a => a.status);
+        const teachers = subjectDTO.teachers || [];
         
-        // Для статистики учитываем только выставленные статусы (не null)
-        const validAttendances = subject.attendances.filter(a => a.status !== null);
+        let teacherString = 'Не указан';
+        if (teachers.length > 0) {
+          const mainTeacher = teachers[0];
+          const lastName = mainTeacher.lastnameTeacher || '';
+          const firstName = mainTeacher.nameTeacher || '';
+          const patronymic = mainTeacher.patronymicTeacher || '';
+          
+          if (lastName && firstName) {
+            const firstInitial = firstName.charAt(0);
+            const patronymicInitial = patronymic ? patronymic.charAt(0) + '.' : '';
+            teacherString = `${lastName} ${firstInitial}.${patronymicInitial}`.trim();
+          } else {
+            teacherString = lastName || 'Не указан';
+          }
+        }
+        
+        const subjectName = subjectDTO.nameSubject || `Предмет ${index + 1}`;
+        const subjectId = subjectDTO.idSubject || index;
+
+        const statuses: ('п' | 'у' | 'н' | null)[] = subject.attendances?.map(a => a?.status) || [];
+        
+        const validAttendances = subject.attendances?.filter(a => a?.status !== null) || [];
         const validStatuses = validAttendances.map(a => a.status as 'п' | 'у' | 'н');
         
         const presentCount = validStatuses.filter(status => status === 'п').length;
         const totalCount = validStatuses.length;
         const percent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
 
-        const reasonStatus: AttendanceDetail[] = subject.attendances.map(attendance => ({
-          idLesson: attendance.idLesson,
-          date: attendance.date,
-          topic: `Занятие ${attendance.idLesson}`,
-          status: attendance.status,
+        const reasonStatus: AttendanceDetail[] = (subject.attendances || []).map((attendance, idx) => ({
+          idLesson: attendance?.idLesson || idx + 1,
+          date: attendance?.date || new Date().toISOString().split('T')[0],
+          topic: `Занятие ${attendance?.idLesson || idx + 1}`,
+          status: attendance?.status || null,
           teacher: teacherString,
-          comment: attendance.comment || undefined
+          comment: attendance?.comment || undefined
         }));
 
         return {
-          id: subject.nameSubjectTeachersDTO.idSubject,
-          subject: subject.nameSubjectTeachersDTO.nameSubject,
+          id: subjectId,
+          subject: subjectName,
           teacher: teacherString,
           statuses, 
           quantity: totalCount, 
           percent: parseFloat(percent.toFixed(1)),
           reasonStatus
         };
-      });
+      })
+        .filter((attendance): attendance is NonNullable<typeof attendance> => attendance !== null
+);
 
-      setAttendanceData(transformedData);
+        const sortedData = [...transformedData].sort((a, b) => a.subject.localeCompare(b.subject, 'ru')
+    );
+
+      setAttendanceData(sortedData);
       
     } catch (error) {
       console.error('Ошибка при загрузке данных с API:', error);
-      setError('Не удалось загрузить данные о посещаемости');
       setAttendanceData([]);
     } finally {
       setLoading(false);
@@ -230,6 +298,17 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (selectedAttendance) {
+      document.body.classList.add('at-modal-open');
+    } else {
+      document.body.classList.remove('at-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('at-modal-open');
+    };
+  }, [selectedAttendance]);
+
 
   useEffect(() => {
   const loadData = async () => {
@@ -245,7 +324,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     await fetchAttendanceData(true);
   };
 
-
   const handleAttendanceClick = async (
     subject: string, 
     status: 'п' | 'у' | 'н' | null, 
@@ -260,6 +338,48 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       await fetchLessonAttendance(idLesson);
     }
   };
+
+ // Функция для открытия страницы управления посещаемостью (для старосты)
+  const handleManageAttendance = () => {
+    if (onManageAttendance) {
+      onManageAttendance();
+    } else {
+      if (userGroupNumber) {
+        setShowHeadmanAttendance(true);
+      } else {
+        alert('Не указан номер группы');
+      }
+    }
+  };
+
+  // функция для закрытия страницы управления
+  const handleCloseHeadmanAttendance = () => {
+    setShowHeadmanAttendance(false);
+  };
+
+  const fetchGroupNumber = async () => {
+    try {
+      if (groupNumber) {
+        setUserGroupNumber(groupNumber);
+        return;
+      }
+      
+      const studentData = await apiService.getStudentData(studentId);
+      if (studentData?.idGroup) {
+        const groupData = await apiService.getGroupData(studentData.idGroup);
+        const groupNum = groupData.numberGroup?.toString();
+        if (groupNum) {
+          setUserGroupNumber(groupNum);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка получения номера группы:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroupNumber();
+  }, [studentId, groupNumber]);
 
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
@@ -286,7 +406,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     let totalLessons = 0; 
 
     attendanceData.forEach(subject => {
-      // Для статистики учитываем только выставленные статусы
       const validStatuses = subject.statuses.filter(status => status !== null) as ('п' | 'у' | 'н')[];
       const stats = calculateSubjectStats(validStatuses);
       
@@ -345,20 +464,10 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
   const statistics = calculateAttendanceStatistics();
   const selectedSubjectData = attendanceData.find(attendance => attendance.subject === selectedSubject);
 
-  // Данные для графиков
   const attendanceChartData = [
     { subject: 'Присутствовал', count: statistics.totalPresent, color: '#2cbb00' },
     { subject: 'Уважительные', count: statistics.totalExcused, color: '#f59e0b' },
     { subject: 'Неуважительные', count: statistics.totalAbsent, color: '#ef4444' }
-  ];
-
-  const progressData = [
-    { week: 'Нед. 1', attendance: 85 },
-    { week: 'Нед. 2', attendance: 78 },
-    { week: 'Нед. 3', attendance: 92 },
-    { week: 'Нед. 4', attendance: 88 },
-    { week: 'Нед. 5', attendance: 90 },
-    { week: 'Нед. 6', attendance: 87 }
   ];
   
   const handleSubjectClick = (subjectName: string) => {
@@ -379,6 +488,37 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       />
     </button>
   );
+
+  // Компонент кнопки для старосты
+  const HeadmanButton = () => {
+    // является ли текущий пользователь старостой
+    const [isHeadman, setIsHeadman] = useState(false);
+    
+    useEffect(() => {
+      const checkHeadmanStatus = async () => {
+        try {
+          const studentData = await apiService.getStudentData(studentId);
+          setIsHeadman(studentData.isLeader === true);
+        } catch (error) {
+          console.error('Ошибка проверки статуса старосты:', error);
+          setIsHeadman(false);
+        }
+      };
+      checkHeadmanStatus();
+    }, [studentId]);
+    
+    if (!isHeadman) return null;
+    
+    return (
+      <button 
+        className="at-headman-btn"
+        onClick={handleManageAttendance}
+        title="Управление посещаемостью группы"
+      >
+        <span>Выставить посещаемость</span>
+      </button>
+    );
+  };
 
   const SemesterSelector = () => (
     <div className="at-semester-selector">
@@ -424,17 +564,27 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     </div>
   );
 
-  // Обновленный рендер карточек предметов - ВСЕ данные для первого семестра
+  // рендер карточек предметов
   const renderSubjectCards = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
+    }
+
+    if (attendanceData.length === 0) {
+      return (
+        <div className="at-no-data-state">
+          <div className="at-empty-state">
+            <p>Нет данных о посещаемости</p>
+          </div>
+        </div>
+      );
     }
 
     return (
       <div className="at-subjects-grid">
         {attendanceData.map((subject) => (
           <div 
-            key={subject.id} 
+            key={`subject-card-${subject.id}-${subject.subject.replace(/\s+/g, '-')}`}
             className="at-subject-card"
             onClick={() => handleSubjectClick(subject.subject)}
             style={{ cursor: 'pointer' }}
@@ -451,7 +601,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                 const detail = subject.reasonStatus?.[index];
                 return (
                   <div
-                    key={index}
+                    key={`status-preview-${subject.id}-${index}-${detail?.idLesson || 'no-id'}`}
                     className="at-preview-status"
                     style={{ backgroundColor: getStatusColor(status) }}
                     onClick={(e) => {
@@ -474,7 +624,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
               {subject.statuses.length > 8 && (
                 <div className="at-more-statuses">+{subject.statuses.length - 8}</div>
               )}
-              {(!subject.statuses) && (
+              {subject.statuses.length === 0 && (
                 <div className="at-no-statuses">Нет данных о посещаемости</div>
               )}
             </div>
@@ -496,10 +646,20 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     );
   };
 
-  // Обновленный рендер таблицы предметов - ВСЕ данные для первого семестра
+  // рендер таблицы предметов 
   const renderSubjectsTable = () => {
     if (selectedSemester === 'second') {
       return renderNoDataState();
+    }
+
+    if (attendanceData.length === 0) {
+      return (
+        <div className="at-no-data-state">
+          <div className="at-empty-state">
+            <p>Нет данных о посещаемости</p>
+          </div>
+        </div>
+      );
     }
 
     const calculateAbsencesStats = (statuses: ('п' | 'у' | 'н' | null)[]) => {
@@ -525,11 +685,11 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
             </tr>
           </thead>
           <tbody>
-            {attendanceData.map((subject) => {
+            {attendanceData.map((subject, rowIndex) => {
               const stats = calculateAbsencesStats(subject.statuses);
               return (
                 <tr 
-                  key={subject.id}
+                  key={`table-row-${subject.id}-${rowIndex}`}
                   className="at-subject-row"
                   onClick={() => handleSubjectClick(subject.subject)}
                   style={{ cursor: 'pointer' }}
@@ -537,6 +697,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                   <td className="at-subject-cell">
                     <div className="at-subject-info">
                       <span className="at-subject-name">{subject.subject}</span>
+                      <span className="at-subject-teacher">{subject.teacher}</span>
                     </div>
                   </td>
                   <td className="at-attendance-cell">
@@ -545,11 +706,11 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                         const detail = subject.reasonStatus?.[index];
                         return (
                           <span
-                            key={index}
+                            key={`stack-item-${subject.id}-${index}-${detail?.idLesson || 'no-id'}`}
                             className="at-stack-status"
                             style={{ backgroundColor: getStatusColor(status) }}
                             onClick={(e) => {
-                              e.stopPropagation(); // Останавливаем всплытие
+                              e.stopPropagation();
                               handleAttendanceClick(
                                 subject.subject,
                                 status,
@@ -559,7 +720,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                                 detail?.comment
                               );
                             }}
-                            title={`${getStatusText(status)} - Занятие ${index + 1}`}
                           >
                             {status || '-'}
                           </span>
@@ -625,7 +785,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
           <button
             className="at-apply-filter-btn"
             onClick={() => {
-              // Применяем фильтр - пересчитываем данные
               const progressResult = calculateAttendanceProgress();
               if (!progressResult.hasEnoughData) {
                 setError(progressResult.message);
@@ -663,12 +822,10 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       return { data: [], hasEnoughData: false, message: 'Нет данных о посещаемости' };
     }
 
-    // Уникальные даты, отсортированные по возрастанию
     const uniqueDates = Array.from(new Set(allDates)).sort((a, b) => 
       new Date(a).getTime() - new Date(b).getTime()
     );
 
-    // Фильтруем даты по выбранному диапазону
     let filteredDates = uniqueDates;
     
     if (dateRange.start && dateRange.end) {
@@ -728,7 +885,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     };
   };
 
-  // Функция для получения номера недели в году
   const getWeekNumber = (date: Date): number => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -754,7 +910,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     return progressData;
   };
 
-  // Функции группировки
   const groupBy3Days = (dates: string[]) => {
     const progressData: { period: string; attendance: number; date: string }[] = [];
     
@@ -782,7 +937,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     const progressData: { period: string; attendance: number; date: string }[] = [];
     const weeks: { [key: string]: string[] } = {};
     
-    // Группируем даты по неделям
     dates.forEach(date => {
       const dateObj = new Date(date);
       const year = dateObj.getFullYear();
@@ -795,7 +949,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       weeks[weekKey].push(date);
     });
     
-    // Обрабатываем каждую неделю
     Object.keys(weeks).forEach(weekKey => {
       const weekDates = weeks[weekKey];
       const weekNum = parseInt(weekKey.split('-W')[1]);
@@ -811,7 +964,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       });
     });
     
-    // Сортируем по дате
     return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
@@ -819,7 +971,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     const progressData: { period: string; attendance: number; date: string }[] = [];
     const months: { [key: string]: string[] } = {};
     
-    // Группируем даты по месяцам
     dates.forEach(date => {
       const dateObj = new Date(date);
       const year = dateObj.getFullYear();
@@ -832,7 +983,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       months[monthKey].push(date);
     });
     
-    // Обрабатываем каждый месяц
     Object.keys(months).forEach(monthKey => {
       const monthDates = months[monthKey];
       const [year, month] = monthKey.split('-');
@@ -850,7 +1000,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       });
     });
     
-    // Сортируем по дате
     return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
@@ -894,18 +1043,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
     }
   };
 
-    const hasDataInSelectedSemester = useCallback(() => {
-    if (selectedSemester === 'first') return true;
-    
-    if (!attendanceData || attendanceData.length === 0) return false;
-    
-    return attendanceData.some(subject => 
-      subject.reasonStatus && 
-      subject.reasonStatus.some(detail => detail.status !== null)
-    );
-  }, [attendanceData, selectedSemester]);
-
-  // Обновите рендер аналитики
+  //  рендер аналитики
   const renderAnalytics = () => {
     if (selectedSemester === 'second') {
       return (
@@ -981,7 +1119,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                   <YAxis domain={[0, 100]} />
                   <Tooltip 
                     formatter={(value) => [`${value}%`, 'Посещаемость']}
-                    labelFormatter={(label) => `Период: ${label}`}
+                    labelFormatter={(label) => `Дата: ${label}`}
                   />
                   <Line 
                     type="monotone" 
@@ -1012,6 +1150,17 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         <div className="at-loading-spinner"></div>
         <p>Загрузка данных о посещаемости...</p>
       </div>
+    );
+  }
+
+  // Если открыта страница управления посещаемостью, показываем её
+  if (showHeadmanAttendance && userGroupNumber) {
+    return (
+      <HeadStudentAttendanceSection
+        groupNumber={userGroupNumber}
+        studentId={studentId}
+        onBack={handleCloseHeadmanAttendance}
+      />
     );
   }
 
@@ -1056,6 +1205,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         <SemesterSelector />
         <div className="at-controls-section-left">
           <ViewToggle />
+          {isHeadman && <HeadmanButton />}
           <RefreshButton />
         </div>
       </div>
@@ -1069,76 +1219,74 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
         )}
 
         {activeTab === 'subjects' && (
-          <div className="at-tab-content">
-            <div className="at-subject-detail-container">
-              <div className="at-subject-selector">
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="at-select"
-                >
-                  <option value="">Выберите предмет</option>
-                  {subjects.map(subject => (
-                    <option key={subject} value={subject}>{subject}</option>
-                  ))}
-                </select>
-              </div>
+        <div className="at-tab-content">
+          <div className="at-subject-detail-container">
+            <div className="at-subject-selector">
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="at-select"
+              >
+                <option value="">Выберите предмет</option>
+                {subjects.map(subject => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+            </div>
 
-              {selectedSubjectData ? (
-                <div className="at-subject-detail">
-                  <div className="at-detail-header">
-                    <h2>{selectedSubjectData.subject}</h2>
-                    <div className="at-subject-meta">
-                      <span className="at-meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
-                      <span className="at-meta-item">Посещаемость: {selectedSubjectData.percent}%</span>
-                    </div>
+            {selectedSubjectData ? (
+              <div className="at-subject-detail">
+                <div className="at-detail-header">
+                  <h2>{selectedSubjectData.subject}</h2>
+                  <div className="at-subject-meta">
+                    <span className="at-meta-item">Преподаватель: {selectedSubjectData.teacher}</span>
+                    <span className="at-meta-item">Посещаемость: {selectedSubjectData.percent}%</span>
                   </div>
-
-                  <div className="at-attendance-timeline">
+                </div>
+                <div className="at-attendance-timeline">
+                  <div className="at-attendance-grid">
                     {selectedSubjectData.reasonStatus?.map((detail, index) => (
-                      <div key={detail.idLesson} className="at-timeline-item">
-                        <div className="at-timeline-content"
+                      <div 
+                        key={`detail-${detail.idLesson}-${index}`} 
+                        className="at-attendance-grid-item"
                         onClick={() => handleAttendanceClick(
-                                selectedSubjectData.subject,
-                                detail.status,
-                                detail.idLesson,
-                                detail.date,
-                                detail.teacher,
-                                detail.comment
-                              )}>
-                          <div className="at-attendance-header">
-                            
-                          </div>
-                          <div className="at-attendance-details">
-                            
-                            <span 
-                              className="at-attendance-value"
-                              style={{ 
-                                backgroundColor: getStatusColor(detail.status)
-                              }}
-                              
-                            >
-                              {detail.status || '-'}
-                            </span>
-                            <span className="at-attendance-date">{formatDate(detail.date)}</span>
-                          </div>
+                          selectedSubjectData.subject,
+                          detail.status,
+                          detail.idLesson,
+                          detail.date,
+                          detail.teacher,
+                          detail.comment
+                        )}
+                      >
+                        <div 
+                          className="at-attendance-grid-status"
+                          style={{ backgroundColor: getStatusColor(detail.status) }}
+                        >
+                          <span className="at-status-letter">{detail.status || '?'}</span>
                         </div>
+                        <div className="at-attendance-grid-date">
+                          {formatDate(detail.date)}
+                        </div>
+                        {detail.status === 'у' && detail.comment && (
+                          <div className="at-attendance-grid-comment" title={detail.comment}>
+                            *
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div className="at-no-subject-selected">
-                  <div className="at-empty-state">
-                    <h3>Выберите предмет</h3>
-                    <p>Для просмотра детальной информации выберите предмет из списка</p>
-                  </div>
+              </div>
+            ) : (
+              <div className="at-no-subject-selected">
+                <div className="at-empty-state">
+                  <p>Для просмотра детальной информации выберите предмет из списка</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
-
+        </div>
+      )}
         {activeTab === 'analytics' && renderAnalytics()}
       </div>
 
@@ -1215,8 +1363,6 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                         </div>
                       </div>
                     )}
-
-                    {/* Информация для неотмеченных статусов */}
                     {selectedAttendance.status === null && (
                       <div className="at-detail-item at-no-status-info">
                         <span className="at-detail-label">Информация</span>

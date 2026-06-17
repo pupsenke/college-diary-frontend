@@ -1,4 +1,3 @@
-/* Основные стили студенческой панели */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 * {
@@ -6,10 +5,30 @@
   box-sizing: border-box;
 }
 
-.st-container {
+/* Темная тема (по умолчанию) */
+body.st-theme-dark .st-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #002FA7 0%, #5986f7 100%);
   position: relative;
+}
+
+/* Светлая тема */
+body.st-theme-light .st-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #d9e8fb 0%, #e9f0f7 100%);
+  position: relative;
+}
+
+body.st-theme-light .st-title-icon {
+   color: #002FA7;
+}
+
+body.st-theme-light .st-content-title {
+   color: #002FA7;
+}
+
+body.st-theme-light .st-content-subtitle {
+   color: #002FA7;
 }
 
 .st-content {
@@ -44,7 +63,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  height: 720px;
+  height: 600px;
   position: relative;
   transition: all 0.3s ease;
 }
@@ -55,7 +74,7 @@
   align-items: center;
   display: flex;
   justify-content: center;
-  height: 720px;
+  height: 600px;
   z-index: 2;
 }
 
@@ -174,7 +193,7 @@
   color: #235bea;
   font-size: 14px;
   font-weight: 500;
-  margin: 18px 0 18px 0;
+  margin: 18px 0 24px 0;
 }
 
 .st-user-group,
@@ -182,28 +201,28 @@
 .st-user-info .st-user-curator {
   color: #002fa7;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   margin: 12px 0;
 }
 
 .st-user-info .st-user-group strong{
   color: #002fa7;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   margin: 12px 0;
 }
 
 .st-user-info .st-user-speciality strong{
   color: #002fa7;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   margin: 12px 0;
 }
 
 .st-user-info .st-user-curator strong{
   color: #002fa7;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   margin: 12px 0;
 }
 
@@ -646,4 +665,34 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Стили для иконок заголовка */
+.st-title-icon {
+  width: 36px;
+  height: 36px;
+  margin-left: 4px;
+  margin-right: 4px;
+  filter: brightness(1);
+}
+
+.st-theme-dark .st-title-icon {
+  filter: brightness(0) invert(1);
+}
+
+.st-theme-light .st-title-icon {
+  filter: none;
+}
+
+.st-content-title-wrapper .st-title-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.st-theme-dark .st-content-title-wrapper .st-title-icon {
+  filter: brightness(0) invert(1);
+}
+
+.st-theme-light .st-content-title-wrapper .st-title-icon {
+  filter: none;
 }

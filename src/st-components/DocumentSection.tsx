@@ -369,76 +369,89 @@ export const DocumentsSection: React.FC = () => {
   // Загрузка данных о предметах и преподавателях
   useEffect(() => {
     const loadTeacherSubjects = async () => {
-    if (!user || !isStudent) return;
-    
-    try {
-      const student = user as Student;
+      if (!user || !isStudent) return;
       
-      const studentMarks = await apiService.getStudentMarks(student.id);
-      
-      const teacherIdsSet = new Set<number>();
-      const subjectIdsSet = new Set<number>();
-      
-      studentMarks.forEach(mark => {
-        if (mark.nameSubjectTeachersDTO && mark.nameSubjectTeachersDTO.teachers) {
-          const mainTeacher = mark.nameSubjectTeachersDTO.teachers[0];
-          if (mainTeacher && mainTeacher.idTeacher) {
-            teacherIdsSet.add(mainTeacher.idTeacher);
+      try {
+        const student = user as Student;
+        
+        const studentMarks = await apiService.getStudentMarks(student.id);
+        
+        const teacherIdsSet = new Set<number>();
+        const subjectIdsSet = new Set<number>();
+        
+        studentMarks.forEach(mark => {
+          const subjectData = mark.stteachersDTO || mark.nameSubjectTeachersDTO;
+          
+          if (subjectData && subjectData.teachers) {
+            const mainTeacher = subjectData.teachers[0];
+            if (mainTeacher && mainTeacher.idTeacher) {
+              teacherIdsSet.add(mainTeacher.idTeacher);
+            }
+          }
+          if (subjectData?.idSubject) {
+            subjectIdsSet.add(subjectData.idSubject);
+          }
+        });
+        
+        const teacherIds = Array.from(teacherIdsSet);
+        const subjectIds = Array.from(subjectIdsSet);
+        
+        const subjectsData: Subject[] = [];
+        for (const subjectId of subjectIds) {
+          try {
+            const subject = await apiService.getSubjectById(subjectId);
+            subjectsData.push({
+              id: subjectId,
+              subjectName: subject.subjectName 
+            });
+          } catch (error) {
+            console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
           }
         }
-        if (mark.nameSubjectTeachersDTO?.idSubject) {
-          subjectIdsSet.add(mark.nameSubjectTeachersDTO.idSubject);
+        
+        // СОРТИРУЕМ ПРЕДМЕТЫ ПО АЛФАВИТУ
+        const sortedSubjects = subjectsData.sort((a, b) => 
+          a.subjectName.localeCompare(b.subjectName, 'ru', { sensitivity: 'base' })
+        );
+        setSubjects(sortedSubjects);
+        
+        const teachersData: Teacher[] = [];
+        for (const teacherId of teacherIds) {
+          try {
+            const teacher = await apiService.getTeacherData(teacherId);
+            teachersData.push({
+              id: teacherId,
+              name: teacher.name,
+              lastName: teacher.lastName,
+              patronymic: teacher.patronymic
+            });
+          } catch (error) {
+            console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
+          }
         }
-      });
-      
-      const teacherIds = Array.from(teacherIdsSet);
-      const subjectIds = Array.from(subjectIdsSet);
-      
-      const subjectsData: Subject[] = [];
-      for (const subjectId of subjectIds) {
-        try {
-          const subject = await apiService.getSubjectById(subjectId);
-          subjectsData.push({
-            id: subjectId,
-            subjectName: subject.subjectName 
-          });
-        } catch (error) {
-          console.error(`Ошибка загрузки предмета ${subjectId}:`, error);
-        }
+        
+        // СОРТИРУЕМ ПРЕПОДАВАТЕЛЕЙ ПО ФАМИЛИИ
+        const sortedTeachers = teachersData.sort((a, b) => 
+          a.lastName.localeCompare(b.lastName, 'ru', { sensitivity: 'base' })
+        );
+        setTeachers(sortedTeachers);
+        
+        const teacherSubjectsData = studentMarks.map(mark => {
+          const subjectData = mark.stteachersDTO || mark.nameSubjectTeachersDTO;
+          const mainTeacher = subjectData?.teachers?.[0];
+          return {
+            idTeacher: mainTeacher?.idTeacher,
+            idSubject: subjectData?.idSubject,
+            subjectName: subjectData?.nameSubject
+          };
+        }).filter(ts => ts.idTeacher && ts.idSubject);
+        
+        setTeacherSubjects(teacherSubjectsData);
+        
+      } catch (error) {
+        console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
       }
-      setSubjects(subjectsData);
-      
-      const teachersData: Teacher[] = [];
-      for (const teacherId of teacherIds) {
-        try {
-          const teacher = await apiService.getTeacherData(teacherId);
-          teachersData.push({
-            id: teacherId,
-            name: teacher.name,
-            lastName: teacher.lastName,
-            patronymic: teacher.patronymic
-          });
-        } catch (error) {
-          console.error(`Ошибка загрузки преподавателя ${teacherId}:`, error);
-        }
-      }
-      setTeachers(teachersData);
-      
-      const teacherSubjectsData = studentMarks.map(mark => {
-        const mainTeacher = mark.nameSubjectTeachersDTO?.teachers?.[0];
-        return {
-          idTeacher: mainTeacher?.idTeacher,
-          idSubject: mark.nameSubjectTeachersDTO?.idSubject,
-          subjectName: mark.nameSubjectTeachersDTO?.nameSubject
-        };
-      }).filter(ts => ts.idTeacher && ts.idSubject); // Фильтруем валидные записи
-      
-      setTeacherSubjects(teacherSubjectsData);
-      
-    } catch (error) {
-      console.error('Ошибка загрузки данных о предметах и преподавателях:', error);
-    }
-  };
+    };
 
     loadTeacherSubjects();
   }, [user, isStudent]);
@@ -471,6 +484,12 @@ export const DocumentsSection: React.FC = () => {
 
     const selectedSubjectId = parseInt(subjectId);
     
+    // Добавить проверку на существование teacherSubjects
+    if (!teacherSubjects || teacherSubjects.length === 0) {
+      setAvailableTeachers([]);
+      return;
+    }
+    
     const subjectRelations = teacherSubjects.filter(ts => ts.idSubject === selectedSubjectId);
     
     const teacherIdsSet = new Set<number>();
@@ -485,7 +504,6 @@ export const DocumentsSection: React.FC = () => {
     
     setAvailableTeachers(filteredTeachers);
   };
-
   // Функции для работы с модальным окном
   const openModal = () => {
     if (userData) {
@@ -865,8 +883,6 @@ export const DocumentsSection: React.FC = () => {
             <div className="ds-modal-type">
               <strong>Тип документа:</strong> {selectedDocumentType}
             </div>
-
-            {error && <div className="ds-error-message">{error}</div>}
 
             <div className="ds-form-sections">
               <div className="ds-form-section">

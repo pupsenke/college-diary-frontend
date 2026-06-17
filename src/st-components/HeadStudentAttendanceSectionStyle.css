@@ -1,0 +1,1410 @@
+/* Основной контейнер */
+.st-attendance-section {
+  width: 1000px;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  margin-bottom: 0;
+  position: relative;
+  transition: width 0.3s ease;
+}
+
+/* Заголовок */
+.st-attendance-header {
+  margin-bottom: 24px;
+  padding: 0 8px;
+  width: 100%;
+}
+
+.st-attendance-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.st-attendance-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.st-group-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #002FA7;
+  margin: 0;
+}
+
+/* Стили для заголовка с кнопками информации и обновления */
+.st-attendance-cabinet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.st-header-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.st-header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.st-back-button {
+  background: white;
+  color: #002FA7;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+
+.st-back-button img {
+  width: 34px;
+  height: 34px;
+  transition: transform 0.3s ease;
+}
+
+.st-back-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Стили для кнопок в заголовке */
+.st-header-btn {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.st-header-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  color: #002FA7;
+}
+
+.st-header-btn:active {
+  transform: translateY(0);
+}
+
+/* Стили для кнопки обновления */
+.st-refresh-btn {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.st-refresh-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  color: #002FA7;
+}
+
+.st-refresh-icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+  filter: brightness(0.8);
+}
+
+.st-refresh-spin {
+  animation: st-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  filter: brightness(1);
+}
+
+@keyframes st-spin {
+  0% { 
+    transform: rotate(0deg);
+    filter: brightness(0.8);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+  100% { 
+    transform: rotate(360deg);
+    filter: brightness(0.8);
+  }
+}
+
+/* Базовые стили для всех тултипов */
+.st-info-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: left;
+}
+
+.st-info-icon-text {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.st-info-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  transform: translateX(0%) translateY(8px);
+  background: white;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Размеры тултипов */
+.st-info-tooltip.small {
+  width: 320px;
+  max-width: calc(80vw - 40px);
+}
+
+.st-info-tooltip.large {
+  width: 320px;
+  max-width: calc(100vw - 40px);
+}
+
+/* Стили контента */
+.st-info-tooltip-content {
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  word-break: break-word;
+  white-space: normal;
+  overflow-y: auto;
+  max-height: 50vh;
+  padding: 0;
+}
+
+.st-info-header {
+  padding: 18px 20px 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4ff 100%);
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.st-info-title h3 {
+  margin: 0 0 6px 0;
+  color: #002FA7;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.st-info-title p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.st-info-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.st-info-section:last-child {
+  border-bottom: none;
+}
+
+.st-info-section h4 {
+  margin: 0 0 12px 0;
+  color: #002FA7;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.st-info-section h4::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: #002FA7;
+  border-radius: 2px;
+}
+
+.st-features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.st-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.st-feature-icon {
+  width: 6px;
+  height: 6px;
+  background: #002FA7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.st-statuses-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.st-status-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.st-status-demo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.st-status-info span {
+  color: #576374;
+  font-size: 12px;
+}
+
+.st-status-present { background: #2cbb00; }
+.st-status-absent { background: #f59e0b; }
+.st-status-not { background: #ef4444; }
+.st-status-empty {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #94a3b8;
+  text-shadow: none;
+}
+
+.st-usage-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.st-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.st-step-number {
+  width: 20px;
+  height: 20px;
+  background: #002FA7;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.st-step span:last-child {
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.st-step code {
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  color: #002FA7;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+.st-info-tip {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4ff 100%);
+  border-top: 1px solid #e0e7ff;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Анимации */
+@keyframes st-tooltipAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(0%) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0%) translateY(8px);
+  }
+}
+
+.st-info-icon-btn:hover .st-info-tooltip,
+.st-info-icon-btn:focus-within .st-info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0%) translateY(8px);
+  animation: st-tooltipAppear 0.3s ease;
+}
+
+.st-info-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 16px;
+  transform: rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-left: 1px solid #e0e7ff;
+  border-top: 1px solid #e0e7ff;
+  z-index: 1;
+}
+
+/* Предупреждение о кэше */
+.st-cache-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.st-cache-warning button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #856404;
+}
+
+/* Стили для выбора предмета */
+.st-subject-selector-container {
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.st-subject-selector {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.st-subject-label {
+  font-weight: 500;
+  color: #002FA7;
+}
+
+.st-subject-select {
+  padding: 10px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 300px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.st-subject-select:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.st-subject-select:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.st-subject-info {
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.st-teacher-info {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.st-teacher-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* Фильтры */
+.st-attendance-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 8px;
+  margin-bottom: 20px;
+}
+
+.st-date-range-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.st-date-range-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.st-date-range-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.st-date-range-input {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  min-width: 80px;
+  transition: all 0.2s ease;
+  height: 35px;
+}
+
+.st-date-range-input:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+/* Контейнер таблицы */
+.st-attendance-table-container {
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.st-attendance-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
+.st-attendance-table {
+  min-width: 100%;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.st-attendance-table th {
+  background: white;
+  color: #002c9c;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 16px 8px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  user-select: none;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+/* Фиксированные заголовки */
+.st-attendance-table th.st-column-number {
+  position: sticky;
+  left: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.st-attendance-table th.st-column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 50;
+  background: #f8fafc;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.st-attendance-table th.st-column-percentage {
+  position: sticky;
+  right: 0;
+  z-index: 50;
+  background: #f8fafc;
+  border-left: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.st-attendance-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-align: center;
+  height: 50px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Фиксированные ячейки */
+.st-attendance-table td.st-column-number {
+  position: sticky;
+  left: 0;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+}
+
+.st-attendance-table td.st-column-name {
+  position: sticky;
+  left: 60px;
+  z-index: 40;
+  background: white;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+.st-attendance-table td.st-column-percentage {
+  position: sticky;
+  right: 0;
+  z-index: 40;
+  background: white;
+  border-left: 2px solid #e2e8f0;
+}
+
+/* Подсветка при наведении на строку */
+.st-attendance-table tbody tr:hover td.st-column-number,
+.st-attendance-table tbody tr:hover td.st-column-name,
+.st-attendance-table tbody tr:hover td.st-column-percentage {
+  background: #f0f4ff;
+}
+
+/* Конкретные размеры и позиции колонок */
+.st-column-number {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+}
+
+.st-column-name {
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  text-align: left;
+}
+
+.st-column-date {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.st-column-percentage {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+/* Стили для ячеек */
+.st-cell-number {
+  font-weight: 600;
+  color: #002FA7;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.st-cell-name {
+  text-align: left !important;
+  padding: 12px 16px !important;
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Стили для статусов посещаемости */
+.st-cell-status-container {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: center;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  width: 100%;
+}
+
+.st-cell-status {
+  height: 36px;
+  width: 36px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.st-cell-status-container:hover .st-cell-status {
+  transform: scale(1.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.st-cell-status-container.st-editing {
+  border: 2px solid #002FA7;
+  border-radius: 6px;
+  background: white;
+}
+
+/* Цвета для статусов */
+.st-status-present {
+  background: #2cbb00;
+}
+
+.st-status-absent {
+  background: #f59e0b;
+}
+
+.st-status-not {
+  background: #ef4444;
+}
+
+.st-status-empty {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #cbd5e1;
+  text-shadow: none;
+}
+
+.st-status-empty:hover {
+  border-color: #002FA7;
+  color: #002FA7;
+  background: #f0f4ff;
+}
+
+/* Стили для процента посещаемости студентов */
+.st-cell-percentage {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Inputs */
+.st-status-input-container {
+  width: 100%;
+  height: 100%;
+}
+
+.st-status-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+}
+
+.st-status-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Контент даты */
+.st-dates-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 34px;
+  width: 100%;
+}
+
+.st-dates-title {
+  font-weight: 600;
+  color: #002c9c;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.st-lesson-id {
+  font-size: 1px;
+  font-weight: 100;
+  color: transparent;
+}
+
+.st-date-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.st-date-info-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0 4px;
+}
+
+.st-date-info-btn:hover {
+  color: #002FA7;
+}
+
+/* Общая посещаемость группы */
+.st-group-attendance-footer {
+  padding: 16px 14px;
+  background: transparent;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.st-group-attendance-percentage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.st-percentage-circle {
+  width: 62px;
+  height: 62px;  
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: conic-gradient(
+    var(--percentage-color, #002FA7) 0% var(--percentage, 0%),
+    #f1f5f9 var(--percentage, 0%) 100%
+  );
+}
+
+.st-percentage-circle::before {
+  content: '';
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  background: white;
+  border-radius: 50%;
+}
+
+.st-percentage-value {
+  font-size: 15px; 
+  font-weight: 800;
+  z-index: 1;
+  color: var(--percentage-color, #002FA7);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.st-percentage-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  padding-right: 5px;
+}
+
+/* Модальные окна */
+.st-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(50, 64, 124, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.st-modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.st-modal-content h3 {
+  margin: 0 0 16px 0;
+  color: #002FA7;
+  font-size: 18px;
+}
+
+.st-reason-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.st-reason-textarea:focus {
+  outline: none;
+  border-color: #002FA7;
+}
+
+.st-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.st-gradient-btn {
+  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%);
+  border: 2px solid rgba(66, 92, 177, 0.508);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.st-gradient-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 83, 255, 0.3);
+}
+
+.st-cancel-btn {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.st-cancel-btn:hover {
+  border-color: #64748b;
+  background: #f8fafc;
+}
+
+/* Стили для модального окна информации о занятии */
+.st-lesson-info-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(50, 64, 124, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.st-lesson-info-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  width: 95%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.st-lesson-info-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.st-lesson-info-modal-header h3 {
+  margin: 0;
+  color: #002FA7;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.st-lesson-info-modal-close {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.st-lesson-info-modal-close:hover {
+  background: #e2e8f0;
+  color: #374151;
+}
+
+.st-lesson-info-modal-content {
+  padding: 24px;
+  background: white;
+}
+
+/* Детальная информация о занятии */
+.st-lesson-details-info {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.st-info-section-header {
+  background: #f8fafc;
+  color: #002FA7;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.st-info-section-content {
+  padding: 14px;
+}
+
+/* ОДИНАКОВАЯ СЕТКА для деталей и статистики - 4 колонки */
+.st-info-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.st-info-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.st-info-grid-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.st-info-grid-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #002FA7;
+}
+
+/* Статистика посещаемости */
+.st-attendance-stats-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.st-attendance-stats-header {
+  background: #f8fafc;
+  color: #002FA7;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.st-attendance-stats-content {
+  padding: 20px;
+}
+
+/* Процент посещаемости - отдельный блок */
+.st-attendance-percentage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e6f0ff 100%);
+  border-radius: 8px;
+  border: 1px solid #c7d2fe;
+  margin-top: 16px;
+}
+
+/* Стили для состояния загрузки */
+.st-lesson-info-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.st-lesson-info-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #002FA7;
+  border-radius: 50%;
+  animation: st-spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.st-lesson-info-loading-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Стили для отсутствующей информации */
+.st-lesson-info-no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  margin: 20px 0;
+}
+
+.st-lesson-info-no-data-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #cbd5e1;
+}
+
+.st-lesson-info-no-data h4 {
+  margin: 0 0 12px 0;
+  color: #475569;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.st-lesson-info-no-data p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Стили для состояния загрузки данных */
+.st-loading-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 16px;
+  background: white;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.st-no-data-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 16px;
+  background: white;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 1px solid #e2e8f0;
+}
+
+/* Стили для скроллбара */
+.st-attendance-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.st-attendance-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.st-attendance-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.st-attendance-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .st-attendance-section {
+    width: 100%;
+    min-width: 100%;
+    padding: 12px;
+  }
+  
+  .st-attendance-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .st-attendance-title-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .st-modal-content {
+    min-width: 90vw;
+    margin: 20px;
+  }
+  
+  .st-column-name {
+    width: 200px;
+    min-width: 200px;
+  }
+  
+  .st-column-number {
+    width: 50px;
+    min-width: 50px;
+  }
+  
+  .st-percentage-circle {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .st-percentage-circle::before {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .st-percentage-value {
+    font-size: 16px;
+  }
+  
+  .st-cell-status {
+    height: 32px;
+    width: 32px;
+    font-size: 12px;
+  }
+  
+  .st-subject-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .st-subject-select {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .st-attendance-cabinet-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .st-header-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .st-info-tooltip {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    min-width: 280px;
+    max-width: 90vw;
+  }
+  
+  .st-info-icon-btn:hover .st-info-tooltip {
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .st-info-icon-btn:focus .st-info-tooltip,
+  .st-info-icon-btn:active .st-info-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@media (max-width: 480px) {
+  .st-header-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .st-lesson-info-modal-header {
+    padding: 16px;
+  }
+  
+  .st-lesson-info-modal-content {
+    padding: 16px;
+  }
+  
+  .st-info-grid-4 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .st-info-grid-item {
+    padding: 14px 8px;
+    min-height: 65px;
+  }
+  
+  .st-info-grid-value {
+    font-size: 16px;
+  }
+  
+  .st-percentage-circle {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .st-percentage-circle::before {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .st-percentage-value {
+    font-size: 14px;
+  }
+}

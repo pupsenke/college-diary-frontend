@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { useCache } from '../context/CacheContext';
 import { teacherApiService, StaffApiResponse } from '../services/teacherApiService';
@@ -50,6 +50,8 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
   const [showPerformance, setShowPerformance] = useState<boolean>(false);
   const [selectedGroupData, setSelectedGroupData] = useState<Group | null>(null);
   const [currentStId, setCurrentStId] = useState<number | null>(null);
+
+  const currentStIdRef = useRef<number | null>(null);
 
   const [attendanceData, setAttendanceData] = useState<Record<string, {
     records: AttendanceRecord[];
@@ -369,20 +371,20 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Выберите нужную группу из списка</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Для работы с посещаемостью нажмите "Выставить посещаемость"</span>
               </div>
-              <div className="step">
-                <span className="step-number">3</span>
+              <div className="steps">
+                <span className="steps-number">3</span>
                 <span>Для работы с оценками нажмите "Выставить оценки"</span>
               </div>
-              <div className="step">
-                <span className="step-number">4</span>
+              <div className="steps">
+                <span className="steps-number">4</span>
                 <span>Используйте фильтры или поиск по группам</span>
               </div>
             </div>
@@ -465,7 +467,6 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     if (groupData) {
       setSelectedGroupData(groupData);
       
-      // Получаем idSt для выбранной группы и предмета
       const getStIdForGroup = async () => {
         try {
           const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
@@ -476,10 +477,8 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           );
           
           if (stId) {
-            setCurrentStId(stId);
+            setCurrentStIdAndRef(stId);
             setShowAttendance(true);
-          } else {
-            console.error('Не удалось получить idSt для группы');
           }
         } catch (error) {
           console.error('Ошибка при получении idSt:', error);
@@ -498,7 +497,26 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     );
     if (groupData) {
       setSelectedGroupData(groupData);
-      setShowPerformance(true);
+      
+      const getStIdForGroup = async () => {
+        try {
+          const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
+          const stId = await teacherApiService.getStId(
+            teacherId, 
+            groupData.subjectName,
+            groupData.numberGroup
+          );
+          
+          if (stId) {
+            setCurrentStIdAndRef(stId);
+            setShowPerformance(true);
+          }
+        } catch (error) {
+          console.error('Ошибка при получении idSt:', error);
+        }
+      };
+      
+      getStIdForGroup();
     }
   };
 
@@ -512,19 +530,84 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
     setShowAttendance(false);
     setShowPerformance(false);
     setSelectedGroupData(null);
-    setCurrentStId(null);
+    setCurrentStIdAndRef(null)
   };
 
-  // от успеваемости к посещаемости
+  const setCurrentStIdAndRef = (stId: number | null) => {
+    setCurrentStId(stId);
+    currentStIdRef.current = stId;
+  };
+
   const handleSetAttendanceFromPerformance = () => {
-    setShowPerformance(false);
-    setShowAttendance(true);
+    console.log('Переход из успеваемости в посещаемость', { 
+      selectedGroupData, 
+      currentStId: currentStIdRef.current 
+    });
+    
+    // Используем ref для проверки
+    if (selectedGroupData && currentStIdRef.current) {
+      setShowPerformance(false);
+      setShowAttendance(true);
+    } else if (selectedGroupData && !currentStIdRef.current) {
+      // Если stId потерялся, загружаем заново
+      console.log('currentStId потерян, загружаем заново');
+      const loadStId = async () => {
+        try {
+          const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
+          const stId = await teacherApiService.getStId(
+            teacherId, 
+            selectedGroupData.subjectName,
+            selectedGroupData.numberGroup
+          );
+          if (stId) {
+            setCurrentStIdAndRef(stId);
+            setShowPerformance(false);
+            setShowAttendance(true);
+          }
+        } catch (error) {
+          console.error('Ошибка при загрузке stId:', error);
+        }
+      };
+      loadStId();
+    } else {
+      console.error('Нет данных для перехода в посещаемость');
+    }
   };
 
-  // от посещаемости к успеваемости
   const handleSetGradesFromAttendance = () => {
-    setShowAttendance(false);
-    setShowPerformance(true);
+    console.log('Переход из посещаемости в успеваемость', { 
+      selectedGroupData, 
+      currentStId: currentStIdRef.current 
+    });
+    
+    // Используем ref для проверки
+    if (selectedGroupData && currentStIdRef.current) {
+      setShowAttendance(false);
+      setShowPerformance(true);
+    } else if (selectedGroupData && !currentStIdRef.current) {
+      // Если stId потерялся, загружаем заново
+      console.log('currentStId потерян, загружаем заново');
+      const loadStId = async () => {
+        try {
+          const teacherId = parseInt(localStorage.getItem('teacher_id') || '0');
+          const stId = await teacherApiService.getStId(
+            teacherId, 
+            selectedGroupData.subjectName,
+            selectedGroupData.numberGroup
+          );
+          if (stId) {
+            setCurrentStIdAndRef(stId);
+            setShowAttendance(false);
+            setShowPerformance(true);
+          }
+        } catch (error) {
+          console.error('Ошибка при загрузке stId:', error);
+        }
+      };
+      loadStId();
+    } else {
+      console.error('Нет данных для перехода в успеваемость');
+    }
   };
 
   // Условия отображения компонентов

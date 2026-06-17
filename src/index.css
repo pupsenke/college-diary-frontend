@@ -11,3 +11,47 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* запрет перевода для всей программы */
+* {
+  -webkit-translate: none !important;
+  translate: none !important;
+}
+
+.notranslate,
+[data-nottranslate],
+[translate="no"] {
+  -webkit-user-select: auto;
+  user-select: auto;
+  text-decoration: none !important;
+}
+
+body, 
+div, 
+span, 
+p, 
+h1, h2, h3, h4, h5, h6,
+table, thead, tbody, tr, td, th,
+button, input, select, textarea,
+label, a, li, ul, ol,
+.schedule-cell,
+.pair-info,
+.pair-subject,
+.pair-teacher,
+.pair-room,
+.grid-header {
+  -webkit-translate: none !important;
+  translate: none !important;
+}
+
+input, textarea, select {
+  -webkit-translate: none !important;
+  translate: none !important;
+  text-transform: none !important;
+}
+
+button,
+[data-nottranslate] {
+  -webkit-user-select: auto;
+  user-select: auto;
+}

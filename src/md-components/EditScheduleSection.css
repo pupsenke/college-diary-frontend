@@ -1,0 +1,597 @@
+.edit-schedule-page {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 110%;
+  max-width: 1900px;
+  margin: 20px auto;
+  min-height: 400px;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.edit-schedule-main {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.edit-schedule-panel {
+  background: white;
+  border-radius: 10px;
+  padding: 30px 0px 30px 0px;
+}
+
+/* верхняя панель */
+.edit-schedule-top-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* левая часть с кнопкой назад и выбором группы */
+.left-panel-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background: white;
+  color: #002FA7;
+  border: 1px solid #002FA7;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 450;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100px;
+  height: 38px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.back-button:hover {
+  background: #f0f3ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 47, 167, 0.1);
+}
+
+.group-selection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.group-selection label {
+  color: #002FA7;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.group-select {
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #002FA7;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #002FA7;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  height: 38px;
+}
+
+.group-select:focus {
+  outline: none;
+  border: 2px solid #002FA7;
+  color: #002FA7;
+}
+
+/* расписание */
+.schedule-grid-container {
+  margin-bottom: 40px;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 120px repeat(6, 1fr);
+  gap: 1px;
+  background: #e0e0e0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.grid-header {
+  background: #002FA7;
+  color: white;
+  padding: 15px 5px;
+  text-align: center;
+  font-weight: 600;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.grid-header.empty {
+  background: #f8f9fa;
+}
+
+.time-cell {
+  background: white;
+  padding: 10px;
+  text-align: center;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.pair-number {
+  font-weight: 600;
+  color: #002FA7;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.pair-time {
+  font-size: 12px;
+  color: #666;
+}
+
+.schedule-cell {
+  background: white;
+  padding: 8px;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 100px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.schedule-cell:hover {
+  background: #f8f9fa;
+}
+
+.schedule-cell.selected {
+  background: #e8f0ff;
+  box-shadow: inset 0 0 0 2px #002FA7;
+}
+
+.schedule-cell.filled {
+  background: #f0f7ff;
+  cursor: pointer;
+}
+
+.schedule-cell.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pair-info {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.pair-info.both-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.week-label {
+  font-weight: 600;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.pair-subject {
+  font-weight: 600;
+  color: #002FA7;
+  margin-bottom: 2px;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.1;
+  font-size: 11px;
+}
+
+.pair-teacher {
+  color: #333;
+  margin-bottom: 2px;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.1;
+  font-size: 10px;
+}
+
+.pair-room {
+  color: #666;
+  font-style: italic;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+
+.add-pair-btn {
+  color: #002FA7;
+  font-weight: 500;
+  padding: 5px 10px;
+  border: 1px dashed #002FA7;
+  border-radius: 4px;
+  background: #f8f9fa;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* статус баннеры */
+.status-banner {
+  background: #e3f2fd;
+  color: #002FA7;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.status-banner.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* панель редактирования пары */
+.edit-pair-panel {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 25px;
+  margin-top: 30px;
+  border: 2px solid #e0e0e0;
+}
+
+.edit-pair-title {
+  color: #002FA7;
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+/* первая строка - преподаватели, предметы, аудитории */
+.edit-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.control-group h4 {
+  color: #002FA7;
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
+/* поиск */
+.search-box {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #002FA7;
+  box-shadow: 0 0 0 2px rgba(0, 47, 167, 0.2);
+}
+
+.no-results {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-style: italic;
+}
+
+/* списки преподавателей, предметов и аудиторий */
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  padding: 4px;
+  overflow-x: visible !important;
+  overflow-y: auto;
+  z-index: 0;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  font-size: 14px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible !important;
+}
+
+.list-item:hover:not(.active):not(:disabled) {
+  border-color: #002FA7;
+  background: #f0f3ff;
+}
+
+.list-item.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.list-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.item-name {
+  flex: 1;
+  text-align: left;
+}
+
+/* привязанная аудитория преподавателя - зеленое выделение */
+.list-item.owner-room {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.list-item.owner-room:hover:not(.active):not(:disabled) {
+  background: #c8e6c9;
+  border-color: #4caf50;
+  color: #1b5e20;
+}
+
+.list-item.owner-room.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+/* иконка примечания */
+.item-note-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.item-note-icon {
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.2s;
+}
+
+.item-note-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: white;
+  color: #002FA7;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: normal;
+  white-space: normal;
+  min-width: 200px;
+  max-width: 350px;
+  width: max-content;
+  word-wrap: break-word;
+  z-index: 9999;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #002FA7;
+  line-height: 1.4;
+}
+
+.item-note-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: #002FA7 transparent transparent transparent;
+}
+
+.item-note-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: white transparent transparent transparent;
+}
+
+.item-note-wrapper:hover .item-note-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* подгруппы */
+.subgroup-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.subgroup-btn {
+  padding: 8px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.subgroup-btn:hover:not(.active) {
+  border-color: #002FA7;
+  color: #002FA7;
+}
+
+.subgroup-btn.active {
+  background: #002FA7;
+  color: white;
+  border-color: #002FA7;
+}
+
+.subgroup-label {
+  color: #027008;
+  margin-bottom: 2px;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3;
+  font-size: 10px;
+}
+
+/* чекбоксы недель */
+.week-checkbox-group {
+  margin-top: 0;
+}
+
+.week-checkboxes {
+  display: flex;
+  gap: 30px;
+  padding: 10px 0;
+}
+
+.week-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  user-select: none;
+}
+
+.week-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #002FA7;
+}
+
+.week-checkbox-label span {
+  font-weight: 500;
+}
+
+.week-checkbox-label:hover {
+  color: #002FA7;
+}
+
+/* кнопки действий */
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cancel-btn,
+.save-btn,
+.delete-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e0e0e0;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.save-btn {
+  background: #002FA7;
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #001f7a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 47, 167, 0.3);
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.cancel-btn:disabled,
+.save-btn:disabled,
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}

@@ -1,6 +1,6 @@
 import { cacheService } from './cacheService';
 import { CACHE_TTL } from './cacheConstants';
-const API_BASE_URL = 'http://localhost:8080';
+import { API_BASE_URL } from '../constants/apiConstant';
 
 export interface GroupData {
   id: number;
@@ -39,11 +39,18 @@ export interface StudentData {
   address?: string;
   email?: string;
   numberGroup?: number;
+  isLeader?: boolean;
 }
 
 // Интерфейсы для успеваемости
 export interface StudentMark {
-  nameSubjectTeachersDTO: {
+  marksBySt: Array<{
+    number: number | null;
+    value: number | null;
+  }> | null;
+  certification: number | null;
+  // Вот ключевое изменение - правильное имя поля
+  nameSubjectTeachersDTO?: {
     idSt: number;
     idSubject: number;
     nameSubject: string;
@@ -54,11 +61,18 @@ export interface StudentMark {
       patronymicTeacher: string;
     }>;
   };
-  marksBySt: Array<{
-    number: number | null;
-    value: number | null;
-  }> | null;
-  certification: number | null; 
+  // Добавляем поле для совместимости с API
+  stteachersDTO?: {
+    idSt: number;
+    idSubject: number;
+    nameSubject: string;
+    teachers: Array<{
+      idTeacher: number;
+      lastnameTeacher: string;
+      nameTeacher: string;
+      patronymicTeacher: string;
+    }>;
+  };
 }
 
 export interface Grade {
@@ -1028,7 +1042,7 @@ export const apiService = {
   },
 
   // Скачивание файла по ID с именем
-  async downloadFileById(fileId: number, fileName: string): Promise<void> {
+  async downloadFileByIdSt(fileId: number, fileName: string): Promise<void> {
     try {
       const blob = await this.getFileById(fileId);
       

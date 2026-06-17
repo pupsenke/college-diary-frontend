@@ -1,5 +1,6 @@
+// cacheService.ts
 export interface CacheConfig {
-  ttl?: number; 
+  ttl?: number;
   version?: string;
 }
 
@@ -13,6 +14,34 @@ export interface CachedData<T> {
 class CacheService {
   private readonly DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 часа
   private readonly VERSION = '1.0.0';
+  private networkListeners: ((isOnline: boolean) => void)[] = [];
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.networkListeners.forEach(listener => listener(true));
+      });
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+        this.networkListeners.forEach(listener => listener(false));
+      });
+    }
+  }
+
+  // Подписка на изменения статуса сети
+  onNetworkChange(callback: (isOnline: boolean) => void) {
+    this.networkListeners.push(callback);
+    return () => {
+      this.networkListeners = this.networkListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  // Проверка онлайн статуса
+  isNetworkOnline(): boolean {
+    return this.isOnline;
+  }
 
   // Сохранение данных в localStorage
   set<T>(key: string, data: T, config: CacheConfig = {}): void {
@@ -25,8 +54,9 @@ class CacheService {
       };
 
       localStorage.setItem(this.getKey(key), JSON.stringify(cachedData));
+      console.log(`[Cache] Data saved for key: ${key}`);
     } catch (error) {
-      console.warn('Failed to cache data:', error);
+      console.warn('[Cache] Failed to cache data:', error);
     }
   }
 
@@ -50,10 +80,56 @@ class CacheService {
         this.remove(key);
         return null;
       }
+      
+      console.log(`[Cache] Data retrieved from cache for key: ${key}`);
       return cachedData.data;
     } catch (error) {
-      console.warn('Failed to retrieve cached data:', error);
+      console.warn('[Cache] Failed to retrieve cached data:', error);
       return null;
+    }
+  }
+
+  // Получение данных с автоматическим fallback на кэш при оффлайн
+  async getWithFallback<T>(
+    key: string,
+    fetchFn: () => Promise<T>,
+    config: CacheConfig = {}
+  ): Promise<{ data: T; fromCache: boolean; error?: string }> {
+    try {
+      // Если есть интернет - пробуем получить свежие данные
+      if (this.isNetworkOnline()) {
+        try {
+          const freshData = await fetchFn();
+          this.set(key, freshData, config);
+          return { data: freshData, fromCache: false };
+        } catch (error) {
+          console.warn(`[Cache] Network request failed for ${key}, trying cache:`, error);
+          // При ошибке сети пробуем кэш
+          const cached = this.get<T>(key, config);
+          if (cached) {
+            return { 
+              data: cached, 
+              fromCache: true, 
+              error: 'Не удалось загрузить свежие данные. Используются кэшированные данные.' 
+            };
+          }
+          throw error;
+        }
+      } 
+      // Если нет интернета - только кэш
+      else {
+        const cached = this.get<T>(key, config);
+        if (cached) {
+          return { 
+            data: cached, 
+            fromCache: true, 
+            error: 'Нет подключения к интернету. Используются кэшированные данные.' 
+          };
+        }
+        throw new Error('Нет подключения к интернету и отсутствуют кэшированные данные');
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -61,8 +137,9 @@ class CacheService {
   remove(key: string): void {
     try {
       localStorage.removeItem(this.getKey(key));
+      console.log(`[Cache] Data removed for key: ${key}`);
     } catch (error) {
-      console.warn('Failed to remove cached data:', error);
+      console.warn('[Cache] Failed to remove cached data:', error);
     }
   }
 
@@ -79,8 +156,9 @@ class CacheService {
       }
 
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log('[Cache] Cache cleared');
     } catch (error) {
-      console.warn('Failed to clear cache:', error);
+      console.warn('[Cache] Failed to clear cache:', error);
     }
   }
 

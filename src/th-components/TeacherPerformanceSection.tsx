@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCache } from '../context/CacheContext';
 import { CacheWarning } from '../th-components/CacheWarning';
 import { 
@@ -11,7 +11,10 @@ import {
   type UpdateMarkGradeRequest,
   type UpdateMarkRequest,
   type ApiLessonType,
-  type StData
+  type StData,
+  type CertificationInfo,
+  type GroupInfo,
+  type SemesterMark
 } from '../services/teacherApiService';
 import './TeacherPerformanceSection.css';
 
@@ -54,6 +57,7 @@ export interface ExamRecord {
   studentId: number;
   examType: 'Э' | 'ДЗ' | 'З' | '';
   grade: string;
+  isRetake?: boolean;
 }
 
 export interface TeacherPerformanceSectionProps {
@@ -187,14 +191,21 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     end: ''
   });
   const [lessonTypesData, setLessonTypesData] = useState<Record<string, LessonTypeInfo>>({});
-  const [globalExamType, setGlobalExamType] = useState<string>('');
 
   const [loadingLessonTypes, setLoadingLessonTypes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { isUsingCache, showCacheWarning, setShowCacheWarning, forceCacheCheck } = useCache();
   const [error, setError] = useState<string | null>(null);
 
-  // Новые состояния для управления датами
+  const [certificationType, setCertificationType] = useState<CertificationInfo | null>(null);
+  const [loadingCertification, setLoadingCertification] = useState(false);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
+  const [savingExam, setSavingExam] = useState<number | null>(null);
+  const [examRetakeStatus, setExamRetakeStatus] = useState<Record<number, boolean>>({});
+
+  const [semesterMarks, setSemesterMarks] = useState<SemesterMark[]>([]);
+
+  // Состояния для управления датами
   const [addDateModal, setAddDateModal] = useState<AddDateModalData>({
     isOpen: false,
     availableLessons: [],
@@ -253,20 +264,93 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     { value: 'ДЗ', label: 'Домашняя работа' }
   ];
 
-
-  // Типы экзаменов
-  const examTypes = [
-    { value: 'Э', label: 'Э' },
-    { value: 'ДЗ', label: 'ДЗ' },
-    { value: 'З', label: 'З' }
-  ];
-
   // Допустимые оценки для экзаменов
   const examGrades = {
     'Э': ['5', '4', '3', '2', ''],
     'ДЗ': ['5', '4', '3', '2', ''],
-    'З': ['з', 'нз', '']
+    'З': ['5', '4', '3', '2', '']
   };
+
+  // Получение доступных оценок для текущего типа экзамена
+  const getAvailableExamGrades = (examType: string): string[] => {
+    return examGrades[examType as keyof typeof examGrades] || [];
+  };
+
+  const loadExistingExamGrades = async (): Promise<void> => {
+    if (!idSt) return;
+    
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (groupId) {
+        const semesterMarksData = await teacherApiService.getSemesterMarks(groupId, idSt);
+        
+        const currentExamType = certificationType?.shortCode || '';
+        
+        semesterMarksData.forEach(mark => {
+          const studentId = mark.idStudent;
+          const certificationId = mark.certification;
+          const isRetake = mark.isRetake;
+          
+          // Только числовые оценки: 5,4,3,2
+          let displayGrade = '';
+          if (certificationId === 5) displayGrade = '5';
+          else if (certificationId === 4) displayGrade = '4';
+          else if (certificationId === 3) displayGrade = '3';
+          else if (certificationId === 2) displayGrade = '2';
+          
+          updateExamRecord(studentId, { 
+            grade: displayGrade,
+            isRetake: isRetake,
+            examType: currentExamType as any 
+          });
+          
+          setExamRetakeStatus(prev => ({
+            ...prev,
+            [studentId]: isRetake
+          }));
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки экзаменационных оценок:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (idSt && groupNumber && students.length > 0 && certificationType?.shortCode) {
+      loadExistingExamGrades();
+    }
+  }, [idSt, groupNumber, students, certificationType]);
+
+  const loadCertificationType = async (): Promise<void> => {
+  if (!idSt || !groupNumber) return;
+
+  setLoadingCertification(true);
+    try {
+      const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+      if (!groupId) {
+        console.warn('Не удалось определить ID группы для загрузки типа аттестации');
+        return;
+      }
+
+      // Инвалидируем кэш перед загрузкой
+      teacherApiService.invalidateCertificationCache(idSt, groupId);
+
+      // Загружаем тип аттестации
+      const certification = await teacherApiService.getCertificationType(idSt, groupId);
+      console.log('Тип аттестации загружен:', certification);
+      setCertificationType(certification);
+    } catch (error) {
+      console.error('Ошибка загрузки типа аттестации:', error);
+    } finally {
+      setLoadingCertification(false);
+    }
+  };
+
+  useEffect(() => {
+    if (idSt && groupNumber) {
+      loadCertificationType();
+    }
+  }, [idSt, groupNumber]);
 
   // Функция для получения цвета оценки
   const getGradeColor = (grade: string): string => {
@@ -289,7 +373,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       'Практика': 'ПР',
       'Практическая работа': 'ПР',
       'Самостоятельная работа': 'СР',
-      'Самостоятелья работа': 'СР', // исправление опечатки из API
+      'Самостоятелья работа': 'СР',
       'Контрольная работа': 'КР',
       'Домашнее задание': 'ДЗ',
       'Домашняя работа': 'ДЗ',
@@ -303,7 +387,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     const typeData = lessonTypesData[date];
     const lessonType = typeData?.type || '';
     
-    // Для отладки
     if (selectedLessonType !== 'all') {
       console.log(`Фильтр: дата "${date}", тип: "${lessonType}", выбран: "${selectedLessonType}"`);
     }
@@ -332,7 +415,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       return new Date(dateStr).getTime();
     }
   };
-
 
   const handlePrevFile = (): void => {
     setFilePreview(prev => ({
@@ -385,9 +467,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 <span>Добавление и удаление столбцов с датами</span>
               </div>
               <div className="feature-item">
-              <span className="feature-icon"></span>
-              <span>Информация о занятиях</span>
-            </div>
+                <span className="feature-icon"></span>
+                <span>Информация о занятиях</span>
+              </div>
             </div>
           </div>
 
@@ -424,20 +506,20 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           <div className="info-section">
             <h4>Как использовать</h4>
             <div className="usage-steps">
-              <div className="step">
-                <span className="step-number">1</span>
+              <div className="steps">
+                <span className="steps-number">1</span>
                 <span>Нажмите на ячейку с оценкой</span>
               </div>
-              <div className="step">
-                <span className="step-number">2</span>
+              <div className="steps">
+                <span className="steps-number">2</span>
                 <span>Введите оценку из списка допустимых</span>
               </div>
-              <div className="step">
-                <span className="step-number">3</span>
+              <div className="steps">
+                <span className="steps-number">3</span>
                 <span>Для комментария нажмите кнопку 💬</span>
               </div>
-              <div className="step">
-                <span className="step-number">4</span>
+              <div className="steps">
+                <span className="steps-number">4</span>
                 <span>Нажмите "Сохранить комментарий"</span>
               </div>
             </div>
@@ -475,7 +557,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       console.log('Starting to load all data...');
 
-      // 1. Загружаем ID преподавателя
       const teacherId = localStorage.getItem('teacher_id');
       if (!teacherId) {
         throw new Error('ID преподавателя не найден в системе');
@@ -483,7 +564,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       const teacherIdNum = parseInt(teacherId);
       setIdTeacher(teacherIdNum);
 
-      // 2. Загружаем idSt
       console.log('Fetching stId...');
       const stId = await teacherApiService.getStId(teacherIdNum, subject, groupNumber);
       if (!stId) {
@@ -491,15 +571,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       }
       setIdSt(stId);
 
-      // 3. Загружаем данные о преподавателях подгрупп
       console.log('Loading subgroup teachers data...');
       await fetchSubjectTeachersData(teacherIdNum);
 
-      // 4. Загружаем студентов из обеих подгрупп
       console.log('Loading students from both subgroups...');
       await loadStudentsFromAllSubgroups(teacherIdNum, stId);
 
-      // 5. Загружаем даты занятий
       console.log('Fetching lesson dates...');
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
       if (!groupId) {
@@ -517,12 +594,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       setLessonDates(dates);
       setAllDates(formattedDates);
 
-      // 6. Загружаем доступные типы занятий для этого предмета
       console.log('Loading lesson types from API...');
       const lessonTypesFromApi = await teacherApiService.getLessonTypes(stId);
       setLessonTypes(lessonTypesFromApi);
 
-      // 7. Инициализируем данные о типах занятий для дат
       console.log('Initializing lesson types data for dates...');
       const lessonTypesData = await loadLessonTypes();
       setLessonTypesData(lessonTypesData);
@@ -533,7 +608,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     } catch (err: any) {
       console.error('Ошибка при загрузке данных:', err);
       
-      // Проверяем, является ли ошибка сетевой
       const isNetworkError = 
         err.message?.includes('Failed to fetch') ||
         err.message?.includes('NetworkError') ||
@@ -542,35 +616,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         err.name === 'TypeError';
       
       if (isNetworkError) {
-        // Проверяем, есть ли кэшированные данные
         forceCacheCheck();
-        
         setShowCacheWarning(true);
-
-          // Пытаемся загрузить данные из кэша
-          try {
-            const teacherId = localStorage.getItem('teacher_id');
-            if (teacherId) {
-              // Определяем groupId для кэша
-              const cachedGroupId = teacherApiService.getGroupIdFromNumber(groupNumber);
-              
-              // Пытаемся загрузить студентов из кэша
-              const cachedStudents = localStorage.getItem(`cache_group_students_${cachedGroupId}_${idSt}_${teacherId}`);
-              if (cachedStudents) {
-                const parsedStudents = JSON.parse(cachedStudents);
-                console.log('Loaded cached students data');
-              }
-              
-              // Пытаемся загрузить даты занятий из кэша
-              const cachedDates = localStorage.getItem(`cache_lesson_dates_${cachedGroupId}_${idSt}_${teacherId}`);
-              if (cachedDates) {
-                const parsedDates = JSON.parse(cachedDates);
-                console.log('Loaded cached lesson dates');
-              }
-            }
-          } catch (cacheError) {
-            console.error('Error loading cached performance data:', cacheError);
-          }
       } else {
         setError(`Не удалось загрузить данные: ${err.message}`);
       }
@@ -580,7 +627,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   };
 
   useEffect(() => {
-    // Загружаем типы занятий когда есть idSt и даты занятий
     if (idSt && lessonDates.length > 0 && lessonTypes.length === 0) {
       const loadTypes = async () => {
         try {
@@ -597,7 +643,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   }, [idSt, lessonDates, lessonTypes.length]);
 
-  // Новая функция для загрузки студентов из всех подгрупп
   const loadStudentsFromAllSubgroups = async (currentTeacherId: number, stId: number): Promise<void> => {
     try {
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
@@ -605,7 +650,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         throw new Error('Не удалось определить ID группы');
       }
 
-      // Получаем данные о преподавателях предмета
       const subjectTeachersData = await teacherApiService.getSubjectTeachersData();
       const currentSubjectId = await teacherApiService.getSubjectIdByName(subject);
       
@@ -622,15 +666,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         'II': []
       };
 
-      // Инвалидируем кэш студентов перед загрузкой новых данных
       teacherApiService.invalidateStudentCache();
-
-      // Создаем Set для отслеживания уже загруженных студентов
       const loadedStudentIds = new Set<number>();
 
       console.log('Преподаватели для предмета:', subjectData.teachers);
       
-      // Загружаем студентов для каждого преподавателя в правильном порядке
       for (let i = 0; i < subjectData.teachers.length; i++) {
         const teacherId = subjectData.teachers[i];
         const subgroup = i === 0 ? 'I' : 'II';
@@ -638,11 +678,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         console.log(`Loading students for ${subgroup} subgroup, teacher ${teacherId}`);
         
         try {
-          // Загружаем студентов без использования кэша
           const apiStudents = await teacherApiService.getGroupStudentsWithoutCache(groupId, stId, teacherId);
           
           if (apiStudents && apiStudents.length > 0) {
-            // Фильтруем студентов, исключая уже загруженных
             const uniqueStudents = apiStudents.filter((student: any) => {
               if (loadedStudentIds.has(student.idStudent)) {
                 console.log(`Студент ${student.idStudent} ${student.lastName} уже загружен, пропускаем`);
@@ -661,7 +699,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               marks: student.marks || []
             }));
 
-            // Сортируем студентов по фамилии
             const sortedStudents = transformedStudents.sort((a, b) => 
               a.lastName.localeCompare(b.lastName)
             );
@@ -669,7 +706,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             subgroupStudentsData[subgroup] = sortedStudents;
             
             console.log(`Loaded ${sortedStudents.length} unique students for ${subgroup} subgroup`);
-            console.log(`Students in ${subgroup}:`, sortedStudents.map(s => `${s.lastName} ${s.id}`));
           }
         } catch (error) {
           console.error(`Error loading students for ${subgroup} subgroup:`, error);
@@ -678,7 +714,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       setSubgroupStudents(subgroupStudentsData);
 
-      // Объединяем всех студентов для отображения (уже без дубликатов)
       const allStudents = [
         ...subgroupStudentsData['I'],
         ...subgroupStudentsData['II']
@@ -686,7 +721,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       setStudents(allStudents);
       
-      // Обновляем распределение по подгруппам
       const updatedStudentSubgroups: Record<number, 'I' | 'II'> = {};
       allStudents.forEach(student => {
         if (student.subgroup) {
@@ -695,18 +729,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       });
       setStudentSubgroups(updatedStudentSubgroups);
 
-      console.log('Total unique students loaded:', allStudents.length);
-      console.log('Subgroup distribution:', updatedStudentSubgroups);
-      console.log('Students in I subgroup:', subgroupStudentsData['I'].length);
-      console.log('Students in II subgroup:', subgroupStudentsData['II'].length);
-
     } catch (error) {
       console.error('Error loading students from subgroups:', error);
       throw error;
     }
   };
 
-  // Функция для загрузки данных о занятии (ST)
   const loadStData = async (): Promise<void> => {
     if (!idSt) return;
 
@@ -720,21 +748,14 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // функция загрузки типов занятий
   const loadLessonTypes = async (): Promise<Record<string, LessonTypeInfo>> => {
     if (!idSt) {
       return {};
     }
 
     try {
-      
-      // Загружаем типы занятий через API
-      const apiLessonTypes = await teacherApiService.getLessonTypes(idSt);
-
-      // Создаем объект lessonTypesData на основе загруженных типов
       const newLessonTypes: Record<string, LessonTypeInfo> = {};
       
-      // Для каждой даты занятия устанавливаем тип из API если доступен
       if (lessonDates && lessonDates.length > 0) {
         for (const lesson of lessonDates) {
           const dateObj = new Date(lesson.date);
@@ -742,7 +763,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
           const displayDate = `${day}.${month} (${lesson.number})`;
           
-          // Получаем информацию о занятии для определения типа
           try {
             const firstStudent = students[0];
             if (firstStudent) {
@@ -757,14 +777,14 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 };
               } else {
                 newLessonTypes[displayDate] = {
-                  type: '', // Пока пустой
+                  type: '',
                   topic: '',
                   comment: ''
                 };
               }
             } else {
               newLessonTypes[displayDate] = {
-                type: '', // Пока пустой
+                type: '',
                 topic: '',
                 comment: ''
               };
@@ -778,24 +798,20 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             };
           }
         }
-      } else {
       }
 
       return newLessonTypes;
-      
     } catch (error) {
       return {};
     }
   };
 
-  // Функция для принудительного обновления типов занятий
   const refreshLessonTypes = async (): Promise<void> => {
     try {
       setLoadingLessonTypes(true);
       console.log('Обновление типов занятий...');
       
       const apiLessonTypes = await loadLessonTypes();
-      
       setLessonTypesData(apiLessonTypes);
       
       setGradeRecords(prev => 
@@ -806,8 +822,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       );
       
       console.log('Типы занятий успешно обновлены:', Object.keys(apiLessonTypes).length, 'занятий');
-      console.log('Детали типов:', apiLessonTypes);
-      
     } catch (error) {
       console.error('Ошибка при обновлении типов занятий:', error);
     } finally {
@@ -815,7 +829,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для получения информации о занятии
   const fetchLessonInfo = async (studentId: number, lessonNumber: number): Promise<LessonInfo | null> => {
     try {
       if (!idSt) {
@@ -830,21 +843,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // функция для распределения подгрупп
   const fetchSubjectTeachersData = async (teacherId: number): Promise<void> => {
     try {
       const data = await teacherApiService.getTeacherSubjects(teacherId);
       setSubjectTeachersData(data);
-      
       await fetchSubgroupTeachers(teacherId);
-      
     } catch (error) {
       console.error('Error loading teacher subjects data:', error);
       setHasMultipleTeachers(false);
     }
   };
 
-  // Функция для загрузки преподавателей подгрупп
   const fetchSubgroupTeachers = async (teacherId: number): Promise<void> => {
     try {
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
@@ -884,108 +893,92 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       
       const hasMultiple = subjectData.teachers.length > 1;
       setHasMultipleTeachers(hasMultiple);
-      
     } catch (error) {
       console.error('Error loading subgroup teachers:', error);
     }
   };
 
-  // Загрузка данных о подгруппах
-  const fetchSubgroupsData = async (teacherId: number, studentsList: Student[]): Promise<void> => {
-    try {
-      const subgroups = await teacherApiService.getSubgroupsForTeacher(teacherId);
-      const updatedStudentSubgroups: Record<number, 'I' | 'II'> = {};
-
-      if (subgroups.length > 0) {
-        const studentToSubgroup: Record<number, 'I' | 'II'> = {};
-        
-        subgroups.forEach((subgroup, index) => {
-          const subgroupLabel = index === 0 ? 'I' : 'II';
-          subgroup.students.forEach(studentId => {
-            studentToSubgroup[studentId] = subgroupLabel;
-          });
-        });
-
-        studentsList.forEach(student => {
-          updatedStudentSubgroups[student.id] = studentToSubgroup[student.id] || 'I';
-        });
-      } else {
-        studentsList.forEach(student => {
-          updatedStudentSubgroups[student.id] = 'I';
-        });
-      }
-
-      setStudentSubgroups(updatedStudentSubgroups);
-    } catch (error) {
-      console.error('Ошибка загрузки данных подгрупп:', error);
-      const defaultSubgroups: Record<number, 'I' | 'II'> = {};
-      studentsList.forEach(student => {
-        defaultSubgroups[student.id] = 'I';
-      });
-      setStudentSubgroups(defaultSubgroups);
-    }
-  };
-
-  // Инициализация данных при монтировании
   useEffect(() => {
     loadAllData();
   }, [groupNumber, subject]);
 
-  // Инициализация записей оценок когда студенты и даты загружены
-  useEffect(() => {
-    if (students.length === 0 || allDates.length === 0) return;
-    
-    console.log('Initializing grade records...');
-    
-    const initialGradeRecords: GradeRecord[] = [];
-    const initialExamRecords: ExamRecord[] = [];
-    
-    students.forEach(student => {
-      allDates.forEach(date => { 
-        const lessonNumber = getLessonNumber(date);
-        const existingMark = student.marks?.find(mark => mark.number === lessonNumber);
-        
-        const initialGrade = existingMark && existingMark.value !== null 
-          ? existingMark.value.toString() 
-          : '';
-        
-        initialGradeRecords.push({
-          id: Date.now() + Math.random(),
-          studentId: student.id,
-          date: date,
-          lessonType: '',
-          topic: '',
-          grade: initialGrade
-        });
-      });
-
-      initialExamRecords.push({
+useEffect(() => {
+  if (students.length === 0 || allDates.length === 0) return;
+  
+  console.log('Initializing grade records...');
+  
+  const initialGradeRecords: GradeRecord[] = [];
+  
+  students.forEach(student => {
+    allDates.forEach(date => { 
+      const lessonNumber = getLessonNumber(date);
+      const existingMark = student.marks?.find(mark => mark.number === lessonNumber);
+      
+      const initialGrade = existingMark && existingMark.value !== null 
+        ? existingMark.value.toString() 
+        : '';
+      
+      initialGradeRecords.push({
         id: Date.now() + Math.random(),
         studentId: student.id,
-        examType: '',
-        grade: ''
+        date: date,
+        lessonType: '',
+        topic: '',
+        grade: initialGrade
       });
     });
+  });
+  
+  setGradeRecords(initialGradeRecords);
+
+  // Инициализация examRecords ТОЛЬКО если они ещё пустые
+  // или если количество студентов изменилось
+  setExamRecords(prev => {
+    // Если уже есть записи для всех текущих студентов — не трогаем
+    const hasAllStudents = students.every(student => 
+      prev.some(record => record.studentId === student.id)
+    );
     
-    setGradeRecords(initialGradeRecords);
-    setExamRecords(initialExamRecords);
+    if (hasAllStudents && prev.length > 0) {
+      // Обновляем только examType, сохраняя оценки
+      const examType = certificationType?.shortCode as any || '';
+      return prev.map(record => ({
+        ...record,
+        examType: examType || record.examType
+      }));
+    }
 
-    setStudentSubgroups(prev => {
-      const hasExistingSubgroups = Object.keys(prev).length > 0;
-      if (hasExistingSubgroups) {
-        return prev;
-      }
+    // Иначе создаём новые, но проверяем prev на существующие оценки
+    const newRecords: ExamRecord[] = [];
+    students.forEach(student => {
+      const existing = prev.find(r => r.studentId === student.id);
+      const examType = certificationType?.shortCode as any || '';
       
-      const initialSubgroups: Record<number, 'I' | 'II'> = {};
-      students.forEach(student => {
-        initialSubgroups[student.id] = 'I';
+      newRecords.push({
+        id: existing?.id || Date.now() + Math.random(),
+        studentId: student.id,
+        examType: examType,
+        grade: existing?.grade || '',  // ← сохраняем загруженную оценку!
+        isRetake: existing?.isRetake || false
       });
-      return initialSubgroups;
     });
-  }, [students, allDates]);
+    return newRecords;
+  });
 
+  setStudentSubgroups(prev => {
+    const hasExistingSubgroups = Object.keys(prev).length > 0;
+    if (hasExistingSubgroups) {
+      return prev;
+    }
+    
+    const initialSubgroups: Record<number, 'I' | 'II'> = {};
+    students.forEach(student => {
+      initialSubgroups[student.id] = 'I';
+    });
+    return initialSubgroups;
+  });
+}, [students, allDates, certificationType]);
 
-  // Функция для принудительного обновления данных
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
     setError(null);
@@ -1007,7 +1000,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для открытия модального окна добавления даты
   const handleOpenAddDateModal = async (): Promise<void> => {
     if (!idSt || !idTeacher) {
       alert('Недостаточно данных для добавления даты');
@@ -1036,7 +1028,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для добавления столбца с датой
   const handleAddDateColumn = async (): Promise<void> => {
     if (!addDateModal.selectedLesson || !idSt || !idTeacher) {
       alert('Выберите занятие для добавления');
@@ -1076,7 +1067,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для открытия модального окна удаления даты
   const handleOpenDeleteDateModal = (date: string, lessonNumber: number): void => {
     setDeleteDateModal({
       isOpen: true,
@@ -1085,7 +1075,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     });
   };
 
-  // Функция для удаления столбца с датой
   const handleDeleteDateColumn = async (): Promise<void> => {
     if (!idSt || !idTeacher) {
       alert('Недостаточно данных для удаления даты');
@@ -1149,8 +1138,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       const lessonsInfo = await teacherApiService.getLessonsInfo(idSt, groupId, idTeacher);
       const lessonFromInfo = lessonsInfo.find((lesson: any) => lesson.number === lessonNumber);
 
-      console.log('Найденные данные о занятии:', { lessonInfo, lessonFromInfo });
-
       const lessonFromDates = lessonDates.find(l => {
         const dateObj = new Date(l.date);
         const day = dateObj.getDate().toString().padStart(2, '0');
@@ -1203,7 +1190,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       console.log('- Тип занятия:', dateModalData.typeMark);
       console.log('- Тема занятия:', dateModalData.comment);
 
-      // 1. Получаем ID типа занятия
       const lessonTypeId = teacherApiService.getLessonTypeIdByName(lessonTypes, dateModalData.typeMark);
       
       if (!lessonTypeId) {
@@ -1214,8 +1200,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
       let idSupplement: number | null = null;
 
-      // 2. Проверяем, есть ли уже supplement для этого занятия
-      // Берем первого студента для проверки существующего supplement
       const firstStudent = filteredStudents[0];
       if (firstStudent) {
         const existingLessonInfo = await fetchLessonInfo(firstStudent.id, showDateModal.lessonNumber);
@@ -1225,7 +1209,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       }
 
-      // 3. Если supplement не существует и есть тема занятия - создаем новый
       if (!idSupplement && dateModalData.comment && dateModalData.comment.trim() !== '') {
         try {
           console.log('Создание нового supplement...');
@@ -1253,7 +1236,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       }
       
-      // 4. Если supplement существует и есть новая тема - обновляем комментарий
       if (idSupplement && dateModalData.comment && dateModalData.comment.trim() !== '') {
         try {
           console.log('Обновление комментария supplement:', idSupplement);
@@ -1264,12 +1246,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       }
 
-      // 5. Обновляем тип занятия для всех студентов
       console.log('Обновление типа занятия для студентов...');
       
       const updatePromises = filteredStudents.map(async (student, index) => {
         try {
-          // Небольшая задержка чтобы не перегружать сервер
           if (index > 0) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
@@ -1300,20 +1280,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       });
 
-      // Ждем завершения всех обновлений
       const results = await Promise.all(updatePromises);
       const successfulUpdates = results.filter(result => result.success).length;
       
       console.log(`Результаты обновления: ${successfulUpdates}/${filteredStudents.length} успешно`);
 
-      // 6. Обновляем UI
       const lessonType = getLessonTypeFromFullName(dateModalData.typeMark);
       const dateObj = new Date(showDateModal.date);
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
       const displayDate = `${day}.${month} (${showDateModal.lessonNumber})`;
       
-      // Обновляем данные о типе занятия
       setLessonTypesData(prev => ({
         ...prev,
         [displayDate]: {
@@ -1324,7 +1301,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         }
       }));
 
-      // Обновляем записи оценок
       setGradeRecords(prev => 
         prev.map(record => 
           record.date === displayDate 
@@ -1333,19 +1309,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         )
       );
 
-      // Инвалидируем кэш
       teacherApiService.invalidateLessonInfoCache();
       teacherApiService.invalidateStudentCache();
 
       console.log('Все операции завершены успешно');
-      
-      let successMessage = `Данные занятия успешно обновлены\nТип: ${dateModalData.typeMark}\nТема: ${dateModalData.comment || 'не указана'}\nОбновлено студентов: ${successfulUpdates}/${filteredStudents.length}`;
-      
-      if (idSupplement) {
-        successMessage += `\nSupplement ID: ${idSupplement}`;
-      }
-      
-      alert(successMessage);
       
       setShowDateModal(null);
       setDateModalData({ typeMark: '', comment: '' });
@@ -1365,15 +1332,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   }, [idSt]);
 
-  // Фильтрация студентов по подгруппе
   const filteredStudents = students.filter(student => {
     if (selectedSubgroup === 'all') return true;
     return studentSubgroups[student.id] === selectedSubgroup;
   });
 
-  // Фильтрация дат по выбранному диапазону и типу занятия
   const filteredDates = allDates.filter(date => {
-    // Фильтр по диапазону дат
     if (dateRange.start || dateRange.end) {
       const currentDate = parseDate(date);
       const startDate = parseDate(dateRange.start);
@@ -1390,7 +1354,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       }
     }
 
-    // Фильтр по типу занятия
     if (selectedLessonType !== 'all') {
       const lessonType = getLessonTypeForDate(date);
       return lessonType === selectedLessonType;
@@ -1399,7 +1362,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return true;
   });
 
-    useEffect(() => {
+  useEffect(() => {
     console.log('Отладка фильтрации:', {
       selectedLessonType,
       lessonTypesData: Object.entries(lessonTypesData).map(([date, data]) => ({
@@ -1413,7 +1376,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     });
   }, [selectedLessonType, lessonTypesData, filteredDates]);
 
-  // Функция для автоматического распределения студентов по подгруппам
   const autoDistributeSubgroups = (): void => {
     const newDistribution: Record<number, 'I' | 'II'> = {};
     
@@ -1429,7 +1391,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     console.log('Автораспределение выполнено');
   };
 
-  // Функция для сохранения распределения по подгруппам
   const saveSubgroupsDistribution = async (): Promise<void> => {
     if (!idTeacher || !idSt) {
       alert('ID преподавателя не найден');
@@ -1452,49 +1413,24 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         alert('Распределение по подгруппам успешно сохранено');
         setShowSubgroupModal(false);
         
-        console.log('Немедленное обновление интерфейса...');
-        
         teacherApiService.invalidateStudentCache();
         teacherApiService.invalidateSubgroupsCache();
         teacherApiService.invalidateSubjectTeachersCache();
         
-        console.log('Немедленная перезагрузка студентов...');
         await loadStudentsFromAllSubgroups(idTeacher, idSt);
-        
-        console.log('Обновление состояния интерфейса...');
-        
         setSelectedSubgroup('all');
-        
         await fetchSubjectTeachersData(idTeacher);
-        
-        console.log('Интерфейс успешно обновлен после сохранения подгрупп');
-        
       } else {
         throw new Error('Сервер вернул ошибку');
       }
-      
     } catch (error: any) {
       console.error('Ошибка при сохранении подгрупп:', error);
-      
-      let errorMessage = 'Неизвестная ошибка';
-      
-      if (error.message.includes('500')) {
-        errorMessage = `Внутренняя ошибка сервера: ${error.message}`;
-      } else if (error.message.includes('404')) {
-        errorMessage = `Ресурс не найден: ${error.message}`;
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('Network Error')) {
-        errorMessage = 'Ошибка соединения с сервером. Проверьте подключение к интернету.';
-      } else {
-        errorMessage = error.message || 'Неизвестная ошибка';
-      }
-      
-      alert(`Ошибка при сохранении распределения по подгруппам:\n\n${errorMessage}`);
+      alert(`Ошибка при сохранении распределения по подгруппам: ${error.message}`);
     } finally {
       setSavingSubgroups(false);
     }
   };
 
-  // Функция для определения размера ячейки
   const getGradeSize = (grade: string): 'small' | 'medium' | 'large' => {
     const simpleGrades = ['5', '4', '3', '2', '1', '0', '', 'з', 'нз'];
     if (simpleGrades.includes(grade)) {
@@ -1506,7 +1442,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Навигация по таблице с клавишами
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!editingCell) return;
@@ -1578,7 +1513,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [editingCell, filteredStudents, filteredDates]);
 
-  // Фокус на input при редактировании
   useEffect(() => {
     if (editingCell && inputRef.current) {
       inputRef.current.focus();
@@ -1586,14 +1520,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   }, [editingCell]);
 
-  // Фокус на select при редактировании экзамена
   useEffect(() => {
     if (editingCell && editingCell.field === 'exam' && examInputRef.current) {
       examInputRef.current.focus();
     }
   }, [editingCell]);
 
-  // Получение записи оценки для студента и даты
   const getGradeRecord = (studentId: number, date: string): GradeRecord => {
     const lessonNumber = getLessonNumber(date);
     const student = students.find(s => s.id === studentId);
@@ -1632,22 +1564,22 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     };
   };
 
-  // Получение экзаменационной записи для студента
   const getExamRecord = (studentId: number): ExamRecord => {
     const record = examRecords.find(record => record.studentId === studentId);
     if (record) {
       return record;
     }
     
+    const examType = certificationType?.shortCode as any || '';
+    
     return {
       id: Date.now() + Math.random(),
       studentId,
-      examType: globalExamType as any,
+      examType: examType,
       grade: ''
     };
   };
 
-  // Обновление записи оценки
   const updateGradeRecord = (studentId: number, date: string, updates: Partial<GradeRecord>): void => {
     setGradeRecords(prev => {
       const existingIndex = prev.findIndex(record => 
@@ -1676,7 +1608,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     });
   };
 
-  // Обновление экзаменационной записи
   const updateExamRecord = (studentId: number, updates: Partial<ExamRecord>): void => {
     setExamRecords(prev => {
       const existingIndex = prev.findIndex(record => record.studentId === studentId);
@@ -1686,18 +1617,18 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         newRecords[existingIndex] = { ...newRecords[existingIndex], ...updates };
         return newRecords;
       } else {
-        return [...prev, {
+        const newRecord: ExamRecord = {
           id: Date.now() + Math.random(),
           studentId,
-          examType: globalExamType as any,
+          examType: '',
           grade: '',
           ...updates
-        }];
+        };
+        return [...prev, newRecord];
       }
     });
   };
 
-  // Обновление подгруппы студента
   const updateStudentSubgroup = (studentId: number, subgroup: 'I' | 'II'): void => {
     setStudentSubgroups(prev => ({
       ...prev,
@@ -1705,7 +1636,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }));
   };
 
-  // Начало редактирования ячейки
   const handleCellClick = (
     studentId: number, 
     date: string,
@@ -1719,7 +1649,61 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     setEditValue(currentValue);
   };
 
-  // Сохранение редактирования оценки
+  const handleSaveExamGrade = async (studentId: number, grade: string, isRetake: boolean): Promise<void> => {
+    if (!idSt) {
+      console.error('idSt не доступен');
+      return;
+    }
+
+    console.log(`Сохранение экзамена: студент=${studentId}, оценка="${grade}", пересдача=${isRetake}`);
+
+    setSavingExam(studentId);
+    
+    try {
+      let certificationId: number | null = null;
+      
+      if (grade === '5') certificationId = 5;
+      else if (grade === '4') certificationId = 4;
+      else if (grade === '3') certificationId = 3;
+      else if (grade === '2') certificationId = 2;
+      else if (grade === '1') certificationId = 1;
+      else if (grade === '0') certificationId = 0;
+      else if (grade === '') certificationId = null;
+      
+      console.log(`certificationId=${certificationId} для оценки "${grade}"`);
+      
+      const result = await teacherApiService.updateCertification(idSt, studentId, certificationId, isRetake);
+      
+      if (result.success) {
+        updateExamRecord(studentId, { grade, isRetake });
+        
+        setExamRetakeStatus(prev => ({
+          ...prev,
+          [studentId]: isRetake
+        }));
+        
+        console.log(`✅ Экзаменационная оценка сохранена для студента ${studentId}: ${grade}, пересдача: ${isRetake}`);
+        
+        const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
+        if (groupId) {
+          teacherApiService.invalidateSemesterMarksCache(groupId, idSt);
+        }
+        teacherApiService.invalidateStudentCache();
+        teacherApiService.invalidateMarksCache();
+      }
+    } catch (error) {
+      console.error('❌ Ошибка сохранения экзаменационной оценки:', error);
+      alert('Ошибка при сохранении экзаменационной оценки');
+    } finally {
+      setSavingExam(null);
+    }
+  };
+
+  const handleExamGradeChange = async (studentId: number, newGrade: string): Promise<void> => {
+    const currentRetake = examRetakeStatus[studentId] || false;
+    await handleSaveExamGrade(studentId, newGrade, currentRetake);
+  };
+
   const handleSaveEdit = async (): Promise<void> => {
     if (!editingCell) return;
 
@@ -1757,7 +1741,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         const allowedGrades = examGrades[examRecord.examType as keyof typeof examGrades] || [];
         
         if (editValue === '' || allowedGrades.includes(editValue)) {
-          updateExamRecord(editingCell.studentId, { grade: editValue });
+          await handleExamGradeChange(editingCell.studentId, editValue);
         }
       }
     } catch (error) {
@@ -1769,13 +1753,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Отмена редактирования
   const handleCancelEdit = (): void => {
     setEditingCell(null);
     setEditValue('');
   };
 
-  // Обработка нажатия клавиш
   const handleKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter') {
       handleSaveEdit();
@@ -1784,7 +1766,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для обновления карты комментариев
   const updateStudentCommentsMap = (studentId: number, lessonNumber: number, history: ChangeHistory[]) => {
     const key = `${studentId}_${lessonNumber}`;
     setStudentCommentsMap(prev => ({
@@ -1796,7 +1777,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }));
   };
 
-  // Функция для загрузки комментариев для всех студентов и дат
   const loadAllComments = async (): Promise<void> => {
     if (!idSt || students.length === 0 || allDates.length === 0) return;
 
@@ -1809,7 +1789,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         student: ChangeHistory[];
       }> = {};
 
-      // Загружаем комментарии для каждой комбинации студент-дата
       for (const student of students) {
         for (const date of allDates) {
           const lessonNumber = getLessonNumber(date);
@@ -1828,7 +1807,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               )
             };
             
-            // Небольшая задержка чтобы не перегружать сервер
             await new Promise(resolve => setTimeout(resolve, 50));
           } catch (error) {
             console.error(`Ошибка загрузки комментариев для студента ${student.id}, занятие ${lessonNumber}:`, error);
@@ -1839,7 +1817,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       
       setStudentCommentsMap(newStudentCommentsMap);
       console.log('Все комментарии загружены:', Object.keys(newStudentCommentsMap).length);
-      
     } catch (error) {
       console.error('Ошибка при загрузке всех комментариев:', error);
     } finally {
@@ -1847,7 +1824,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функцию для преобразования типов
   const transformChangeHistory = (history: any[]): ChangeHistory[] => {
     return history.map(item => ({
       ...item,
@@ -1856,21 +1832,21 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         if (typeof file === 'object' && file !== null && file.id && file.name) {
           return {
             ...file,
-            fileId: file.id, // Используем id файла из paths
+            fileId: file.id,
             supplementId: item.idSupplement || item.id
           };
         } else if (typeof file === 'string') {
           return {
             id: index + 1,
             name: file.split('/').pop() || `Файл ${index + 1}`,
-            fileId: index + 1, // Запасной вариант
+            fileId: index + 1,
             supplementId: item.idSupplement || item.id
           };
         } else {
           return {
             id: index + 1,
             name: `Файл ${index + 1}`,
-            fileId: index + 1, // Запасной вариант
+            fileId: index + 1,
             supplementId: item.idSupplement || item.id
           };
         }
@@ -1878,7 +1854,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }));
   };
 
-  // Функция для загрузки истории изменений студента
   const loadStudentChangeHistory = async (studentId: number, lessonNumber: number): Promise<void> => {
     if (!idSt) return;
     
@@ -1890,7 +1865,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       const transformedHistory = transformChangeHistory(history);
       setStudentChangeHistory(transformedHistory);
       updateStudentCommentsMap(studentId, lessonNumber, transformedHistory);
-      console.log('Student change history loaded:', transformedHistory);
     } catch (error) {
       console.error('Error loading student change history:', error);
       setStudentChangeHistory([]);
@@ -1899,7 +1873,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функции для получения комментариев
   const getStudentCommentsForCell = (studentId: number, date: string): ChangeHistory[] => {
     const lessonNumber = getLessonNumber(date);
     const key = `${studentId}_${lessonNumber}`;
@@ -1915,23 +1888,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
   const handleDownloadFile = async (fileId: number, fileName: string): Promise<void> => {
     try {
       console.log(`Attempting to download file: ${fileName} (File ID: ${fileId})`);
-      
-      // Используем новый метод скачивания по fileId
       await teacherApiService.downloadFileById(fileId, fileName);
     } catch (error: any) {
       console.error('Ошибка при скачивании файла:', error);
-      
-      let errorMessage = 'Не удалось скачать файл';
-      
-      if (error.message.includes('404')) {
-        errorMessage = 'Файл не найден на сервере';
-      } else if (error.message.includes('403')) {
-        errorMessage = 'Нет доступа к файлу';
-      } else if (error.message.includes('network') || error.message.includes('Network')) {
-        errorMessage = 'Проблемы с подключением к серверу';
-      }
-      
-      alert(`${errorMessage}: ${fileName}`);
+      alert(`Не удалось скачать файл: ${fileName}`);
     }
   };
 
@@ -1939,32 +1899,18 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     file: { 
       id: number; 
       name: string;
-      supplementId?: number; // ID supplement для скачивания
-      fileId?: number; // ID файла из paths
+      supplementId?: number;
+      fileId?: number;
     }; 
     onDownload: (fileId: number, fileName: string) => Promise<void>;
   }> = ({ file, onDownload }) => {
     const [downloading, setDownloading] = useState(false);
-    const [downloadError, setDownloadError] = useState<string | null>(null);
 
     const handleDownload = async (): Promise<void> => {
       setDownloading(true);
-      setDownloadError(null);
-      
       try {
-        // Приоритет: fileId (из paths) > supplementId (старый метод)
         const fileIdToDownload = file.fileId || file.supplementId || file.id;
-        console.log(`Starting download for file: ${file.name} (File ID: ${fileIdToDownload})`);
-        
         await onDownload(fileIdToDownload, file.name);
-        console.log(`Download completed for file: ${file.name}`);
-      } catch (error: any) {
-        console.error('Download error:', error);
-        setDownloadError(error.message || 'Не удалось скачать файл');
-        
-        setTimeout(() => {
-          alert(`Ошибка скачивания файла: ${error.message || 'Неизвестная ошибка'}`);
-        }, 100);
       } finally {
         setDownloading(false);
       }
@@ -1974,22 +1920,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       <div className="file-item-simple">
         <div className="file-icon">📄</div>
         <div className="file-info-simple">
-          <span 
-            className="file-name-simple" 
-            title={file.name}
-          >
+          <span className="file-name-simple" title={file.name}>
             {file.name.length > 30 ? `${file.name.substring(0, 30)}...` : file.name}
           </span>
-          {downloadError && (
-            <div className="download-error">
-              Ошибка
-            </div>
-          )}
           <button 
             className={`download-btn-simple ${downloading ? 'downloading' : ''}`}
             onClick={handleDownload}
             disabled={downloading}
-            title={`Скачать ${file.name}`}
           >
             {downloading ? 'Скачивание...' : 'Скачать'}
           </button>
@@ -1998,7 +1935,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Функция для открытия модального окна комментария
   const handleOpenCommentModal = async (studentId: number, date: string): Promise<void> => {
     const record = getGradeRecord(studentId, date);
     const lessonNumber = getLessonNumber(date);
@@ -2011,21 +1947,18 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     await loadStudentChangeHistory(studentId, lessonNumber);
   };
 
-  // Функция для получения комментариев студента из истории
   const getStudentComments = (): ChangeHistory[] => {
     return studentChangeHistory.filter(change => 
       !change.teacherOrStudent && (change.comment || change.files)
     );
   };
 
-  // Функция для получения комментариев преподавателя из истории
   const getTeacherComments = (): ChangeHistory[] => {
     return studentChangeHistory.filter(change => 
       change.teacherOrStudent && (change.comment || change.files)
     );
   };
 
-  // Функция для сохранения комментария преподавателя
   const handleSaveTeacherComment = async (): Promise<void> => {
     if (!commentModalData || !idTeacher || !idSt) return;
 
@@ -2033,13 +1966,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     try {
       const lessonNumber = getLessonNumber(commentModalData.date);
       const groupId = teacherApiService.getGroupIdFromNumber(groupNumber);
-      const key = `${commentModalData.studentId}_${lessonNumber}`;
 
       if (!groupId) {
         throw new Error('Не удалось определить ID группы');
       }
-
-      let idSupplement: number | undefined;
 
       if (teacherCommentText.trim() || teacherAttachedFiles.length > 0) {
         const commentResult = await teacherApiService.addTeacherComment({
@@ -2051,35 +1981,21 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
           comment: teacherCommentText.trim()
         });
 
-        if (commentResult.idSupplement) {
-          idSupplement = commentResult.idSupplement;
-          
-          if (teacherAttachedFiles.length > 0) {
-            console.log('Starting file upload for supplement:', idSupplement);
-            const fileResult = await teacherApiService.addTeacherCommentFiles(
-              idSupplement, 
-              teacherAttachedFiles
-            );
-            console.log('File upload result:', fileResult);
-          }
+        if (commentResult.idSupplement && teacherAttachedFiles.length > 0) {
+          await teacherApiService.addTeacherCommentFiles(commentResult.idSupplement, teacherAttachedFiles);
         }
       }
 
       updateGradeRecord(
         commentModalData.studentId, 
         commentModalData.date, 
-        { 
-          comment: teacherCommentText.trim() || undefined
-        }
+        { comment: teacherCommentText.trim() || undefined }
       );
 
       await loadStudentChangeHistory(commentModalData.studentId, lessonNumber);
 
       setTeacherCommentText('');
       setTeacherAttachedFiles([]);
-
-      console.log('Комментарий преподавателя успешно сохранен');
-      
     } catch (error) {
       console.error('Ошибка при сохранении комментария преподавателя:', error);
       alert('Ошибка при сохранении комментария. Попробуйте еще раз.');
@@ -2088,69 +2004,35 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Функция для удаления файла преподавателя
   const removeTeacherFile = (index: number): void => {
     setTeacherAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Функция для рендера секции файлов преподавателя
   const renderTeacherFilesSection = (files: File[], removeFile: (index: number) => void) => {
     if (!files || files.length === 0) {
       return null;
     }
-
-    const createImagePreview = (file: File): string => {
-      return URL.createObjectURL(file);
-    };
-
-    const handleImagePreviewClick = (file: File) => {
-      const imageUrl = URL.createObjectURL(file);
-      window.open(imageUrl, '_blank');
-    };
 
     return (
       <div className="attached-files-section">
         <div className="files-header">
           <span>Прикрепленные файлы ({files.length})</span>
         </div>
-        <div className="files-instruction">
-          Для прикрепления изображений можете использовать комбинацию Ctrl+V в поле комментария
-        </div>
         <div className="files-list">
-          {files.map((file, index) => {
-            const isImage = file.type.startsWith('image/');
-            const previewUrl = isImage ? createImagePreview(file) : '';
-            
-            return (
-              <div key={index} className="file-item">
-                {isImage ? (
-                  <div className="image-preview-container">
-                    <div className="file-info">
-                      <span className="file-name">{file.name}</span>
-                      <span className="file-size">
-                        ({(file.size / 1024).toFixed(1)} KB)
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="file-info">
-                    <div className="file-icon">📄</div>
-                    <span className="file-name">{file.name}</span>
-                    <span className="file-size">
-                      ({(file.size / 1024).toFixed(1)} KB)
-                    </span>
-                  </div>
-                )}
-
+          {files.map((file, index) => (
+            <div key={index} className="file-item">
+              <div className="file-info">
+                <div className="file-icon">📄</div>
+                <span className="file-name">{file.name}</span>
+                <span className="file-size">({(file.size / 1024).toFixed(1)} KB)</span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     );
   };
 
-  // Функция для рендера истории комментариев
   const renderCommentHistory = (comments: ChangeHistory[], title: string, emptyMessage: string) => {
     if (loadingStudentHistory) {
       return (
@@ -2162,11 +2044,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
 
     if (comments.length === 0) {
-      return (
-        <div className="no-comments-section">
-          {emptyMessage}
-        </div>
-      );
+      return <div className="no-comments-section">{emptyMessage}</div>;
     }
 
     return (
@@ -2189,29 +2067,25 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 </span>
               </div>
               
-              {comment.comment && (
-                <div className="comment-text">
-                  {comment.comment}
+              {comment.comment && <div className="comment-text">{comment.comment}</div>}
+              
+              {comment.files && comment.files.length > 0 && (
+                <div className="comment-files-simple">
+                  <div className="files-header-simple">
+                    <span>Прикрепленные файлы ({comment.files.length})</span>
+                  </div>
+                  <div className="files-list-simple">
+                    {comment.files.map((file) => (
+                      <FileItemSimple 
+                        key={file.id} 
+                        file={file}
+                        onDownload={handleDownloadFile}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               
-                {comment.files && comment.files.length > 0 && (
-                  <div className="comment-files-simple">
-                    <div className="files-header-simple">
-                      <span>Прикрепленные файлы ({comment.files.length})</span>
-                    </div>
-                    <div className="files-list-simple">
-                      {comment.files.map((file, fileIndex) => (
-                        <FileItemSimple 
-                          key={file.id} 
-                          file={file}
-                          onDownload={handleDownloadFile}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-            
               {index < comments.length - 1 && <div className="comment-divider"></div>}
             </div>
           ))}
@@ -2220,7 +2094,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна комментария с вкладками
   const renderCommentModal = (): React.ReactElement | null => {
     if (!commentModalData) return null;
 
@@ -2263,44 +2136,19 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                   <textarea
                     value={teacherCommentText}
                     onChange={(e) => setTeacherCommentText(e.target.value)}
-                    onPaste={(e) => {
-                      const items = e.clipboardData?.items;
-                      if (!items) return;
-
-                      const newFiles: File[] = [];
-                      for (let i = 0; i < items.length; i++) {
-                        const item = items[i];
-                        if (item.kind === 'file') {
-                          const file = item.getAsFile();
-                          if (file && file.type.startsWith('image/')) {
-                            newFiles.push(file);
-                            e.preventDefault();
-                          }
-                        }
-                      }
-                      if (newFiles.length > 0) {
-                        setTeacherAttachedFiles(prev => [...prev, ...newFiles]);
-                      }
-                    }}
                     placeholder="Введите комментарий преподавателя..."
                     rows={4}
                     className="comment-textarea"
                   />
                   <div className="file-upload-section">
-                    <div className="file-upload-actions">
-                      <button
-                        type="button"
-                        className="explorer-upload-btn"
-                        onClick={() => document.getElementById('file-explorer-input')?.click()}
-                        disabled={uploadingFiles}
-                      >
-                        {uploadingFiles ? 'Загрузка...' : 'Прикрепить файлы'}
-                      </button>
-                      <div className="file-formats-info">
-                        Допустимые форматы: JPG, PNG, GIF, BMP, WEBP, TXT, PDF, DOC, DOCX, XLS, XLSX
-                      </div>
-                    </div>
-                    
+                    <button
+                      type="button"
+                      className="explorer-upload-btn"
+                      onClick={() => document.getElementById('file-explorer-input')?.click()}
+                      disabled={uploadingFiles}
+                    >
+                      {uploadingFiles ? 'Загрузка...' : 'Прикрепить файлы'}
+                    </button>
                     <input
                       type="file"
                       id="file-explorer-input"
@@ -2343,7 +2191,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 setStudentChangeHistory([]);
               }}
               disabled={uploadingFiles}
-              type="button"
             >
               Отмена
             </button>
@@ -2353,7 +2200,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 className="gradient-btn" 
                 onClick={handleSaveTeacherComment}
                 disabled={uploadingFiles || (!teacherCommentText && teacherAttachedFiles.length === 0)}
-                type="button"
               >
                 {uploadingFiles ? 'Сохранение...' : 'Сохранить комментарий'}
               </button>
@@ -2364,7 +2210,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Обработка вставки файлов через Ctrl+V в текстовое поле
   const handlePaste = (e: React.ClipboardEvent): void => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -2384,39 +2229,25 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     if (newFiles.length > 0) {
       e.preventDefault();
       setAttachedFiles(prev => [...prev, ...newFiles]);
-      console.log(`Добавлено изображений: ${newFiles.length}`);
     }
   };
 
-  // Функция для загрузки файлов на сервер
   const uploadFiles = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     setUploadingFiles(true);
     
     try {
-      // Используем новый метод для загрузки через проводник
       const result = await teacherApiService.uploadFilesFromExplorer(files);
       
       if (result.success && result.fileUrls) {
         uploadedUrls.push(...result.fileUrls);
-        
-        files.forEach((file, index) => {
-          if (file.type.startsWith('image/')) {
-            console.log(`Изображение загружено: ${result.fileUrls?.[index]}`);
-          } else {
-            console.log(`Файл загружен: ${result.fileUrls?.[index]}`);
-          }
-        });
       } else {
-        console.log('Файлы загружены, но URL не возвращены');
-        // Создаем заглушки для URL
         files.forEach(file => {
           uploadedUrls.push(`uploaded://${file.name}`);
         });
       }
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
-      // Создаем заглушки в случае ошибки
       files.forEach(file => {
         uploadedUrls.push(`error://${file.name}`);
       });
@@ -2427,7 +2258,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return uploadedUrls;
   };
 
-  // для обработки выбора файлов через input:
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -2435,8 +2265,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     const newFiles: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      // Проверяем допустимые форматы
       const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
       const allowedDocumentTypes = [
         'text/plain', 
@@ -2454,8 +2282,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       if (isAllowedImage || isAllowedDocument) {
         newFiles.push(file);
       } else {
-        console.warn(`Недопустимый формат файла: ${file.name} (${file.type})`);
-        alert(`Файл "${file.name}" имеет недопустимый формат. Допустимы: изображения, текстовые документы, docx, файлы Excel.`);
+        alert(`Файл "${file.name}" имеет недопустимый формат.`);
       }
     }
 
@@ -2467,11 +2294,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       }
     }
 
-    // Сбрасываем input
     event.target.value = '';
   };
 
-  // Сохранение комментария с прикрепленными файлами
   const handleSaveComment = async (): Promise<void> => {
     if (!commentModalData) return;
 
@@ -2496,22 +2321,11 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       setCommentModalData(null);
       setCommentText('');
       setAttachedFiles([]);
-      
     } catch (error) {
       console.error('Ошибка при сохранении комментария:', error);
     }
   };
 
-  // Обработка изменения глобального типа экзамена
-  const handleGlobalExamTypeChange = (examType: string): void => {
-    setGlobalExamType(examType);
-    
-    filteredStudents.forEach(student => {
-      updateExamRecord(student.id, { examType: examType as any });
-    });
-  };
-
-  // Обработчик клика по кнопке "Выставить посещаемость"
   const handleSetAttendance = (): void => {
     if (onSetAttendance) {
       onSetAttendance();
@@ -2520,7 +2334,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Расчет среднего балла для студента
   const calculateAverageGrade = (studentId: number): number => {
     const studentGrades = gradeRecords
       .filter(record => 
@@ -2537,7 +2350,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return sum / studentGrades.length;
   };
 
-  // Расчет среднего балла по группе
   const calculateGroupAverageGrade = (): number => {
     if (filteredStudents.length === 0) return 0;
     
@@ -2548,7 +2360,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return totalAverage / filteredStudents.length;
   };
 
-  // Получение класса для ячейки оценки
   const getGradeClass = (grade: string): string => {
     if (!grade) return 'grade-empty';
     
@@ -2562,12 +2373,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     return 'grade-unsatisfactory';
   };
 
-  // Получение класса для экзаменационной оценки
   const getExamGradeClass = (grade: string, examType: string): string => {
     if (!grade) return 'exam-grade-empty';
     
     if (examType === 'З') {
-      return grade === 'з' ? 'exam-grade-pass' : 'exam-grade-fail';
+      if (grade === '5' || grade === '4' || grade === '3') return 'exam-grade-pass';
+      if (grade === '2') return 'exam-grade-fail';
+      return 'exam-grade-empty';
     } else {
       const numericGrade = parseFloat(grade);
       if (numericGrade >= 4.5) return 'exam-grade-excellent';
@@ -2577,27 +2389,33 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     }
   };
 
-  // Получение доступных оценок для текущего типа экзамена
-  const getAvailableExamGrades = (examType: string): string[] => {
-    return examGrades[examType as keyof typeof examGrades] || [];
-  };
-
-  // Обработчик изменения оценки экзамена
-  const handleExamGradeChange = (studentId: number, newGrade: string): void => {
-    updateExamRecord(studentId, { grade: newGrade });
-  };
-
-  // Обработчик клика по ячейке экзамена
   const handleExamCellClick = (studentId: number, currentGrade: string): void => {
-    if (globalExamType) {
-      setEditingCell({ studentId, date: '', field: 'exam' });
-      setEditValue(currentGrade);
-    } else {
-      alert('Сначала выберите тип экзамена в заголовке столбца');
+    if (certificationType?.type === 'none') {
+      alert('Аттестация не назначена, оценки выставить нельзя');
+      return;
     }
+    
+    if (!certificationType?.shortCode) {
+      alert('Тип экзамена не определен. Подождите загрузки...');
+      return;
+    }
+    
+    setEditingCell({ studentId, date: '', field: 'exam' });
+    setEditValue(currentGrade);
   };
 
-  // Рендер заголовка даты с кнопками управления
+  useEffect(() => {
+    if (certificationType?.shortCode && students.length > 0) {
+      console.log('Синхронизация examType:', certificationType.shortCode);
+      students.forEach(student => {
+        const currentRecord = getExamRecord(student.id);
+        if (currentRecord.examType !== certificationType.shortCode) {
+          updateExamRecord(student.id, { examType: certificationType.shortCode as any });
+        }
+      });
+    }
+  }, [certificationType, students]);
+
   const renderDateHeader = (date: string, index: number): React.ReactElement => {
     const lessonNumber = getLessonNumber(date);
     const lesson = lessonDates.find(l => {
@@ -2647,7 +2465,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер пустого столбца с "+" для добавления даты
   const renderAddDateColumn = (): React.ReactElement => {
     return (
       <th className="column-add-date" rowSpan={2}>
@@ -2662,7 +2479,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер таблицы
   const renderTable = (): React.ReactElement => {
     return (
       <div className="performance-table-wrapper">
@@ -2683,18 +2499,24 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               <th className="column-exam sticky-col-right highlight-col table-header-rowspan" rowSpan={2}>
                 <div className="global-exam-header">
                   <div>Экзамен</div>
-                  <select 
-                    value={globalExamType}
-                    onChange={(e) => handleGlobalExamTypeChange(e.target.value)}
-                    className="global-exam-select"
-                  >
-                    <option value=""></option>
-                    {examTypes.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                  {loadingCertification ? (
+                    <div className="certification-loading">
+                      <div className="loading-spinner-small"></div>
+                      <span>Загрузка...</span>
+                    </div>
+                  ) : certificationType && certificationType.type !== 'none' ? (
+                    <div className="certification-type-badge">
+                      <span className="certification-code">{certificationType.shortCode}</span>
+                    </div>
+                  ) : certificationType && certificationType.type === 'none' ? (
+                    <div className="certification-none">
+                      <span>Отсутствует</span>
+                    </div>
+                  ) : (
+                    <div className="certification-error">
+                      <span>Ошибка загрузки</span>
+                    </div>
+                  )}
                 </div>
               </th>
             </tr>
@@ -2802,9 +2624,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                             }`}
                           >
                             💬
-                            {(getTeacherCommentsForCell(student.id, date).some(c => c.files && c.files.length > 0) ||
-                            getStudentCommentsForCell(student.id, date).some(c => c.files && c.files.length > 0))
-                            }
                           </button>
                         </div>
                       </td>
@@ -2832,10 +2651,17 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                         className={`exam-grade ${getExamGradeClass(examRecord.grade, examRecord.examType)}`}
                         onClick={() => handleExamCellClick(student.id, examRecord.grade)}
                         style={{
-                          backgroundColor: getGradeColor(examRecord.grade)
+                          backgroundColor: getGradeColor(examRecord.grade),
+                          opacity: savingExam === student.id ? 0.6 : 1,
+                          cursor: savingExam === student.id ? 'wait' : 'pointer'
                         }}
                       >
-                        {isEditingExam ? (
+                        {savingExam === student.id ? (
+                          <div className="exam-saving-spinner">
+                            <div className="loading-spinner-small"></div>
+                            <span>Сохранение...</span>
+                          </div>
+                        ) : isEditingExam ? (
                           <select
                             ref={examInputRef}
                             value={editValue}
@@ -2845,31 +2671,40 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                             }}
                             onBlur={handleSaveEdit}
                             className="exam-grade-select"
-                            style={{
-                              backgroundColor: 'transparent',
-                              border: 'none',
-                              textAlign: 'center',
-                              width: '100%',
-                              cursor: 'pointer'
-                            }}
+                            disabled={savingExam === student.id}
                           >
                             <option value="">-</option>
-                            {getAvailableExamGrades(examRecord.examType).map(grade => (
-                              <option key={grade} value={grade}>
-                                {grade === 'з' ? 'з' : 
-                                grade === 'нз' ? 'нз' : 
-                                grade || '-'}
-                              </option>
-                            ))}
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
                           </select>
                         ) : (
-                          <div className="exam-grade-value">
-                            {examRecord.grade ? (
-                              examRecord.grade === 'з' ? 'Зачет' : 
-                              examRecord.grade === 'нз' ? 'Незачет' : 
-                              examRecord.grade
-                            ) : '-'}
-                          </div>
+                          <>
+                            <div className="exam-grade-value">
+                              {examRecord.grade ? examRecord.grade : '-'}
+                            </div>
+                            {/* Чекбокс пересдачи */}
+                            {certificationType && certificationType.type !== 'none' && (
+                              <label className="retake-checkbox-label" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={examRetakeStatus[student.id] || false}
+                                  onChange={async (e) => {
+                                    const newRetakeStatus = e.target.checked;
+                                    setExamRetakeStatus(prev => ({
+                                      ...prev,
+                                      [student.id]: newRetakeStatus
+                                    }));
+                                    await handleSaveExamGrade(student.id, examRecord.grade, newRetakeStatus);
+                                  }}
+                                  disabled={savingExam === student.id}
+                                  className="retake-checkbox"
+                                />
+                                <span className="retake-label">Пересдача</span>
+                              </label>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -2889,7 +2724,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна добавления даты
   const renderAddDateModal = (): React.ReactElement | null => {
     if (!addDateModal.isOpen) return null;
 
@@ -2951,7 +2785,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна удаления даты
   const renderDeleteDateModal = (): React.ReactElement | null => {
     if (!deleteDateModal.isOpen) return null;
 
@@ -2991,16 +2824,13 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна темы занятия
   const renderTopicModal = (): React.ReactElement | null => {
     if (!showTopicModal) return null;
 
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <h3>
-            Тема занятия {showTopicModal}
-          </h3>
+          <h3>Тема занятия {showTopicModal}</h3>
           
           <textarea
             value={topicText}
@@ -3019,23 +2849,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна информации о занятии
   const renderDateModal = (): React.ReactElement | null => {
     if (!showDateModal) return null;
-
-    const availableLessonTypes = lessonTypes.map(lt => 
-      typeof lt === 'string' ? lt : (lt as any).name
-    ).filter(Boolean);
-
-    const handleSaveDateInfoInternal = async (): Promise<void> => {
-      if (!showDateModal) return;
-
-      try {
-        await handleSaveDateInfo();
-      } catch (error) {
-        console.error('Ошибка при сохранении:', error);
-      }
-    };
 
     const handleCloseModal = (): void => {
       setShowDateModal(null);
@@ -3047,19 +2862,12 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         <div className="lesson-info-modal" onClick={(e) => e.stopPropagation()}>
           <div className="lesson-info-modal-header">
             <h3>Информация о занятии</h3>
-            <button 
-              className="lesson-info-modal-close"
-              onClick={handleCloseModal}
-            >
-              ×
-            </button>
+            <button className="lesson-info-modal-close" onClick={handleCloseModal}>×</button>
           </div>
 
           <div className="lesson-info-modal-content">
             <div className="lesson-details-info">
-              <div className="info-section-header">
-                Детали расписания
-              </div>
+              <div className="info-section-header">Детали расписания</div>
               <div className="info-section-content">
                 <div className="info-grid-4">
                   <div className="info-grid-item">
@@ -3083,9 +2891,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             </div>
 
             <div className="attendance-stats-section">
-              <div className="attendance-stats-header">
-                Управление занятием
-              </div>
+              <div className="attendance-stats-header">Управление занятием</div>
               <div className="attendance-stats-content">
                 <div className="form-group-full-width">
                   <label className="form-label">Тип занятия *</label>
@@ -3102,15 +2908,10 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                       </option>
                     ))}
                   </select>
-                  {lessonTypes.length === 0 && (
-                    <div className="form-help-text">
-                      Загрузка типов занятий...
-                    </div>
-                  )}
                 </div>
 
                 <div className="form-group-full-width">
-                  <label className="form-label">Тема занятия *</label>
+                  <label className="form-label">Тема занятия</label>
                   <textarea
                     value={dateModalData.comment}
                     onChange={(e) => setDateModalData(prev => ({...prev, comment: e.target.value}))}
@@ -3123,9 +2924,9 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
 
                 <div className="lesson-info-actions">
                   <button
-                      className="gradient-btn"
-                      onClick={handleSaveDateInfo}
-                      disabled={!dateModalData.typeMark || updatingLessonType}
+                    className="gradient-btn"
+                    onClick={handleSaveDateInfo}
+                    disabled={!dateModalData.typeMark || updatingLessonType}
                   >
                     {updatingLessonType ? 'Сохранение...' : 'Сохранить изменения'}
                   </button>
@@ -3138,7 +2939,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Рендер модального окна подгрупп
   const renderSubgroupModal = (): React.ReactElement | null => {
     if (!showSubgroupModal) return null;
 
@@ -3146,47 +2946,48 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     const studentsInSubgroupII = students.filter(student => studentSubgroups[student.id] === 'II');
 
     return (
-      <div className="modal-overlay">
-        <div className="modal-content subgroup-modal expanded">
-          <h3>Управление подгруппами</h3>
+      <div className="th-subgroup-modal-overlay" onClick={() => setShowSubgroupModal(false)}>
+        <div className="th-subgroup-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="th-subgroup-modal-header">
+            <h3>Управление подгруппами</h3>
+            <button className="th-subgroup-modal-close" onClick={() => setShowSubgroupModal(false)}>×</button>
+          </div>
           
-          <div className="subgroup-modal-content">
-            <div className="subgroup-stats-centered">
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{studentsInSubgroupI.length}</div>
-                <div className="stat-label-centered">I подгруппа</div>
+          <div className="th-subgroup-modal-content">
+            <div className="th-subgroup-stats">
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{studentsInSubgroupI.length}</div>
+                <div className="th-stat-label">I подгруппа</div>
               </div>
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{studentsInSubgroupII.length}</div>
-                <div className="stat-label-centered">II подгруппа</div>
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{studentsInSubgroupII.length}</div>
+                <div className="th-stat-label">II подгруппа</div>
               </div>
-              <div className="subgroup-stat-centered">
-                <div className="stat-value-centered">{students.length}</div>
-                <div className="stat-label-centered">Всего студентов</div>
+              <div className="th-subgroup-stat">
+                <div className="th-stat-value">{students.length}</div>
+                <div className="th-stat-label">Всего студентов</div>
               </div>
             </div>
 
-            <div className="subgroup-actions">
-              <button 
-                className="gradient-btn auto-distribute-btn"
-                onClick={autoDistributeSubgroups}
-                disabled={savingSubgroups}
-              >
+            <div className="th-auto-distribute-section">
+              <button className="th-auto-distribute-btn" onClick={autoDistributeSubgroups} disabled={savingSubgroups}>
                 Автораспределение
               </button>
             </div>
 
-            <div className="students-list">
-              <div className="students-grid">
+            <div className="th-students-section">
+              <h4>Список студентов</h4>
+              <div className="th-students-grid">
                 {students.map((student) => (
-                  <div key={student.id} className="student-subgroup-item">
-                    <span className="student-name">
+                  <div key={student.id} className="th-student-item">
+                    <span className="th-student-name">
                       {student.lastName} {student.firstName} {student.middleName}
                     </span>
                     <select 
                       value={studentSubgroups[student.id] || 'I'}
                       onChange={(e) => updateStudentSubgroup(student.id, e.target.value as 'I' | 'II')}
-                      className="subgroup-select-modal"
+                      className="th-subgroup-select"
+                      disabled={savingSubgroups}
                     >
                       <option value="I">I подгруппа</option>
                       <option value="II">II подгруппа</option>
@@ -3195,30 +2996,21 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
                 ))}
               </div>
             </div>
-          </div>
 
-          <div className="modal-actions">
-            <button 
-              className="cancel-btn" 
-              onClick={() => setShowSubgroupModal(false)}
-              disabled={savingSubgroups}
-            >
-              Отмена
-            </button>
-            <button 
-              className="gradient-btn" 
-              onClick={saveSubgroupsDistribution}
-              disabled={savingSubgroups}
-            >
-              {savingSubgroups ? 'Сохранение...' : 'Сохранить распределение'}
-            </button>
+            <div className="th-modal-actions">
+              <button className="th-cancel-btn" onClick={() => setShowSubgroupModal(false)} disabled={savingSubgroups}>
+                Отмена
+              </button>
+              <button className={`th-save-btn ${savingSubgroups ? 'th-loading' : ''}`} onClick={saveSubgroupsDistribution} disabled={savingSubgroups}>
+                {savingSubgroups ? 'Сохранение...' : 'Сохранить распределение'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   };
 
-  // Рендер фильтров с кнопкой добавления даты
   const renderFilters = (): React.ReactElement => {
     return (
       <div className="performance-filters">
@@ -3244,7 +3036,6 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         </div>
 
         <div className="type-filters">
-          {/* Фильтр по типу занятия с кнопкой обновления */}
           <div className="filter-group-with-button">
             <div className="filter-select-wrapper">
               <select 
@@ -3302,19 +3093,14 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
     );
   };
 
-  // Обработка состояния загрузки
   if (loading && !idTeacher) {
     return (
       <div className="teacher-performance-section">
         <div className="performance-header">
           <div className="performance-title-container">
             <div className="performance-title">
-              <div className="group-title">
-                Успеваемость {groupNumber}
-              </div>
-              <div className="subject-full-title">
-                {subject}
-              </div>
+              <div className="group-title">Успеваемость {groupNumber}</div>
+              <div className="subject-full-title">{subject}</div>
             </div>
           </div>
         </div>
@@ -3331,12 +3117,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
         <div className="performance-header">
           <div className="performance-title-container">
             <div className="performance-title">
-              <div className="group-title">
-                Успеваемость {groupNumber}
-              </div>
-              <div className="subject-full-title">
-                {subject}
-              </div>
+              <div className="group-title">Успеваемость {groupNumber}</div>
+              <div className="subject-full-title">{subject}</div>
             </div>
           </div>
         </div>
@@ -3347,11 +3129,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
             <br />
             {error}
           </div>
-          <button 
-            className="retry-button"
-            onClick={loadAllData}
-            disabled={!idTeacher}
-          >
+          <button className="retry-button" onClick={loadAllData} disabled={!idTeacher}>
             <svg className="retry-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -3367,7 +3145,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       <div className="performance-cabinet-header">
         <div className="header-left-actions">
           {onBackToGroups && (
-            <button className="back-button" onClick={onBackToGroups}>
+            <button className="backs-button" onClick={onBackToGroups}>
               <img src="/th-icons/arrow_icon.svg" alt="Назад" />
             </button>
           )}
@@ -3381,12 +3159,8 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
       <div className="performance-header">
         <div className="performance-title-container">
           <div className="performance-title">
-            <div className="group-title">
-              Успеваемость {groupNumber}
-            </div>
-            <div className="subject-full-title">
-              {subject}
-            </div>
+            <div className="group-title">Успеваемость {groupNumber}</div>
+            <div className="subject-full-title">{subject}</div>
           </div>
           <div className="performance-actions">
             {hasMultipleTeachers && (

@@ -66,17 +66,16 @@ body.menu-collapsed .teacher-attendance-section {
 
 /* Кнопки */
 .gradient-btn {
-  background: linear-gradient(135deg, #011080 0%, #0f53ff 100%) !important;
-  border: 2px solid rgba(66, 92, 177, 0.508) !important;
+  background: #002FA7 !important;
   color: white !important;
-  padding: 10px 20px !important;
-  border-radius: 8px !important;
+  border: none !important;
+  padding: 13px 25px !important;
+  border-radius: 13px !important;
   cursor: pointer !important;
   font-weight: 500 !important;
   font-size: 14px !important;
   transition: all 0.2s ease !important;
   min-width: 180px !important;
-  height: 40px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
