@@ -10,6 +10,7 @@ export interface Student {
   lastName: string;
   firstName: string;
   middleName: string;
+  active?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -426,6 +427,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
         lastName: studentData.lastName || '',
         firstName: studentData.name || '',
         middleName: studentData.patronymic || '',
+        active: studentData.active !== undefined ? studentData.active : true
       }));
       
       // Преобразуем данные API в формат записей посещаемости
@@ -736,6 +738,12 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
 
   // Начало редактирования ячейки
   const handleCellClick = (studentId: number, date: string, type: 'status', currentValue: string) => {
+    // Проверяем активность студента
+    const student = filteredStudents.find(s => s.id === studentId);
+    if (student && student.active === false) {
+      return;
+    }
+    
     setEditingCell({ studentId, date, type });
     setEditValue(currentValue);
   };
@@ -1073,15 +1081,18 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
           <tbody>
             {filteredStudents.map((student, studentIndex) => {
               const attendancePercentage = calculateAttendancePercentage(student.id);
+              const isInactive = student.active === false;
               
               return (
-                <tr key={student.id}>
+                <tr key={student.id}
+                  className={isInactive ? 'student-inactive' : ''}>
                   <td className="column-number sticky-col">
                     <div className="cell-number">{studentIndex + 1}</div>
                   </td>
                   <td className="column-name sticky-col">
                     <div className="cell-name">
                       {student.lastName} {student.firstName} {student.middleName}
+                      {isInactive && <span className="inactive-badge">деактивирован</span>}
                     </div>
                   </td>
                   
@@ -1098,6 +1109,7 @@ export const TeacherAttendanceSection: React.FC<TeacherAttendanceSectionProps> =
                         <div 
                           className={`cell-status-container ${isEditing ? 'editing' : ''}`}
                           onClick={() => handleCellClick(student.id, date, 'status', record.status)}
+                          style={{ opacity: isInactive ? 0.5 : 1, cursor: isInactive ? 'not-allowed' : 'pointer' }}
                         >
                           {isEditing && editingCell?.type === 'status' ? (
                             <div className="status-input-container">

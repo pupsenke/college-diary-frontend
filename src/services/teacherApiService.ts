@@ -100,12 +100,23 @@ export interface Group {
   course?: number;
 }
 
+export interface StudentActiveStatus {
+  id: number;
+  active: boolean;
+}
+
+export interface UpdateStudentActiveRequest {
+  id: number;
+  active: boolean;
+}
+
 export interface Student {
   id: number;
   lastName: string;
   firstName: string;
   middleName: string;
   subgroup?: 'I' | 'II';
+  active?: boolean;
   marks?: Array<{
     number: number;
     value: number | null;
@@ -268,6 +279,7 @@ export interface AttendanceRecord {
   name: string;
   patronymic: string;
   subgroup?: 'I' | 'II';
+  active?: boolean; 
   attendances: Array<{
     idLesson: number;
     date: string;
@@ -990,7 +1002,6 @@ export const teacherApiService = {
   // Метод для получения студентов группы без использования кэша
   async getGroupStudentsWithoutCache(groupId: number, idSt: number, idTeacher: number): Promise<Student[]> {
     try {
-      // Формируем URL с правильными параметрами как в Postman
       const url = `${API_BASE_URL}/api/v1/groups/marks/group?idGroup=${groupId}&idSt=${idSt}&idTeacher=${idTeacher}`;
       
       const response = await fetch(url);
@@ -1001,8 +1012,13 @@ export const teacherApiService = {
       
       const students = await response.json();
       
-      // Сортируем студентов по фамилии от А до Я
-      const sortedStudents = students.sort((a: Student, b: Student) => 
+      // Нормализуем — гарантируем active
+      const normalizedStudents = students.map((student: Student) => ({
+        ...student,
+        active: student.active !== undefined ? student.active : true
+      }));
+      
+      const sortedStudents = normalizedStudents.sort((a: Student, b: Student) => 
         a.lastName.localeCompare(b.lastName)
       );
             
@@ -3001,7 +3017,6 @@ export const teacherApiService = {
     subjectName: string
   ): Promise<{ success: boolean }> {
     try {
-
       // 1. Получаем ID преподавателей для подгрупп
       const { subgroupIId, subgroupIIId } = await this.getTeacherSubgroupIds(
         idTeacher, 
@@ -3016,10 +3031,7 @@ export const teacherApiService = {
       
       Object.entries(studentSubgroups).forEach(([studentId, subgroup]) => {
         const numericStudentId = Number(studentId);
-        if (isNaN(numericStudentId)) {
-          console.error('Неверный ID студента:', studentId);
-          return;
-        }
+        if (isNaN(numericStudentId)) return;
         
         if (subgroup === 'I') {
           subgroupIStudents.push(numericStudentId);
@@ -3032,15 +3044,11 @@ export const teacherApiService = {
       const currentSubgroupsTeacherI = await this.getSubgroupsForTeacher(subgroupIId);
       const currentSubgroupsTeacherII = await this.getSubgroupsForTeacher(subgroupIIId);
       
-      // 4. Собираем ВСЕХ студентов для удаления ИЗ ОБОИХ ПОДГРУПП
+      // 4. Собираем всех студентов для удаления
       const allStudentsToRemove: number[] = [];
-      
-      // Собираем студентов из подгрупп первого преподавателя
       currentSubgroupsTeacherI.forEach(subgroup => {
         allStudentsToRemove.push(...subgroup.students);
       });
-      
-      // Собираем студентов из подгрупп второго преподавателя
       currentSubgroupsTeacherII.forEach(subgroup => {
         allStudentsToRemove.push(...subgroup.students);
       });
@@ -3049,65 +3057,34 @@ export const teacherApiService = {
         array.indexOf(studentId) === index
       );
 
-      // 5. УДАЛЯЕМ всех студентов из подгрупп ОБОИХ ПРЕПОДАВАТЕЛЕЙ
+      // 5. Удаляем всех студентов из подгрупп
       if (uniqueStudentsToRemove.length > 0) {
-        
-        // Удаляем из подгрупп первого преподавателя
-        console.log({
+        await this.deleteStudentsFromSubgroups({
           idTeacher: subgroupIId,
           idSt: idSt,
           students: uniqueStudentsToRemove
         });
         
-        const deleteResultI = await this.deleteStudentsFromSubgroups({
-          idTeacher: subgroupIId,
-          idSt: idSt,
-          students: uniqueStudentsToRemove
-        });
-        
-        // Удаляем из подгрупп второго преподавателя (если это разные преподаватели)
         if (subgroupIIId !== subgroupIId) {
-          console.log({
-            idTeacher: subgroupIIId,
-            idSt: idSt,
-            students: uniqueStudentsToRemove
-          });
-          
-          const deleteResultII = await this.deleteStudentsFromSubgroups({
+          await this.deleteStudentsFromSubgroups({
             idTeacher: subgroupIIId,
             idSt: idSt,
             students: uniqueStudentsToRemove
           });
         }
-      } else {
       }
 
-      // 6. ДОБАВЛЯЕМ студентов к соответствующим преподавателям
-      
-      // Для I подгруппы (первый преподаватель)
+      // 6. Добавляем студентов в нужные подгруппы
       if (subgroupIStudents.length > 0) {
-        console.log({
-          idSt: idSt,
-          idTeacher: subgroupIId,
-          students: subgroupIStudents
-        });
-        
-        const addResultI = await this.addStudentsToSubgroup({
+        await this.addStudentsToSubgroup({
           idSt: idSt,
           idTeacher: subgroupIId,
           students: subgroupIStudents
         });
       }
       
-      // Для II подгруппы (второй преподаватель)
       if (subgroupIIStudents.length > 0) {
-        console.log({
-          idSt: idSt,
-          idTeacher: subgroupIIId,
-          students: subgroupIIStudents
-        });
-        
-        const addResultII = await this.addStudentsToSubgroup({
+        await this.addStudentsToSubgroup({
           idSt: idSt,
           idTeacher: subgroupIIId,
           students: subgroupIIStudents
@@ -3122,16 +3099,6 @@ export const teacherApiService = {
       
     } catch (error: any) {
       console.error('=== ОШИБКА СОХРАНЕНИЯ ===', error);
-      
-      // Детальный анализ ошибки
-      if (error.message) {
-        console.error('Текст ошибки:', error.message);
-      }
-      
-      if (error.response) {
-        console.error('Response error:', error.response);
-      }
-      
       throw error;
     }
   },
@@ -3229,6 +3196,91 @@ export const teacherApiService = {
     }
   },
 
+  // Получение всех студентов
+  async getAllStudents(): Promise<Student[]> {
+    const cacheKey = 'all_students';
+    
+    const cached = cacheService.get<Student[]>(cacheKey, { 
+      ttl: CACHE_TTL.STUDENT_DATA 
+    });
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: Student[] = await response.json();
+      
+      cacheService.set(cacheKey, data, { 
+        ttl: CACHE_TTL.STUDENT_DATA 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching all students:', error);
+      return [];
+    }
+  },
+
+  // Обновление статуса активности студента
+  async updateStudentActive(studentId: number, active: boolean): Promise<{ success: boolean }> {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/students/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: studentId,
+          active: active
+        }),
+      });
+
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('Update student active error text:', errorText);
+        } catch (e) {
+          errorText = 'Не удалось прочитать текст ошибки';
+        }
+        
+        throw new Error(`Ошибка обновления статуса студента: ${response.status} - ${errorText}`);
+      }
+
+      // Инвалидируем кэши
+      this.invalidateStudentCache();
+      this.invalidateSubgroupsCache();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating student active status:', error);
+      throw error;
+    }
+  },
+
+  // Инвалидация кэша всех студентов
+  invalidateAllStudentsCache(): void {
+    cacheService.remove('all_students');
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('cache_all_students')) {
+        cacheService.remove(key.replace('cache_', ''));
+      }
+    }
+  },
+
   /**
    * Получение списка студентов с посещаемостью для группы через новый endpoint
    */
@@ -3245,15 +3297,11 @@ export const teacherApiService = {
     }
 
     try {
-      
-      // ПРЕОБРАЗУЕМ НОМЕР ГРУППЫ В ID
       const groupId = this.getGroupIdFromNumber(groupNumber);
       if (!groupId) {
         return [];
       }
       
-      
-      // ИСПОЛЬЗУЕМ ID ГРУППЫ В ЗАПРОСЕ
       const url = `${API_BASE_URL}/api/v1/attendances/group/${groupId}/st/${idSt}/teacher/${teacherId}`;
       
       const response = await fetchWithTimeout(url, {
@@ -3275,17 +3323,22 @@ export const teacherApiService = {
       if (!Array.isArray(data)) {
         return [];
       }
-            
-      cacheService.set(cacheKey, data, { 
+
+      const normalizedData = data.map((student: any) => ({
+        ...student,
+        active: student.active !== undefined ? student.active : true  // по умолчанию активен
+      }));
+      
+      cacheService.set(cacheKey, normalizedData, { 
         ttl: CACHE_TTL.STUDENT_DATA 
       });
       
-      return data;
+      return normalizedData;
     } catch (error) {
-
+      console.error('Error fetching group attendance:', error);
       return [];
     }
-  },
+},
 
   /**
    * Преобразование данных посещаемости в формат студентов

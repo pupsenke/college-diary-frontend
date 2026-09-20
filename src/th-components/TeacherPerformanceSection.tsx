@@ -25,6 +25,7 @@ export interface Student {
   firstName: string;
   middleName: string;
   subgroup?: 'I' | 'II';
+  active?: boolean;
   marks?: Array<{
     number: number;
     value: number | null;
@@ -696,6 +697,7 @@ export const TeacherPerformanceSection: React.FC<TeacherPerformanceSectionProps>
               firstName: student.name,
               middleName: student.patronymic,
               subgroup: subgroup,
+              active: student.active !== undefined ? student.active : true,
               marks: student.marks || []
             }));
 
@@ -1410,7 +1412,6 @@ useEffect(() => {
       );
       
       if (result.success) {
-        alert('Распределение по подгруппам успешно сохранено');
         setShowSubgroupModal(false);
         
         teacherApiService.invalidateStudentCache();
@@ -1642,6 +1643,12 @@ useEffect(() => {
     field: 'grade' | 'lessonType' | 'topic' | 'exam', 
     currentValue: string
   ): void => {
+    // Проверяем активность студента
+    const student = students.find(s => s.id === studentId);
+    if (student && student.active === false) {
+      return;
+    }
+    
     const record = getGradeRecord(studentId, date);
     console.log(`Редактирование: студент ${studentId}, дата ${date}, поле ${field}, значение ${currentValue}`);
     
@@ -1936,6 +1943,11 @@ useEffect(() => {
   };
 
   const handleOpenCommentModal = async (studentId: number, date: string): Promise<void> => {
+    const student = students.find(s => s.id === studentId);
+    if (student && student.active === false) {
+      return;
+    }
+
     const record = getGradeRecord(studentId, date);
     const lessonNumber = getLessonNumber(date);
     
@@ -2390,13 +2402,16 @@ useEffect(() => {
   };
 
   const handleExamCellClick = (studentId: number, currentGrade: string): void => {
+    const student = students.find(s => s.id === studentId);
+    if (student && student.active === false) {
+      return;
+    }
+
     if (certificationType?.type === 'none') {
-      alert('Аттестация не назначена, оценки выставить нельзя');
       return;
     }
     
     if (!certificationType?.shortCode) {
-      alert('Тип экзамена не определен. Подождите загрузки...');
       return;
     }
     
@@ -2526,15 +2541,17 @@ useEffect(() => {
               const averageGrade = calculateAverageGrade(student.id);
               const examRecord = getExamRecord(student.id);
               const isEditingExam = editingCell?.studentId === student.id && editingCell?.field === 'exam';
+              const isInactive = student.active === false;
               
               return (
-                <tr key={student.id}>
+                <tr key={student.id} className={isInactive ? 'student-inactive' : ''}>
                   <td className="column-number sticky-col">
                     <div className="cell-number">{studentIndex + 1}.</div>
                   </td>
                   <td className="column-name sticky-col">
                     <div className="cell-name">
                       {student.lastName} {student.firstName} {student.middleName}
+                      {isInactive && <span className="inactive-badge">деактивирован</span>}
                     </div>
                   </td>
 
@@ -2564,10 +2581,12 @@ useEffect(() => {
                       <td key={dateIndex} className="column-date">
                         <div className="grade-cell-container">
                           <div 
-                            className={`grade-cell ${getGradeClass(record.grade)} ${getGradeSize(record.grade)} ${record.comment ? 'has-comment' : ''}`}
+                            className={`grade-cell ${getGradeClass(record.grade)} ${getGradeSize(record.grade)} ${record.comment ? 'has-comment' : ''} ${isInactive ? 'disabled' : ''}`}
                             onClick={() => handleCellClick(student.id, date, 'grade', record.grade)}
                             style={{
-                              backgroundColor: getGradeColor(record.grade)
+                              backgroundColor: getGradeColor(record.grade),
+                              opacity: isInactive ? 0.5 : 1,
+                              cursor: isInactive ? 'not-allowed' : 'pointer'
                             }}
                           >
                             {isEditing ? (
@@ -2608,7 +2627,9 @@ useEffect(() => {
                               ? 'has-files' : ''
                             }`}
                             onClick={() => handleOpenCommentModal(student.id, date)}
-                            title={`Комментарии: ${
+                            title={ isInactive 
+                              ? 'Студент отчислен — комментарии недоступны'
+                              :`Комментарии: ${
                               getTeacherCommentsForCell(student.id, date).length > 0 ? 
                               `Преподаватель (${getTeacherCommentsForCell(student.id, date).length})` : ''
                             }${
@@ -2622,6 +2643,10 @@ useEffect(() => {
                               getStudentCommentsForCell(student.id, date).some(c => c.files && c.files.length > 0)) 
                               ? ' 📎' : ''
                             }`}
+                            style={{
+                              opacity: isInactive ? 0.3 : 1,
+                              cursor: isInactive ? 'not-allowed' : 'pointer'
+                            }}
                           >
                             💬
                           </button>
@@ -2648,12 +2673,12 @@ useEffect(() => {
                   <td className="column-exam sticky-col-right highlight-col">
                     <div className="exam-cell-container">
                       <div 
-                        className={`exam-grade ${getExamGradeClass(examRecord.grade, examRecord.examType)}`}
+                        className={`exam-grade ${getExamGradeClass(examRecord.grade, examRecord.examType)} ${isInactive ? 'disabled' : ''}`}
                         onClick={() => handleExamCellClick(student.id, examRecord.grade)}
                         style={{
                           backgroundColor: getGradeColor(examRecord.grade),
-                          opacity: savingExam === student.id ? 0.6 : 1,
-                          cursor: savingExam === student.id ? 'wait' : 'pointer'
+                          opacity: savingExam === student.id ? 0.6 : (isInactive ? 0.5 : 1),
+                          cursor: isInactive ? 'not-allowed' : (savingExam === student.id ? 'wait' : 'pointer')
                         }}
                       >
                         {savingExam === student.id ? (
@@ -2691,6 +2716,7 @@ useEffect(() => {
                                   type="checkbox"
                                   checked={examRetakeStatus[student.id] || false}
                                   onChange={async (e) => {
+                                    if (isInactive) return;
                                     const newRetakeStatus = e.target.checked;
                                     setExamRetakeStatus(prev => ({
                                       ...prev,
@@ -2698,7 +2724,7 @@ useEffect(() => {
                                     }));
                                     await handleSaveExamGrade(student.id, examRecord.grade, newRetakeStatus);
                                   }}
-                                  disabled={savingExam === student.id}
+                                  disabled={savingExam === student.id || isInactive}
                                   className="retake-checkbox"
                                 />
                                 <span className="retake-label">Пересдача</span>

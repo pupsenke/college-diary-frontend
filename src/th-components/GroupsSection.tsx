@@ -84,6 +84,9 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           let presentCount = 0;
           
           attendanceData.forEach((studentData: any) => {
+            // Пропускаем неактивных студентов
+            if (studentData.active === false) return;
+
             if (studentData.attendances && Array.isArray(studentData.attendances)) {
               studentData.attendances.forEach((attendance: any) => {
                 totalRecords++;
@@ -101,7 +104,7 @@ export const GroupsSection: React.FC<Props> = ({ selectedDiscipline, onDisciplin
           setAttendanceData(prev => ({
             ...prev,
             [groupKey]: {
-              records: [], // Можно сохранить реальные записи если нужно
+              records: [],
               percentage: percentage
             }
           }));
